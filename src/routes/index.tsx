@@ -11,10 +11,10 @@ function Home() {
         {m.home_page()}
       </p>
       <div className="flex flex-wrap gap-3">
-        <Link className="rounded-md border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-2" to="/docs/form">
+        <Link className="rounded-md border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-2" params={{ slug: 'form' }} to="/docs/registry/$slug">
           Form docs
         </Link>
-        <Link className="rounded-md border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-2" to="/docs/data-table">
+        <Link className="rounded-md border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-2" params={{ slug: 'data-table' }} to="/docs/registry/$slug">
           Data table docs
         </Link>
       </div>

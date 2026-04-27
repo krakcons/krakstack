@@ -8,6 +8,7 @@
       "type": "registry:block",
       "title": "Data Table",
       "description": "A URL-state-driven data table with filtering, sorting, column visibility, CSV export, gallery view, grouping, and drag-and-drop row moves.",
+      "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, pagination, and column visibility\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```",
       "files": [
         {
           "path": "registry/components/data-table/data-table.tsx",
@@ -42,6 +43,7 @@
       "type": "registry:block",
       "title": "Form",
       "description": "A TanStack Form setup with reusable field wrappers, text inputs, text areas, selects, multi-selects, key/value editing, file uploads, submit state, and dirty-navigation blocking.",
+      "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- Localized component messages\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n</form.AppForm>\n```",
       "files": [
         {
           "path": "registry/components/form/form.tsx",
@@ -75,6 +77,7 @@
       "title": "Database",
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
       "type": "registry:lib",
+      "docs": "## Overview\n\n`service-database` provides a Drizzle PostgreSQL client as an Effect service. It reads `DATABASE_URL`, configures pg type parsing for date and interval types, and exposes a reusable layer for application programs.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { DatabaseService } from \"@/services/database\";\nimport { users } from \"@/db/schema\";\n\nconst program = Effect.gen(function* () {\n  const db = yield* DatabaseService;\n  return yield* db.select().from(users);\n});\n\nconst usersList = await Effect.runPromise(\n  program.pipe(Effect.provide(DatabaseService.layer)),\n);\n```",
       "dependencies": ["effect@beta", "@effect/sql-pg@beta", "pg", "drizzle-orm@beta"],
       "devDependencies": ["drizzle-kit@beta", "@types/pg"],
       "files": [

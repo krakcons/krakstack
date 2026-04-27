@@ -11,9 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DocsServiceDatabaseRouteImport } from './routes/docs/service-database'
-import { Route as DocsFormRouteImport } from './routes/docs/form'
-import { Route as DocsDataTableRouteImport } from './routes/docs/data-table'
+import { Route as DocsRegistrySlugRouteImport } from './routes/docs/registry/$slug'
 
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
@@ -25,66 +23,34 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsServiceDatabaseRoute = DocsServiceDatabaseRouteImport.update({
-  id: '/service-database',
-  path: '/service-database',
-  getParentRoute: () => DocsRoute,
-} as any)
-const DocsFormRoute = DocsFormRouteImport.update({
-  id: '/form',
-  path: '/form',
-  getParentRoute: () => DocsRoute,
-} as any)
-const DocsDataTableRoute = DocsDataTableRouteImport.update({
-  id: '/data-table',
-  path: '/data-table',
+const DocsRegistrySlugRoute = DocsRegistrySlugRouteImport.update({
+  id: '/registry/$slug',
+  path: '/registry/$slug',
   getParentRoute: () => DocsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
-  '/docs/data-table': typeof DocsDataTableRoute
-  '/docs/form': typeof DocsFormRoute
-  '/docs/service-database': typeof DocsServiceDatabaseRoute
+  '/docs/registry/$slug': typeof DocsRegistrySlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
-  '/docs/data-table': typeof DocsDataTableRoute
-  '/docs/form': typeof DocsFormRoute
-  '/docs/service-database': typeof DocsServiceDatabaseRoute
+  '/docs/registry/$slug': typeof DocsRegistrySlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
-  '/docs/data-table': typeof DocsDataTableRoute
-  '/docs/form': typeof DocsFormRoute
-  '/docs/service-database': typeof DocsServiceDatabaseRoute
+  '/docs/registry/$slug': typeof DocsRegistrySlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/docs'
-    | '/docs/data-table'
-    | '/docs/form'
-    | '/docs/service-database'
+  fullPaths: '/' | '/docs' | '/docs/registry/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/docs'
-    | '/docs/data-table'
-    | '/docs/form'
-    | '/docs/service-database'
-  id:
-    | '__root__'
-    | '/'
-    | '/docs'
-    | '/docs/data-table'
-    | '/docs/form'
-    | '/docs/service-database'
+  to: '/' | '/docs' | '/docs/registry/$slug'
+  id: '__root__' | '/' | '/docs' | '/docs/registry/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -108,40 +74,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs/service-database': {
-      id: '/docs/service-database'
-      path: '/service-database'
-      fullPath: '/docs/service-database'
-      preLoaderRoute: typeof DocsServiceDatabaseRouteImport
-      parentRoute: typeof DocsRoute
-    }
-    '/docs/form': {
-      id: '/docs/form'
-      path: '/form'
-      fullPath: '/docs/form'
-      preLoaderRoute: typeof DocsFormRouteImport
-      parentRoute: typeof DocsRoute
-    }
-    '/docs/data-table': {
-      id: '/docs/data-table'
-      path: '/data-table'
-      fullPath: '/docs/data-table'
-      preLoaderRoute: typeof DocsDataTableRouteImport
+    '/docs/registry/$slug': {
+      id: '/docs/registry/$slug'
+      path: '/registry/$slug'
+      fullPath: '/docs/registry/$slug'
+      preLoaderRoute: typeof DocsRegistrySlugRouteImport
       parentRoute: typeof DocsRoute
     }
   }
 }
 
 interface DocsRouteChildren {
-  DocsDataTableRoute: typeof DocsDataTableRoute
-  DocsFormRoute: typeof DocsFormRoute
-  DocsServiceDatabaseRoute: typeof DocsServiceDatabaseRoute
+  DocsRegistrySlugRoute: typeof DocsRegistrySlugRoute
 }
 
 const DocsRouteChildren: DocsRouteChildren = {
-  DocsDataTableRoute: DocsDataTableRoute,
-  DocsFormRoute: DocsFormRoute,
-  DocsServiceDatabaseRoute: DocsServiceDatabaseRoute,
+  DocsRegistrySlugRoute: DocsRegistrySlugRoute,
 }
 
 const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)

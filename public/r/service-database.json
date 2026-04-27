@@ -21,5 +21,6 @@
       "target": "services/database.ts"
     }
   ],
+  "docs": "## Overview\n\n`service-database` provides a Drizzle PostgreSQL client as an Effect service. It reads `DATABASE_URL`, configures pg type parsing for date and interval types, and exposes a reusable layer for application programs.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { DatabaseService } from \"@/services/database\";\nimport { users } from \"@/db/schema\";\n\nconst program = Effect.gen(function* () {\n  const db = yield* DatabaseService;\n  return yield* db.select().from(users);\n});\n\nconst usersList = await Effect.runPromise(\n  program.pipe(Effect.provide(DatabaseService.layer)),\n);\n```",
   "type": "registry:lib"
 }

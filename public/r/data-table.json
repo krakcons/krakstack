@@ -38,5 +38,6 @@
       "target": "./messages/components/data-table/fr.json"
     }
   ],
+  "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, pagination, and column visibility\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```",
   "type": "registry:block"
 }

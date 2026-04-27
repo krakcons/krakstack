@@ -38,5 +38,6 @@
       "target": "./messages/components/form/fr.json"
     }
   ],
+  "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- Localized component messages\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n</form.AppForm>\n```",
   "type": "registry:block"
 }
