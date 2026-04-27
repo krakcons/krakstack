@@ -1,5 +1,6 @@
 {
   pkgs,
+  config,
   ...
 }:
 {
@@ -12,7 +13,7 @@
   };
 
   env = {
-    DATABASE_URL = "postgresql://postgres@127.0.0.1:54329/template";
+    DATABASE_URL = "postgresql://postgres:postgres@localhost:${toString config.services.postgres.port}/dev";
   };
 
   services.postgres = {
@@ -22,8 +23,13 @@
       extensions.postgis
       extensions.pgvector
     ];
+    listen_addresses = "127.0.0.1";
     initialDatabases = [
-      { name = "template"; }
+      {
+        name = "dev";
+        user = "postgres";
+        pass = "postgres";
+      }
     ];
   };
 
