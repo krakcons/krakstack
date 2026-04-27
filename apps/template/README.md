@@ -1,199 +1,220 @@
-Welcome to your new TanStack Start app!
+# KrakStack Template
 
-# Getting Started
+A full-stack web application template built with TanStack Start, Effect, Drizzle ORM, and Tailwind CSS. Ships with a task CRUD demo featuring optimistic updates, i18n, and auto-generated API documentation.
 
-To run this application:
+## Tech Stack
+
+| Layer           | Technology                                       |
+| --------------- | ------------------------------------------------ |
+| Runtime         | Bun                                              |
+| Framework       | TanStack Start (React + SSR)                     |
+| State           | Effect Atom (optimistic atoms)                   |
+| API             | Effect HTTP (OpenAPI + Scalar docs)              |
+| Database        | PostgreSQL via Drizzle ORM                       |
+| Styling         | Tailwind CSS + Shadcn (base-vega) + Lucide icons |
+| Forms           | TanStack Form                                    |
+| Tables          | TanStack Table                                   |
+| i18n            | Paraglide.js + inlang (English & French)         |
+| Dev Environment | devenv (Nix)                                     |
+| Linting         | Oxlint                                           |
+| Formatting      | Oxfmt                                            |
+
+## Prerequisites
+
+- [Bun](https://bun.sh/) >= 1.0
+- PostgreSQL (provided via devenv or self-hosted)
+
+## Running Locally
+
+### Option A: devenv (recommended)
+
+The project includes a `devenv.nix` that auto-provisions PostgreSQL 18 with PostGIS and pgvector extensions, and starts both the dev server and Drizzle Studio as background processes.
+
+1. Install [devenv](https://devenv.sh/getting-started/)
+2. Enter the shell:
+
+```bash
+devenv shell
+```
+
+Or if you use [direnv](https://direnv.net/):
+
+```bash
+direnv allow
+```
+
+This will:
+
+- Provision a PostgreSQL database (`dev`, user `postgres`, password `postgres`) on a dynamically assigned port
+- Set the `DATABASE_URL` environment variable automatically
+- Start `bun run dev` (Vite on port 3000) and `bunx drizzle-kit studio` as managed processes
+
+3. Push the database schema:
+
+```bash
+bunx drizzle-kit push
+```
+
+4. Open [http://localhost:3000](http://localhost:3000)
+
+### Option B: Manual setup
+
+1. Install [Bun](https://bun.sh/)
+
+2. Set up a PostgreSQL database (version 14+, with `pgvector` and `postgis` extensions recommended) and note the connection string
+
+3. Copy the environment file and fill in your database URL:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+```
+
+4. Install dependencies:
 
 ```bash
 bun install
+```
+
+5. Push the database schema:
+
+```bash
+bunx drizzle-kit push
+```
+
+6. Start the dev server:
+
+```bash
 bun --bun run dev
 ```
 
-# Building For Production
+7. Open [http://localhost:3000](http://localhost:3000)
 
-To build this application for production:
+## Scripts
+
+| Command                 | Description                        |
+| ----------------------- | ---------------------------------- |
+| `bun --bun run dev`     | Start Vite dev server on port 3000 |
+| `bun --bun run build`   | Production build                   |
+| `bun --bun run preview` | Preview production build           |
+| `bun run lint`          | Run Oxlint                         |
+| `bun run fmt`           | Run Oxfmt                          |
+| `bun run type:check`    | Run TypeScript type checking       |
+
+## Database
+
+Drizzle ORM manages the PostgreSQL schema. The schema is defined in `src/db/schema.ts`.
+
+| Command                     | Description                                  |
+| --------------------------- | -------------------------------------------- |
+| `bunx drizzle-kit push`     | Push schema changes directly to the database |
+| `bunx drizzle-kit generate` | Generate migration files from schema changes |
+| `bunx drizzle-kit migrate`  | Run pending migrations                       |
+| `bunx drizzle-kit studio`   | Open Drizzle Studio (database browser)       |
+
+### Current schema
+
+- **tasks** — `id` (UUID), `title`, `description`, `completed`, `created_at`, `updated_at`
+
+## Project Structure
+
+```
+src/
+├── api.ts                  # Effect HTTP API definition (endpoints & groups)
+├── server.ts               # TanStack Start server entry (Paraglide middleware)
+├── router.tsx              # TanStack Router config with i18n URL rewriting
+├── styles.css              # Tailwind CSS entry point
+├── db/
+│   └── schema.ts           # Drizzle ORM schema definitions
+├── services/
+│   ├── database.ts         # Effect-managed Drizzle + PostgreSQL connection
+│   └── task/
+│       ├── index.ts        # TaskService (CRUD operations with Effect)
+│       ├── schema.ts       # Effect Schema validation (Task, CreateTask, UpdateTask)
+│       └── handler.ts      # Effect HTTP API handlers wired to TaskService
+├── lib/
+│   ├── api-builder.ts      # Effect Layer wiring (API + handlers + services)
+│   ├── api-client.ts       # Client-side API client (Effect Atom HTTP)
+│   ├── api-handler.ts      # Exposes API + Scalar docs as a Web Handler
+│   ├── utils.ts            # Utility functions (cn, etc.)
+│   └── atoms/
+│       └── tasks.ts        # Effect Atom atoms (queries + optimistic mutations)
+├── components/
+│   ├── ui/                 # Shadcn UI primitives (button, dialog, input, etc.)
+│   ├── data-table/         # Reusable data-table component (TanStack Table)
+│   ├── form/               # Reusable form component (TanStack Form)
+│   └── tasks/              # Task-specific components (dialog, table)
+├── messages/
+│   ├── en.json             # English translations
+│   ├── fr.json             # French translations
+│   └── components/         # Component-scoped translations
+├── paraglide/              # Auto-generated Paraglide runtime (do not edit)
+└── routes/
+    ├── __root.tsx           # Root layout (HTML shell, locale awareness)
+    ├── index.tsx            # Home page (task table + create dialog)
+    └── api/                 # API route handlers
+```
+
+## API Documentation
+
+The Effect HTTP API is served at `/api` with auto-generated docs:
+
+- **Scalar docs**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
+- **OpenAPI spec**: [http://localhost:3000/api/openapi.json](http://localhost:3000/api/openapi.json)
+
+### Endpoints
+
+| Method | Path             | Description      |
+| ------ | ---------------- | ---------------- |
+| GET    | `/api/tasks`     | List all tasks   |
+| POST   | `/api/tasks`     | Create a task    |
+| GET    | `/api/tasks/:id` | Get a task by ID |
+| PATCH  | `/api/tasks/:id` | Update a task    |
+| DELETE | `/api/tasks/:id` | Delete a task    |
+
+## Internationalization (i18n)
+
+The app supports **English** and **French** via [Paraglide.js](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) and [inlang](https://inlang.com/).
+
+- Locales are configured in `project.inlang/settings.json`
+- Translation messages live in `src/messages/{locale}.json`
+- URL-based locale detection with patterns like `/en/...` and `/fr/...`
+- API routes (`/api/...`) are excluded from locale routing
+
+The Paraglide runtime in `src/paraglide/` is auto-generated — do not edit it directly.
+
+## Components
+
+Shadcn components are configured in `components.json` using the `base-vega` style. Add new components with:
+
+```bash
+bunx shadcn@latest add <component>
+```
+
+## Building for Production
 
 ```bash
 bun --bun run build
 ```
 
-## Testing
+The output is written to `dist/`.
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+## Demo Files
 
-```bash
-bun --bun run test
-```
+The task CRUD feature serves as a reference implementation. To remove it, delete:
 
-## Styling
+- `src/services/task/`
+- `src/components/tasks/`
+- `src/components/data-table/`
+- `src/lib/atoms/tasks.ts`
+- `src/db/schema.ts` (the `tasks` table)
+- `src/api.ts` (the task endpoints)
+- `src/lib/api-builder.ts`, `src/lib/api-client.ts`, `src/lib/api-handler.ts`
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+Then update `src/routes/index.tsx` with your own content.
 
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `bun install @tailwindcss/vite tailwindcss -D`
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-pnpm dlx shadcn@latest add button
-```
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "My App" },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-});
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from "@tanstack/react-start";
-
-const getServerTime = createServerFn({
-  method: "GET",
-}).handler(async () => {
-  return new Date().toISOString();
-});
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    getServerTime().then(setTime);
-  }, []);
-
-  return <div>Server time: {time}</div>;
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-import { json } from "@tanstack/react-start";
-
-export const Route = createFileRoute("/api/hello")({
-  server: {
-    handlers: {
-      GET: () => json({ message: "Hello, World!" }),
-    },
-  },
-});
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/people")({
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json();
-  },
-  component: PeopleComponent,
-});
-
-function PeopleComponent() {
-  const data = Route.useLoaderData();
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).

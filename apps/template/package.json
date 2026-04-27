@@ -21,7 +21,6 @@
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-form": "^1.29.1",
     "@tanstack/react-router": "^1.168.25",
-    "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.132.0",
