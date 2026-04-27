@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
 
 import { Api } from "@/api";
-import { TaskService } from "@/services/task";
+import { Tasks } from "@/services/task";
 
 const internalServerError = () => new HttpApiError.InternalServerError({});
 
@@ -10,14 +10,14 @@ export const tasksHandler = HttpApiBuilder.group(Api, "tasks", (handlers) =>
   handlers
     .handle("listTasks", () =>
       Effect.gen(function* () {
-        const tasks = yield* TaskService;
+        const tasks = yield* Tasks;
 
         return yield* tasks.list().pipe(Effect.mapError(internalServerError));
       }),
     )
     .handle("getTask", ({ params }) =>
       Effect.gen(function* () {
-        const tasks = yield* TaskService;
+        const tasks = yield* Tasks;
         const task = yield* tasks.get(params.id).pipe(Effect.mapError(internalServerError));
 
         if (!task) return yield* new HttpApiError.NotFound({});
@@ -27,7 +27,7 @@ export const tasksHandler = HttpApiBuilder.group(Api, "tasks", (handlers) =>
     )
     .handle("createTask", ({ payload }) =>
       Effect.gen(function* () {
-        const tasks = yield* TaskService;
+        const tasks = yield* Tasks;
 
         const task = yield* tasks.create(payload).pipe(Effect.mapError(internalServerError));
 
@@ -38,7 +38,7 @@ export const tasksHandler = HttpApiBuilder.group(Api, "tasks", (handlers) =>
     )
     .handle("updateTask", ({ params, payload }) =>
       Effect.gen(function* () {
-        const tasks = yield* TaskService;
+        const tasks = yield* Tasks;
 
         const task = yield* tasks
           .update(params.id, payload)
@@ -51,7 +51,7 @@ export const tasksHandler = HttpApiBuilder.group(Api, "tasks", (handlers) =>
     )
     .handle("deleteTask", ({ params }) =>
       Effect.gen(function* () {
-        const tasks = yield* TaskService;
+        const tasks = yield* Tasks;
 
         const task = yield* tasks.delete(params.id).pipe(Effect.mapError(internalServerError));
 

@@ -5,17 +5,17 @@ import { tasks } from "@/db/schema";
 import { CreateTask, UpdateTask } from "@/services/task/schema";
 import { DB } from "@/services/database";
 
-export class TaskService extends Context.Service<TaskService>()("TaskService", {
+export class Tasks extends Context.Service<Tasks>()("Tasks", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
-    const list = Effect.fn("list")(function* () {
+    const list = Effect.fn("Tasks.list")(function* () {
       const tasks = yield* db.query.tasks.findMany();
 
       return tasks;
     });
 
-    const get = Effect.fn("get")(function* (id: string) {
+    const get = Effect.fn("Tasks.get")(function* (id: string) {
       const task = yield* db.query.tasks.findFirst({
         where: {
           id,
@@ -25,7 +25,7 @@ export class TaskService extends Context.Service<TaskService>()("TaskService", {
       return task;
     });
 
-    const create = Effect.fn("create")(function* (input: typeof CreateTask.Type) {
+    const create = Effect.fn("Tasks.create")(function* (input: typeof CreateTask.Type) {
       const [task] = yield* db.insert(tasks).values(input).returning();
 
       if (!task) return undefined;
@@ -33,7 +33,7 @@ export class TaskService extends Context.Service<TaskService>()("TaskService", {
       return task;
     });
 
-    const update = Effect.fn("update")(function* (id: string, input: typeof UpdateTask.Type) {
+    const update = Effect.fn("Tasks.update")(function* (id: string, input: typeof UpdateTask.Type) {
       const [task] = yield* db
         .update(tasks)
         .set({ ...input, updatedAt: new Date() })
@@ -45,7 +45,7 @@ export class TaskService extends Context.Service<TaskService>()("TaskService", {
       return task;
     });
 
-    const _delete = Effect.fn("delete")(function* (id: string) {
+    const _delete = Effect.fn("Tasks.delete")(function* (id: string) {
       const [task] = yield* db.delete(tasks).where(eq(tasks.id, id)).returning();
 
       if (!task) return undefined;

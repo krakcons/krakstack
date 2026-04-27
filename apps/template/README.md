@@ -134,9 +134,9 @@ src/
 ├── services/
 │   ├── database.ts         # Effect-managed Drizzle + PostgreSQL connection
 │   └── task/
-│       ├── index.ts        # TaskService (CRUD operations with Effect)
+│       ├── index.ts        # Tasks (CRUD operations with Effect)
 │       ├── schema.ts       # Effect Schema validation (Task, CreateTask, UpdateTask)
-│       └── handler.ts      # Effect HTTP API handlers wired to TaskService
+│       └── handler.ts      # Effect HTTP API handlers wired to Tasks
 ├── lib/
 │   ├── api-builder.ts      # Effect Layer wiring (API + handlers + services)
 │   ├── api-client.ts       # Client-side API client (Effect Atom HTTP)
@@ -217,4 +217,3 @@ The task CRUD feature serves as a reference implementation. To remove it, delete
 - `src/lib/api-builder.ts`, `src/lib/api-client.ts`, `src/lib/api-handler.ts`
 
 Then update `src/routes/index.tsx` with your own content.
-
