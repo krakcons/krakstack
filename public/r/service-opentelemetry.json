@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "service-opentelemetry",
+  "title": "OpenTelemetry",
+  "description": "An Effect service that sets up OpenTelemetry traces, metrics, and log export via OTLP, with Effect Logger bridging so all application logs (including SQL queries) are sent to the collector.",
+  "dependencies": [
+    "effect@beta",
+    "@effect/opentelemetry@beta",
+    "@opentelemetry/exporter-trace-otlp-http",
+    "@opentelemetry/sdk-trace-base"
+  ],
+  "files": [
+    {
+      "path": "registry/services/opentelemetry.ts",
+      "content": "import { NodeSdk } from \"@effect/opentelemetry\";\nimport { OTLPTraceExporter } from \"@opentelemetry/exporter-trace-otlp-http\";\nimport { BatchSpanProcessor } from \"@opentelemetry/sdk-trace-base\";\nimport { Config, Context, Effect, Layer } from \"effect\";\n\nconst OtelLive = NodeSdk.layer(\n  Effect.gen(function* () {\n    const serviceName = yield* Config.string(\"OTEL_SERVICE_NAME\").pipe(Config.withDefault(\"app\"));\n    const otlpEndpoint = yield* Config.string(\"OTEL_EXPORTER_OTLP_ENDPOINT\").pipe(\n      Config.withDefault(\"http://localhost:4318\"),\n    );\n\n    return {\n      resource: { serviceName },\n      spanProcessor: new BatchSpanProcessor(\n        new OTLPTraceExporter({ url: `${otlpEndpoint}/v1/traces` }),\n      ),\n    };\n  }),\n);\n\nexport class OpenTelemetry extends Context.Service<OpenTelemetry>()(\"@app/OpenTelemetry\", {\n  make: Effect.log(\"OpenTelemetry initialized\"),\n}) {\n  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provideMerge(OtelLive));\n}\n",
+      "type": "registry:file",
+      "target": "services/opentelemetry.ts"
+    }
+  ],
+  "docs": "## Overview\n\n`service-opentelemetry` uses `@effect/opentelemetry/Otlp` to set up traces, metrics, and log export to an OTLP collector over HTTP/JSON. It bridges Effect's Logger so all application logs — including SQL queries from `@effect/sql-pg` — are emitted as OpenTelemetry log records.\n\nEnvironment variables are read through `effect/Config` so they integrate with Effect's configuration layer and can be overridden in tests.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { OpenTelemetry } from \"@/services/opentelemetry\";\n\nconst program = Effect.gen(function* () {\n  // Spans, metrics, and logs are automatically exported\n  // to the configured OTLP endpoint.\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(OpenTelemetry.layer)),\n);\n```\n\n### Environment Variables\n\n- `OTEL_SERVICE_NAME` — Service name used in the OTel resource. Defaults to `\"app\"`\n- `OTEL_EXPORTER_OTLP_ENDPOINT` — Base URL for the OTLP collector. Defaults to `http://localhost:4318`",
+  "type": "registry:lib"
+}
