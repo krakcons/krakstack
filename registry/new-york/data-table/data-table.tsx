@@ -265,7 +265,7 @@ const GroupHeaderRow = <TData,>({
       <TableCell
         className={cn(
           "py-2 font-medium transition-colors cursor-pointer",
-          isOver && "outline outline-1 outline-primary",
+          isOver && "outline outline-primary",
         )}
         colSpan={colSpan}
         ref={setNodeRef}
@@ -313,7 +313,7 @@ const GroupHeaderCard = <TData,>({
     <button
       className={cn(
         "flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left font-medium transition-colors",
-        isOver && "outline outline-1 outline-primary",
+        isOver && "outline outline-primary",
       )}
       onClick={onToggle}
       ref={setNodeRef}
@@ -362,7 +362,7 @@ const DataTableRow = <TData,>({
       {...listeners}
     >
       {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id} className="min-w-32 align-center whitespace-normal break-words">
+        <TableCell key={cell.id} className="min-w-32 align-center whitespace-normal wrap-break-words">
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}
