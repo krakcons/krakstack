@@ -36,18 +36,24 @@ function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2 text-base font-semibold text-foreground hover:text-foreground">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-base font-semibold text-foreground hover:text-foreground"
+          >
             <div className="flex size-7 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
               K
             </div>
             Krakstack
           </Link>
           <div className="flex items-center gap-5 text-sm">
-            <Link to="/docs" className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              to="/docs"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
               Docs
             </Link>
             <a
-              href="https://github.com/anomalyco/krakstack"
+              href="https://github.com/krakcons/krakstack"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground transition-colors hover:text-foreground"
@@ -62,18 +68,23 @@ function Home() {
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-16">
         <section className="mb-16 text-center">
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">Open Source</p>
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+            Open Source
+          </p>
           <h1 className="mb-4 font-serif text-4xl font-bold tracking-tight sm:text-5xl">
             Components &amp; services for your stack
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Production-ready blocks and libraries you can add to your app with shadcn. Built with TanStack, Effect, and Drizzle.
+            Production-ready blocks and libraries you can add to your app with shadcn. Built with
+            TanStack, Effect, and Drizzle.
           </p>
         </section>
 
         {groupedItems.map((section) => (
           <section key={section.title} className="mb-12">
-            <h2 className="mb-6 text-xs font-bold uppercase tracking-[0.16em] text-primary">{section.title}</h2>
+            <h2 className="mb-6 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+              {section.title}
+            </h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {section.items.map((item) => (
                 <Link
@@ -114,3 +125,4 @@ function Home() {
     </div>
   );
 }
+
