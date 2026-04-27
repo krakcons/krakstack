@@ -7,12 +7,16 @@
     "effect@beta",
     "@effect/opentelemetry@beta",
     "@opentelemetry/exporter-trace-otlp-http",
-    "@opentelemetry/sdk-trace-base"
+    "@opentelemetry/exporter-logs-otlp-http",
+    "@opentelemetry/exporter-metrics-otlp-http",
+    "@opentelemetry/sdk-trace-base",
+    "@opentelemetry/sdk-logs",
+    "@opentelemetry/sdk-metrics"
   ],
   "files": [
     {
       "path": "registry/services/opentelemetry.ts",
-      "content": "import { NodeSdk } from \"@effect/opentelemetry\";\nimport { OTLPTraceExporter } from \"@opentelemetry/exporter-trace-otlp-http\";\nimport { BatchSpanProcessor } from \"@opentelemetry/sdk-trace-base\";\nimport { Config, Context, Effect, Layer } from \"effect\";\n\nconst OtelLive = NodeSdk.layer(\n  Effect.gen(function* () {\n    const serviceName = yield* Config.string(\"OTEL_SERVICE_NAME\").pipe(Config.withDefault(\"app\"));\n    const otlpEndpoint = yield* Config.string(\"OTEL_EXPORTER_OTLP_ENDPOINT\").pipe(\n      Config.withDefault(\"http://localhost:4318\"),\n    );\n\n    return {\n      resource: { serviceName },\n      spanProcessor: new BatchSpanProcessor(\n        new OTLPTraceExporter({ url: `${otlpEndpoint}/v1/traces` }),\n      ),\n    };\n  }),\n);\n\nexport class OpenTelemetry extends Context.Service<OpenTelemetry>()(\"@app/OpenTelemetry\", {\n  make: Effect.log(\"OpenTelemetry initialized\"),\n}) {\n  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provideMerge(OtelLive));\n}\n",
+      "content": "import { NodeSdk } from \"@effect/opentelemetry\";\nimport { OTLPLogExporter } from \"@opentelemetry/exporter-logs-otlp-http\";\nimport { OTLPMetricExporter } from \"@opentelemetry/exporter-metrics-otlp-http\";\nimport { OTLPTraceExporter } from \"@opentelemetry/exporter-trace-otlp-http\";\nimport { BatchLogRecordProcessor } from \"@opentelemetry/sdk-logs\";\nimport { BatchSpanProcessor } from \"@opentelemetry/sdk-trace-base\";\nimport { PeriodicExportingMetricReader } from \"@opentelemetry/sdk-metrics\";\nimport { Config, Context, Effect, Layer } from \"effect\";\n\nconst OtelLive = NodeSdk.layer(\n  Effect.gen(function* () {\n    const serviceName = yield* Config.string(\"OTEL_SERVICE_NAME\").pipe(Config.withDefault(\"app\"));\n    const otlpEndpoint = yield* Config.string(\"OTEL_EXPORTER_OTLP_ENDPOINT\").pipe(\n      Config.withDefault(\"http://localhost:4318\"),\n    );\n\n    return {\n      resource: { serviceName },\n      spanProcessor: new BatchSpanProcessor(\n        new OTLPTraceExporter({ url: `${otlpEndpoint}/v1/traces` }),\n      ),\n      logRecordProcessor: new BatchLogRecordProcessor(\n        new OTLPLogExporter({ url: `${otlpEndpoint}/v1/logs` }),\n      ),\n      metricReader: new PeriodicExportingMetricReader({\n        exporter: new OTLPMetricExporter({ url: `${otlpEndpoint}/v1/metrics` }),\n        exportIntervalMillis: 10000,\n      }),\n    };\n  }),\n);\n\nexport class OpenTelemetry extends Context.Service<OpenTelemetry>()(\"@app/OpenTelemetry\", {\n  make: Effect.log(\"OpenTelemetry initialized\"),\n}) {\n  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provideMerge(OtelLive));\n}\n",
       "type": "registry:file",
       "target": "services/opentelemetry.ts"
     }
