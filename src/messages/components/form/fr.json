@@ -1,0 +1,15 @@
+{
+  "key_value_field_key": "Clé",
+  "key_value_field_value": "Valeur",
+  "key_value_field_delete": "Supprimer",
+  "key_value_field_add": "Ajouter",
+  "form_accepts": "Accepte :",
+  "form_suggested_image_size": "Taille de l'image suggérée :",
+  "actions_delete": "Supprimer",
+  "form_block_navigation_title": "Quitter sans sauvegarder?",
+  "form_block_navigation_description": "Vos modifications n'ont pas été sauvegardés. Si vous quittez, vous perdrez vos modifications.",
+  "form_block_navigation_cancel": "Annuler",
+  "form_block_navigation_confirm": "Confirmer",
+  "form_submit": "Soumettre",
+  "form_revert": "Revenir aux paramètres par défaut"
+}

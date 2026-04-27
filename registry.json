@@ -10,8 +10,18 @@
       "description": "A simple data table component.",
       "files": [
         {
-          "path": "registry/new-york/data-table/data-table.tsx",
+          "path": "registry/data-table/data-table.tsx",
           "type": "registry:component"
+        },
+        {
+          "path": "registry/data-table/messages/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/data-table/en.json"
+        },
+        {
+          "path": "registry/data-table/messages/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/data-table/fr.json"
         }
       ],
       "registryDependencies": [
@@ -38,8 +48,18 @@
       "description": "A form builder.",
       "files": [
         {
-          "path": "registry/new-york/form/form.tsx",
+          "path": "registry/form/form.tsx",
           "type": "registry:component"
+        },
+        {
+          "path": "registry/form/messages/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/form/en.json"
+        },
+        {
+          "path": "registry/form/messages/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/form/fr.json"
         }
       ],
       "registryDependencies": [
@@ -50,8 +70,7 @@
         "field",
         "input",
         "label",
-        "textarea",
-        "virtualized-combobox"
+        "textarea"
       ],
       "dependencies": [
         "lucide-react",
