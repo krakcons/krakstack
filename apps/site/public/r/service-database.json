@@ -1,6 +1,8 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "service-database",
+  "title": "Database",
+  "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
   "dependencies": [
     "effect@beta",
     "@effect/sql-pg@beta",

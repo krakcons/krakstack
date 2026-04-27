@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppForm } from "@/components/form";
 import { InstallCommand } from "@/components/install-command";
+import { useRegistryItem } from "@/lib/use-registry-item";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -20,6 +21,12 @@ const planOptions = [
   { label: "Enterprise", value: "enterprise" },
 ];
 
+const registryFallback = {
+  name: "form",
+  title: "Form",
+  description: "A form builder.",
+};
+
 type FormValues = {
   name: string;
   email: string;
@@ -34,6 +41,7 @@ type FormValues = {
 
 function FormDocs() {
   const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(null);
+  const registryItem = useRegistryItem("form", registryFallback);
   const form = useAppForm({
     defaultValues: {
       name: "Ada Lovelace",
@@ -67,13 +75,9 @@ function FormDocs() {
         <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
           <div className="grid min-w-0 gap-3">
             <h1 className="font-serif text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
-              Form
+              {registryItem.title ?? registryItem.name}
             </h1>
-            <p className="max-w-2xl text-lg text-[var(--sea-ink-soft)]">
-              A working demo of the app form hook, field wrappers, text inputs, text areas,
-              select controls, multi-select controls, key/value editing, file uploads, submit state,
-              and navigation blocking for dirty forms.
-            </p>
+            <p className="max-w-2xl text-lg text-[var(--sea-ink-soft)]">{registryItem.description}</p>
           </div>
           <Card className="bg-[var(--surface-strong)]">
             <CardHeader>

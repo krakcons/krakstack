@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InstallCommand } from "@/components/install-command";
+import { useRegistryItem } from "@/lib/use-registry-item";
 import {
   DataTable,
   DataTableColumnHeader,
@@ -15,6 +16,12 @@ export const Route = createFileRoute("/docs/data-table")({
   validateSearch: TableSearchSchema,
   component: DataTableDocs,
 });
+
+const registryFallback = {
+  name: "data-table",
+  title: "Data Table",
+  description: "A simple data table component.",
+};
 
 type Project = {
   id: string;
@@ -215,6 +222,8 @@ const columns: ColumnDef<Project>[] = [
 ];
 
 function DataTableDocs() {
+  const registryItem = useRegistryItem("data-table", registryFallback);
+
   return (
     <main className="mx-auto flex min-h-screen w-full min-w-0 max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <section className="grid min-w-0 gap-3">
@@ -224,13 +233,9 @@ function DataTableDocs() {
         <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-end">
           <div className="grid min-w-0 gap-3">
             <h1 className="font-serif text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
-              Data Table
+              {registryItem.title ?? registryItem.name}
             </h1>
-            <p className="max-w-3xl text-lg text-[var(--sea-ink-soft)]">
-              A working table backed by URL search state. Try filtering, sorting, hiding columns,
-              exporting CSV, switching to gallery view, grouping by status or owner, and dragging
-              rows between groups.
-            </p>
+            <p className="max-w-3xl text-lg text-[var(--sea-ink-soft)]">{registryItem.description}</p>
           </div>
           <Card className="bg-[var(--surface-strong)]">
             <CardHeader>

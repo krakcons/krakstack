@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsServiceDatabaseRouteImport } from './routes/docs/service-database'
 import { Route as DocsFormRouteImport } from './routes/docs/form'
 import { Route as DocsDataTableRouteImport } from './routes/docs/data-table'
 
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DocsServiceDatabaseRoute = DocsServiceDatabaseRouteImport.update({
+  id: '/service-database',
+  path: '/service-database',
+  getParentRoute: () => DocsRoute,
 } as any)
 const DocsFormRoute = DocsFormRouteImport.update({
   id: '/form',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRouteWithChildren
   '/docs/data-table': typeof DocsDataTableRoute
   '/docs/form': typeof DocsFormRoute
+  '/docs/service-database': typeof DocsServiceDatabaseRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteWithChildren
   '/docs/data-table': typeof DocsDataTableRoute
   '/docs/form': typeof DocsFormRoute
+  '/docs/service-database': typeof DocsServiceDatabaseRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,30 @@ export interface FileRoutesById {
   '/docs': typeof DocsRouteWithChildren
   '/docs/data-table': typeof DocsDataTableRoute
   '/docs/form': typeof DocsFormRoute
+  '/docs/service-database': typeof DocsServiceDatabaseRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/docs' | '/docs/data-table' | '/docs/form'
+  fullPaths:
+    | '/'
+    | '/docs'
+    | '/docs/data-table'
+    | '/docs/form'
+    | '/docs/service-database'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs' | '/docs/data-table' | '/docs/form'
-  id: '__root__' | '/' | '/docs' | '/docs/data-table' | '/docs/form'
+  to:
+    | '/'
+    | '/docs'
+    | '/docs/data-table'
+    | '/docs/form'
+    | '/docs/service-database'
+  id:
+    | '__root__'
+    | '/'
+    | '/docs'
+    | '/docs/data-table'
+    | '/docs/form'
+    | '/docs/service-database'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/service-database': {
+      id: '/docs/service-database'
+      path: '/service-database'
+      fullPath: '/docs/service-database'
+      preLoaderRoute: typeof DocsServiceDatabaseRouteImport
+      parentRoute: typeof DocsRoute
+    }
     '/docs/form': {
       id: '/docs/form'
       path: '/form'
@@ -103,11 +135,13 @@ declare module '@tanstack/react-router' {
 interface DocsRouteChildren {
   DocsDataTableRoute: typeof DocsDataTableRoute
   DocsFormRoute: typeof DocsFormRoute
+  DocsServiceDatabaseRoute: typeof DocsServiceDatabaseRoute
 }
 
 const DocsRouteChildren: DocsRouteChildren = {
   DocsDataTableRoute: DocsDataTableRoute,
   DocsFormRoute: DocsFormRoute,
+  DocsServiceDatabaseRoute: DocsServiceDatabaseRoute,
 }
 
 const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
