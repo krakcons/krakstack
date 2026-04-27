@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppForm } from "@/components/form";
+import { InstallCommand } from "@/components/install-command";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -59,12 +60,12 @@ function FormDocs() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <section className="grid gap-3">
+      <section className="grid min-w-0 gap-3">
         <p className="text-sm font-semibold tracking-[0.24em] text-[var(--kicker)] uppercase">
           Components
         </p>
-        <div className="grid gap-4 lg:grid-cols-[1fr_22rem] lg:items-end">
-          <div className="grid gap-3">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
+          <div className="grid min-w-0 gap-3">
             <h1 className="font-serif text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
               Form
             </h1>
@@ -84,6 +85,8 @@ function FormDocs() {
           </Card>
         </div>
       </section>
+
+      <InstallCommand slug="form" />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <Card className="bg-[var(--surface-strong)]">
