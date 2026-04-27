@@ -18,14 +18,11 @@ const PgLive = PgClient.layer({
   },
 });
 
-export class DatabaseService extends Context.Service<DatabaseService>()(
-  "@211-search/DatabaseService",
-  {
-    make: Effect.gen(function* () {
-      const db = yield* PgDrizzle.makeWithDefaults({ schema });
-      return db;
-    }),
-  },
-) {
+export class DB extends Context.Service<DB>()("DB", {
+  make: Effect.gen(function* () {
+    const db = yield* PgDrizzle.makeWithDefaults({ schema });
+    return db;
+  }),
+}) {
   static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(PgLive));
 }
