@@ -56,7 +56,9 @@ export function FormPreview() {
       <Card className="bg-[var(--surface-strong)]">
         <CardHeader>
           <CardTitle>Lead Capture</CardTitle>
-          <CardDescription>This form uses the exported field and form components from `useAppForm`.</CardDescription>
+          <CardDescription>
+            This form uses the exported field and form components from `useAppForm`.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form.AppForm>
@@ -68,19 +70,86 @@ export function FormPreview() {
                 void form.handleSubmit();
               }}
             >
-              <form.FieldWrapper description="Core contact details with text, select, and multi-select fields." legend="Profile" localized={false}>
-                <form.AppField name="name">{(field) => <field.TextField label="Name" placeholder="Ada Lovelace" />}</form.AppField>
-                <form.AppField name="email">{(field) => <field.TextField description="Used only for this demonstration." label="Email" placeholder="ada@example.com" type="email" />}</form.AppField>
-                <form.AppField name="plan">{(field) => <field.SelectField description="SelectField stores a single string value." label="Plan" options={planOptions} />}</form.AppField>
-                <form.AppField name="interests">{(field) => <field.MultiSelectField description="MultiSelectField stores an array of string values." label="Interests" options={interestOptions} placeholder="Pick interests" />}</form.AppField>
+              <form.FieldWrapper
+                description="Core contact details with text, select, and multi-select fields."
+                legend="Profile"
+                localized={false}
+              >
+                <form.AppField name="name">
+                  {(field) => <field.TextField label="Name" placeholder="Ada Lovelace" />}
+                </form.AppField>
+                <form.AppField name="email">
+                  {(field) => (
+                    <field.TextField
+                      description="Used only for this demonstration."
+                      label="Email"
+                      placeholder="ada@example.com"
+                      type="email"
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="plan">
+                  {(field) => (
+                    <field.SelectField
+                      description="SelectField stores a single string value."
+                      label="Plan"
+                      options={planOptions}
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="interests">
+                  {(field) => (
+                    <field.MultiSelectField
+                      description="MultiSelectField stores an array of string values."
+                      label="Interests"
+                      options={interestOptions}
+                      placeholder="Pick interests"
+                    />
+                  )}
+                </form.AppField>
               </form.FieldWrapper>
 
-              <form.FieldWrapper description="Compound fields can be composed in the same wrapper." legend="Details" localized={false}>
-                <form.AppField name="notes">{(field) => <field.TextAreaField label="Notes" placeholder="What should the team know?" rows={4} />}</form.AppField>
-                <form.AppField name="metadata">{(field) => <field.KeyValueField description="Add, edit, or remove arbitrary metadata pairs." label="Metadata" />}</form.AppField>
-                <form.AppField name="attachment">{(field) => <field.FileField accept=".pdf,.txt" label="Attachment" />}</form.AppField>
-                <form.AppField name="heroImage">{(field) => <field.ImageField label="Preview image" size={{ width: 192, height: 108, suggestedWidth: 1280, suggestedHeight: 720 }} />}</form.AppField>
-                <form.AppField name="acceptedTerms">{(field) => <field.CheckboxField description="CheckboxField stores a boolean value." label="I agree to be contacted about this request" />}</form.AppField>
+              <form.FieldWrapper
+                description="Compound fields can be composed in the same wrapper."
+                legend="Details"
+                localized={false}
+              >
+                <form.AppField name="notes">
+                  {(field) => (
+                    <field.TextAreaField
+                      label="Notes"
+                      placeholder="What should the team know?"
+                      rows={4}
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="metadata">
+                  {(field) => (
+                    <field.KeyValueField
+                      description="Add, edit, or remove arbitrary metadata pairs."
+                      label="Metadata"
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="attachment">
+                  {(field) => <field.FileField accept=".pdf,.txt" label="Attachment" />}
+                </form.AppField>
+                <form.AppField name="heroImage">
+                  {(field) => (
+                    <field.ImageField
+                      label="Preview image"
+                      size={{ width: 192, height: 108, suggestedWidth: 1280, suggestedHeight: 720 }}
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="acceptedTerms">
+                  {(field) => (
+                    <field.CheckboxField
+                      description="CheckboxField stores a boolean value."
+                      label="I agree to be contacted about this request"
+                    />
+                  )}
+                </form.AppField>
               </form.FieldWrapper>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -98,7 +167,9 @@ export function FormPreview() {
       <Card className="h-fit bg-[var(--surface-strong)]">
         <CardHeader>
           <CardTitle>Submitted Value</CardTitle>
-          <CardDescription>The submit handler normalizes files to displayable names.</CardDescription>
+          <CardDescription>
+            The submit handler normalizes files to displayable names.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <pre className="overflow-auto rounded-lg border border-[var(--line)] bg-[#1d2e45] p-4 text-xs text-[#e8efff]">

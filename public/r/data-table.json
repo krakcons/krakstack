@@ -3,11 +3,7 @@
   "name": "data-table",
   "title": "Data Table",
   "description": "A URL-state-driven data table with filtering, sorting, column visibility, CSV export, gallery view, grouping, and drag-and-drop row moves.",
-  "dependencies": [
-    "@dnd-kit/core",
-    "@tanstack/react-router",
-    "@tanstack/react-table"
-  ],
+  "dependencies": ["@dnd-kit/core", "@tanstack/react-router", "@tanstack/react-table"],
   "registryDependencies": [
     "badge",
     "card",

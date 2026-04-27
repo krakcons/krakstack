@@ -1,36 +1,36 @@
-import { Check, Copy } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Check, Copy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const siteUrl = (import.meta.env.VITE_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
+const siteUrl = (import.meta.env.VITE_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 export function InstallCommand({ slug }: { slug: string }) {
-  const [copied, setCopied] = useState(false)
-  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const installCommand = `bunx --bun shadcn@latest add ${siteUrl}/r/${slug}.json`
+  const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const installCommand = `bunx --bun shadcn@latest add ${siteUrl}/r/${slug}.json`;
 
   useEffect(() => {
     return () => {
       if (copiedTimeoutRef.current) {
-        clearTimeout(copiedTimeoutRef.current)
+        clearTimeout(copiedTimeoutRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   async function copyInstallCommand() {
-    await navigator.clipboard.writeText(installCommand)
-    setCopied(true)
+    await navigator.clipboard.writeText(installCommand);
+    setCopied(true);
 
     if (copiedTimeoutRef.current) {
-      clearTimeout(copiedTimeoutRef.current)
+      clearTimeout(copiedTimeoutRef.current);
     }
 
     copiedTimeoutRef.current = setTimeout(() => {
-      setCopied(false)
-      copiedTimeoutRef.current = null
-    }, 2000)
+      setCopied(false);
+      copiedTimeoutRef.current = null;
+    }, 2000);
   }
 
   return (
@@ -46,10 +46,10 @@ export function InstallCommand({ slug }: { slug: string }) {
           </pre>
           <Button size="sm" variant="outline" onClick={copyInstallCommand}>
             {copied ? <Check /> : <Copy />}
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? "Copied" : "Copy"}
           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createFormHook, createFormHookContexts, useStore } from "@tanstack/react-form";
-import { Block,  } from "@tanstack/react-router";
+import { Block } from "@tanstack/react-router";
 import { Loader2, Plus, Trash, Languages } from "lucide-react";
 import type { InputHTMLAttributes, JSX } from "react";
 import {
@@ -25,7 +25,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -488,7 +495,6 @@ export const FieldWrapper = ({
       value: string;
     }[];
   }) => {
-
   return (
     <FieldSet>
       {legend && (
