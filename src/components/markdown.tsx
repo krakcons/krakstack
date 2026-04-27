@@ -108,7 +108,7 @@ function HighlightedCode({ code, language }: { code: string; language: string })
 
   return (
     <div
-      className="overflow-hidden rounded-lg [&_pre]:my-0 [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-[var(--line)] [&_pre]:p-4"
+      className="overflow-hidden rounded-lg [&_pre]:my-0 [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-[var(--line)] [&_pre]:p-4 [&_pre_code]:bg-transparent"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
