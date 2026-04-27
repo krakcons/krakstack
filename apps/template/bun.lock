@@ -30,6 +30,7 @@
         "tw-animate-css": "^1.3.6",
       },
       "devDependencies": {
+        "@inlang/paraglide-js": "^2.16.1",
         "@tailwindcss/typography": "^0.5.16",
         "@types/node": "^22.10.2",
         "@types/pg": "^8.20.0",

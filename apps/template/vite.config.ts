@@ -12,7 +12,18 @@ const config = defineConfig({
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/paraglide",
-      strategy: ["url", "baseLocale"],
+      strategy: ["url", "cookie", "preferredLanguage", "baseLocale"],
+      cookieName: "locale",
+      urlPatterns: [
+        {
+          pattern: "/:path(.*)?",
+          localized: [
+            ["en", "/en/:path(.*)?"],
+            ["fr", "/fr/:path(.*)?"],
+          ],
+        },
+      ],
+      routeStrategies: [{ match: "/api/:path(.*)?", exclude: true }],
     }),
     tailwindcss(),
     tanstackStart(),
