@@ -10,16 +10,16 @@
       "description": "A simple data table component.",
       "files": [
         {
-          "path": "registry/data-table/data-table.tsx",
+          "path": "registry/components/data-table/data-table.tsx",
           "type": "registry:component"
         },
         {
-          "path": "registry/data-table/messages/en.json",
+          "path": "registry/components/data-table/messages/en.json",
           "type": "registry:file",
           "target": "./messages/components/data-table/en.json"
         },
         {
-          "path": "registry/data-table/messages/fr.json",
+          "path": "registry/components/data-table/messages/fr.json",
           "type": "registry:file",
           "target": "./messages/components/data-table/fr.json"
         }
@@ -35,11 +35,7 @@
         "select",
         "table"
       ],
-      "dependencies": [
-        "@dnd-kit/core",
-        "@tanstack/react-router",
-        "@tanstack/react-table"
-      ]
+      "dependencies": ["@dnd-kit/core", "@tanstack/react-router", "@tanstack/react-table"]
     },
     {
       "name": "form",
@@ -48,16 +44,16 @@
       "description": "A form builder.",
       "files": [
         {
-          "path": "registry/form/form.tsx",
+          "path": "registry/components/form/form.tsx",
           "type": "registry:component"
         },
         {
-          "path": "registry/form/messages/en.json",
+          "path": "registry/components/form/messages/en.json",
           "type": "registry:file",
           "target": "./messages/components/form/en.json"
         },
         {
-          "path": "registry/form/messages/fr.json",
+          "path": "registry/components/form/messages/fr.json",
           "type": "registry:file",
           "target": "./messages/components/form/fr.json"
         }
@@ -72,11 +68,19 @@
         "label",
         "textarea"
       ],
-      "dependencies": [
-        "lucide-react",
-        "react",
-        "@tanstack/react-form",
-        "@tanstack/react-router"
+      "dependencies": ["lucide-react", "react", "@tanstack/react-form", "@tanstack/react-router"]
+    },
+    {
+      "name": "service-database",
+      "type": "registry:lib",
+      "dependencies": ["effect@beta", "@effect/sql-pg@beta", "pg", "drizzle-orm@beta"],
+      "devDependencies": ["drizzle-kit@beta", "@types/pg"],
+      "files": [
+        {
+          "path": "registry/services/database.ts",
+          "type": "registry:file",
+          "target": "services/database.ts"
+        }
       ]
     }
   ]
