@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { InstallCommand } from "@/components/install-command";
 import {
   DataTable,
   DataTableColumnHeader,
@@ -215,13 +216,13 @@ const columns: ColumnDef<Project>[] = [
 
 function DataTableDocs() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <section className="grid gap-3">
+    <main className="mx-auto flex min-h-screen w-full min-w-0 max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="grid min-w-0 gap-3">
         <p className="text-sm font-semibold tracking-[0.24em] text-[var(--kicker)] uppercase">
           Components
         </p>
-        <div className="grid gap-4 lg:grid-cols-[1fr_24rem] lg:items-end">
-          <div className="grid gap-3">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-end">
+          <div className="grid min-w-0 gap-3">
             <h1 className="font-serif text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
               Data Table
             </h1>
@@ -242,14 +243,16 @@ function DataTableDocs() {
         </div>
       </section>
 
-      <Card className="bg-[var(--surface-strong)]">
+      <InstallCommand slug="data-table" />
+
+      <Card className="min-w-0 bg-[var(--surface-strong)]">
         <CardHeader>
           <CardTitle>Project Queue</CardTitle>
           <CardDescription>
             This demo uses the exported `DataTable`, `DataTableColumnHeader`, and actions-column helper.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <DataTable
             columns={columns}
             data={projects}

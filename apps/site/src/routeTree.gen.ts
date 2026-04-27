@@ -9,58 +9,73 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsFormRouteImport } from './routes/docs/form'
 import { Route as DocsDataTableRouteImport } from './routes/docs/data-table'
 
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsFormRoute = DocsFormRouteImport.update({
-  id: '/docs/form',
-  path: '/docs/form',
-  getParentRoute: () => rootRouteImport,
+  id: '/form',
+  path: '/form',
+  getParentRoute: () => DocsRoute,
 } as any)
 const DocsDataTableRoute = DocsDataTableRouteImport.update({
-  id: '/docs/data-table',
-  path: '/docs/data-table',
-  getParentRoute: () => rootRouteImport,
+  id: '/data-table',
+  path: '/data-table',
+  getParentRoute: () => DocsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
   '/docs/data-table': typeof DocsDataTableRoute
   '/docs/form': typeof DocsFormRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
   '/docs/data-table': typeof DocsDataTableRoute
   '/docs/form': typeof DocsFormRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
   '/docs/data-table': typeof DocsDataTableRoute
   '/docs/form': typeof DocsFormRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/docs/data-table' | '/docs/form'
+  fullPaths: '/' | '/docs' | '/docs/data-table' | '/docs/form'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs/data-table' | '/docs/form'
-  id: '__root__' | '/' | '/docs/data-table' | '/docs/form'
+  to: '/' | '/docs' | '/docs/data-table' | '/docs/form'
+  id: '__root__' | '/' | '/docs' | '/docs/data-table' | '/docs/form'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DocsDataTableRoute: typeof DocsDataTableRoute
-  DocsFormRoute: typeof DocsFormRoute
+  DocsRoute: typeof DocsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,25 +85,36 @@ declare module '@tanstack/react-router' {
     }
     '/docs/form': {
       id: '/docs/form'
-      path: '/docs/form'
+      path: '/form'
       fullPath: '/docs/form'
       preLoaderRoute: typeof DocsFormRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DocsRoute
     }
     '/docs/data-table': {
       id: '/docs/data-table'
-      path: '/docs/data-table'
+      path: '/data-table'
       fullPath: '/docs/data-table'
       preLoaderRoute: typeof DocsDataTableRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DocsRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+interface DocsRouteChildren {
+  DocsDataTableRoute: typeof DocsDataTableRoute
+  DocsFormRoute: typeof DocsFormRoute
+}
+
+const DocsRouteChildren: DocsRouteChildren = {
   DocsDataTableRoute: DocsDataTableRoute,
   DocsFormRoute: DocsFormRoute,
+}
+
+const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  DocsRoute: DocsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
