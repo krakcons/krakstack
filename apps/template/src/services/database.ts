@@ -3,7 +3,6 @@ import { Context, Effect, Layer, Redacted } from "effect";
 import { PgClient } from "@effect/sql-pg";
 import { types } from "pg";
 
-// @ts-ignore - TODO: Setup your own schema and remove this comment
 import * as schema from "@/db/schema";
 
 const PgLive = PgClient.layer({
