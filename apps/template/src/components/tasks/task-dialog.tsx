@@ -128,21 +128,25 @@ export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }
             </DialogDescription>
           </DialogHeader>
 
-          <form.AppField name="title">
-            {(field) => (
-              <field.TextField label="Title" placeholder="Ship the table view" autoFocus />
-            )}
-          </form.AppField>
-          <form.AppField name="description">
-            {(field) => <field.TextAreaField label="Description" placeholder="Optional details" />}
-          </form.AppField>
+          <form.AppForm>
+            <form.AppField name="title">
+              {(field) => (
+                <field.TextField label="Title" placeholder="Ship the table view" autoFocus />
+              )}
+            </form.AppField>
+            <form.AppField name="description">
+              {(field) => (
+                <field.TextAreaField label="Description" placeholder="Optional details" />
+              )}
+            </form.AppField>
 
-          <div className="min-h-5 text-sm text-destructive">{error || null}</div>
+            <div className="min-h-5 text-sm text-destructive">{error || null}</div>
 
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <form.SubmitButton />
-          </DialogFooter>
+            <DialogFooter>
+              <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+              <form.SubmitButton />
+            </DialogFooter>
+          </form.AppForm>
         </form>
       </DialogContent>
     </Dialog>

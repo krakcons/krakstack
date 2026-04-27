@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { type ColumnDef } from "@tanstack/react-table";
-import { CheckCircle2, Circle, Pencil, RotateCcw } from "lucide-react";
+import { CheckCircle2, Circle, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useAtomSet } from "@effect/atom-react";
 
 import {
@@ -10,8 +10,18 @@ import {
   DataTableColumnHeader,
 } from "@/components/data-table/data-table";
 import { TaskDialog } from "@/components/tasks/task-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { updateTaskAtom, useTasksAtom, type Task } from "@/lib/atoms/tasks";
+import { deleteTaskAtom, updateTaskAtom, useTasksAtom, type Task } from "@/lib/atoms/tasks";
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat(undefined, {
@@ -24,7 +34,9 @@ const formatDate = (date: Date) =>
 export function TaskTable() {
   const tasksResult = useTasksAtom();
   const updateTask = useAtomSet(updateTaskAtom);
+  const deleteTask = useAtomSet(deleteTaskAtom);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const tasks = AsyncResult.match(tasksResult, {
     onInitial: () => [],
     onFailure: () => [],
@@ -39,7 +51,9 @@ export function TaskTable() {
         <div className="flex min-w-52 flex-col gap-1">
           <span className="font-medium">{row.original.title}</span>
           {row.original.description ? (
-            <span className="line-clamp-2 text-sm text-muted-foreground">{row.original.description}</span>
+            <span className="line-clamp-2 text-sm text-muted-foreground">
+              {row.original.description}
+            </span>
           ) : null}
         </div>
       ),
@@ -49,7 +63,11 @@ export function TaskTable() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => (
         <Badge variant={row.original.completed ? "default" : "secondary"}>
-          {row.original.completed ? <CheckCircle2 data-icon="inline-start" /> : <Circle data-icon="inline-start" />}
+          {row.original.completed ? (
+            <CheckCircle2 data-icon="inline-start" />
+          ) : (
+            <Circle data-icon="inline-start" />
+          )}
           {row.original.completed ? "Done" : "Open"}
         </Badge>
       ),
@@ -57,7 +75,9 @@ export function TaskTable() {
     {
       accessorKey: "updatedAt",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatDate(row.original.updatedAt)}</span>,
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">{formatDate(row.original.updatedAt)}</span>
+      ),
     },
     createDataTableActionsColumn<Task>([
       {
@@ -89,11 +109,29 @@ export function TaskTable() {
           });
         },
       },
+      {
+        name: "Delete",
+        icon: <Trash2 />,
+        variant: "destructive",
+        onClick: setDeletingTask,
+      },
     ]),
   ];
 
+  const confirmDelete = () => {
+    if (!deletingTask) return;
+
+    deleteTask({
+      params: { id: deletingTask.id },
+      reactivityKeys: ["tasks"],
+    });
+    setDeletingTask(null);
+  };
+
   return AsyncResult.match(tasksResult, {
-    onInitial: () => <div className="rounded-xl border bg-card p-6 text-muted-foreground">Loading tasks...</div>,
+    onInitial: () => (
+      <div className="rounded-xl border bg-card p-6 text-muted-foreground">Loading tasks...</div>
+    ),
     onFailure: () => (
       <div className="rounded-xl border bg-card p-6 text-destructive">Unable to load tasks.</div>
     ),
@@ -118,6 +156,27 @@ export function TaskTable() {
               }}
             />
           ) : null}
+
+          <AlertDialog
+            open={Boolean(deletingTask)}
+            onOpenChange={(open) => !open && setDeletingTask(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete task?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete{" "}
+                  {deletingTask ? `"${deletingTask.title}"` : "this task"}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       );
     },

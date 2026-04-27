@@ -53,4 +53,10 @@ export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
   fn: ApiClient.mutation("tasks", "updateTask"),
 });
 
+export const deleteTaskAtom = Atom.optimisticFn(allTasksAtom, {
+  reducer: (current, args) =>
+    AsyncResult.success(currentTasks(current).filter((task) => task.id !== args.params.id)),
+  fn: ApiClient.mutation("tasks", "deleteTask"),
+});
+
 export const useTasksAtom = () => useAtomValue(allTasksAtom);
