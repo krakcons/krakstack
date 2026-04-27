@@ -13,28 +13,43 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { getRegistryGroup, registryItems } from '@/lib/registry'
 import { Link, Outlet, createFileRoute, useRouterState } from '@tanstack/react-router'
-import { Database, FileText, Home, Table2 } from 'lucide-react'
+import { Box, Database, FileText, Home, Table2 } from 'lucide-react'
 
 export const Route = createFileRoute('/docs')({ component: DocsLayout })
+
+const iconByName = {
+  'data-table': Table2,
+  form: FileText,
+  'service-database': Database,
+} as const
+
+const registrySections = registryItems.reduce(
+  (sections, item) => {
+    const title = getRegistryGroup(item)
+    const section = sections.find((entry) => entry.title === title)
+    const navItem = {
+      title: item.title ?? item.name,
+      to: `/docs/registry/${item.name}`,
+      icon: iconByName[item.name as keyof typeof iconByName] ?? Box,
+    }
+
+    if (section) section.items.push(navItem)
+    else sections.push({ title, items: [navItem] })
+
+    return sections
+  },
+  [] as Array<{ title: string; items: Array<{ title: string; to: string; icon: typeof Box }> }>,
+)
 
 const docsNav = [
   {
     title: 'Overview',
     items: [{ title: 'Home', to: '/', icon: Home }],
   },
-  {
-    title: 'Components',
-    items: [
-      { title: 'Form', to: '/docs/form', icon: FileText },
-      { title: 'Data table', to: '/docs/data-table', icon: Table2 },
-    ],
-  },
-  {
-    title: 'Services',
-    items: [{ title: 'Database', to: '/docs/service-database', icon: Database }],
-  },
-] as const
+  ...registrySections,
+]
 
 function DocsLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
