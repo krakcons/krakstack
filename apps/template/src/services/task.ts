@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Context, Effect, Layer, Schema } from "effect";
 
 import { tasks } from "@/db/schema";
@@ -9,8 +9,8 @@ export const Task = Schema.Struct({
   title: Schema.String,
   description: Schema.NullOr(Schema.String),
   completed: Schema.Boolean,
-  createdAt: Schema.String,
-  updatedAt: Schema.String,
+  createdAt: Schema.Date,
+  updatedAt: Schema.Date,
 }).annotate({ identifier: "Task" });
 
 export const CreateTask = Schema.Struct({
@@ -24,57 +24,61 @@ export const UpdateTask = Schema.Struct({
   completed: Schema.optional(Schema.Boolean),
 }).annotate({ identifier: "UpdateTask" });
 
-const selectTaskFields = {
-  id: tasks.id,
-  title: tasks.title,
-  description: tasks.description,
-  completed: tasks.completed,
-  createdAt: tasks.createdAt,
-  updatedAt: tasks.updatedAt,
-};
-
 export class TaskService extends Context.Service<TaskService>()("TaskService", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
+    const list = Effect.fn("list")(function* () {
+      const tasks = yield* db.query.tasks.findMany();
+
+      return tasks;
+    });
+
+    const get = Effect.fn("get")(function* (id: string) {
+      const task = yield* db.query.tasks.findFirst({
+        where: {
+          id,
+        },
+      });
+
+      return task;
+    });
+
+    const create = Effect.fn("create")(function* (input: typeof CreateTask.Type) {
+      const [task] = yield* db.insert(tasks).values(input).returning();
+
+      if (!task) return undefined;
+
+      return task;
+    });
+
+    const update = Effect.fn("update")(function* (id: string, input: typeof UpdateTask.Type) {
+      const [task] = yield* db
+        .update(tasks)
+        .set({ ...input, updatedAt: new Date() })
+        .where(eq(tasks.id, id))
+        .returning();
+
+      if (!task) return undefined;
+
+      return task;
+    });
+
+    const _delete = Effect.fn("delete")(function* (id: string) {
+      const [task] = yield* db.delete(tasks).where(eq(tasks.id, id)).returning();
+
+      if (!task) return undefined;
+
+      return task;
+    });
+
     return {
-      list: db.select(selectTaskFields).from(tasks).orderBy(asc(tasks.createdAt)),
-      get: (id: string) =>
-        Effect.gen(function* () {
-          const [task] = yield* db
-            .select(selectTaskFields)
-            .from(tasks)
-            .where(eq(tasks.id, id))
-            .limit(1);
-
-          return task ?? null;
-        }),
-      create: (input: typeof CreateTask.Type) =>
-        Effect.gen(function* () {
-          const [task] = yield* db.insert(tasks).values(input).returning(selectTaskFields);
-
-          return task;
-        }),
-      update: (id: string, input: typeof UpdateTask.Type) =>
-        Effect.gen(function* () {
-          const [task] = yield* db
-            .update(tasks)
-            .set({ ...input, updatedAt: new Date() })
-            .where(eq(tasks.id, id))
-            .returning(selectTaskFields);
-
-          return task ?? null;
-        }),
-      delete: (id: string) =>
-        Effect.gen(function* () {
-          const [task] = yield* db
-            .delete(tasks)
-            .where(eq(tasks.id, id))
-            .returning(selectTaskFields);
-
-          return task ?? null;
-        }),
-    } as const;
+      list,
+      get,
+      create,
+      update,
+      delete: _delete,
+    };
   }),
 }) {
   static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.layer));

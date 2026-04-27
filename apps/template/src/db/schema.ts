@@ -1,3 +1,4 @@
+import { defineRelations } from "drizzle-orm";
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const tasks = pgTable("tasks", {
@@ -8,3 +9,11 @@ export const tasks = pgTable("tasks", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const schema = {
+  tasks,
+};
+
+export const relations = defineRelations(schema, () => ({
+  tasks: {},
+}));

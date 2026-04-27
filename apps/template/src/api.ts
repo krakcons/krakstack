@@ -8,13 +8,24 @@ const TaskIdParams = Schema.Struct({ id: Schema.String }).annotate({ identifier:
 export const TaskApi = HttpApi.make("TaskApi")
   .add(
     HttpApiGroup.make("tasks")
-      .add(HttpApiEndpoint.get("listTasks", "/tasks", { success: Schema.Array(Task) }))
-      .add(HttpApiEndpoint.post("createTask", "/tasks", { payload: CreateTask, success: Task }))
+      .add(
+        HttpApiEndpoint.get("listTasks", "/tasks", {
+          success: Schema.Array(Task),
+          error: [HttpApiError.InternalServerError],
+        }),
+      )
+      .add(
+        HttpApiEndpoint.post("createTask", "/tasks", {
+          payload: CreateTask,
+          success: Task,
+          error: [HttpApiError.InternalServerError],
+        }),
+      )
       .add(
         HttpApiEndpoint.get("getTask", "/tasks/:id", {
           params: TaskIdParams,
           success: Task,
-          error: HttpApiError.NotFound,
+          error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
         }),
       )
       .add(
@@ -22,14 +33,14 @@ export const TaskApi = HttpApi.make("TaskApi")
           params: TaskIdParams,
           payload: UpdateTask,
           success: Task,
-          error: HttpApiError.NotFound,
+          error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
         }),
       )
       .add(
         HttpApiEndpoint.delete("deleteTask", "/tasks/:id", {
           params: TaskIdParams,
           success: Task,
-          error: HttpApiError.NotFound,
+          error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
         }),
       ),
   )
