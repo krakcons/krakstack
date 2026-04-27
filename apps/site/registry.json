@@ -4,15 +4,60 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
-      "name": "hello-world",
+      "name": "data-table",
       "type": "registry:block",
-      "title": "Hello World",
-      "description": "A simple hello world component.",
+      "title": "Data Table",
+      "description": "A simple data table component.",
       "files": [
         {
-          "path": "registry/new-york/hello-world/hello-world.tsx",
+          "path": "registry/new-york/data-table/data-table.tsx",
           "type": "registry:component"
         }
+      ],
+      "registryDependencies": [
+        "badge",
+        "card",
+        "dropdown-menu",
+        "button",
+        "input",
+        "label",
+        "scroll-area",
+        "select",
+        "table"
+      ],
+      "dependencies": [
+        "@dnd-kit/core",
+        "@tanstack/react-router",
+        "@tanstack/react-table"
+      ]
+    },
+    {
+      "name": "form",
+      "type": "registry:block",
+      "title": "Form",
+      "description": "A form builder.",
+      "files": [
+        {
+          "path": "registry/new-york/form/form.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "registryDependencies": [
+        "select",
+        "alert-dialog",
+        "button",
+        "checkbox",
+        "field",
+        "input",
+        "label",
+        "textarea",
+        "virtualized-combobox"
+      ],
+      "dependencies": [
+        "lucide-react",
+        "react",
+        "@tanstack/react-form",
+        "@tanstack/react-router"
       ]
     }
   ]
