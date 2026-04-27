@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { Link, Outlet, createFileRoute, useRouterState } from '@tanstack/react-router'
-import { FileText, Home, Table2 } from 'lucide-react'
+import { Database, FileText, Home, Table2 } from 'lucide-react'
 
 export const Route = createFileRoute('/docs')({ component: DocsLayout })
 
@@ -29,6 +29,10 @@ const docsNav = [
       { title: 'Form', to: '/docs/form', icon: FileText },
       { title: 'Data table', to: '/docs/data-table', icon: Table2 },
     ],
+  },
+  {
+    title: 'Services',
+    items: [{ title: 'Database', to: '/docs/service-database', icon: Database }],
   },
 ] as const
 

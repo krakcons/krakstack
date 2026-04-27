@@ -7,7 +7,7 @@
       "name": "data-table",
       "type": "registry:block",
       "title": "Data Table",
-      "description": "A simple data table component.",
+      "description": "A URL-state-driven data table with filtering, sorting, column visibility, CSV export, gallery view, grouping, and drag-and-drop row moves.",
       "files": [
         {
           "path": "registry/components/data-table/data-table.tsx",
@@ -41,7 +41,7 @@
       "name": "form",
       "type": "registry:block",
       "title": "Form",
-      "description": "A form builder.",
+      "description": "A TanStack Form setup with reusable field wrappers, text inputs, text areas, selects, multi-selects, key/value editing, file uploads, submit state, and dirty-navigation blocking.",
       "files": [
         {
           "path": "registry/components/form/form.tsx",
@@ -72,6 +72,8 @@
     },
     {
       "name": "service-database",
+      "title": "Database",
+      "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
       "type": "registry:lib",
       "dependencies": ["effect@beta", "@effect/sql-pg@beta", "pg", "drizzle-orm@beta"],
       "devDependencies": ["drizzle-kit@beta", "@types/pg"],
