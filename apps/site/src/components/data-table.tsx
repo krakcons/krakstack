@@ -137,6 +137,7 @@ export interface DataTableGalleryConfig {
   tagIcon?: ReactNode;
 }
 
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -265,7 +266,7 @@ const GroupHeaderRow = <TData,>({
       <TableCell
         className={cn(
           "py-2 font-medium transition-colors cursor-pointer",
-          isOver && "outline outline-1 outline-primary",
+          isOver && "outline outline-primary",
         )}
         colSpan={colSpan}
         ref={setNodeRef}
@@ -362,7 +363,7 @@ const DataTableRow = <TData,>({
       {...listeners}
     >
       {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id} className="min-w-32 align-center whitespace-normal break-words">
+        <TableCell key={cell.id} className="min-w-32 align-center whitespace-normal wrap-break-words">
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}

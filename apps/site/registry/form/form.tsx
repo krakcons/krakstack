@@ -1,4 +1,3 @@
-import { getLocale } from "@/paraglide/runtime";
 import { m } from "@/paraglide/messages";
 import {
   Select,
@@ -8,9 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { locales } from "@/lib/i18n";
 import { createFormHook, createFormHookContexts, useStore } from "@tanstack/react-form";
-import { Block, useSearch } from "@tanstack/react-router";
+import { Block,  } from "@tanstack/react-router";
 import { Loader2, Plus, Trash, Languages } from "lucide-react";
 import type { InputHTMLAttributes, JSX } from "react";
 import {
@@ -28,7 +26,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
-import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -176,37 +173,6 @@ const SelectField = ({
           </SelectGroup>
         </SelectContent>
       </Select>
-      {props.description && <FieldDescription>{props.description}</FieldDescription>}
-      <FieldError errors={field.getMeta().errors} />
-    </Field>
-  );
-};
-
-const VirtualizedComboboxField = ({
-  options,
-  children,
-  ...props
-}: DefaultOptions & {
-  children?: React.ReactNode;
-  options: {
-    label: string;
-    value: string;
-  }[];
-}) => {
-  const field = useFieldContext<string>();
-  const invalid = !field.state.meta.isValid;
-
-  return (
-    <Field data-invalid={invalid}>
-      <div className="flex items-center gap-2 w-full">
-        <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
-        {children}
-      </div>
-      <VirtualizedCombobox
-        options={options}
-        value={field.state.value}
-        onValueChange={(value) => field.handleChange(value)}
-      />
       {props.description && <FieldDescription>{props.description}</FieldDescription>}
       <FieldError errors={field.getMeta().errors} />
     </Field>
@@ -510,24 +476,25 @@ export const FieldWrapper = ({
   legend,
   localized = true,
   description,
+  locales,
+  editingLocale,
 }: {
   children: React.ReactNode;
 } & DefaultFormOptions & {
     localized?: boolean;
+    editingLocale?: string;
+    locales?: {
+      label: string;
+      value: string;
+    }[];
   }) => {
-  const search = useSearch({
-    from: "/admin",
-    shouldThrow: false,
-  });
-  const locale = getLocale();
-  const editingLocale = search?.locale ?? locale;
 
   return (
     <FieldSet>
       {legend && (
         <FieldLegend className="gap-2 flex items-center">
           {legend}
-          {localized && (
+          {localized && editingLocale && locales && (
             <Badge variant="outline">
               <Languages />
               {locales.find((l) => l.value === editingLocale)!.label}
@@ -571,7 +538,6 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
     FileField,
     KeyValueField,
     ImageField,
-    VirtualizedComboboxField,
     RevertButton,
   },
   formComponents: {
