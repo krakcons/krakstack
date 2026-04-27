@@ -98,7 +98,11 @@
         "effect@beta",
         "@effect/opentelemetry@beta",
         "@opentelemetry/exporter-trace-otlp-http",
-        "@opentelemetry/sdk-trace-base"
+        "@opentelemetry/exporter-logs-otlp-http",
+        "@opentelemetry/exporter-metrics-otlp-http",
+        "@opentelemetry/sdk-trace-base",
+        "@opentelemetry/sdk-logs",
+        "@opentelemetry/sdk-metrics"
       ],
       "files": [
         {
