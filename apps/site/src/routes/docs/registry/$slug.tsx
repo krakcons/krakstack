@@ -109,7 +109,17 @@ function getShadcnHref(dependency: string) {
 }
 
 function RegistryPreview({ slug }: { slug: string }) {
-  if (slug === "data-table") return <DataTablePreview />;
-  if (slug === "form") return <FormPreview />;
-  return null;
+  const preview =
+    slug === "data-table" ? <DataTablePreview /> : slug === "form" ? <FormPreview /> : null;
+
+  if (!preview) return null;
+
+  return (
+    <section className="grid gap-3">
+      <h2 className="font-serif text-3xl font-semibold tracking-tight text-[var(--sea-ink)]">
+        Preview
+      </h2>
+      {preview}
+    </section>
+  );
 }

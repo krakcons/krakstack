@@ -3,12 +3,7 @@
   "name": "form",
   "title": "Form",
   "description": "A TanStack Form setup with reusable field wrappers, text inputs, text areas, selects, multi-selects, key/value editing, file uploads, submit state, and dirty-navigation blocking.",
-  "dependencies": [
-    "lucide-react",
-    "react",
-    "@tanstack/react-form",
-    "@tanstack/react-router"
-  ],
+  "dependencies": ["lucide-react", "react", "@tanstack/react-form", "@tanstack/react-router"],
   "registryDependencies": [
     "select",
     "alert-dialog",

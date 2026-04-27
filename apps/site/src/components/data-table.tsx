@@ -88,7 +88,14 @@ import {
 } from "react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const DataTableViewContext = createContext<DataTableView>("table");
 
@@ -136,7 +143,6 @@ export interface DataTableGalleryConfig {
   tag?: string;
   tagIcon?: ReactNode;
 }
-
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -363,7 +369,10 @@ const DataTableRow = <TData,>({
       {...listeners}
     >
       {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id} className="min-w-32 align-center whitespace-normal wrap-break-words">
+        <TableCell
+          key={cell.id}
+          className="min-w-32 align-center whitespace-normal wrap-break-words"
+        >
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}
