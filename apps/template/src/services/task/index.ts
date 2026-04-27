@@ -1,28 +1,9 @@
 import { eq } from "drizzle-orm";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer } from "effect";
 
 import { tasks } from "@/db/schema";
+import { CreateTask, UpdateTask } from "@/services/task/schema";
 import { DB } from "@/services/database";
-
-export const Task = Schema.Struct({
-  id: Schema.String,
-  title: Schema.String,
-  description: Schema.NullOr(Schema.String),
-  completed: Schema.Boolean,
-  createdAt: Schema.Date,
-  updatedAt: Schema.Date,
-}).annotate({ identifier: "Task" });
-
-export const CreateTask = Schema.Struct({
-  title: Schema.NonEmptyString,
-  description: Schema.optional(Schema.String),
-}).annotate({ identifier: "CreateTask" });
-
-export const UpdateTask = Schema.Struct({
-  title: Schema.optional(Schema.NonEmptyString),
-  description: Schema.optional(Schema.NullOr(Schema.String)),
-  completed: Schema.optional(Schema.Boolean),
-}).annotate({ identifier: "UpdateTask" });
 
 export class TaskService extends Context.Service<TaskService>()("TaskService", {
   make: Effect.gen(function* () {

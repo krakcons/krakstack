@@ -1,11 +1,9 @@
 import { Schema } from "effect";
 import { HttpApi, HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
 
-import { CreateTask, Task, UpdateTask } from "@/services/task";
+import { CreateTask, Task, UpdateTask, TaskIdParams } from "@/services/task/schema";
 
-const TaskIdParams = Schema.Struct({ id: Schema.String }).annotate({ identifier: "TaskIdParams" });
-
-export const TaskApi = HttpApi.make("TaskApi")
+export const Api = HttpApi.make("Api")
   .add(
     HttpApiGroup.make("tasks")
       .add(
