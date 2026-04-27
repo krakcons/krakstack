@@ -26,4 +26,9 @@
       { name = "template"; }
     ];
   };
+
+  processes = {
+    vite.exec = "bun run dev";
+    drizzle.exec = "bunx drizzle-kit studio";
+  };
 }

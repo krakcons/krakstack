@@ -9,9 +9,7 @@ export const TaskApi = HttpApi.make("TaskApi")
   .add(
     HttpApiGroup.make("tasks")
       .add(HttpApiEndpoint.get("listTasks", "/tasks", { success: Schema.Array(Task) }))
-      .add(
-        HttpApiEndpoint.post("createTask", "/tasks", { payload: CreateTask, success: Task }),
-      )
+      .add(HttpApiEndpoint.post("createTask", "/tasks", { payload: CreateTask, success: Task }))
       .add(
         HttpApiEndpoint.get("getTask", "/tasks/:id", {
           params: TaskIdParams,
