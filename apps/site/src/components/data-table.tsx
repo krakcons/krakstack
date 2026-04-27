@@ -313,7 +313,7 @@ const GroupHeaderCard = <TData,>({
     <button
       className={cn(
         "flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left font-medium transition-colors",
-        isOver && "outline outline-1 outline-primary",
+        isOver && "outline outline-primary",
       )}
       onClick={onToggle}
       ref={setNodeRef}
