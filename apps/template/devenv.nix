@@ -18,6 +18,7 @@
 
   services.postgres = {
     enable = true;
+    port = 5432;
     package = pkgs.postgresql_18;
     extensions = extensions: [
       extensions.postgis
