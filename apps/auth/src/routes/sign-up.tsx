@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { m } from "@/paraglide/messages";
 import { authClient } from "@/lib/auth-client";
 import { ErrorMessage, useAppForm } from "@/components/form/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +27,7 @@ function SignUp() {
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? "Unable to create account.", fields: {} },
+          onSubmit: { form: result.error.message ?? m.sign_up_error(), fields: {} },
         });
         return;
       }
@@ -39,8 +40,8 @@ function SignUp() {
     <main className="grid min-h-screen place-items-center px-6 py-10">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-3xl">Create account</CardTitle>
-          <CardDescription>Create a central account for every connected project.</CardDescription>
+          <CardTitle className="text-3xl">{m.sign_up_title()}</CardTitle>
+          <CardDescription>{m.sign_up_description()}</CardDescription>
         </CardHeader>
         <CardContent>
           <form.AppForm>
@@ -53,17 +54,22 @@ function SignUp() {
               }}
             >
               <form.AppField name="name">
-                {(field) => <field.TextField label="Name" autoComplete="name" required />}
+                {(field) => <field.TextField label={m.field_name()} autoComplete="name" required />}
               </form.AppField>
               <form.AppField name="email">
                 {(field) => (
-                  <field.TextField label="Email" type="email" autoComplete="email" required />
+                  <field.TextField
+                    label={m.field_email()}
+                    type="email"
+                    autoComplete="email"
+                    required
+                  />
                 )}
               </form.AppField>
               <form.AppField name="password">
                 {(field) => (
                   <field.TextField
-                    label="Password"
+                    label={m.field_password()}
                     type="password"
                     autoComplete="new-password"
                     minLength={8}
@@ -82,12 +88,12 @@ function SignUp() {
             </form>
           </form.AppForm>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {m.sign_up_have_account()}{" "}
             <Link
               className="font-medium text-foreground underline-offset-4 hover:underline"
               to="/sign-in"
             >
-              Sign in
+              {m.auth_sign_in()}
             </Link>
           </p>
         </CardContent>

@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { m } from "@/paraglide/messages";
 import { authClient } from "@/lib/auth-client";
 import { ErrorMessage, useAppForm } from "@/components/form/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,7 @@ function SignIn() {
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? "Unable to sign in.", fields: {} },
+          onSubmit: { form: result.error.message ?? m.sign_in_error(), fields: {} },
         });
         return;
       }
@@ -37,8 +38,8 @@ function SignIn() {
     <main className="grid min-h-screen place-items-center px-6 py-10">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-3xl">Sign in</CardTitle>
-          <CardDescription>Use your central Krakstack account.</CardDescription>
+          <CardTitle className="text-3xl">{m.auth_sign_in()}</CardTitle>
+          <CardDescription>{m.sign_in_description()}</CardDescription>
         </CardHeader>
         <CardContent>
           <form.AppForm>
@@ -52,13 +53,18 @@ function SignIn() {
             >
               <form.AppField name="email">
                 {(field) => (
-                  <field.TextField label="Email" type="email" autoComplete="email" required />
+                  <field.TextField
+                    label={m.field_email()}
+                    type="email"
+                    autoComplete="email"
+                    required
+                  />
                 )}
               </form.AppField>
               <form.AppField name="password">
                 {(field) => (
                   <field.TextField
-                    label="Password"
+                    label={m.field_password()}
                     type="password"
                     autoComplete="current-password"
                     required
@@ -76,12 +82,12 @@ function SignIn() {
             </form>
           </form.AppForm>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Need an account?{" "}
+            {m.sign_in_need_account()}{" "}
             <Link
               className="font-medium text-foreground underline-offset-4 hover:underline"
               to="/sign-up"
             >
-              Sign up
+              {m.auth_sign_up()}
             </Link>
           </p>
         </CardContent>

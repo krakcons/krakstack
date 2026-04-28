@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { m } from "@/paraglide/messages";
 import { authClient } from "@/lib/auth-client";
 import { useAppForm } from "@/components/form/form";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
 
 export const Route = createFileRoute("/consent")({
   validateSearch: (search: Record<string, unknown>) => ({
-    clientId: typeof search.client_id === "string" ? search.client_id : "connected application",
+    clientId:
+      typeof search.client_id === "string" ? search.client_id : m.consent_connected_application(),
     scope: typeof search.scope === "string" ? search.scope : "openid profile email",
   }),
   component: Consent,
@@ -36,7 +38,7 @@ function Consent() {
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? "Unable to complete consent.", fields: {} },
+          onSubmit: { form: result.error.message ?? m.consent_error(), fields: {} },
         });
         return;
       }
@@ -49,16 +51,13 @@ function Consent() {
     <main className="grid min-h-screen place-items-center px-6 py-10">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle className="text-3xl">Authorize application</CardTitle>
-          <CardDescription>
-            <span className="font-medium text-foreground">{clientId}</span> is requesting access to
-            your Krakstack account.
-          </CardDescription>
+          <CardTitle className="text-3xl">{m.consent_title()}</CardTitle>
+          <CardDescription>{m.consent_description({ clientId })}</CardDescription>
         </CardHeader>
         <form.AppForm>
           <CardContent className="space-y-4">
             <div className="rounded-md border p-4">
-              <p className="text-sm font-medium">Requested scopes</p>
+              <p className="text-sm font-medium">{m.consent_requested_scopes()}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {scopes.map((item) => (
                   <span className="rounded-md border px-3 py-1 text-sm" key={item}>
@@ -86,7 +85,7 @@ function Consent() {
                     onClick={() => form.handleSubmit({ accept: true })}
                     type="button"
                   >
-                    Authorize
+                    {m.consent_authorize()}
                   </Button>
                   <Button
                     disabled={isSubmitting}
@@ -94,7 +93,7 @@ function Consent() {
                     type="button"
                     variant="outline"
                   >
-                    Deny
+                    {m.consent_deny()}
                   </Button>
                 </>
               )}
