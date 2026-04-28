@@ -1,8 +1,7 @@
-import * as React from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { authClient } from "@/lib/auth-client";
-import { useAppForm } from "@/components/form/form";
+import { ErrorMessage, useAppForm } from "@/components/form/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/sign-up")({
@@ -10,15 +9,14 @@ export const Route = createFileRoute("/sign-up")({
 });
 
 function SignUp() {
-  const [error, setError] = React.useState<string | null>(null);
   const form = useAppForm({
     defaultValues: {
       name: "",
       email: "",
       password: "",
     },
-    onSubmit: async ({ value }) => {
-      setError(null);
+    onSubmit: async ({ value, formApi }) => {
+      formApi.setErrorMap({});
 
       const result = await authClient.signUp.email({
         name: value.name,
@@ -27,7 +25,9 @@ function SignUp() {
       });
 
       if (result.error) {
-        setError(result.error.message ?? "Unable to create account.");
+        formApi.setErrorMap({
+          onSubmit: { form: result.error.message ?? "Unable to create account.", fields: {} },
+        });
         return;
       }
 
@@ -71,7 +71,13 @@ function SignUp() {
                   />
                 )}
               </form.AppField>
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              <form.Subscribe
+                selector={(formState) =>
+                  (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form
+                }
+              >
+                {(error) => (error ? <ErrorMessage text={String(error)} /> : null)}
+              </form.Subscribe>
               <form.SubmitButton />
             </form>
           </form.AppForm>

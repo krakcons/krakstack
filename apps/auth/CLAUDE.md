@@ -1,4 +1,5 @@
 <!-- effect-solutions:start -->
+
 ## Effect Best Practices
 
 **IMPORTANT:** Always consult effect-solutions before writing Effect code.
@@ -10,4 +11,5 @@
 Topics: quick-start, project-setup, tsconfig, basics, services-and-layers, data-modeling, error-handling, config, testing, cli.
 
 Never guess at Effect patterns - check the guide first.
+
 <!-- effect-solutions:end -->
