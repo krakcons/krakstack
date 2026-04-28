@@ -94,16 +94,7 @@
       "description": "An Effect service that sets up OpenTelemetry traces, metrics, and log export via OTLP, with Effect Logger bridging so all application logs (including SQL queries) are sent to the collector.",
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-opentelemetry` uses `@effect/opentelemetry/Otlp` to set up traces, metrics, and log export to an OTLP collector over HTTP/JSON. It bridges Effect's Logger so all application logs — including SQL queries from `@effect/sql-pg` — are emitted as OpenTelemetry log records.\n\nEnvironment variables are read through `effect/Config` so they integrate with Effect's configuration layer and can be overridden in tests.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { OpenTelemetry } from \"@/services/opentelemetry\";\n\nconst program = Effect.gen(function* () {\n  // Spans, metrics, and logs are automatically exported\n  // to the configured OTLP endpoint.\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(OpenTelemetry.layer)),\n);\n```\n\n### Environment Variables\n\n- `OTEL_SERVICE_NAME` — Service name used in the OTel resource. Defaults to `\"app\"`\n- `OTEL_EXPORTER_OTLP_ENDPOINT` — Base URL for the OTLP collector. Defaults to `http://localhost:4318`",
-      "dependencies": [
-        "effect@beta",
-        "@effect/opentelemetry@beta",
-        "@opentelemetry/exporter-trace-otlp-http",
-        "@opentelemetry/exporter-logs-otlp-http",
-        "@opentelemetry/exporter-metrics-otlp-http",
-        "@opentelemetry/sdk-trace-base",
-        "@opentelemetry/sdk-logs",
-        "@opentelemetry/sdk-metrics"
-      ],
+      "dependencies": ["effect@beta"],
       "files": [
         {
           "path": "registry/services/opentelemetry.ts",
