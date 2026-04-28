@@ -1,0 +1,36 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sign-in",
+  "title": "Sign In",
+  "description": "A Better Auth email/password sign-in card with TanStack Form validation and localized labels.",
+  "dependencies": [
+    "@tanstack/react-router",
+    "better-auth",
+    "react"
+  ],
+  "registryDependencies": [
+    "card",
+    "form"
+  ],
+  "files": [
+    {
+      "path": "registry/components/sign-in/sign-in.tsx",
+      "content": "import { Link } from \"@tanstack/react-router\";\n\nimport { ErrorMessage, useAppForm } from \"@/components/form\";\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport { authClient } from \"@/lib/auth-client\";\nimport { m } from \"@/paraglide/messages\";\n\nexport function SignIn() {\n  const form = useAppForm({\n    defaultValues: {\n      email: \"\",\n      password: \"\",\n    },\n    onSubmit: async ({ value, formApi }) => {\n      formApi.setErrorMap({});\n\n      const result = await authClient.signIn.email({\n        email: value.email,\n        password: value.password,\n      });\n\n      if (result.error) {\n        formApi.setErrorMap({\n          onSubmit: { form: result.error.message ?? m.sign_in_error(), fields: {} },\n        });\n        return;\n      }\n\n      window.location.assign(result.data?.url ?? \"/\");\n    },\n  });\n\n  return (\n    <Card className=\"w-full max-w-md\">\n      <CardHeader>\n        <CardTitle className=\"text-3xl\">{m.auth_sign_in()}</CardTitle>\n        <CardDescription>{m.sign_in_description()}</CardDescription>\n      </CardHeader>\n      <CardContent>\n        <form.AppForm>\n          <form\n            className=\"flex flex-col gap-4\"\n            onSubmit={(event) => {\n              event.preventDefault();\n              event.stopPropagation();\n              form.handleSubmit();\n            }}\n          >\n            <form.AppField name=\"email\">\n              {(field) => (\n                <field.TextField\n                  label={m.field_email()}\n                  type=\"email\"\n                  autoComplete=\"email\"\n                  required\n                />\n              )}\n            </form.AppField>\n            <form.AppField name=\"password\">\n              {(field) => (\n                <field.TextField\n                  label={m.field_password()}\n                  type=\"password\"\n                  autoComplete=\"current-password\"\n                  required\n                />\n              )}\n            </form.AppField>\n            <form.Subscribe\n              selector={(formState) =>\n                (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form\n              }\n            >\n              {(error) => (error ? <ErrorMessage text={String(error)} /> : null)}\n            </form.Subscribe>\n            <form.SubmitButton />\n          </form>\n        </form.AppForm>\n        <p className=\"mt-6 text-center text-sm text-muted-foreground\">\n          {m.sign_in_need_account()}{\" \"}\n          <Link className=\"font-medium text-foreground underline-offset-4 hover:underline\" to=\"/sign-up\">\n            {m.auth_sign_up()}\n          </Link>\n        </p>\n      </CardContent>\n    </Card>\n  );\n}\n",
+      "type": "registry:component"
+    },
+    {
+      "path": "registry/components/sign-in/messages/en.json",
+      "content": "{\n  \"auth_sign_in\": \"Sign in\",\n  \"auth_sign_up\": \"Sign up\",\n  \"sign_in_description\": \"Use your Krakstack Site account.\",\n  \"sign_in_error\": \"Unable to sign in.\",\n  \"sign_in_need_account\": \"Need an account?\",\n  \"field_email\": \"Email\",\n  \"field_password\": \"Password\"\n}\n",
+      "type": "registry:file",
+      "target": "./messages/components/sign-in/en.json"
+    },
+    {
+      "path": "registry/components/sign-in/messages/fr.json",
+      "content": "{\n  \"auth_sign_in\": \"Se connecter\",\n  \"auth_sign_up\": \"S'inscrire\",\n  \"sign_in_description\": \"Utilisez votre compte Krakstack Site.\",\n  \"sign_in_error\": \"Impossible de se connecter.\",\n  \"sign_in_need_account\": \"Besoin d'un compte ?\",\n  \"field_email\": \"E-mail\",\n  \"field_password\": \"Mot de passe\"\n}\n",
+      "type": "registry:file",
+      "target": "./messages/components/sign-in/fr.json"
+    }
+  ],
+  "docs": "## Overview\n\n`sign-in` provides a self-contained email/password sign-in card for Better Auth projects. It submits credentials through `authClient.signIn.email()`, displays form-level errors, and links to the sign-up route.\n\n## Features\n\n- Better Auth email/password sign-in\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n- Card-based layout ready to drop into a route\n\n## Usage\n\n```tsx\nimport { SignIn } from \"@/components/sign-in\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignIn />\n</main>\n```",
+  "type": "registry:block"
+}

@@ -11,6 +11,10 @@ const validAudiences = process.env.BETTER_AUTH_VALID_AUDIENCES?.split(",")
   .map((audience) => audience.trim())
   .filter(Boolean);
 
+const cachedTrustedClients = process.env.BETTER_AUTH_CACHED_TRUSTED_CLIENTS?.split(",")
+  .map((clientId) => clientId.trim())
+  .filter(Boolean);
+
 export const auth = betterAuth({
   appName: "Krakstack Auth",
   database: new Pool({
@@ -35,6 +39,7 @@ export const auth = betterAuth({
       loginPage: "/sign-in",
       consentPage: "/consent",
       allowDynamicClientRegistration: false,
+      ...(cachedTrustedClients ? { cachedTrustedClients: new Set(cachedTrustedClients) } : {}),
       scopes: ["openid", "profile", "email", "offline_access"],
       ...(validAudiences ? { validAudiences } : {}),
     }),

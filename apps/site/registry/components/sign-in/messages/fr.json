@@ -1,0 +1,9 @@
+{
+  "auth_sign_in": "Se connecter",
+  "auth_sign_up": "S'inscrire",
+  "sign_in_description": "Utilisez votre compte Krakstack Site.",
+  "sign_in_error": "Impossible de se connecter.",
+  "sign_in_need_account": "Besoin d'un compte ?",
+  "field_email": "E-mail",
+  "field_password": "Mot de passe"
+}

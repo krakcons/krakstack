@@ -13,7 +13,9 @@
     "type:check": "tsc --noEmit",
     "registry:build": "shadcn build",
     "lint": "oxlint",
-    "fmt": "oxfmt"
+    "fmt": "oxfmt",
+    "auth:generate": "bunx @better-auth/cli@latest generate --config ./src/lib/auth.ts",
+    "auth:migrate": "bunx @better-auth/cli@latest migrate --config ./src/lib/auth.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -30,6 +32,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.167.28",
     "@types/pg": "^8.20.0",
+    "better-auth": "^1.6.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "1.0.0-beta.22",

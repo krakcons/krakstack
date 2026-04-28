@@ -1,13 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Database, FileText, Table2 } from "lucide-react";
+import { Database, FileText, LogIn, Table2, UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 const iconByName = {
   "data-table": Table2,
   form: FileText,
+  "sign-in": LogIn,
+  "sign-up": UserPlus,
   "service-database": Database,
 } as const;
 
