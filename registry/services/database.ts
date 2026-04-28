@@ -2,6 +2,7 @@ import * as PgDrizzle from "drizzle-orm/effect-postgres";
 import { Context, Effect, Layer, Redacted } from "effect";
 import { PgClient } from "@effect/sql-pg";
 import { types } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 
 // @ts-ignore - TODO: Setup your own schema and remove this comment
 import { schema, relations } from "@/db/schema";
@@ -26,3 +27,8 @@ export class DB extends Context.Service<DB>()("DB", {
 }) {
   static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(PgLive));
 }
+
+export const rawdb = drizzle(process.env.DATABASE_URL!, {
+  schema,
+  relations,
+});

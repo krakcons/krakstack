@@ -1,5 +1,6 @@
-import { Pool } from "pg";
 import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
+import { rawdb } from "@/services/database";
 
 const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
   .map((origin) => origin.trim())
@@ -7,8 +8,8 @@ const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
 
 export const auth = betterAuth({
   appName: "Krakstack Site",
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
+  database: drizzleAdapter(rawdb, {
+    provider: "pg",
   }),
   trustedOrigins,
   emailAndPassword: {
