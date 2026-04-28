@@ -11,7 +11,7 @@ export function Markdown({ content }: MarkdownProps) {
   const blocks = parseBlocks(content);
 
   return (
-    <div className="prose prose-slate max-w-none prose-headings:font-serif prose-headings:text-[var(--sea-ink)] prose-p:text-[var(--sea-ink-soft)] prose-li:text-[var(--sea-ink-soft)] prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:border-[var(--line)] prose-pre:bg-[#1d2e45] prose-pre:text-[#e8efff]">
+    <div className="prose prose-slate max-w-none prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-[#1d2e45] prose-pre:text-[#e8efff]">
       {blocks.map((block, index) => renderBlock(block, index))}
     </div>
   );

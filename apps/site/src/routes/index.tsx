@@ -71,7 +71,7 @@ function Home() {
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">
             Open Source
           </p>
-          <h1 className="mb-4 font-serif text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
             Components &amp; services for your stack
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
@@ -125,4 +125,3 @@ function Home() {
     </div>
   );
 }
-

@@ -27,13 +27,9 @@ function RegistryDocs() {
   return (
     <main className="mx-auto flex min-h-screen w-full min-w-0 max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <section className="grid min-w-0 gap-3">
-        <p className="text-sm font-semibold tracking-[0.24em] text-[var(--kicker)] uppercase">
-          {group}
-        </p>
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
-          {item.title ?? item.name}
-        </h1>
-        <p className="max-w-3xl text-lg text-[var(--sea-ink-soft)]">{item.description}</p>
+        <p className="text-sm font-semibold tracking-[0.24em] uppercase">{group}</p>
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{item.title ?? item.name}</h1>
+        <p className="max-w-3xl text-lg">{item.description}</p>
       </section>
 
       <InstallCommand slug={item.name} />
@@ -116,9 +112,7 @@ function RegistryPreview({ slug }: { slug: string }) {
 
   return (
     <section className="grid gap-3">
-      <h2 className="font-serif text-3xl font-semibold tracking-tight text-[var(--sea-ink)]">
-        Preview
-      </h2>
+      <h2 className="text-3xl font-semibold tracking-tight text-[var(--sea-ink)]">Preview</h2>
       {preview}
     </section>
   );
