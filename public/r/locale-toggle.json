@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "locale-toggle",
+  "title": "Locale Toggle",
+  "description": "A Paraglide-powered dropdown for switching between configured locales with localized language labels.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "button",
+    "dropdown-menu"
+  ],
+  "files": [
+    {
+      "path": "registry/components/locale-toggle/locale-toggle.tsx",
+      "content": "import { setLocale, getLocale, locales, type Locale } from \"@/paraglide/runtime\";\nimport { Button } from \"@/components/ui/button\";\nimport {\n  DropdownMenu,\n  DropdownMenuContent,\n  DropdownMenuGroup,\n  DropdownMenuLabel,\n  DropdownMenuRadioGroup,\n  DropdownMenuRadioItem,\n  DropdownMenuTrigger,\n} from \"@/components/ui/dropdown-menu\";\nimport { Languages } from \"lucide-react\";\nimport { m } from \"@/paraglide/messages\";\n\nconst localeLabels: Record<Locale, () => string> = {\n  en: m.locale_en,\n  fr: m.locale_fr,\n};\n\nexport const LocaleToggle = () => {\n  const locale = getLocale();\n\n  return (\n    <DropdownMenu>\n      <DropdownMenuTrigger\n        render={\n          <Button variant=\"outline\" size=\"icon\" className=\"focus-visible:ring-0\">\n            <Languages className=\"size-4\" />\n            <span className=\"sr-only\">{m.locale_toggle_label()}</span>\n          </Button>\n        }\n      />\n      <DropdownMenuContent className=\"w-32\">\n        <DropdownMenuGroup>\n          <DropdownMenuLabel>{m.locale_toggle_label()}</DropdownMenuLabel>\n          <DropdownMenuRadioGroup value={locale} onValueChange={(v) => setLocale(v as Locale)}>\n            {locales.map((l) => (\n              <DropdownMenuRadioItem key={l} value={l}>\n                {localeLabels[l]()}\n              </DropdownMenuRadioItem>\n            ))}\n          </DropdownMenuRadioGroup>\n        </DropdownMenuGroup>\n      </DropdownMenuContent>\n    </DropdownMenu>\n  );\n};\n",
+      "type": "registry:component"
+    },
+    {
+      "path": "registry/components/locale-toggle/messages/en.json",
+      "content": "{\n  \"locale_toggle_label\": \"Switch language\",\n  \"locale_en\": \"English\",\n  \"locale_fr\": \"French\"\n}\n",
+      "type": "registry:file",
+      "target": "./messages/components/locale-toggle/en.json"
+    },
+    {
+      "path": "registry/components/locale-toggle/messages/fr.json",
+      "content": "{\n  \"locale_toggle_label\": \"Changer de langue\",\n  \"locale_en\": \"Anglais\",\n  \"locale_fr\": \"Français\"\n}\n",
+      "type": "registry:file",
+      "target": "./messages/components/locale-toggle/fr.json"
+    }
+  ],
+  "docs": "## Overview\n\n`locale-toggle` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- Localized menu label and locale names\n- Icon-only trigger with accessible screen-reader text\n- Includes component-scoped message files\n\n## Usage\n\n```tsx\nimport { LocaleToggle } from \"@/components/locale-toggle\";\n\n<LocaleToggle />\n```",
+  "type": "registry:block"
+}
