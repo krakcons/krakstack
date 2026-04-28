@@ -1,5 +1,0 @@
-/Users/billyhawkes/Projects/krakstack/apps/site/.devenv/bootstrap/bootstrapLib.nix
-/Users/billyhawkes/Projects/krakstack/apps/site/.devenv/bootstrap/default.nix
-/Users/billyhawkes/Projects/krakstack/apps/site/devenv.lock
-/Users/billyhawkes/Projects/krakstack/apps/site/devenv.nix
-/Users/billyhawkes/Projects/krakstack/apps/site/.env
