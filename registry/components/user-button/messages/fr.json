@@ -1,0 +1,9 @@
+{
+  "user_button_aria_label": "Ouvrir le menu utilisateur",
+  "user_button_account": "Compte",
+  "user_button_logout": "Se déconnecter",
+  "user_form_title": "Compte",
+  "user_form_description": "Mettez à jour les informations de profil associées à votre compte.",
+  "user_form_name_label": "Nom",
+  "user_form_update_error": "Impossible de mettre à jour votre compte."
+}

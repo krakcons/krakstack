@@ -1,0 +1,10 @@
+{
+  "auth_sign_in": "Se connecter",
+  "sign_up_title": "Créer un compte",
+  "sign_up_description": "Créez un compte pour ce site.",
+  "sign_up_error": "Impossible de créer le compte.",
+  "sign_up_have_account": "Vous avez déjà un compte ?",
+  "field_name": "Nom",
+  "field_email": "E-mail",
+  "field_password": "Mot de passe"
+}

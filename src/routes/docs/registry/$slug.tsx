@@ -5,6 +5,9 @@ import {
   TableSearchSchema,
 } from "@/components/registry-previews/data-table-preview";
 import { FormPreview } from "@/components/registry-previews/form-preview";
+import { SignInPreview } from "@/components/registry-previews/sign-in-preview";
+import { SignUpPreview } from "@/components/registry-previews/sign-up-preview";
+import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { RegistryItem } from "@/lib/registry";
 import { getRegistryGroup, getRegistryItem } from "@/lib/registry";
@@ -106,7 +109,17 @@ function getShadcnHref(dependency: string) {
 
 function RegistryPreview({ slug }: { slug: string }) {
   const preview =
-    slug === "data-table" ? <DataTablePreview /> : slug === "form" ? <FormPreview /> : null;
+    slug === "data-table" ? (
+      <DataTablePreview />
+    ) : slug === "form" ? (
+      <FormPreview />
+    ) : slug === "user-button" ? (
+      <UserButtonPreview />
+    ) : slug === "sign-in" ? (
+      <SignInPreview />
+    ) : slug === "sign-up" ? (
+      <SignUpPreview />
+    ) : null;
 
   if (!preview) return null;
 

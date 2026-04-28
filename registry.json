@@ -98,6 +98,81 @@
       "dependencies": ["lucide-react"]
     },
     {
+      "name": "user-button",
+      "type": "registry:block",
+      "title": "User Button",
+      "description": "A Better Auth user menu with account editing, localized labels, and sign-out handling.",
+      "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for Better Auth projects. It reads the current user from the app-local `authClient.useSession()`, opens an account dialog for updating the user's name, and signs the user out with an optional redirect.\n\n## Features\n\n- Better Auth `useSession`, `updateUser`, and `signOut` integration\n- Account dialog with the local `form` registry block\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@/components/user-button\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```",
+      "files": [
+        {
+          "path": "registry/components/user-button/user-button.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/components/user-button/messages/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/user-button/en.json"
+        },
+        {
+          "path": "registry/components/user-button/messages/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/user-button/fr.json"
+        }
+      ],
+      "registryDependencies": ["button", "dialog", "dropdown-menu", "form"],
+      "dependencies": ["better-auth", "lucide-react", "react"]
+    },
+    {
+      "name": "sign-in",
+      "type": "registry:block",
+      "title": "Sign In",
+      "description": "A Better Auth email/password sign-in card with TanStack Form validation and localized labels.",
+      "docs": "## Overview\n\n`sign-in` provides a self-contained email/password sign-in card for Better Auth projects. It submits credentials through `authClient.signIn.email()`, displays form-level errors, and links to the sign-up route.\n\n## Features\n\n- Better Auth email/password sign-in\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n- Card-based layout ready to drop into a route\n\n## Usage\n\n```tsx\nimport { SignIn } from \"@/components/sign-in\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignIn />\n</main>\n```",
+      "files": [
+        {
+          "path": "registry/components/sign-in/sign-in.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/components/sign-in/messages/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/sign-in/en.json"
+        },
+        {
+          "path": "registry/components/sign-in/messages/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/sign-in/fr.json"
+        }
+      ],
+      "registryDependencies": ["card", "form"],
+      "dependencies": ["@tanstack/react-router", "better-auth", "react"]
+    },
+    {
+      "name": "sign-up",
+      "type": "registry:block",
+      "title": "Sign Up",
+      "description": "A Better Auth email/password registration card with TanStack Form validation and localized labels.",
+      "docs": "## Overview\n\n`sign-up` provides a self-contained account creation card for Better Auth projects. It creates users through `authClient.signUp.email()`, displays form-level errors, and links back to the sign-in route.\n\n## Features\n\n- Better Auth email/password registration\n- Name, email, and password fields\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n\n## Usage\n\n```tsx\nimport { SignUp } from \"@/components/sign-up\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignUp />\n</main>\n```",
+      "files": [
+        {
+          "path": "registry/components/sign-up/sign-up.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/components/sign-up/messages/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/sign-up/en.json"
+        },
+        {
+          "path": "registry/components/sign-up/messages/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/sign-up/fr.json"
+        }
+      ],
+      "registryDependencies": ["card", "form"],
+      "dependencies": ["@tanstack/react-router", "better-auth", "react"]
+    },
+    {
       "name": "service-database",
       "title": "Database",
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",

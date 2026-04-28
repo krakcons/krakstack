@@ -1,0 +1,10 @@
+{
+  "auth_sign_in": "Sign in",
+  "sign_up_title": "Create account",
+  "sign_up_description": "Create an account for this site.",
+  "sign_up_error": "Unable to create account.",
+  "sign_up_have_account": "Already have an account?",
+  "field_name": "Name",
+  "field_email": "Email",
+  "field_password": "Password"
+}
