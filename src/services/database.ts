@@ -20,8 +20,7 @@ const PgLive = PgClient.layer({
 
 export class DB extends Context.Service<DB>()("DB", {
   make: Effect.gen(function* () {
-    const client = yield* PgClient.PgClient;
-    const db = PgDrizzle.drizzle(client, { schema, relations });
+    const db = yield* PgDrizzle.makeWithDefaults({ schema, relations });
     return db;
   }),
 }) {
