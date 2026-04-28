@@ -47,7 +47,16 @@ export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
   reducer: (current, args) =>
     AsyncResult.success(
       currentTasks(current).map((task) =>
-        task.id === args.params.id ? { ...task, ...args.payload, updatedAt: new Date() } : task,
+        task.id === args.params.id
+          ? {
+              ...task,
+              ...args.payload,
+              description: args.payload.description !== undefined ? args.payload.description : task.description,
+              title: args.payload.title ?? task.title,
+              completed: args.payload.completed ?? task.completed,
+              updatedAt: new Date(),
+            }
+          : task,
       ),
     ),
   fn: ApiClient.mutation("tasks", "updateTask"),

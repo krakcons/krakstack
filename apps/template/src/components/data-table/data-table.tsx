@@ -340,8 +340,8 @@ const DataTableRow = <TData,>({
   row,
 }: {
   canDrag: boolean;
-  dragLabel?: string;
-  onRowClick?: (row: TData) => void;
+  dragLabel?: string | undefined;
+  onRowClick?: ((row: TData) => void) | undefined;
   row: Row<TData>;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -389,9 +389,9 @@ const DataTableGalleryCard = <TData,>({
   table,
 }: {
   canDrag: boolean;
-  dragLabel?: string;
-  gallery?: DataTableGalleryConfig;
-  onRowClick?: (row: TData) => void;
+  dragLabel?: string | undefined;
+  gallery?: DataTableGalleryConfig | undefined;
+  onRowClick?: ((row: TData) => void) | undefined;
   row: Row<TData>;
   table: TanstackTable<TData>;
 }) => {

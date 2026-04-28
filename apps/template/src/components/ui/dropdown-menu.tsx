@@ -77,8 +77,8 @@ function DropdownMenuItem({
   variant = "default",
   ...props
 }: MenuPrimitive.Item.Props & {
-  inset?: boolean;
-  variant?: "default" | "destructive";
+  inset?: boolean | undefined;
+  variant?: "default" | "destructive" | undefined;
 }) {
   return (
     <MenuPrimitive.Item
