@@ -1,16 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Database, FileText, LogIn, Table2, UserPlus } from "lucide-react";
+import { Activity, Database, Globe, KeyRound, ListChecks, Shield, Table2, UserRound } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 const iconByName = {
   "data-table": Table2,
-  form: FileText,
-  "sign-in": LogIn,
-  "sign-up": UserPlus,
+  form: ListChecks,
+  "locale-toggle": Globe,
+  "user-button": UserRound,
+  "sign-in": KeyRound,
+  "sign-up": KeyRound,
+  auth: Shield,
   "service-database": Database,
+  "service-opentelemetry": Activity,
 } as const;
 
 const groupedItems = registryItems.reduce(
@@ -23,7 +27,7 @@ const groupedItems = registryItems.reduce(
     }
     section.items.push({
       ...item,
-      icon: iconByName[item.name as keyof typeof iconByName] ?? Table2,
+      icon: iconByName[item.name as keyof typeof iconByName] ?? Shield,
     });
     return sections;
   },
@@ -49,7 +53,7 @@ function Home() {
           </Link>
           <div className="flex items-center gap-5 text-sm">
             <Link
-              to="/docs"
+              to="/docs/registry/data-table"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               Docs
@@ -119,7 +123,7 @@ function Home() {
       <footer className="border-t py-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 text-sm text-muted-foreground">
           <span>Built with the sea in mind.</span>
-          <Link to="/docs" className="transition-colors hover:text-foreground">
+          <Link to="/docs/registry/data-table" className="transition-colors hover:text-foreground">
             Documentation
           </Link>
         </div>
