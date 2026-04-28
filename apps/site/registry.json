@@ -73,6 +73,31 @@
       "dependencies": ["lucide-react", "react", "@tanstack/react-form", "@tanstack/react-router"]
     },
     {
+      "name": "locale-toggle",
+      "type": "registry:block",
+      "title": "Locale Toggle",
+      "description": "A Paraglide-powered dropdown for switching between configured locales with localized language labels.",
+      "docs": "## Overview\n\n`locale-toggle` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- Localized menu label and locale names\n- Icon-only trigger with accessible screen-reader text\n- Includes component-scoped message files\n\n## Usage\n\n```tsx\nimport { LocaleToggle } from \"@/components/locale-toggle\";\n\n<LocaleToggle />\n```",
+      "files": [
+        {
+          "path": "registry/components/locale-toggle/locale-toggle.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/components/locale-toggle/messages/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/locale-toggle/en.json"
+        },
+        {
+          "path": "registry/components/locale-toggle/messages/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/locale-toggle/fr.json"
+        }
+      ],
+      "registryDependencies": ["button", "dropdown-menu"],
+      "dependencies": ["lucide-react"]
+    },
+    {
       "name": "service-database",
       "title": "Database",
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
