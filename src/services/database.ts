@@ -28,7 +28,7 @@ export class DB extends Context.Service<DB>()("DB", {
   static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(PgLive));
 }
 
-export const rawdb = drizzle(process.env.DATABASE_URL!, {
+export const db = drizzle(process.env.DATABASE_URL!, {
   schema,
   relations,
 });

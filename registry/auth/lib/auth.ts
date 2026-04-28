@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
+
 import { db } from "@/services/database";
 
 const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
@@ -7,7 +8,7 @@ const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
   .filter(Boolean);
 
 export const auth = betterAuth({
-  appName: "Krakstack Site",
+  appName: "App",
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

@@ -118,12 +118,13 @@ function getHighlighter() {
   highlighterPromise ??= Promise.all([
     import("shiki/core"),
     import("shiki/engine/javascript"),
+    import("shiki/dist/langs/json.mjs"),
     import("shiki/dist/langs/typescript.mjs"),
     import("shiki/dist/langs/tsx.mjs"),
     import("shiki/dist/themes/github-dark.mjs"),
-  ]).then(([core, engine, typescriptLanguage, tsxLanguage, githubDarkTheme]) =>
+  ]).then(([core, engine, jsonLanguage, typescriptLanguage, tsxLanguage, githubDarkTheme]) =>
     core.createHighlighterCore({
-      langs: [typescriptLanguage.default, tsxLanguage.default],
+      langs: [jsonLanguage.default, typescriptLanguage.default, tsxLanguage.default],
       themes: [githubDarkTheme.default],
       engine: engine.createJavaScriptRegexEngine(),
     }),
