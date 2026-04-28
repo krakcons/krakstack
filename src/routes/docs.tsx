@@ -13,16 +13,22 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Activity, Database, Globe, KeyRound, ListChecks, Shield, Table2, UserRound } from "lucide-react";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
-import { Box, Database, FileText, Home, Table2 } from "lucide-react";
 
 export const Route = createFileRoute("/docs")({ component: DocsLayout });
 
 const iconByName = {
   "data-table": Table2,
-  form: FileText,
+  form: ListChecks,
+  "locale-toggle": Globe,
+  "user-button": UserRound,
+  "sign-in": KeyRound,
+  "sign-up": KeyRound,
+  auth: Shield,
   "service-database": Database,
+  "service-opentelemetry": Activity,
 } as const;
 
 const registrySections = registryItems.reduce(
@@ -32,7 +38,7 @@ const registrySections = registryItems.reduce(
     const navItem = {
       title: item.title ?? item.name,
       to: `/docs/registry/${item.name}`,
-      icon: iconByName[item.name as keyof typeof iconByName] ?? Box,
+      icon: iconByName[item.name as keyof typeof iconByName] ?? Shield,
     };
 
     if (section) section.items.push(navItem);
@@ -43,13 +49,7 @@ const registrySections = registryItems.reduce(
   [] as Array<{ title: string; items: Array<{ title: string; to: string; icon: typeof Box }> }>,
 );
 
-const docsNav = [
-  {
-    title: "Overview",
-    items: [{ title: "Home", to: "/", icon: Home }],
-  },
-  ...registrySections,
-];
+const docsNav = registrySections;
 
 function DocsLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -60,7 +60,7 @@ function DocsLayout() {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" tooltip="Krakstack docs">
+              <SidebarMenuButton size="lg" tooltip="Krakstack" render={<Link to="/" />}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
                   K
                 </div>
@@ -100,7 +100,9 @@ function DocsLayout() {
       <SidebarInset className="min-w-0 overflow-x-hidden">
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger />
-          <div className="text-sm font-medium">Docs</div>
+          <Link to="/docs/registry/data-table" className="text-sm font-medium">
+              Docs
+            </Link>
         </header>
         <Outlet />
       </SidebarInset>
