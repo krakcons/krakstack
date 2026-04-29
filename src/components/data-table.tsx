@@ -818,17 +818,20 @@ export function DataTable<TData, TValue>({
 
   const renderGalleryRows = (rows: Row<TData>[], canDrag: boolean) => (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {rows.map((row) => (
-        <DataTableGalleryCard
-          canDrag={canDrag}
-          dragLabel={grouping?.getRowLabel?.(row.original)}
-          gallery={gallery}
-          key={row.id}
-          onRowClick={onRowClick}
-          row={row}
-          table={table}
-        />
-      ))}
+      {rows.map((row) => {
+        const dragLabel = grouping?.getRowLabel?.(row.original);
+        return (
+          <DataTableGalleryCard
+            key={row.id}
+            canDrag={canDrag}
+            row={row}
+            table={table}
+            {...(gallery ? { gallery } : {})}
+            {...(dragLabel ? { dragLabel } : {})}
+            {...(onRowClick ? { onRowClick } : {})}
+          />
+        );
+      })}
     </div>
   );
 
@@ -849,15 +852,18 @@ export function DataTable<TData, TValue>({
             (hasChildren ? (
               renderGroupedTableSections(section.children)
             ) : section.rows.length > 0 ? (
-              section.rows.map((row) => (
-                <DataTableRow
-                  canDrag={canDragRows}
-                  dragLabel={grouping?.getRowLabel?.(row.original)}
-                  key={row.id}
-                  onRowClick={onRowClick}
-                  row={row}
-                />
-              ))
+              section.rows.map((row) => {
+                const dragLabel = grouping?.getRowLabel?.(row.original);
+                return (
+                  <DataTableRow
+                    key={row.id}
+                    canDrag={canDragRows}
+                    row={row}
+                    {...(dragLabel ? { dragLabel } : {})}
+                    {...(onRowClick ? { onRowClick } : {})}
+                  />
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell
@@ -1038,10 +1044,10 @@ export function DataTable<TData, TValue>({
                     : bodyRows.length > 0
                       ? bodyRows.map((row) => (
                           <DataTableRow
-                            canDrag={false}
                             key={row.id}
-                            onRowClick={onRowClick}
+                            canDrag={false}
                             row={row}
+                            {...(onRowClick ? { onRowClick } : {})}
                           />
                         ))
                       : renderTableEmptyState()}
@@ -1494,7 +1500,7 @@ export const createDataTableActionsColumn = <TData extends object>(
                       e.stopPropagation();
                       action.onClick(cell.row.original);
                     }}
-                    variant={action.variant}
+                    {...(action.variant ? { variant: action.variant } : {})}
                   >
                     {action.icon}
                     {action.name}
