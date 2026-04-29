@@ -27,6 +27,7 @@ const optimisticTask = (payload: CreateTaskPayload): Task => {
 
   return {
     id: `optimistic-${crypto.randomUUID()}`,
+    userId: "optimistic",
     title: payload.title,
     description: payload.description ?? null,
     completed: false,
@@ -51,7 +52,10 @@ export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
           ? {
               ...task,
               ...args.payload,
-              description: args.payload.description !== undefined ? args.payload.description : task.description,
+              description:
+                args.payload.description !== undefined
+                  ? args.payload.description
+                  : task.description,
               title: args.payload.title ?? task.title,
               completed: args.payload.completed ?? task.completed,
               updatedAt: new Date(),

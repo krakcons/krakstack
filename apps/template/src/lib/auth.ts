@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
 
 export const auth = betterAuth({
-  appName: "Krakstack Site",
+  appName: "Krakstack Template",
   account: {
     encryptOAuthTokens: true,
     storeStateStrategy: "cookie",

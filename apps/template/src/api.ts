@@ -9,21 +9,25 @@ export const Api = HttpApi.make("Api")
       .add(
         HttpApiEndpoint.get("listTasks", "/tasks", {
           success: Schema.Array(Task),
-          error: [HttpApiError.InternalServerError],
+          error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
         }),
       )
       .add(
         HttpApiEndpoint.post("createTask", "/tasks", {
           payload: CreateTask,
           success: Task,
-          error: [HttpApiError.InternalServerError],
+          error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
         }),
       )
       .add(
         HttpApiEndpoint.get("getTask", "/tasks/:id", {
           params: TaskIdParams,
           success: Task,
-          error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+          error: [
+            HttpApiError.Unauthorized,
+            HttpApiError.NotFound,
+            HttpApiError.InternalServerError,
+          ],
         }),
       )
       .add(
@@ -31,14 +35,22 @@ export const Api = HttpApi.make("Api")
           params: TaskIdParams,
           payload: UpdateTask,
           success: Task,
-          error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+          error: [
+            HttpApiError.Unauthorized,
+            HttpApiError.NotFound,
+            HttpApiError.InternalServerError,
+          ],
         }),
       )
       .add(
         HttpApiEndpoint.delete("deleteTask", "/tasks/:id", {
           params: TaskIdParams,
           success: Task,
-          error: [HttpApiError.NotFound, HttpApiError.InternalServerError],
+          error: [
+            HttpApiError.Unauthorized,
+            HttpApiError.NotFound,
+            HttpApiError.InternalServerError,
+          ],
         }),
       ),
   )

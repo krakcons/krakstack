@@ -31,7 +31,7 @@ const formatDate = (date: Date) =>
     minute: "2-digit",
   }).format(date);
 
-export function TaskTable() {
+export function TaskTable({ from = "/" }: { from?: "/" | "/admin" }) {
   const tasksResult = useTasksAtom();
   const updateTask = useAtomSet(updateTaskAtom);
   const deleteTask = useAtomSet(deleteTaskAtom);
@@ -143,7 +143,7 @@ export function TaskTable() {
             data={tasks}
             exportFileName="tasks.csv"
             features={{ gallery: false }}
-            from="/"
+            from={from}
             onRowClick={setEditingTask}
           />
 

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 
 import { tasks } from "@/db/schema";
@@ -9,35 +9,34 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
-    const list = Effect.fn("Tasks.list")(function* () {
-      const tasks = yield* db.query.tasks.findMany();
+    const list = Effect.fn("Tasks.list")(function* (userId: string) {
+      const tasks = yield* db.query.tasks.findMany({
+        where: {
+          userId,
+        },
+      });
 
       return tasks;
     });
 
-    const get = Effect.fn("Tasks.get")(function* (id: string) {
+    const get = Effect.fn("Tasks.get")(function* (userId: string, id: string) {
       const task = yield* db.query.tasks.findFirst({
         where: {
           id,
+          userId,
         },
       });
 
       return task;
     });
 
-    const create = Effect.fn("Tasks.create")(function* (input: typeof CreateTask.Type) {
-      const [task] = yield* db.insert(tasks).values(input).returning();
-
-      if (!task) return undefined;
-
-      return task;
-    });
-
-    const update = Effect.fn("Tasks.update")(function* (id: string, input: typeof UpdateTask.Type) {
+    const create = Effect.fn("Tasks.create")(function* (
+      userId: string,
+      input: typeof CreateTask.Type,
+    ) {
       const [task] = yield* db
-        .update(tasks)
-        .set({ ...input, updatedAt: new Date() })
-        .where(eq(tasks.id, id))
+        .insert(tasks)
+        .values({ ...input, userId })
         .returning();
 
       if (!task) return undefined;
@@ -45,8 +44,27 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
       return task;
     });
 
-    const _delete = Effect.fn("Tasks.delete")(function* (id: string) {
-      const [task] = yield* db.delete(tasks).where(eq(tasks.id, id)).returning();
+    const update = Effect.fn("Tasks.update")(function* (
+      userId: string,
+      id: string,
+      input: typeof UpdateTask.Type,
+    ) {
+      const [task] = yield* db
+        .update(tasks)
+        .set({ ...input, updatedAt: new Date() })
+        .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+        .returning();
+
+      if (!task) return undefined;
+
+      return task;
+    });
+
+    const _delete = Effect.fn("Tasks.delete")(function* (userId: string, id: string) {
+      const [task] = yield* db
+        .delete(tasks)
+        .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+        .returning();
 
       if (!task) return undefined;
 

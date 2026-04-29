@@ -217,7 +217,7 @@ function CreateClientDialog() {
   const form = useAppForm({
     defaultValues: {
       clientName: "",
-      redirectUris: "http://localhost:3000/api/auth/oauth2/callback/krakstack-auth",
+      redirectUris: "https://www.example.com/api/auth/callback/krakstack-auth",
       scopes: ["openid", "profile", "email", "offline_access"],
     } satisfies ClientFormValues,
     onSubmit: async ({ value, formApi }) => {
@@ -435,4 +435,3 @@ const parseListInput = (value: string) =>
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
-

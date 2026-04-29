@@ -1,19 +1,15 @@
 {
   pkgs,
-  config,
   ...
 }:
 {
+  dotenv.enable = true;
   languages.javascript = {
     enable = true;
     bun = {
       enable = true;
       install.enable = true;
     };
-  };
-
-  env = {
-    DATABASE_URL = "postgresql://postgres:postgres@localhost:${toString config.services.postgres.port}/dev";
   };
 
   services.postgres = {
@@ -27,7 +23,7 @@
     listen_addresses = "127.0.0.1";
     initialDatabases = [
       {
-        name = "dev";
+        name = "template";
         user = "postgres";
         pass = "postgres";
       }

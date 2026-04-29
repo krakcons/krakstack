@@ -2,6 +2,7 @@ import { Schema } from "effect";
 
 export const Task = Schema.Struct({
   id: Schema.String,
+  userId: Schema.String,
   title: Schema.String,
   description: Schema.NullOr(Schema.String),
   completed: Schema.Boolean,

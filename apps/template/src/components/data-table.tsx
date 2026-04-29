@@ -1456,7 +1456,7 @@ export const createDataTableActionsColumn = <TData extends object>(
   actions: {
     name: string;
     icon?: ReactNode;
-    variant?: "default" | "destructive";
+    variant?: "default" | "destructive" | undefined;
     onClick: (data: TData) => void;
     visible?: (data: TData) => boolean;
   }[],
