@@ -29,22 +29,20 @@ type UserFormType = {
 type UserDropdownProps = {
   signOutRedirect?: string;
   side?: ComponentProps<typeof DropdownMenuContent>["side"];
+  renderUnauthenticated?: () => React.ReactNode;
 };
 
 export const UserButton = ({
   signOutRedirect = "/",
   side = "bottom",
+  renderUnauthenticated,
 }: UserDropdownProps) => {
   const { data: session, isPending, refetch } = authClient.useSession();
   const [accountDialog, setAccountDialog] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   if (!session) {
-    return (
-      <Button onClick={() => window.location.assign("/sign-in")} variant="outline">
-        Sign In
-      </Button>
-    );
+    return <>{renderUnauthenticated?.()}</>;
   }
 
   const displayName = session.user.name.trim();
