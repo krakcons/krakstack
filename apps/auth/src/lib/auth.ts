@@ -1,24 +1,25 @@
-import { Pool } from "pg";
 import { betterAuth } from "better-auth";
-import { jwt } from "better-auth/plugins";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
+import { admin, jwt } from "better-auth/plugins";
 import { oauthProvider } from "@better-auth/oauth-provider";
 
-const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+import { db } from "@/services/database";
 
-const validAudiences = process.env.BETTER_AUTH_VALID_AUDIENCES?.split(",")
-  .map((audience) => audience.trim())
-  .filter(Boolean);
+const parseCsv = (value: string | undefined) =>
+  value
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
-const cachedTrustedClients = process.env.BETTER_AUTH_CACHED_TRUSTED_CLIENTS?.split(",")
-  .map((clientId) => clientId.trim())
-  .filter(Boolean);
+const trustedOrigins = parseCsv(process.env.BETTER_AUTH_TRUSTED_ORIGINS);
+
+const validAudiences = parseCsv(process.env.BETTER_AUTH_VALID_AUDIENCES);
 
 export const auth = betterAuth({
   appName: "Krakstack Auth",
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
+  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+  database: drizzleAdapter(db, {
+    provider: "pg",
   }),
   trustedOrigins,
   emailAndPassword: {
@@ -34,12 +35,18 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    admin(),
     jwt(),
     oauthProvider({
       loginPage: "/sign-in",
       consentPage: "/consent",
       allowDynamicClientRegistration: false,
-      ...(cachedTrustedClients ? { cachedTrustedClients: new Set(cachedTrustedClients) } : {}),
+      clientPrivileges: async ({ user }) => {
+        const role = (user as { role?: unknown } | undefined)?.role;
+        if (typeof role !== "string") return false;
+
+        return role.split(",").some((item) => item.trim() === "admin");
+      },
       scopes: ["openid", "profile", "email", "offline_access"],
       ...(validAudiences ? { validAudiences } : {}),
     }),

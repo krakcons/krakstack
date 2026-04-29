@@ -1,21 +1,15 @@
 {
   pkgs,
-  config,
   ...
 }:
 {
+  dotenv.enable = true;
   languages.javascript = {
     enable = true;
     bun = {
       enable = true;
       install.enable = true;
     };
-  };
-
-  env = {
-    DATABASE_URL = "postgresql://postgres:postgres@localhost:${toString config.services.postgres.port}/site";
-    BETTER_AUTH_URL = "http://localhost:3000";
-    BETTER_AUTH_SECRET = "SCwlfJUMci/lwEwFWex/ductuMdPbta33MVIVuxGbcE=";
   };
 
   services.postgres = {
