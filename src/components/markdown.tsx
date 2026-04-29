@@ -121,13 +121,28 @@ function getHighlighter() {
     import("shiki/dist/langs/json.mjs"),
     import("shiki/dist/langs/typescript.mjs"),
     import("shiki/dist/langs/tsx.mjs"),
+    import("shiki/dist/langs/bash.mjs"),
     import("shiki/dist/themes/github-dark.mjs"),
-  ]).then(([core, engine, jsonLanguage, typescriptLanguage, tsxLanguage, githubDarkTheme]) =>
-    core.createHighlighterCore({
-      langs: [jsonLanguage.default, typescriptLanguage.default, tsxLanguage.default],
-      themes: [githubDarkTheme.default],
-      engine: engine.createJavaScriptRegexEngine(),
-    }),
+  ]).then(
+    ([
+      core,
+      engine,
+      jsonLanguage,
+      typescriptLanguage,
+      tsxLanguage,
+      bashLanguage,
+      githubDarkTheme,
+    ]) =>
+      core.createHighlighterCore({
+        langs: [
+          jsonLanguage.default,
+          typescriptLanguage.default,
+          tsxLanguage.default,
+          bashLanguage.default,
+        ],
+        themes: [githubDarkTheme.default],
+        engine: engine.createJavaScriptRegexEngine(),
+      }),
   );
 
   return highlighterPromise;
