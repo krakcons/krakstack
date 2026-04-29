@@ -85,14 +85,14 @@ function AppSidebar({ brand, groups }: AppSidebarProps) {
   );
 }
 
-type AdminPageHeaderProps = {
+type SidebarPageHeaderProps = {
   title: string;
   description?: string;
   badge?: { label: string; variant?: "default" | "secondary" | "outline" | "destructive" };
   actions?: React.ReactNode;
 };
 
-export function AdminPageHeader({ title, description, badge, actions }: AdminPageHeaderProps) {
+export function SidebarPageHeader({ title, description, badge, actions }: SidebarPageHeaderProps) {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-2">
@@ -113,7 +113,7 @@ export function AdminPageHeader({ title, description, badge, actions }: AdminPag
   );
 }
 
-export function AdminLayout({
+export function SidebarLayout({
   brand,
   groups,
   children,

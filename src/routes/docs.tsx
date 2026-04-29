@@ -1,7 +1,7 @@
-import { Blocks, Activity, Database, Globe, KeyRound, ListChecks, Shield, Table2, UserRound } from "lucide-react";
+import { Blocks, Activity, Database, Globe, KeyRound, ListChecks, PanelLeft, Shield, Table2, UserRound } from "lucide-react";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminLayout, type NavGroup } from "@/components/admin-layout/admin-layout";
+import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout/sidebar-layout";
 
 export const Route = createFileRoute("/docs")({ component: DocsLayout });
 
@@ -15,6 +15,7 @@ const iconByName = {
   auth: Shield,
   "service-database": Database,
   "service-opentelemetry": Activity,
+  "sidebar-layout": PanelLeft,
 } as const;
 
 const docsBrand = {
@@ -43,5 +44,5 @@ const docsNavGroups: NavGroup[] = registryItems.reduce(
 );
 
 function DocsLayout() {
-  return <AdminLayout brand={docsBrand} groups={docsNavGroups} />;
+  return <SidebarLayout brand={docsBrand} groups={docsNavGroups} />;
 }
