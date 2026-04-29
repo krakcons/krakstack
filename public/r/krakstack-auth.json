@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
-  "name": "auth",
-  "title": "Auth",
+  "name": "krakstack-auth",
+  "title": "Krakstack Auth",
   "description": "A Better Auth foundation for TanStack Start that connects to Krakstack Auth via OAuth, with server config, React client, and an /api/auth route handler.",
   "dependencies": [
     "@tanstack/react-router",
@@ -22,10 +22,10 @@
       "target": "lib/auth-client.ts"
     },
     {
-      "path": "registry/auth/routes/api.tsx",
-      "content": "import { createFileRoute } from \"@tanstack/react-router\";\n\nimport { auth } from \"@/lib/auth\";\n\nconst handler = (request: Request) => {\n  const { pathname } = new URL(request.url);\n\n  if (pathname.startsWith(\"/api/auth\")) {\n    return auth.handler(request);\n  }\n\n  return Response.json({ error: \"Not found\" }, { status: 404 });\n};\n\nexport const Route = createFileRoute(\"/api/$\")({\n  server: {\n    handlers: {\n      GET: async ({ request }) => handler(request),\n      POST: async ({ request }) => handler(request),\n      PUT: async ({ request }) => handler(request),\n      PATCH: async ({ request }) => handler(request),\n      DELETE: async ({ request }) => handler(request),\n      OPTIONS: async ({ request }) => handler(request),\n    },\n  },\n});\n",
+      "path": "registry/auth/routes/auth.tsx",
+      "content": "import { auth } from \"@/lib/auth\";\nimport { createFileRoute } from \"@tanstack/react-router\";\n\nexport const Route = createFileRoute(\"/api/auth/$\")({\n  server: {\n    handlers: {\n      GET: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n      POST: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n    },\n  },\n});",
       "type": "registry:file",
-      "target": "routes/api/$.tsx"
+      "target": "routes/api/auth/$.tsx"
     }
   ],
   "docs": "## Overview\n\n`auth` installs the app-level Better Auth foundation used by the sign-in, sign-up, and user-button blocks. It connects to Krakstack Auth as an OAuth provider using the generic OAuth plugin with PKCE, and includes the server config, React client, and the TanStack Start API route that forwards `/api/auth/*` requests to Better Auth.\n\n## Included Files\n\n- `lib/auth.ts` - Better Auth server setup with the Krakstack Auth OAuth provider\n- `lib/auth-client.ts` - Better Auth React client with generic OAuth support\n- `routes/api/$.tsx` - TanStack Start server route for `/api/auth/*`\n\n## Usage\n\n```tsx\nimport { authClient } from \"@/lib/auth-client\";\n\nconst { data: session } = authClient.useSession();\n```\n\nServer code can import the configured auth instance:\n\n```ts\nimport { auth } from \"@/lib/auth\";\n```\n\nTo initiate OAuth sign-in with Krakstack Auth:\n\n```tsx\nauthClient.signIn.oauth2({ providerId: \"krakstack-auth\", callbackURL: \"/dashboard\" });\n```\n\n## Environment Variables\n\n- `BETTER_AUTH_SECRET` - Secret used by Better Auth\n- `BETTER_AUTH_URL` - Public auth URL, for example `http://localhost:3000`\n- `KRAKSTACK_AUTH_CLIENT_ID` - OAuth client ID registered in Krakstack Auth\n- `KRAKSTACK_AUTH_CLIENT_SECRET` - OAuth client secret registered in Krakstack Auth\n- `KRAKSTACK_AUTH_URL` - Krakstack Auth issuer URL, for example `http://localhost:4000`",
