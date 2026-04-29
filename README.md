@@ -19,6 +19,7 @@ Installable shadcn blocks and services:
 - **data-table** — URL-state-driven data table with filtering, sorting, column visibility, CSV export, gallery view, grouping, and drag-and-drop
 - **form** — TanStack Form hook with typed field components, submit state, file/image inputs, and dirty-navigation blocking
 - **service-database** — Effect service providing a Drizzle PostgreSQL client from `DATABASE_URL`
+- **krakstack-template** — Full-stack TanStack Start starter app, available at [`apps/template`](https://github.com/krakcons/krakstack/tree/main/apps/template)
 
 ## Tech Stack
 
@@ -60,4 +61,3 @@ Please be respectful and constructive. By contributing, you agree that your work
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
