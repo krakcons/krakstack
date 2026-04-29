@@ -10,7 +10,7 @@ import {
   TableSearchSchema,
 } from "@/components/data-table";
 import { ErrorMessage } from "@/components/form/form";
-import { AdminPageHeader } from "@/components/admin-layout/admin-layout";
+import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,7 +94,7 @@ function UsersPage() {
 
   return (
     <>
-      <AdminPageHeader
+      <SidebarPageHeader
         title={m.admin_users_title()}
         description={`${m.admin_users_description()} ${total === 1 ? m.admin_users_count_single() : m.admin_users_count({ count: total.toString() })}`}
         badge={{ label: m.admin_badge_admin() }}

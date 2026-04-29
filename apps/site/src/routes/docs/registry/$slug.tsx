@@ -1,4 +1,4 @@
-import { AdminPageHeader } from "@/components/admin-layout/admin-layout";
+import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
 import { InstallCommand } from "@/components/install-command";
 import { Markdown } from "@/components/markdown";
 import {
@@ -30,7 +30,7 @@ function RegistryDocs() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full min-w-0 max-w-7xl flex-col gap-8">
-      <AdminPageHeader
+      <SidebarPageHeader
         title={item.title ?? item.name}
         description={item.description}
         badge={{ label: group }}

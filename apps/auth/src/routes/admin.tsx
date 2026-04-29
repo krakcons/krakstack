@@ -6,8 +6,8 @@ import { KeyRound, LayoutDashboard, Loader2, ShieldAlert, Users } from "lucide-r
 import { m } from "@/paraglide/messages";
 import { Button } from "@/components/ui/button";
 import { LocaleToggle } from "@/components/locale-toggle/locale-toggle";
-import { AdminLayout, type NavGroup } from "@/components/admin-layout/admin-layout";
-import { AdminPageHeader } from "@/components/admin-layout/admin-layout";
+import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout/sidebar-layout";
+import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
 import {
   Card,
   CardContent,
@@ -78,7 +78,7 @@ function Admin() {
     return <DashboardPage />;
   }
 
-  return <AdminLayout brand={adminBrand} groups={adminNavGroups} />;
+  return <SidebarLayout brand={adminBrand} groups={adminNavGroups} />;
 }
 
 type ClientStats = {
@@ -125,8 +125,8 @@ function DashboardPage() {
   }));
 
   return (
-    <AdminLayout brand={adminBrand} groups={adminNavGroups}>
-      <AdminPageHeader
+    <SidebarLayout brand={adminBrand} groups={adminNavGroups}>
+      <SidebarPageHeader
         title={m.admin_dashboard()}
         description={m.admin_dashboard_description()}
       />
@@ -195,7 +195,7 @@ function DashboardPage() {
           )}
         </>
       )}
-    </AdminLayout>
+    </SidebarLayout>
   );
 }
 

@@ -10,7 +10,7 @@ import {
   TableSearchSchema,
 } from "@/components/data-table";
 import { ErrorMessage, useAppForm } from "@/components/form/form";
-import { AdminPageHeader } from "@/components/admin-layout/admin-layout";
+import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,7 +102,7 @@ function ClientsPage() {
 
   return (
     <>
-      <AdminPageHeader
+      <SidebarPageHeader
         title={m.admin_clients_title()}
         description={m.admin_clients_description()}
         badge={{ label: m.admin_badge_oauth() }}
