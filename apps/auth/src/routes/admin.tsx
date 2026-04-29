@@ -6,8 +6,8 @@ import { KeyRound, LayoutDashboard, Loader2, ShieldAlert, Users } from "lucide-r
 import { m } from "@/paraglide/messages";
 import { Button } from "@/components/ui/button";
 import { LocaleToggle } from "@/components/locale-toggle/locale-toggle";
-import { AdminLayout, type NavGroup } from "@/components/admin-layout";
-import { AdminPageHeader } from "@/components/admin-layout";
+import { AdminLayout, type NavGroup } from "@/components/admin-layout/admin-layout";
+import { AdminPageHeader } from "@/components/admin-layout/admin-layout";
 import {
   Card,
   CardContent,

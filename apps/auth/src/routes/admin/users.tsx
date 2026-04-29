@@ -10,7 +10,7 @@ import {
   TableSearchSchema,
 } from "@/components/data-table";
 import { ErrorMessage } from "@/components/form/form";
-import { AdminPageHeader } from "@/components/admin-layout";
+import { AdminPageHeader } from "@/components/admin-layout/admin-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

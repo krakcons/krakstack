@@ -10,7 +10,7 @@ import {
   TableSearchSchema,
 } from "@/components/data-table";
 import { ErrorMessage, useAppForm } from "@/components/form/form";
-import { AdminPageHeader } from "@/components/admin-layout";
+import { AdminPageHeader } from "@/components/admin-layout/admin-layout";
 import {
   AlertDialog,
   AlertDialogAction,
