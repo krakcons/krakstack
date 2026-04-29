@@ -5,7 +5,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
-import { KeyRound, PanelLeftIcon, Users } from "lucide-react";
+import { KeyRound, LayoutDashboard, PanelLeftIcon, Users } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -665,7 +665,7 @@ function AuthSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" tooltip="Krakstack" render={<Link to="/" />}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                K
+                <Users />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">Krakstack</span>
@@ -680,6 +680,16 @@ function AuthSidebar() {
           <SidebarGroupLabel>Admin</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={pathname === "/admin"}
+                  render={<Link to="/admin" />}
+                  tooltip="Dashboard"
+                >
+                  <LayoutDashboard />
+                  <span>Dashboard</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={pathname === "/admin/users"}
@@ -743,3 +753,4 @@ export {
   SidebarTrigger,
   useSidebar,
 };
+
