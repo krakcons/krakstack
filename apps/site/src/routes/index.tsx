@@ -53,7 +53,8 @@ function Home() {
           </Link>
           <div className="flex items-center gap-5 text-sm">
             <Link
-              to="/docs/registry/data-table"
+              to="/docs/registry/$slug"
+              params={{ slug: "data-table" }}
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
               Docs
@@ -123,9 +124,9 @@ function Home() {
       <footer className="border-t py-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 text-sm text-muted-foreground">
           <span>Built with the sea in mind.</span>
-          <Link to="/docs/registry/data-table" className="transition-colors hover:text-foreground">
-            Documentation
-          </Link>
+          <Link to="/docs/registry/$slug" params={{ slug: "data-table" }} className="transition-colors hover:text-foreground">
+             Documentation
+           </Link>
         </div>
       </footer>
     </div>
