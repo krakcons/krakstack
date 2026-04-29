@@ -4,9 +4,13 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Ban, Loader2, RefreshCw, ShieldOff, UserIcon } from "lucide-react";
 import { useState } from "react";
 
-import { createDataTableActionsColumn, DataTable, TableSearchSchema } from "@/components/data-table";
+import {
+  createDataTableActionsColumn,
+  DataTable,
+  TableSearchSchema,
+} from "@/components/data-table";
 import { ErrorMessage } from "@/components/form/form";
-import { AuthSidebar, SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AdminPageHeader } from "@/components/admin-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/admin/users")({
   validateSearch: TableSearchSchema,
@@ -46,7 +51,7 @@ function useUsers() {
       const result = await authClient.admin.listUsers({
         query: { limit: 100 },
       });
-      if (result.error) throw new Error(result.error.message ?? "Admin access is required.");
+      if (result.error) throw new Error(result.error.message ?? m.admin_error_access_required());
       const data = result.data as { users: User[]; total: number } | undefined;
       return { users: data?.users ?? [], total: data?.total ?? 0 };
     },
@@ -58,7 +63,7 @@ function useBanUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       const result = await authClient.admin.banUser({ userId });
-      if (result.error) throw new Error(result.error.message ?? "Unable to ban user.");
+      if (result.error) throw new Error(result.error.message ?? m.admin_error_ban());
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -71,7 +76,7 @@ function useUnbanUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       const result = await authClient.admin.unbanUser({ userId });
-      if (result.error) throw new Error(result.error.message ?? "Unable to unban user.");
+      if (result.error) throw new Error(result.error.message ?? m.admin_error_unban());
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -88,54 +93,38 @@ function UsersPage() {
   const total = data?.total ?? 0;
 
   return (
-    <SidebarProvider>
-      <AuthSidebar />
-      <SidebarInset className="min-w-0 overflow-x-hidden">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <SidebarTrigger />
-        </header>
-        <div className="flex flex-col gap-6 px-5 py-6 md:px-8">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex flex-col gap-2">
-              <Badge className="w-fit" variant="secondary">
-                Admin
-              </Badge>
-              <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-                <p className="max-w-2xl text-sm text-muted-foreground">
-                  Manage registered users and their access. {total} user{total !== 1 ? "s" : ""} total.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
-                {isLoading ? (
-                  <Loader2 className="animate-spin" data-icon="inline-start" />
-                ) : (
-                  <RefreshCw data-icon="inline-start" />
-                )}
-                Refresh
-              </Button>
-            </div>
-          </header>
+    <>
+      <AdminPageHeader
+        title={m.admin_users_title()}
+        description={`${m.admin_users_description()} ${total === 1 ? m.admin_users_count_single() : m.admin_users_count({ count: total.toString() })}`}
+        badge={{ label: m.admin_badge_admin() }}
+        actions={
+          <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
+            {isLoading ? (
+              <Loader2 className="animate-spin" data-icon="inline-start" />
+            ) : (
+              <RefreshCw data-icon="inline-start" />
+            )}
+            {m.admin_refresh()}
+          </Button>
+        }
+      />
 
-          {error ? <ErrorMessage text={error.message} /> : null}
-          <DataTable
-            columns={userColumns({ onBan: setBanningUser, onUnban: setUnbanningUser })}
-            data={users}
-            exportFileName="users.csv"
-            features={{ gallery: false }}
-            from="/admin/users"
-          />
-          {banningUser ? (
-            <BanUserDialog user={banningUser} onClose={() => setBanningUser(null)} />
-          ) : null}
-          {unbanningUser ? (
-            <UnbanUserDialog user={unbanningUser} onClose={() => setUnbanningUser(null)} />
-          ) : null}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+      {error ? <ErrorMessage text={error.message} /> : null}
+      <DataTable
+        columns={userColumns({ onBan: setBanningUser, onUnban: setUnbanningUser })}
+        data={users}
+        exportFileName="users.csv"
+        features={{ gallery: false }}
+        from="/admin/users"
+      />
+      {banningUser ? (
+        <BanUserDialog user={banningUser} onClose={() => setBanningUser(null)} />
+      ) : null}
+      {unbanningUser ? (
+        <UnbanUserDialog user={unbanningUser} onClose={() => setUnbanningUser(null)} />
+      ) : null}
+    </>
   );
 }
 
@@ -148,16 +137,12 @@ const userColumns = ({
 }): ColumnDef<User>[] => [
   {
     accessorKey: "name",
-    header: "User",
+    header: m.admin_column_user(),
     cell: ({ row }) => (
       <div className="flex min-w-48 items-center gap-3">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
           {row.original.image ? (
-            <img
-              alt={row.original.name}
-              className="size-8 rounded-full"
-              src={row.original.image}
-            />
+            <img alt={row.original.name} className="size-8 rounded-full" src={row.original.image} />
           ) : (
             <UserIcon className="size-4 text-muted-foreground" />
           )}
@@ -171,20 +156,20 @@ const userColumns = ({
   },
   {
     accessorKey: "emailVerified",
-    header: "Verified",
+    header: m.admin_column_verified(),
     cell: ({ row }) =>
       row.original.emailVerified ? (
-        <Badge variant="outline">Verified</Badge>
+        <Badge variant="outline">{m.admin_column_verified()}</Badge>
       ) : (
-        <Badge variant="secondary">Unverified</Badge>
+        <Badge variant="secondary">{m.admin_column_unverified()}</Badge>
       ),
   },
   {
     accessorKey: "role",
-    header: "Role",
+    header: m.admin_column_role(),
     cell: ({ row }) => {
       const role = row.original.role;
-      if (!role) return <span className="text-muted-foreground">None</span>;
+      if (!role) return <span className="text-muted-foreground">{m.admin_column_role_none()}</span>;
       return (
         <div className="flex flex-wrap gap-1.5">
           {role.split(",").map((r) => (
@@ -198,17 +183,17 @@ const userColumns = ({
   },
   {
     accessorKey: "banned",
-    header: "Status",
+    header: m.admin_column_status(),
     cell: ({ row }) =>
       row.original.banned ? (
-        <Badge variant="destructive">Banned</Badge>
+        <Badge variant="destructive">{m.admin_status_banned()}</Badge>
       ) : (
-        <Badge variant="outline">Active</Badge>
+        <Badge variant="outline">{m.admin_status_active()}</Badge>
       ),
   },
   {
     accessorKey: "createdAt",
-    header: "Created",
+    header: m.admin_column_created(),
     cell: ({ row }) => (
       <span className="text-sm text-muted-foreground">
         {new Date(row.original.createdAt).toLocaleDateString()}
@@ -217,14 +202,14 @@ const userColumns = ({
   },
   createDataTableActionsColumn<User>([
     {
-      name: "Ban",
+      name: m.admin_action_ban(),
       icon: <Ban className="size-4" />,
       variant: "destructive",
       onClick: onBan,
       visible: (user) => !user.banned,
     },
     {
-      name: "Unban",
+      name: m.admin_action_unban(),
       icon: <ShieldOff className="size-4" />,
       onClick: onUnban,
       visible: (user) => !!user.banned,
@@ -232,36 +217,33 @@ const userColumns = ({
   ]),
 ];
 
-function BanUserDialog({
-  user,
-  onClose,
-}: {
-  user: User;
-  onClose: () => void;
-}) {
+function BanUserDialog({ user, onClose }: { user: User; onClose: () => void }) {
   const banUser = useBanUser();
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Ban user</AlertDialogTitle>
+          <AlertDialogTitle>{m.admin_ban_title()}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to ban <strong>{user.name}</strong> ({user.email})? They will not
-            be able to sign in.
+            {m.admin_ban_description({ name: user.name, email: user.email })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {banUser.error ? <ErrorMessage text={banUser.error.message} /> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={banUser.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={banUser.isPending}>
+            {m.form_block_navigation_cancel()}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               banUser.mutate(user.id, { onSuccess: onClose });
             }}
             disabled={banUser.isPending}
           >
-            {banUser.isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
-            Ban
+            {banUser.isPending ? (
+              <Loader2 className="animate-spin" data-icon="inline-start" />
+            ) : null}
+            {m.admin_action_ban()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -269,39 +251,37 @@ function BanUserDialog({
   );
 }
 
-function UnbanUserDialog({
-  user,
-  onClose,
-}: {
-  user: User;
-  onClose: () => void;
-}) {
+function UnbanUserDialog({ user, onClose }: { user: User; onClose: () => void }) {
   const unbanUser = useUnbanUser();
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Unban user</AlertDialogTitle>
+          <AlertDialogTitle>{m.admin_unban_title()}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to unban <strong>{user.name}</strong> ({user.email})? They will be
-            able to sign in again.
+            {m.admin_unban_description({ name: user.name, email: user.email })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {unbanUser.error ? <ErrorMessage text={unbanUser.error.message} /> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={unbanUser.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={unbanUser.isPending}>
+            {m.form_block_navigation_cancel()}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               unbanUser.mutate(user.id, { onSuccess: onClose });
             }}
             disabled={unbanUser.isPending}
           >
-            {unbanUser.isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
-            Unban
+            {unbanUser.isPending ? (
+              <Loader2 className="animate-spin" data-icon="inline-start" />
+            ) : null}
+            {m.admin_action_unban()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
+

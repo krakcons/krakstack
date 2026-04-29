@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
+import { LocaleToggle } from "@/components/locale-toggle/locale-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -22,9 +23,12 @@ function Home() {
               <p className="text-xs text-muted-foreground">{m.app_tagline()}</p>
             </div>
           </div>
-          <Link className={buttonVariants({ variant: "outline" })} to="/sign-in">
-            {m.auth_sign_in()}
-          </Link>
+          <div className="flex items-center gap-3">
+            <LocaleToggle />
+            <Link className={buttonVariants({ variant: "outline" })} to="/sign-in">
+              {m.auth_sign_in()}
+            </Link>
+          </div>
         </header>
 
         <section className="grid gap-8 md:grid-cols-[1.25fr_0.75fr] md:items-center">

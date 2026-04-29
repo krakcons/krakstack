@@ -1,6 +1,6 @@
-# Template
+# Krakstack Site
 
-This is a template for a new Krak project.
+This is a documentation site for KrakStack.
 
 # i18n (required)
 

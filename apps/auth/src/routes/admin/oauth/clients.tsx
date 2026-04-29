@@ -4,8 +4,13 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Loader2, Pencil, Plus, RefreshCw, Trash } from "lucide-react";
 import { useState } from "react";
 
-import { createDataTableActionsColumn, DataTable, TableSearchSchema } from "@/components/data-table";
+import {
+  createDataTableActionsColumn,
+  DataTable,
+  TableSearchSchema,
+} from "@/components/data-table";
 import { ErrorMessage, useAppForm } from "@/components/form/form";
+import { AdminPageHeader } from "@/components/admin-layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AuthSidebar, SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +32,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/admin/oauth/clients")({
   validateSearch: TableSearchSchema,
@@ -71,7 +76,7 @@ function useOAuthClients() {
     queryKey: ["admin", "oauth", "clients"],
     queryFn: async () => {
       const result = await authClient.oauth2.getClients();
-      if (result.error) throw new Error(result.error.message ?? "Admin access is required.");
+      if (result.error) throw new Error(result.error.message ?? m.admin_error_fetch_clients());
       return (result.data ?? []) as OAuthClient[];
     },
   });
@@ -82,7 +87,7 @@ function useDeleteClient() {
   return useMutation({
     mutationFn: async (clientId: string) => {
       const result = await authClient.oauth2.deleteClient({ client_id: clientId });
-      if (result.error) throw new Error(result.error.message ?? "Unable to delete OAuth client.");
+      if (result.error) throw new Error(result.error.message ?? m.admin_error_delete_client());
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
@@ -96,61 +101,41 @@ function ClientsPage() {
   const [deletingClient, setDeletingClient] = useState<OAuthClient | null>(null);
 
   return (
-    <SidebarProvider>
-      <AuthSidebar />
-      <SidebarInset className="min-w-0 overflow-x-hidden">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <SidebarTrigger />
-        </header>
-        <div className="flex flex-col gap-6 px-5 py-6 md:px-8">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex flex-col gap-2">
-              <Badge className="w-fit" variant="secondary">
-                OAuth
-              </Badge>
-              <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
-                <p className="max-w-2xl text-sm text-muted-foreground">
-                  Manage applications that can authenticate through Krakstack Auth.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
-                {isLoading ? (
-                  <Loader2 className="animate-spin" data-icon="inline-start" />
-                ) : (
-                  <RefreshCw data-icon="inline-start" />
-                )}
-                Refresh
-              </Button>
-              <CreateClientDialog />
-            </div>
-          </header>
+    <>
+      <AdminPageHeader
+        title={m.admin_clients_title()}
+        description={m.admin_clients_description()}
+        badge={{ label: m.admin_badge_oauth() }}
+        actions={
+          <>
+            <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
+              {isLoading ? (
+                <Loader2 className="animate-spin" data-icon="inline-start" />
+              ) : (
+                <RefreshCw data-icon="inline-start" />
+              )}
+              {m.admin_refresh()}
+            </Button>
+            <CreateClientDialog />
+          </>
+        }
+      />
 
-          {error ? <ErrorMessage text={error.message} /> : null}
-          <DataTable
-            columns={clientColumns({ onEdit: setEditingClient, onDelete: setDeletingClient })}
-            data={clients}
-            exportFileName="oauth-clients.csv"
-            features={{ gallery: false }}
-            from="/admin/oauth/clients"
-          />
-          {editingClient ? (
-            <UpdateClientDialog
-              client={editingClient}
-              onClose={() => setEditingClient(null)}
-            />
-          ) : null}
-          {deletingClient ? (
-            <DeleteClientDialog
-              client={deletingClient}
-              onClose={() => setDeletingClient(null)}
-            />
-          ) : null}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+      {error ? <ErrorMessage text={error.message} /> : null}
+      <DataTable
+        columns={clientColumns({ onEdit: setEditingClient, onDelete: setDeletingClient })}
+        data={clients}
+        exportFileName="oauth-clients.csv"
+        features={{ gallery: false }}
+        from="/admin/oauth/clients"
+      />
+      {editingClient ? (
+        <UpdateClientDialog client={editingClient} onClose={() => setEditingClient(null)} />
+      ) : null}
+      {deletingClient ? (
+        <DeleteClientDialog client={deletingClient} onClose={() => setDeletingClient(null)} />
+      ) : null}
+    </>
   );
 }
 
@@ -163,7 +148,7 @@ const clientColumns = ({
 }): ColumnDef<OAuthClient>[] => [
   {
     accessorKey: "client_name",
-    header: "Client",
+    header: m.admin_column_client(),
     cell: ({ row }) => (
       <div className="flex min-w-48 flex-col gap-1">
         <span className="font-medium">{row.original.client_name ?? row.original.client_id}</span>
@@ -173,34 +158,45 @@ const clientColumns = ({
   },
   {
     accessorKey: "redirect_uris",
-    header: "Redirect URIs",
+    header: m.admin_column_redirect_uris(),
     cell: ({ row }) => <ListCell items={row.original.redirect_uris} />,
   },
   {
     accessorKey: "scope",
-    header: "Scopes",
+    header: m.admin_column_scopes(),
     cell: ({ row }) => <ListCell items={row.original.scope?.split(" ").filter(Boolean) ?? []} />,
   },
   {
     id: "flags",
-    header: "Flags",
+    header: m.admin_column_flags(),
     cell: ({ row }) => (
       <div className="flex flex-wrap gap-1.5">
-        <Badge variant="outline">{row.original.token_endpoint_auth_method ?? "default"}</Badge>
-        {row.original.skip_consent ? <Badge variant="secondary">skip consent</Badge> : null}
+        <Badge variant="outline">
+          {row.original.token_endpoint_auth_method ?? m.admin_flag_default()}
+        </Badge>
+        {row.original.skip_consent ? (
+          <Badge variant="secondary">{m.admin_flag_skip_consent()}</Badge>
+        ) : null}
         {row.original.require_pkce ? <Badge variant="secondary">PKCE</Badge> : null}
-        {row.original.disabled ? <Badge variant="destructive">disabled</Badge> : null}
+        {row.original.disabled ? (
+          <Badge variant="destructive">{m.admin_flag_disabled()}</Badge>
+        ) : null}
       </div>
     ),
   },
   createDataTableActionsColumn<OAuthClient>([
-    { name: "Edit", icon: <Pencil className="size-4" />, onClick: onEdit },
-    { name: "Delete", icon: <Trash className="size-4" />, variant: "destructive", onClick: onDelete },
+    { name: m.admin_action_edit(), icon: <Pencil className="size-4" />, onClick: onEdit },
+    {
+      name: m.actions_delete(),
+      icon: <Trash className="size-4" />,
+      variant: "destructive",
+      onClick: onDelete,
+    },
   ]),
 ];
 
 function ListCell({ items }: { items: string[] }) {
-  if (items.length === 0) return <span className="text-muted-foreground">None</span>;
+  if (items.length === 0) return <span className="text-muted-foreground">{m.admin_none()}</span>;
 
   return (
     <div className="flex max-w-md flex-col gap-1">
@@ -241,7 +237,7 @@ function CreateClientDialog() {
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? "Unable to create OAuth client.", fields: {} },
+          onSubmit: { form: result.error.message ?? m.admin_error_create_client(), fields: {} },
         });
         return;
       }
@@ -257,12 +253,12 @@ function CreateClientDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button />}>
         <Plus data-icon="inline-start" />
-        Create client
+        {m.admin_create_client()}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create OAuth client</DialogTitle>
-          <DialogDescription>Register an application for OAuth authorization code flow.</DialogDescription>
+          <DialogTitle>{m.admin_create_client_title()}</DialogTitle>
+          <DialogDescription>{m.admin_create_client_description()}</DialogDescription>
         </DialogHeader>
         <form.AppForm>
           <form
@@ -274,20 +270,26 @@ function CreateClientDialog() {
             }}
           >
             <form.AppField name="clientName">
-              {(field) => <field.TextField label="Display name" required />}
+              {(field) => <field.TextField label={m.admin_field_display_name()} required />}
             </form.AppField>
             <form.AppField name="redirectUris">
               {(field) => (
                 <field.TextAreaField
-                  description="Separate multiple redirect URIs with commas or new lines."
-                  label="Redirect URIs"
+                  description={m.admin_field_redirect_uris_description()}
+                  label={m.admin_field_redirect_uris()}
                   required
                   rows={3}
                 />
               )}
             </form.AppField>
             <form.AppField name="scopes">
-              {(field) => <field.MultiSelectField label="Scopes" options={SCOPE_OPTIONS} required />}
+              {(field) => (
+                <field.MultiSelectField
+                  label={m.admin_column_scopes()}
+                  options={SCOPE_OPTIONS}
+                  required
+                />
+              )}
             </form.AppField>
             <form.Subscribe
               selector={(formState) =>
@@ -298,8 +300,10 @@ function CreateClientDialog() {
             </form.Subscribe>
             {createdClientId ? (
               <div className="flex flex-col gap-1 rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
-                <p>Created client {createdClientId}.</p>
-                {createdClientSecret ? <code className="break-all">{createdClientSecret}</code> : null}
+                <p>{m.admin_created_client({ id: createdClientId })}</p>
+                {createdClientSecret ? (
+                  <code className="break-all">{createdClientSecret}</code>
+                ) : null}
               </div>
             ) : null}
             <form.SubmitButton />
@@ -310,13 +314,7 @@ function CreateClientDialog() {
   );
 }
 
-function UpdateClientDialog({
-  client,
-  onClose,
-}: {
-  client: OAuthClient;
-  onClose: () => void;
-}) {
+function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose: () => void }) {
   const queryClient = useQueryClient();
   const form = useAppForm({
     defaultValues: {
@@ -338,7 +336,7 @@ function UpdateClientDialog({
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? "Unable to update OAuth client.", fields: {} },
+          onSubmit: { form: result.error.message ?? m.admin_error_update_client(), fields: {} },
         });
         return;
       }
@@ -352,9 +350,9 @@ function UpdateClientDialog({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit OAuth client</DialogTitle>
+          <DialogTitle>{m.admin_edit_client_title()}</DialogTitle>
           <DialogDescription>
-            Update settings for <code className="text-xs">{client.client_id}</code>.
+            {m.admin_edit_client_description({ id: client.client_id })}
           </DialogDescription>
         </DialogHeader>
         <form.AppForm>
@@ -367,19 +365,21 @@ function UpdateClientDialog({
             }}
           >
             <form.AppField name="clientName">
-              {(field) => <field.TextField label="Display name" />}
+              {(field) => <field.TextField label={m.admin_field_display_name()} />}
             </form.AppField>
             <form.AppField name="redirectUris">
               {(field) => (
                 <field.TextAreaField
-                  description="Separate multiple redirect URIs with commas or new lines."
-                  label="Redirect URIs"
+                  description={m.admin_field_redirect_uris_description()}
+                  label={m.admin_field_redirect_uris()}
                   rows={3}
                 />
               )}
             </form.AppField>
             <form.AppField name="scopes">
-              {(field) => <field.MultiSelectField label="Scopes" options={SCOPE_OPTIONS} />}
+              {(field) => (
+                <field.MultiSelectField label={m.admin_column_scopes()} options={SCOPE_OPTIONS} />
+              )}
             </form.AppField>
             <form.Subscribe
               selector={(formState) =>
@@ -396,36 +396,33 @@ function UpdateClientDialog({
   );
 }
 
-function DeleteClientDialog({
-  client,
-  onClose,
-}: {
-  client: OAuthClient;
-  onClose: () => void;
-}) {
+function DeleteClientDialog({ client, onClose }: { client: OAuthClient; onClose: () => void }) {
   const deleteClient = useDeleteClient();
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete OAuth client</AlertDialogTitle>
+          <AlertDialogTitle>{m.admin_delete_client_title()}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete <strong>{client.client_name ?? client.client_id}</strong>?
-            This action cannot be undone.
+            {m.admin_delete_client_description({ name: client.client_name ?? client.client_id })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {deleteClient.error ? <ErrorMessage text={deleteClient.error.message} /> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteClient.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleteClient.isPending}>
+            {m.form_block_navigation_cancel()}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               deleteClient.mutate(client.client_id, { onSuccess: onClose });
             }}
             disabled={deleteClient.isPending}
           >
-            {deleteClient.isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
-            Delete
+            {deleteClient.isPending ? (
+              <Loader2 className="animate-spin" data-icon="inline-start" />
+            ) : null}
+            {m.actions_delete()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -438,3 +435,4 @@ const parseListInput = (value: string) =>
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
+
