@@ -11,6 +11,7 @@ export function getRegistryItem(slug: string) {
 }
 
 export function getRegistryGroup(item: RegistryItem) {
+  if (item.name === "krakstack-template") return "Templates";
   if (item.type === "registry:block") return "Components";
   if (item.type === "registry:lib") return "Services";
   return "Registry";

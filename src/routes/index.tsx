@@ -4,7 +4,7 @@ import { LocaleToggle } from "@/components/locale-toggle";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { m } from "@/paraglide/messages";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Activity, Blocks, Database, Globe, KeyRound, ListChecks, Shield, Table2, UserRound } from "lucide-react";
+import { Activity, Blocks, Database, FileCode2, Globe, KeyRound, ListChecks, Shield, Table2, UserRound } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -19,6 +19,7 @@ const iconByName = {
   auth: Shield,
   "service-database": Database,
   "service-opentelemetry": Activity,
+  "krakstack-template": FileCode2,
 } as const;
 
 const groupedItems = registryItems.reduce(
