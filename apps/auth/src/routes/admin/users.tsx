@@ -1,7 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Ban, Loader2, RefreshCw, ShieldOff, UserIcon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { createDataTableActionsColumn, DataTable, TableSearchSchema } from "@/components/data-table";
 import { ErrorMessage } from "@/components/form/form";
@@ -38,38 +39,53 @@ type User = {
   banExpires: Date | null;
 };
 
+function useUsers() {
+  return useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: async () => {
+      const result = await authClient.admin.listUsers({
+        query: { limit: 100 },
+      });
+      if (result.error) throw new Error(result.error.message ?? "Admin access is required.");
+      const data = result.data as { users: User[]; total: number } | undefined;
+      return { users: data?.users ?? [], total: data?.total ?? 0 };
+    },
+  });
+}
+
+function useBanUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const result = await authClient.admin.banUser({ userId });
+      if (result.error) throw new Error(result.error.message ?? "Unable to ban user.");
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+}
+
+function useUnbanUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const result = await authClient.admin.unbanUser({ userId });
+      if (result.error) throw new Error(result.error.message ?? "Unable to unban user.");
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+}
+
 function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error, refetch } = useUsers();
   const [banningUser, setBanningUser] = useState<User | null>(null);
   const [unbanningUser, setUnbanningUser] = useState<User | null>(null);
 
-  const loadUsers = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const result = await authClient.admin.listUsers({
-      query: { limit: 100 },
-    });
-
-    if (result.error) {
-      setError(result.error.message ?? "Admin access is required.");
-      setUsers([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const data = result.data as { users: User[]; total: number } | undefined;
-    setUsers(data?.users ?? []);
-    setTotal(data?.total ?? 0);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    void loadUsers();
-  }, []);
+  const users = data?.users ?? [];
+  const total = data?.total ?? 0;
 
   return (
     <SidebarProvider>
@@ -92,7 +108,7 @@ function UsersPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button disabled={isLoading} onClick={() => void loadUsers()} variant="outline">
+              <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
                 {isLoading ? (
                   <Loader2 className="animate-spin" data-icon="inline-start" />
                 ) : (
@@ -103,7 +119,7 @@ function UsersPage() {
             </div>
           </header>
 
-          {error ? <ErrorMessage text={error} /> : null}
+          {error ? <ErrorMessage text={error.message} /> : null}
           <DataTable
             columns={userColumns({ onBan: setBanningUser, onUnban: setUnbanningUser })}
             data={users}
@@ -112,18 +128,10 @@ function UsersPage() {
             from="/admin/users"
           />
           {banningUser ? (
-            <BanUserDialog
-              user={banningUser}
-              onClose={() => setBanningUser(null)}
-              onBanned={loadUsers}
-            />
+            <BanUserDialog user={banningUser} onClose={() => setBanningUser(null)} />
           ) : null}
           {unbanningUser ? (
-            <UnbanUserDialog
-              user={unbanningUser}
-              onClose={() => setUnbanningUser(null)}
-              onUnbanned={loadUsers}
-            />
+            <UnbanUserDialog user={unbanningUser} onClose={() => setUnbanningUser(null)} />
           ) : null}
         </div>
       </SidebarInset>
@@ -227,32 +235,11 @@ const userColumns = ({
 function BanUserDialog({
   user,
   onClose,
-  onBanned,
 }: {
   user: User;
   onClose: () => void;
-  onBanned: () => Promise<void>;
 }) {
-  const [isBanning, setIsBanning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleBan = useCallback(async () => {
-    setIsBanning(true);
-    setError(null);
-
-    const result = await authClient.admin.banUser({
-      userId: user.id,
-    });
-
-    if (result.error) {
-      setError(result.error.message ?? "Unable to ban user.");
-      setIsBanning(false);
-      return;
-    }
-
-    await onBanned();
-    onClose();
-  }, [user.id, onClose, onBanned]);
+  const banUser = useBanUser();
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
@@ -264,11 +251,16 @@ function BanUserDialog({
             be able to sign in.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error ? <ErrorMessage text={error} /> : null}
+        {banUser.error ? <ErrorMessage text={banUser.error.message} /> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isBanning}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleBan} disabled={isBanning}>
-            {isBanning ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
+          <AlertDialogCancel disabled={banUser.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              banUser.mutate(user.id, { onSuccess: onClose });
+            }}
+            disabled={banUser.isPending}
+          >
+            {banUser.isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
             Ban
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -280,32 +272,11 @@ function BanUserDialog({
 function UnbanUserDialog({
   user,
   onClose,
-  onUnbanned,
 }: {
   user: User;
   onClose: () => void;
-  onUnbanned: () => Promise<void>;
 }) {
-  const [isUnbanning, setIsUnbanning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleUnban = useCallback(async () => {
-    setIsUnbanning(true);
-    setError(null);
-
-    const result = await authClient.admin.unbanUser({
-      userId: user.id,
-    });
-
-    if (result.error) {
-      setError(result.error.message ?? "Unable to unban user.");
-      setIsUnbanning(false);
-      return;
-    }
-
-    await onUnbanned();
-    onClose();
-  }, [user.id, onClose, onUnbanned]);
+  const unbanUser = useUnbanUser();
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
@@ -317,11 +288,16 @@ function UnbanUserDialog({
             able to sign in again.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error ? <ErrorMessage text={error} /> : null}
+        {unbanUser.error ? <ErrorMessage text={unbanUser.error.message} /> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isUnbanning}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleUnban} disabled={isUnbanning}>
-            {isUnbanning ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
+          <AlertDialogCancel disabled={unbanUser.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              unbanUser.mutate(user.id, { onSuccess: onClose });
+            }}
+            disabled={unbanUser.isPending}
+          >
+            {unbanUser.isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
             Unban
           </AlertDialogAction>
         </AlertDialogFooter>

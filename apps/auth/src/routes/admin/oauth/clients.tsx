@@ -1,7 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Loader2, Pencil, Plus, RefreshCw, Trash } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { createDataTableActionsColumn, DataTable, TableSearchSchema } from "@/components/data-table";
 import { ErrorMessage, useAppForm } from "@/components/form/form";
@@ -58,32 +59,34 @@ type ClientUpdateFormValues = {
   scopes: string;
 };
 
+function useOAuthClients() {
+  return useQuery({
+    queryKey: ["admin", "oauth", "clients"],
+    queryFn: async () => {
+      const result = await authClient.oauth2.getClients();
+      if (result.error) throw new Error(result.error.message ?? "Admin access is required.");
+      return (result.data ?? []) as OAuthClient[];
+    },
+  });
+}
+
+function useDeleteClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (clientId: string) => {
+      const result = await authClient.oauth2.deleteClient({ client_id: clientId });
+      if (result.error) throw new Error(result.error.message ?? "Unable to delete OAuth client.");
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
+    },
+  });
+}
+
 function ClientsPage() {
-  const [clients, setClients] = useState<OAuthClient[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: clients = [], isLoading, error, refetch } = useOAuthClients();
   const [editingClient, setEditingClient] = useState<OAuthClient | null>(null);
   const [deletingClient, setDeletingClient] = useState<OAuthClient | null>(null);
-
-  const loadClients = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const result = await authClient.oauth2.getClients();
-    if (result.error) {
-      setError(result.error.message ?? "Admin access is required.");
-      setClients([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setClients((result.data ?? []) as OAuthClient[]);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    void loadClients();
-  }, []);
 
   return (
     <SidebarProvider>
@@ -106,7 +109,7 @@ function ClientsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button disabled={isLoading} onClick={() => void loadClients()} variant="outline">
+              <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
                 {isLoading ? (
                   <Loader2 className="animate-spin" data-icon="inline-start" />
                 ) : (
@@ -114,11 +117,11 @@ function ClientsPage() {
                 )}
                 Refresh
               </Button>
-              <CreateClientDialog onCreated={loadClients} />
+              <CreateClientDialog />
             </div>
           </header>
 
-          {error ? <ErrorMessage text={error} /> : null}
+          {error ? <ErrorMessage text={error.message} /> : null}
           <DataTable
             columns={clientColumns({ onEdit: setEditingClient, onDelete: setDeletingClient })}
             data={clients}
@@ -130,14 +133,12 @@ function ClientsPage() {
             <UpdateClientDialog
               client={editingClient}
               onClose={() => setEditingClient(null)}
-              onUpdated={loadClients}
             />
           ) : null}
           {deletingClient ? (
             <DeleteClientDialog
               client={deletingClient}
               onClose={() => setDeletingClient(null)}
-              onDeleted={loadClients}
             />
           ) : null}
         </div>
@@ -205,7 +206,8 @@ function ListCell({ items }: { items: string[] }) {
   );
 }
 
-function CreateClientDialog({ onCreated }: { onCreated: () => Promise<void> }) {
+function CreateClientDialog() {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [createdClientId, setCreatedClientId] = useState<string | null>(null);
   const [createdClientSecret, setCreatedClientSecret] = useState<string | null>(null);
@@ -239,7 +241,7 @@ function CreateClientDialog({ onCreated }: { onCreated: () => Promise<void> }) {
 
       setCreatedClientId(result.data.client_id);
       setCreatedClientSecret(result.data.client_secret ?? null);
-      await onCreated();
+      void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
       form.reset();
     },
   });
@@ -304,12 +306,11 @@ function CreateClientDialog({ onCreated }: { onCreated: () => Promise<void> }) {
 function UpdateClientDialog({
   client,
   onClose,
-  onUpdated,
 }: {
   client: OAuthClient;
   onClose: () => void;
-  onUpdated: () => Promise<void>;
 }) {
+  const queryClient = useQueryClient();
   const form = useAppForm({
     defaultValues: {
       clientName: client.client_name ?? "",
@@ -335,7 +336,7 @@ function UpdateClientDialog({
         return;
       }
 
-      await onUpdated();
+      void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
       onClose();
     },
   });
@@ -391,32 +392,11 @@ function UpdateClientDialog({
 function DeleteClientDialog({
   client,
   onClose,
-  onDeleted,
 }: {
   client: OAuthClient;
   onClose: () => void;
-  onDeleted: () => Promise<void>;
 }) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleDelete = useCallback(async () => {
-    setIsDeleting(true);
-    setError(null);
-
-    const result = await authClient.oauth2.deleteClient({
-      client_id: client.client_id,
-    });
-
-    if (result.error) {
-      setError(result.error.message ?? "Unable to delete OAuth client.");
-      setIsDeleting(false);
-      return;
-    }
-
-    await onDeleted();
-    onClose();
-  }, [client.client_id, onClose, onDeleted]);
+  const deleteClient = useDeleteClient();
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
@@ -428,11 +408,16 @@ function DeleteClientDialog({
             This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error ? <ErrorMessage text={error} /> : null}
+        {deleteClient.error ? <ErrorMessage text={deleteClient.error.message} /> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
+          <AlertDialogCancel disabled={deleteClient.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              deleteClient.mutate(client.client_id, { onSuccess: onClose });
+            }}
+            disabled={deleteClient.isPending}
+          >
+            {deleteClient.isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>
