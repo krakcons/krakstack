@@ -5,7 +5,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
-import { KeyRound, PanelLeftIcon } from "lucide-react";
+import { KeyRound, PanelLeftIcon, Users } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -676,6 +676,23 @@ function AuthSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={pathname === "/admin/users"}
+                  render={<Link to="/admin/users" />}
+                  tooltip="Users"
+                >
+                  <Users />
+                  <span>Users</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>OAuth</SidebarGroupLabel>
           <SidebarGroupContent>

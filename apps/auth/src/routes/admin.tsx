@@ -40,7 +40,7 @@ function Admin() {
   }
 
   if (pathname === "/admin") {
-    return <Navigate replace to="/admin/oauth/clients" />;
+    return <Navigate replace to="/admin/users" />;
   }
 
   return <Outlet />;

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AuthSignUpRouteImport } from './routes/_auth.sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth.sign-in'
 import { Route as AuthConsentRouteImport } from './routes/_auth.consent'
@@ -35,6 +36,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/sign-up',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/consent': typeof AuthConsentRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/consent': typeof AuthConsentRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_auth/consent': typeof AuthConsentRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/consent'
     | '/sign-in'
     | '/sign-up'
+    | '/admin/users'
     | '/admin/oauth/clients'
     | '/api/auth/$'
     | '/.well-known/oauth-authorization-server/api/auth'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/consent'
     | '/sign-in'
     | '/sign-up'
+    | '/admin/users'
     | '/admin/oauth/clients'
     | '/api/auth/$'
     | '/.well-known/oauth-authorization-server/api/auth'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_auth/consent'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
+    | '/admin/users'
     | '/admin/oauth/clients'
     | '/api/auth/$'
     | '/.well-known/oauth-authorization-server/api/auth'
@@ -202,6 +214,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_auth/sign-up': {
       id: '/_auth/sign-up'
@@ -284,10 +303,12 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AdminRouteChildren {
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminOauthClientsRoute: typeof AdminOauthClientsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminUsersRoute: AdminUsersRoute,
   AdminOauthClientsRoute: AdminOauthClientsRoute,
 }
 
