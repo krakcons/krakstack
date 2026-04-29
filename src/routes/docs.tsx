@@ -1,7 +1,7 @@
 import { Blocks, Activity, Database, Globe, KeyRound, ListChecks, PanelLeft, Shield, Table2, UserRound } from "lucide-react";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { createFileRoute } from "@tanstack/react-router";
-import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout/sidebar-layout";
+import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout";
 
 export const Route = createFileRoute("/docs")({ component: DocsLayout });
 
