@@ -23,7 +23,7 @@
     },
     {
       "path": "registry/auth/routes/auth.tsx",
-      "content": "import { auth } from \"@/lib/auth\";\nimport { createFileRoute } from \"@tanstack/react-router\";\n\nexport const Route = createFileRoute(\"/api/auth/$\")({\n  server: {\n    handlers: {\n      GET: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n      POST: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n    },\n  },\n});",
+      "content": "import { auth } from \"@/lib/auth\";\nimport { createFileRoute } from \"@tanstack/react-router\";\n\nexport const Route = createFileRoute(\"/api/auth/$\")({\n  server: {\n    handlers: {\n      GET: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n      POST: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n    },\n  },\n});\n\n",
       "type": "registry:file",
       "target": "routes/api/auth/$.tsx"
     }
