@@ -228,6 +228,31 @@
           "target": "services/opentelemetry.ts"
         }
       ]
+    },
+    {
+      "name": "admin-layout",
+      "type": "registry:block",
+      "title": "Admin Layout",
+      "description": "A sidebar-based admin layout with configurable navigation groups, a brand header, page header component, and locale toggle.",
+      "docs": "## Overview\n\n`admin-layout` provides a sidebar-based admin layout for applications using TanStack Router. It includes a configurable sidebar with brand header and navigation groups, a page header component with badges and actions, and a locale toggle in the top bar.\n\n## Features\n\n- Configurable sidebar with brand header and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `AdminPageHeader` with optional badge, description, and actions\n- Customizable header end content (defaults to `LocaleToggle`)\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { AdminLayout, AdminPageHeader, type NavGroup } from \"@/components/admin-layout\";\nimport { LayoutDashboard, Users } from \"lucide-react\";\n\nconst brand = {\n  label: () => \"My App\",\n  subtitle: () => \"Admin Panel\",\n  icon: LayoutDashboard,\n  href: \"/admin\",\n};\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<AdminLayout brand={brand} groups={groups} />\n```\n\nFor pages with custom content:\n\n```tsx\n<AdminLayout brand={brand} groups={groups}>\n  <AdminPageHeader title=\"Users\" description=\"Manage users\" />\n</AdminLayout>\n```",
+      "files": [
+        {
+          "path": "registry/components/admin-layout/admin-layout.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/components/admin-layout/messages/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/admin-layout/en.json"
+        },
+        {
+          "path": "registry/components/admin-layout/messages/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/admin-layout/fr.json"
+        }
+      ],
+      "registryDependencies": ["badge", "sidebar", "@krak/locale-toggle"],
+      "dependencies": ["@tanstack/react-router", "lucide-react", "react"]
     }
   ]
 }
