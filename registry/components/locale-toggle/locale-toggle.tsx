@@ -1,5 +1,6 @@
 import { setLocale, getLocale, locales, type Locale } from "@/paraglide/runtime";
 import { Button } from "@/components/ui/button";
+import { m } from "@/paraglide/messages";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,11 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Languages } from "lucide-react";
-import { m } from "@/paraglide/messages";
-
-const localeLabels: Record<Locale, () => string> = {
-  en: m.locale_en,
-  fr: m.locale_fr,
+const localeLabels: Record<Locale, string> = {
+  en: "English",
+  fr: "Français",
 };
 
 export const LocaleToggle = () => {
@@ -36,7 +35,7 @@ export const LocaleToggle = () => {
           <DropdownMenuRadioGroup value={locale} onValueChange={(v) => setLocale(v as Locale)}>
             {locales.map((l) => (
               <DropdownMenuRadioItem key={l} value={l}>
-                {localeLabels[l]()}
+                {localeLabels[l]}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
