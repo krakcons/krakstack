@@ -2,7 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/lib/auth-client";
-import { ErrorMessage, useAppForm } from "@/components/form/form";
+import { ErrorMessage, useAppForm } from "@/components/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_auth/sign-up")({

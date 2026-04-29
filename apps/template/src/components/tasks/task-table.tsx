@@ -8,7 +8,7 @@ import {
   createDataTableActionsColumn,
   DataTable,
   DataTableColumnHeader,
-} from "@/components/data-table/data-table";
+} from "@/components/data-table";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import {
   AlertDialog,

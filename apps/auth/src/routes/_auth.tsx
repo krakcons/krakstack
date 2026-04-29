@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-import { LocaleToggle } from "@/components/locale-toggle/locale-toggle";
+import { LocaleToggle } from "@/components/locale-toggle";
 
 export const Route = createFileRoute("/_auth")({
   component: AuthLayout,

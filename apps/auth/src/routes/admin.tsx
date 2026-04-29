@@ -5,9 +5,8 @@ import { KeyRound, LayoutDashboard, Loader2, ShieldAlert, Users } from "lucide-r
 
 import { m } from "@/paraglide/messages";
 import { Button } from "@/components/ui/button";
-import { LocaleToggle } from "@/components/locale-toggle/locale-toggle";
-import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout/sidebar-layout";
-import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
+import { LocaleToggle } from "@/components/locale-toggle";
+import { SidebarLayout, SidebarPageHeader, type NavGroup } from "@/components/sidebar-layout";
 import {
   Card,
   CardContent,

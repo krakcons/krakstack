@@ -340,8 +340,8 @@ const DataTableRow = <TData,>({
   row,
 }: {
   canDrag: boolean;
-  dragLabel?: string | undefined;
-  onRowClick?: ((row: TData) => void) | undefined;
+  dragLabel?: string;
+  onRowClick?: (row: TData) => void;
   row: Row<TData>;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -389,9 +389,9 @@ const DataTableGalleryCard = <TData,>({
   table,
 }: {
   canDrag: boolean;
-  dragLabel?: string | undefined;
-  gallery?: DataTableGalleryConfig | undefined;
-  onRowClick?: ((row: TData) => void) | undefined;
+  dragLabel?: string;
+  gallery?: DataTableGalleryConfig;
+  onRowClick?: (row: TData) => void;
   row: Row<TData>;
   table: TanstackTable<TData>;
 }) => {
@@ -898,11 +898,11 @@ export function DataTable<TData, TValue>({
     });
 
   return (
-    <div className="min-w-0 max-w-full rounded-md">
+    <div className="w-[calc(100vw-32px)] rounded-md sm:w-full">
       <div className="flex flex-col gap-3 pb-4">
         <div className="flex flex-col gap-2 sm:flex-wrap sm:flex-row sm:items-center sm:justify-between">
           {showSearch ? (
-            <div className="relative min-w-0 flex-1 sm:min-w-sm">
+            <div className="relative flex-1 min-w-sm">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 className="pl-9"
@@ -914,7 +914,7 @@ export function DataTable<TData, TValue>({
           ) : (
             <div />
           )}
-          <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {grouping?.fields.length ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -1013,7 +1013,7 @@ export function DataTable<TData, TValue>({
               renderGalleryEmptyState()
             )
           ) : (
-            <ScrollArea className="max-w-full overflow-hidden">
+            <ScrollArea>
               <Table className="min-w-full">
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (

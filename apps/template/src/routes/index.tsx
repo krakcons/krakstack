@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { TableSearchSchema } from "@/components/data-table/data-table";
+import { TableSearchSchema } from "@/components/data-table";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { TaskTable } from "@/components/tasks/task-table";
 import { Button } from "@/components/ui/button";

@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
-import { LocaleToggle } from "@/components/locale-toggle/locale-toggle";
+import { LocaleToggle } from "@/components/locale-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

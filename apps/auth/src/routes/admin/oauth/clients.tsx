@@ -9,8 +9,8 @@ import {
   DataTable,
   TableSearchSchema,
 } from "@/components/data-table";
-import { ErrorMessage, useAppForm } from "@/components/form/form";
-import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
+import { ErrorMessage, useAppForm } from "@/components/form";
+import { SidebarPageHeader } from "@/components/sidebar-layout";
 import {
   AlertDialog,
   AlertDialogAction,

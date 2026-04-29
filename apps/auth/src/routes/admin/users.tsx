@@ -9,8 +9,8 @@ import {
   DataTable,
   TableSearchSchema,
 } from "@/components/data-table";
-import { ErrorMessage } from "@/components/form/form";
-import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
+import { ErrorMessage } from "@/components/form";
+import { SidebarPageHeader } from "@/components/sidebar-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

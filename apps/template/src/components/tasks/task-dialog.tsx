@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { useAtomSet } from "@effect/atom-react";
 
-import { useAppForm } from "@/components/form/form";
+import { useAppForm } from "@/components/form";
 import { createTaskAtom, updateTaskAtom, type Task } from "@/lib/atoms/tasks";
 import { Button } from "@/components/ui/button";
 import {

@@ -1,4 +1,4 @@
-import { SidebarPageHeader } from "@/components/sidebar-layout/sidebar-layout";
+import { SidebarPageHeader } from "@/components/sidebar-layout";
 import { InstallCommand } from "@/components/install-command";
 import { Markdown } from "@/components/markdown";
 import {
