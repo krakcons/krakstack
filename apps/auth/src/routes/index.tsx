@@ -1,6 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { Users } from "lucide-react";
 
 import { m } from "@/paraglide/messages";
+import { AppBrand } from "@/components/app-brand";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,39 +13,36 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <main className="min-h-screen px-6 py-8 md:px-10">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col justify-between gap-10">
-        <header className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground">
-              {m.app_initials()}
-            </div>
-            <div>
-              <p className="text-sm font-semibold">{m.app_name()}</p>
-              <p className="text-xs text-muted-foreground">{m.app_tagline()}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <LocaleToggle />
-            <Link className={buttonVariants({ variant: "outline" })} to="/sign-in">
-              {m.auth_sign_in()}
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+          <AppBrand label={m.sidebar_brand()} subtitle={m.sidebar_brand_subtitle()} icon={Users} />
+          <div className="flex items-center gap-5 text-sm">
+            <Link
+              className="text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              to="/admin"
+            >
+              {m.home_open_admin()}
             </Link>
+            <LocaleToggle />
           </div>
-        </header>
+        </nav>
+      </header>
 
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-between gap-10 px-4 py-16">
         <section className="grid gap-8 md:grid-cols-[1.25fr_0.75fr] md:items-center">
           <div className="flex flex-col gap-6">
             <div className="inline-flex w-fit rounded-md border px-3 py-1 text-sm text-muted-foreground">
               {m.home_badge()}
             </div>
             <div className="space-y-4">
-              <h1 className="max-w-3xl text-5xl font-bold tracking-tight md:text-7xl">
+              <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
                 {m.home_heading()}
               </h1>
               <p className="max-w-2xl text-lg text-muted-foreground">{m.home_description()}</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Link className={buttonVariants({ size: "lg" })} to="/sign-in">
+              <Link className={buttonVariants({ size: "lg" })} to="/admin">
                 {m.home_open_sign_in()}
               </Link>
               <a className={buttonVariants({ size: "lg", variant: "outline" })} href="/api/auth/ok">
@@ -72,8 +71,8 @@ function Home() {
         </section>
 
         <footer className="text-sm text-muted-foreground">{m.home_footer()}</footer>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 

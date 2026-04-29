@@ -33,15 +33,13 @@ export const Route = createFileRoute("/admin")({
 });
 
 function Admin() {
-  const { session } = Route.useRouteContext();
-
   return (
     <SidebarLayout
       brand={{
         label: m.admin_brand,
-        subtitle: () => session.user.name || session.user.email,
+        subtitle: m.admin_brand_subtitle,
         icon: LayoutDashboard,
-        href: "/admin",
+        href: "/",
       }}
       groups={[
         {

@@ -1,6 +1,7 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 
+import { AppBrand } from "@/components/app-brand";
 import { Badge } from "@/components/ui/badge";
 import { LocaleToggle } from "@/components/locale-toggle";
 import {
@@ -45,15 +46,19 @@ function AppSidebar({ brand, groups }: AppSidebarProps) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip={brand.label()} render={<Link to={brand.href} />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                <brand.icon />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{brand.label()}</span>
-                <span className="truncate text-xs">{brand.subtitle()}</span>
-              </div>
-            </SidebarMenuButton>
+            <SidebarMenuButton
+              size="lg"
+              tooltip={brand.label()}
+              render={
+                <AppBrand
+                  label={brand.label()}
+                  subtitle={brand.subtitle()}
+                  icon={brand.icon}
+                  to={brand.href}
+                  variant="sidebar"
+                />
+              }
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

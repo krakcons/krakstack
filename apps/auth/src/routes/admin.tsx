@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useRouterState } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { KeyRound, LayoutDashboard, Loader2, ShieldAlert, Users } from "lucide-react";
@@ -24,6 +24,14 @@ import {
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/admin")({
+  ssr: false,
+  beforeLoad: async () => {
+    const session = await authClient.getSession();
+
+    if (!session.data?.user) {
+      throw redirect({ to: "/sign-in" });
+    }
+  },
   component: Admin,
 });
 

@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LayoutDashboard } from "lucide-react";
 
+import { AppBrand } from "@/components/app-brand";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocaleToggle } from "@/components/locale-toggle";
@@ -11,21 +13,28 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <main className="min-h-svh bg-background">
-      <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-12 px-6 py-6 md:px-8">
-        <header className="flex items-center justify-between">
-          <div className="font-semibold tracking-tight">{m.home_brand()}</div>
-          <div className="flex items-center gap-2">
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+          <AppBrand label={m.home_brand()} subtitle={m.admin_brand_subtitle()} icon={LayoutDashboard} />
+          <div className="flex items-center gap-5 text-sm">
+            <a
+              className="text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              href="/admin"
+            >
+              {m.home_open_admin()}
+            </a>
             <LocaleToggle />
-            <Button render={<a href="/admin" />}>{m.home_open_admin()}</Button>
           </div>
-        </header>
+        </nav>
+      </header>
 
-        <section className="grid flex-1 items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-16">
+        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-3">
               <p className="text-sm font-medium text-muted-foreground">{m.home_eyebrow()}</p>
-              <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
+              <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
                 {m.home_title()}
               </h1>
               <p className="max-w-2xl text-lg text-muted-foreground">{m.home_description()}</p>
@@ -52,7 +61,7 @@ function Home() {
             </CardContent>
           </Card>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

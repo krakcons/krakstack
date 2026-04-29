@@ -4,6 +4,21 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "app-brand",
+      "type": "registry:block",
+      "title": "App Brand",
+      "description": "A compact TanStack Router brand link with a semantic icon, app name, and subtitle.",
+      "docs": "## Overview\n\n`app-brand` provides a small reusable brand link for app shells, home page headers, and navigation chrome. It keeps the icon container, label, and subtitle visually consistent across pages.\n\n## Usage\n\n```tsx\nimport { AppBrand } from \"@/components/app-brand\";\nimport { Blocks } from \"lucide-react\";\n\n<AppBrand label=\"Krakstack\" subtitle=\"Documentation\" icon={Blocks} />\n```",
+      "files": [
+        {
+          "path": "registry/components/app-brand/app-brand.tsx",
+          "type": "registry:component",
+          "target": "components/app-brand.tsx"
+        }
+      ],
+      "dependencies": ["@tanstack/react-router", "lucide-react"]
+    },
+    {
       "name": "data-table",
       "type": "registry:block",
       "title": "Data Table",
@@ -248,7 +263,7 @@
            "target": "components/sidebar-layout.tsx"
          }
        ],
-      "registryDependencies": ["badge", "sidebar", "@krak/locale-toggle"],
+      "registryDependencies": ["badge", "sidebar", "@krak/app-brand", "@krak/locale-toggle"],
       "dependencies": ["@tanstack/react-router", "lucide-react", "react"]
     }
   ]
