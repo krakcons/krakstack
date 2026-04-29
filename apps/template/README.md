@@ -45,17 +45,28 @@ direnv allow
 
 This will:
 
-- Provision a PostgreSQL database (`dev`, user `postgres`, password `postgres`) on a dynamically assigned port
-- Set the `DATABASE_URL` environment variable automatically
+- Provision PostgreSQL with a `billyhawkes` superuser and a `postgres` app user (`postgres` password)
 - Start `bun run dev` (Vite on port 3000) and `bunx drizzle-kit studio` as managed processes
 
-3. Push the database schema:
+3. Copy the environment file:
+
+```bash
+cp .env.example .env
+```
+
+Set `DATABASE_URL` in `.env` to a valid PostgreSQL connection string:
+
+```env
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+```
+
+4. Push the database schema:
 
 ```bash
 bunx drizzle-kit push
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000)
+5. Open [http://localhost:3000](http://localhost:3000)
 
 ### Option B: Manual setup
 
