@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AuthSidebar, SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AuthSidebar, SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,8 +88,11 @@ function ClientsPage() {
   return (
     <SidebarProvider>
       <AuthSidebar />
-      <SidebarInset>
-        <div className="flex min-h-screen flex-col gap-6 px-5 py-6 md:px-8">
+      <SidebarInset className="min-w-0 overflow-x-hidden">
+        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <SidebarTrigger />
+        </header>
+        <div className="flex flex-col gap-6 px-5 py-6 md:px-8">
           <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col gap-2">
               <Badge className="w-fit" variant="secondary">
