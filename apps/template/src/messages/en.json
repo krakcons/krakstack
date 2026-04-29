@@ -1,4 +1,5 @@
 {
+  "app_name": "Template",
   "table_page_size": "Page size",
   "table_empty": "No results.",
   "table_filter": "Filter results...",

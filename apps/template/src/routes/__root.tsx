@@ -1,5 +1,6 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
+import { m } from "../paraglide/messages.js";
 import { getLocale } from "../paraglide/runtime.js";
 import appCss from "../styles.css?url";
 
@@ -14,7 +15,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "KrakStack: Template",
+        title: `${m.home_brand()} ${m.app_name()}`,
       },
     ],
     links: [

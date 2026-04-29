@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AppBrand } from "@/components/app-brand";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
+import { m } from "@/paraglide/messages";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Activity, Blocks, Database, Globe, KeyRound, ListChecks, Shield, Table2, UserRound } from "lucide-react";
 
@@ -45,7 +46,7 @@ function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <AppBrand label="Krakstack" subtitle="Documentation" icon={Blocks} />
+          <AppBrand label="Krakstack" subtitle={m.app_name()} icon={Blocks} />
           <div className="flex items-center gap-5 text-sm">
             <Link
               to="/docs/registry/$slug"

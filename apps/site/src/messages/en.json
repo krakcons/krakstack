@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_name": "Documentation",
   "home_page": "Home page",
   "about_page": "About page",
   "example_message": "Welcome to your i18n app.",

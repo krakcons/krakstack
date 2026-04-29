@@ -16,7 +16,7 @@ function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <AppBrand label={m.home_brand()} subtitle={m.admin_brand_subtitle()} icon={LayoutDashboard} />
+          <AppBrand label={m.home_brand()} subtitle={m.app_name()} icon={LayoutDashboard} />
           <div className="flex items-center gap-5 text-sm">
             <a
               className="text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"

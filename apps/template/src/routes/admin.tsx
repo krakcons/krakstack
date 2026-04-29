@@ -37,7 +37,7 @@ function Admin() {
     <SidebarLayout
       brand={{
         label: m.admin_brand,
-        subtitle: m.admin_brand_subtitle,
+        subtitle: m.app_name,
         icon: LayoutDashboard,
         href: "/",
       }}
