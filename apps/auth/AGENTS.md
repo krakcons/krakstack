@@ -1,3 +1,11 @@
+# KrakStack Auth
+
+This is a KrakStack Auth application for centralized better auth and user management.
+
+# i18n
+
+All public facing strings should be translated using paraglide.js in the @/src/messages/global folder.
+
 <!-- intent-skills:start -->
 
 ## Skill Loading

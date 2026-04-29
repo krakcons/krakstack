@@ -1,6 +1,7 @@
 import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, ShieldAlert, Users } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { KeyRound, Loader2, ShieldAlert, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { AuthSidebar, SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 
@@ -48,20 +55,48 @@ function Admin() {
   return <Outlet />;
 }
 
-function useTotalUsers() {
+type ClientStats = {
+  id: string;
+  clientId: string;
+  name: string | null;
+  icon: string | null;
+  disabled: boolean | null;
+  userCount: number;
+};
+
+type DashboardStats = {
+  totalUsers: number;
+  totalClients: number;
+  clients: ClientStats[];
+};
+
+function useDashboardStats() {
   return useQuery({
-    queryKey: ["admin", "users", "total"],
+    queryKey: ["admin", "dashboard"],
     queryFn: async () => {
-      const result = await authClient.admin.listUsers({ query: { limit: 1 } });
-      if (result.error) throw new Error(result.error.message ?? "Failed to fetch users.");
-      const data = result.data as { total: number } | undefined;
-      return data?.total ?? 0;
+      const res = await fetch("/api/admin/oauth-stats", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch dashboard stats.");
+      return (await res.json()) as DashboardStats;
     },
   });
 }
 
+const chartConfig = {
+  userCount: {
+    label: "Users",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
+
 function DashboardPage() {
-  const { data: total, isLoading, error } = useTotalUsers();
+  const { data: stats, isLoading, error } = useDashboardStats();
+
+  const chartData = (stats?.clients ?? []).map((c) => ({
+    name: c.name ?? c.clientId,
+    userCount: c.userCount,
+  }));
 
   return (
     <SidebarProvider>
@@ -85,22 +120,69 @@ function DashboardPage() {
           {error ? (
             <p className="text-sm text-destructive">{error.message}</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Card>
-                <CardHeader>
-                  <CardDescription>Total Users</CardDescription>
-                  <CardTitle className="text-3xl font-bold tabular-nums">
-                    {isLoading ? <Loader2 className="animate-spin size-6" /> : (total ?? 0).toLocaleString()}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="size-4" />
-                    <span>Registered users</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                  <CardHeader>
+                    <CardDescription>Total Users</CardDescription>
+                    <CardTitle className="text-3xl font-bold tabular-nums">
+                      {isLoading ? <Loader2 className="animate-spin size-6" /> : (stats?.totalUsers ?? 0).toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="size-4" />
+                      <span>Registered users</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardDescription>OAuth Clients</CardDescription>
+                    <CardTitle className="text-3xl font-bold tabular-nums">
+                      {isLoading ? <Loader2 className="animate-spin size-6" /> : (stats?.totalClients ?? 0).toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <KeyRound className="size-4" />
+                      <span>Registered clients</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {chartData.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>OAuth Client Users</CardTitle>
+                    <CardDescription>
+                      Number of users consented to each OAuth client.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                      <BarChart accessibilityLayer data={chartData}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          tickMargin={10}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="userCount" fill="var(--color-userCount)" radius={4} />
+                      </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </SidebarInset>

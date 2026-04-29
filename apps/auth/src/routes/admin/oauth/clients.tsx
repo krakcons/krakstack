@@ -47,16 +47,23 @@ type OAuthClient = {
   disabled?: boolean;
 };
 
+const SCOPE_OPTIONS = [
+  { label: "openid", value: "openid" },
+  { label: "profile", value: "profile" },
+  { label: "email", value: "email" },
+  { label: "offline_access", value: "offline_access" },
+];
+
 type ClientFormValues = {
   clientName: string;
   redirectUris: string;
-  scopes: string;
+  scopes: string[];
 };
 
 type ClientUpdateFormValues = {
   clientName: string;
   redirectUris: string;
-  scopes: string;
+  scopes: string[];
 };
 
 function useOAuthClients() {
@@ -215,7 +222,7 @@ function CreateClientDialog() {
     defaultValues: {
       clientName: "",
       redirectUris: "http://localhost:3000/api/auth/oauth2/callback/krakstack-auth",
-      scopes: "openid, profile, email, offline_access",
+      scopes: ["openid", "profile", "email", "offline_access"],
     } satisfies ClientFormValues,
     onSubmit: async ({ value, formApi }) => {
       setCreatedClientId(null);
@@ -225,7 +232,7 @@ function CreateClientDialog() {
       const result = await authClient.oauth2.createClient({
         client_name: value.clientName,
         redirect_uris: parseListInput(value.redirectUris),
-        scope: parseListInput(value.scopes).join(" "),
+        scope: value.scopes.join(" "),
         token_endpoint_auth_method: "client_secret_post",
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
@@ -280,7 +287,7 @@ function CreateClientDialog() {
               )}
             </form.AppField>
             <form.AppField name="scopes">
-              {(field) => <field.TextField label="Scopes" required />}
+              {(field) => <field.MultiSelectField label="Scopes" options={SCOPE_OPTIONS} required />}
             </form.AppField>
             <form.Subscribe
               selector={(formState) =>
@@ -315,7 +322,7 @@ function UpdateClientDialog({
     defaultValues: {
       clientName: client.client_name ?? "",
       redirectUris: client.redirect_uris.join("\n"),
-      scopes: client.scope?.replace(/ /g, ", ") ?? "",
+      scopes: client.scope?.split(" ").filter(Boolean) ?? [],
     } satisfies ClientUpdateFormValues,
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({});
@@ -325,7 +332,7 @@ function UpdateClientDialog({
         update: {
           client_name: value.clientName || undefined,
           redirect_uris: parseListInput(value.redirectUris),
-          scope: parseListInput(value.scopes).join(" "),
+          scope: value.scopes.join(" "),
         },
       });
 
@@ -372,7 +379,7 @@ function UpdateClientDialog({
               )}
             </form.AppField>
             <form.AppField name="scopes">
-              {(field) => <field.TextField label="Scopes" />}
+              {(field) => <field.MultiSelectField label="Scopes" options={SCOPE_OPTIONS} />}
             </form.AppField>
             <form.Subscribe
               selector={(formState) =>

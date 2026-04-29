@@ -1,3 +1,11 @@
+# Template
+
+This is a template for a new Krak project.
+
+# i18n
+
+All public facing strings should be translated using paraglide.js in the @/src/messages/global folder.
+
 <!-- intent-skills:start -->
 
 ## Skill Loading
@@ -25,4 +33,3 @@ Topics: quick-start, project-setup, tsconfig, basics, services-and-layers, data-
 Never guess at Effect patterns - check the guide first.
 
 <!-- effect-solutions:end -->
-

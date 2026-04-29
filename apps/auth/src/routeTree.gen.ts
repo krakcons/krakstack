@@ -19,6 +19,7 @@ import { Route as AuthConsentRouteImport } from './routes/_auth.consent'
 import { Route as DotwellKnownOpenidConfigurationRouteImport } from './routes/[.]well-known/openid-configuration'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAdminOauthStatsRouteImport } from './routes/api/admin/oauth-stats'
 import { Route as AdminOauthClientsRouteImport } from './routes/admin/oauth/clients'
 import { Route as ApiAuthDotwellKnownOpenidConfigurationRouteImport } from './routes/api/auth/[.]well-known/openid-configuration'
 import { Route as DotwellKnownOauthAuthorizationServerApiAuthRouteImport } from './routes/[.]well-known/oauth-authorization-server/api/auth'
@@ -74,6 +75,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminOauthStatsRoute = ApiAdminOauthStatsRouteImport.update({
+  id: '/api/admin/oauth-stats',
+  path: '/api/admin/oauth-stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminOauthClientsRoute = AdminOauthClientsRouteImport.update({
   id: '/oauth/clients',
   path: '/oauth/clients',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof AuthSignUpRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
+  '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
   '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof AuthSignUpRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
+  '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
   '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
+  '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
   '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/admin/users'
     | '/admin/oauth/clients'
+    | '/api/admin/oauth-stats'
     | '/api/auth/$'
     | '/.well-known/oauth-authorization-server/api/auth'
     | '/api/auth/.well-known/openid-configuration'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/admin/users'
     | '/admin/oauth/clients'
+    | '/api/admin/oauth-stats'
     | '/api/auth/$'
     | '/.well-known/oauth-authorization-server/api/auth'
     | '/api/auth/.well-known/openid-configuration'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/_auth/sign-up'
     | '/admin/users'
     | '/admin/oauth/clients'
+    | '/api/admin/oauth-stats'
     | '/api/auth/$'
     | '/.well-known/oauth-authorization-server/api/auth'
     | '/api/auth/.well-known/openid-configuration'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
   DotwellKnownOpenidConfigurationRoute: typeof DotwellKnownOpenidConfigurationRoute
+  ApiAdminOauthStatsRoute: typeof ApiAdminOauthStatsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthDotwellKnownOpenidConfigurationRoute: typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
@@ -264,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/oauth-stats': {
+      id: '/api/admin/oauth-stats'
+      path: '/api/admin/oauth-stats'
+      fullPath: '/api/admin/oauth-stats'
+      preLoaderRoute: typeof ApiAdminOauthStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/oauth/clients': {
       id: '/admin/oauth/clients'
       path: '/oauth/clients'
@@ -336,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotwellKnownOauthAuthorizationServerRoute:
     DotwellKnownOauthAuthorizationServerRouteWithChildren,
   DotwellKnownOpenidConfigurationRoute: DotwellKnownOpenidConfigurationRoute,
+  ApiAdminOauthStatsRoute: ApiAdminOauthStatsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthDotwellKnownOpenidConfigurationRoute:
     ApiAuthDotwellKnownOpenidConfigurationRoute,
