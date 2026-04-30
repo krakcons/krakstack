@@ -148,19 +148,24 @@ const CheckboxField = (props: DefaultOptions) => {
 
 const SelectField = ({
   options,
+  children,
   ...props
 }: DefaultOptions & {
   options: {
     label: string;
     value: string;
   }[];
+  children?: React.ReactNode;
 }) => {
   const field = useFieldContext<string>();
   const invalid = !field.state.meta.isValid;
 
   return (
     <Field data-invalid={invalid}>
-      <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
+      <div className="flex items-center gap-2 w-full">
+        <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
+        {children}
+      </div>
       <Select
         items={options}
         required
