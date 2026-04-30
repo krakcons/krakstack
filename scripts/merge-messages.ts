@@ -1,5 +1,5 @@
 // scripts/merge-messages.ts
-const langs = ["en", "fr"];
+import { locales } from "@/paraglide/runtime";
 const glob = new Bun.Glob("src/messages/**/*.json");
 
 const messagesByLang: Record<string, Record<string, string>> = {};
@@ -7,7 +7,7 @@ const messagesByLang: Record<string, Record<string, string>> = {};
 for await (const file of glob.scan(".")) {
   console.log(`[merge-messages] ${file}`);
   const lang = file.split("/").pop()?.replace(".json", "");
-  if (!lang || !langs.includes(lang)) continue;
+  if (!lang || !locales.includes(lang as any)) continue;
 
   const contents = await Bun.file(file).json();
   messagesByLang[lang] = { ...messagesByLang[lang], ...contents };
