@@ -283,8 +283,10 @@ const GroupHeaderRow = <TData,>({
           style={{ paddingLeft: `${section.depth * GROUP_INDENT_PX}px` }}
         >
           {collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
-          <div className="min-w-0 flex-1 text-left">{label}</div>
-          <span className="ml-auto text-muted-foreground text-sm">{section.rows.length}</span>
+          <div className="min-w-0 flex-1 text-left flex items-center gap-2">
+            <div className="min-w-0">{label}</div>
+            <Badge variant="outline">{section.rows.length}</Badge>
+          </div>
         </div>
       </TableCell>
     </TableRow>
@@ -327,8 +329,10 @@ const GroupHeaderCard = <TData,>({
       type="button"
     >
       {collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
-      <div className="min-w-0 flex-1">{label}</div>
-      <span className="text-muted-foreground text-sm">{section.rows.length}</span>
+      <div className="min-w-0 flex-1 flex items-center gap-2">
+        <div className="min-w-0">{label}</div>
+        <Badge variant="outline">{section.rows.length}</Badge>
+      </div>
     </button>
   );
 };
