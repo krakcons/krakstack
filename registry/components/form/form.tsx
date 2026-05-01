@@ -170,7 +170,7 @@ const SelectField = ({
         items={options}
         required
         onValueChange={(value) => field.handleChange(value ?? "")}
-        defaultValue={field.state.value}
+        value={field.state.value}
       >
         <SelectTrigger className="gap-1" id={field.name} aria-invalid={invalid}>
           <SelectValue />
