@@ -23,21 +23,23 @@ export function AppBrand({
     variant === "sidebar"
       ? "bg-sidebar-primary text-sidebar-primary-foreground"
       : "bg-primary text-primary-foreground";
+  const contentClassName =
+    variant === "sidebar" ? "group-data-[collapsible=icon]:hidden" : undefined;
 
   return (
     <Link
       to={to}
-      className={["flex items-center gap-2 text-foreground hover:text-foreground", className]
+      className={["flex min-w-0 items-center gap-2 text-foreground hover:text-foreground", className]
         .filter(Boolean)
         .join(" ")}
       {...props}
     >
       <div
-        className={["flex size-8 items-center justify-center rounded-md", iconClassName].join(" ")}
+        className={["flex size-8 shrink-0 items-center justify-center rounded-md", iconClassName].join(" ")}
       >
         <Icon className="size-4" />
       </div>
-      <div className="flex min-w-0 flex-col leading-none">
+      <div className={["flex min-w-0 flex-col leading-none", contentClassName].filter(Boolean).join(" ")}>
         <span className="truncate font-semibold tracking-tight">{label}</span>
         <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
       </div>
