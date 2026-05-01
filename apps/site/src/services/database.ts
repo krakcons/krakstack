@@ -5,7 +5,7 @@ import { types } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 
 // @ts-ignore - TODO: Setup your own schema and remove this comment
-import { schema, relations } from "@/db/schema";
+import { relations } from "@/db/schema";
 
 const PgLive = PgClient.layer({
   url: Redacted.make(process.env.DATABASE_URL!),
@@ -21,7 +21,7 @@ const PgLive = PgClient.layer({
 
 export class DB extends Context.Service<DB>()("DB", {
   make: Effect.gen(function* () {
-    const db = yield* PgDrizzle.makeWithDefaults({ schema, relations });
+    const db = yield* PgDrizzle.makeWithDefaults({ relations });
     return db;
   }),
 }) {
@@ -29,6 +29,5 @@ export class DB extends Context.Service<DB>()("DB", {
 }
 
 export const db = drizzle(process.env.DATABASE_URL!, {
-  schema,
   relations,
 });

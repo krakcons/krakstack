@@ -2,13 +2,13 @@
 
 This is a KrakStack Auth application for centralized better auth and user management.
 
-# i18n (required)
+## i18n (required)
 
 English and French are required for all public facing strings.
 
 All public facing strings should be translated using paraglide.js and the vite plugin.
 
-Translations are stored in the `src/messages/global` folder.
+Custom translations are stored in `src/messages/global/en.json` and `src/messages/global/fr.json`. Do not edit the messages at `src/messages/en.json` and `src/messages/fr.json` directly as they are generated.
 
 <!-- intent-skills:start -->
 

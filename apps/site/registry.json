@@ -24,12 +24,12 @@
       "title": "Data Table",
       "description": "A URL-state-driven data table with filtering, sorting, column visibility, CSV export, gallery view, grouping, and drag-and-drop row moves.",
       "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, pagination, and column visibility\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```",
-       "files": [
-         {
-           "path": "registry/components/data-table/data-table.tsx",
-           "type": "registry:component",
-           "target": "components/data-table.tsx"
-         },
+      "files": [
+        {
+          "path": "registry/components/data-table/data-table.tsx",
+          "type": "registry:component",
+          "target": "components/data-table.tsx"
+        },
         {
           "path": "registry/components/data-table/messages/en.json",
           "type": "registry:file",
@@ -60,12 +60,12 @@
       "title": "Form",
       "description": "A TanStack Form setup with reusable field wrappers, text inputs, text areas, selects, multi-selects, key/value editing, file uploads, submit state, and dirty-navigation blocking.",
       "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- Localized component messages\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n</form.AppForm>\n```",
-       "files": [
-         {
-           "path": "registry/components/form/form.tsx",
-           "type": "registry:component",
-           "target": "components/form.tsx"
-         },
+      "files": [
+        {
+          "path": "registry/components/form/form.tsx",
+          "type": "registry:component",
+          "target": "components/form.tsx"
+        },
         {
           "path": "registry/components/form/messages/en.json",
           "type": "registry:file",
@@ -95,12 +95,12 @@
       "title": "Locale Toggle",
       "description": "A Paraglide-powered dropdown for switching between configured locales with localized language labels.",
       "docs": "## Overview\n\n`locale-toggle` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- Localized menu label and locale names\n- Icon-only trigger with accessible screen-reader text\n- Includes component-scoped message files\n\n## Usage\n\n```tsx\nimport { LocaleToggle } from \"@/components/locale-toggle\";\n\n<LocaleToggle />\n```",
-       "files": [
-         {
-           "path": "registry/components/locale-toggle/locale-toggle.tsx",
-           "type": "registry:component",
-           "target": "components/locale-toggle.tsx"
-         },
+      "files": [
+        {
+          "path": "registry/components/locale-toggle/locale-toggle.tsx",
+          "type": "registry:component",
+          "target": "components/locale-toggle.tsx"
+        },
         {
           "path": "registry/components/locale-toggle/messages/en.json",
           "type": "registry:file",
@@ -121,12 +121,12 @@
       "title": "User Button",
       "description": "A Better Auth user menu with account editing, localized labels, and sign-out handling.",
       "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for Better Auth projects. It reads the current user from the app-local `authClient.useSession()`, opens an account dialog for updating the user's name, and signs the user out with an optional redirect.\n\n## Features\n\n- Better Auth `useSession`, `updateUser`, and `signOut` integration\n- Account dialog with the local `form` registry block\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@/components/user-button\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```",
-       "files": [
-         {
-           "path": "registry/components/user-button/user-button.tsx",
-           "type": "registry:component",
-           "target": "components/user-button.tsx"
-         },
+      "files": [
+        {
+          "path": "registry/components/user-button/user-button.tsx",
+          "type": "registry:component",
+          "target": "components/user-button.tsx"
+        },
         {
           "path": "registry/components/user-button/messages/en.json",
           "type": "registry:file",
@@ -147,12 +147,12 @@
       "title": "Sign In",
       "description": "A Better Auth email/password sign-in card with TanStack Form validation and localized labels.",
       "docs": "## Overview\n\n`sign-in` provides a self-contained email/password sign-in card for Better Auth projects. It submits credentials through `authClient.signIn.email()`, displays form-level errors, and links to the sign-up route.\n\n## Features\n\n- Better Auth email/password sign-in\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n- Card-based layout ready to drop into a route\n\n## Usage\n\n```tsx\nimport { SignIn } from \"@/components/sign-in\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignIn />\n</main>\n```",
-       "files": [
-         {
-           "path": "registry/components/sign-in/sign-in.tsx",
-           "type": "registry:component",
-           "target": "components/sign-in.tsx"
-         },
+      "files": [
+        {
+          "path": "registry/components/sign-in/sign-in.tsx",
+          "type": "registry:component",
+          "target": "components/sign-in.tsx"
+        },
         {
           "path": "registry/components/sign-in/messages/en.json",
           "type": "registry:file",
@@ -173,12 +173,12 @@
       "title": "Sign Up",
       "description": "A Better Auth email/password registration card with TanStack Form validation and localized labels.",
       "docs": "## Overview\n\n`sign-up` provides a self-contained account creation card for Better Auth projects. It creates users through `authClient.signUp.email()`, displays form-level errors, and links back to the sign-in route.\n\n## Features\n\n- Better Auth email/password registration\n- Name, email, and password fields\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n\n## Usage\n\n```tsx\nimport { SignUp } from \"@/components/sign-up\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignUp />\n</main>\n```",
-       "files": [
-         {
-           "path": "registry/components/sign-up/sign-up.tsx",
-           "type": "registry:component",
-           "target": "components/sign-up.tsx"
-         },
+      "files": [
+        {
+          "path": "registry/components/sign-up/sign-up.tsx",
+          "type": "registry:component",
+          "target": "components/sign-up.tsx"
+        },
         {
           "path": "registry/components/sign-up/messages/en.json",
           "type": "registry:file",
@@ -225,8 +225,8 @@
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-database` provides a Drizzle PostgreSQL client as an Effect service. It reads `DATABASE_URL`, configures pg type parsing for date and interval types, and exposes a reusable layer for application programs.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { DB } from \"@/services/database\";\nimport { users } from \"@/db/schema\";\n\nconst program = Effect.gen(function* () {\n  const db = yield* DB;\n  return yield* db.select().from(users);\n});\n\nconst usersList = await Effect.runPromise(\n  program.pipe(Effect.provide(DB.layer)),\n);\n```",
-      "dependencies": ["effect@beta", "@effect/sql-pg@beta", "pg", "drizzle-orm@beta"],
-      "devDependencies": ["drizzle-kit@beta", "@types/pg"],
+      "dependencies": ["effect@beta", "@effect/sql-pg@beta", "pg", "drizzle-orm@rc"],
+      "devDependencies": ["drizzle-kit@rc", "@types/pg"],
       "files": [
         {
           "path": "registry/services/database.ts",
@@ -281,13 +281,13 @@
       "title": "Sidebar Layout",
       "description": "A sidebar-based layout with configurable navigation groups, a brand header, page header component, and locale toggle.",
       "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with brand header and navigation groups, a page header component with badges and actions, and a locale toggle in the top bar.\n\n## Features\n\n- Configurable sidebar with brand header and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Customizable header end content (defaults to `LocaleToggle`)\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/sidebar-layout\";\nimport { LayoutDashboard, Users } from \"lucide-react\";\n\nconst brand = {\n  label: () => \"My App\",\n  subtitle: () => \"Admin Panel\",\n  icon: LayoutDashboard,\n  href: \"/admin\",\n};\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout brand={brand} groups={groups} />\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout brand={brand} groups={groups}>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
-       "files": [
-         {
-           "path": "registry/components/sidebar-layout/sidebar-layout.tsx",
-           "type": "registry:component",
-           "target": "components/sidebar-layout.tsx"
-         }
-       ],
+      "files": [
+        {
+          "path": "registry/components/sidebar-layout/sidebar-layout.tsx",
+          "type": "registry:component",
+          "target": "components/sidebar-layout.tsx"
+        }
+      ],
       "registryDependencies": ["badge", "sidebar", "@krak/app-brand", "@krak/locale-toggle"],
       "dependencies": ["@tanstack/react-router", "lucide-react", "react"]
     }
