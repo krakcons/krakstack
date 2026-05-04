@@ -4,19 +4,19 @@ A full-stack web application template built with TanStack Start, Effect, Drizzle
 
 ## Tech Stack
 
-| Layer           | Technology                                       |
-| --------------- | ------------------------------------------------ |
-| Runtime         | Bun                                              |
-| Framework       | TanStack Start (React + SSR)                     |
-| State           | Effect Atom (optimistic atoms)                   |
-| API             | Effect HTTP (OpenAPI + Scalar docs)              |
-| Database        | PostgreSQL via Drizzle ORM                       |
-| Styling         | Tailwind CSS + Shadcn (base-vega) + Lucide icons |
-| Forms           | TanStack Form                                    |
-| Tables          | TanStack Table                                   |
-| i18n            | Paraglide.js + inlang (English & French)         |
-| Linting         | Oxlint                                           |
-| Formatting      | Oxfmt                                            |
+| Layer      | Technology                                       |
+| ---------- | ------------------------------------------------ |
+| Runtime    | Bun                                              |
+| Framework  | TanStack Start (React + SSR)                     |
+| State      | Effect Atom (optimistic atoms)                   |
+| API        | Effect HTTP (OpenAPI + Scalar docs)              |
+| Database   | PostgreSQL via Drizzle ORM                       |
+| Styling    | Tailwind CSS + Shadcn (base-vega) + Lucide icons |
+| Forms      | TanStack Form                                    |
+| Tables     | TanStack Table                                   |
+| i18n       | Paraglide.js + inlang (English & French)         |
+| Linting    | Oxlint                                           |
+| Formatting | Oxfmt                                            |
 
 ## Prerequisites
 

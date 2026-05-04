@@ -58,5 +58,12 @@
   "admin_badge": "Private",
   "admin_title": "Tasks",
   "admin_description": "Manage the task list attached to your user account.",
-  "tasks_create": "Create task"
+  "tasks_create": "Create task",
+  "user_button_aria_label": "Open user menu",
+  "user_button_account": "Account",
+  "user_button_logout": "Log out",
+  "user_form_title": "Account",
+  "user_form_description": "Update the profile details associated with your account.",
+  "user_form_name_label": "Name",
+  "user_form_update_error": "Unable to update your account."
 }

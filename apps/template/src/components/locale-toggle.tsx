@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Languages } from "lucide-react";
-const localeLabels: Record<Locale, () => string> = {
-  en: m.locale_en,
-  fr: m.locale_fr,
+const localeLabels: Record<Locale, string> = {
+  en: "English",
+  fr: "Français",
 };
 
 export const LocaleToggle = () => {
@@ -24,7 +24,7 @@ export const LocaleToggle = () => {
       <DropdownMenuTrigger
         render={
           <Button variant="outline" size="icon" className="focus-visible:ring-0">
-            <Languages />
+            <Languages className="size-4" />
             <span className="sr-only">{m.locale_toggle_label()}</span>
           </Button>
         }
@@ -35,7 +35,7 @@ export const LocaleToggle = () => {
           <DropdownMenuRadioGroup value={locale} onValueChange={(v) => setLocale(v as Locale)}>
             {locales.map((l) => (
               <DropdownMenuRadioItem key={l} value={l}>
-                {localeLabels[l]()}
+                {localeLabels[l]}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>

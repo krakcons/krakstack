@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Loader2, Pencil, Plus, RefreshCw, Trash } from "lucide-react";
+import { Check, Copy, Loader2, Pencil, Plus, RefreshCw, Trash, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import {
   createDataTableActionsColumn,
@@ -91,6 +92,7 @@ function useDeleteClient() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
+      toast.success(m.admin_client_deleted_toast());
     },
   });
 }
@@ -245,6 +247,7 @@ function CreateClientDialog() {
       setCreatedClientId(result.data.client_id);
       setCreatedClientSecret(result.data.client_secret ?? null);
       void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
+      toast.success(m.admin_client_created_toast());
       form.reset();
     },
   });
@@ -295,12 +298,7 @@ function CreateClientDialog() {
               {(submitError) => (submitError ? <ErrorMessage text={String(submitError)} /> : null)}
             </form.Subscribe>
             {createdClientId ? (
-              <div className="flex flex-col gap-1 rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
-                <p>{m.admin_created_client({ id: createdClientId })}</p>
-                {createdClientSecret ? (
-                  <code className="break-all">{createdClientSecret}</code>
-                ) : null}
-              </div>
+              <CredentialCard clientId={createdClientId} clientSecret={createdClientSecret} />
             ) : null}
             <form.SubmitButton />
           </form>
@@ -338,6 +336,7 @@ function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose:
       }
 
       void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
+      toast.success(m.admin_client_updated_toast());
       onClose();
     },
   });
@@ -423,6 +422,66 @@ function DeleteClientDialog({ client, onClose }: { client: OAuthClient; onClose:
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    toast.success(m.admin_client_copied());
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={handleCopy}>
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    </Button>
+  );
+}
+
+function CredentialCard({
+  clientId,
+  clientSecret,
+}: {
+  clientId: string;
+  clientSecret: string | null;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border p-4">
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium">{m.admin_client_credentials_title()}</span>
+        <span className="text-xs text-muted-foreground">
+          {m.admin_client_credentials_description()}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            {m.admin_client_id_label()}
+          </span>
+          <code className="min-w-0 flex-1 truncate text-xs">{clientId}</code>
+          <CopyButton value={clientId} />
+        </div>
+        {clientSecret ? (
+          <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
+            <span className="shrink-0 text-xs font-medium text-muted-foreground">
+              {m.admin_client_secret_label()}
+            </span>
+            <code className="min-w-0 flex-1 truncate text-xs">{clientSecret}</code>
+            <CopyButton value={clientSecret} />
+          </div>
+        ) : null}
+      </div>
+      <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2">
+        <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
+        <span className="text-xs text-amber-700 dark:text-amber-400">
+          {m.admin_client_secret_warning()}
+        </span>
+      </div>
+    </div>
   );
 }
 

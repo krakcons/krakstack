@@ -1,0 +1,11 @@
+{
+  "admin_client_credentials_title": "Client Credentials",
+  "admin_client_credentials_description": "Save these credentials now. You will not be able to see the client secret again.",
+  "admin_client_id_label": "Client ID",
+  "admin_client_secret_label": "Client Secret",
+  "admin_client_copied": "Copied to clipboard",
+  "admin_client_created_toast": "OAuth client created",
+  "admin_client_updated_toast": "OAuth client updated",
+  "admin_client_deleted_toast": "OAuth client deleted",
+  "admin_client_secret_warning": "Make sure you have copied the client secret before closing this dialog."
+}

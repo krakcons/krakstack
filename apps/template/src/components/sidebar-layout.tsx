@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { AppBrand } from "@/components/app-brand";
 import { Badge } from "@/components/ui/badge";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { UserButton } from "@/components/user-button";
 import {
   Sidebar,
   SidebarContent,
@@ -135,7 +136,14 @@ export function SidebarLayout({
       <SidebarInset className="min-w-0 overflow-x-hidden">
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger />
-          <div className="ml-auto">{headerEnd ?? <LocaleToggle />}</div>
+          <div className="ml-auto flex items-center gap-2">
+            {headerEnd ?? (
+              <>
+                <LocaleToggle />
+                <UserButton />
+              </>
+            )}
+          </div>
         </header>
         <div className="flex flex-col gap-6 px-5 py-6 md:px-8">{children ?? <Outlet />}</div>
       </SidebarInset>

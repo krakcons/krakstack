@@ -12,7 +12,8 @@
     "lint": "oxlint",
     "fmt": "oxfmt",
     "type:check": "tsc --noEmit",
-    "prepare": "effect-language-service patch"
+    "prepare": "effect-language-service patch",
+    "shadcn:update": "for file in src/components/ui/*.tsx; do bunx shadcn@latest add -y -o $(basename \"$file\" .tsx); done"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

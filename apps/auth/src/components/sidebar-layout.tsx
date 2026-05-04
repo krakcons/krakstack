@@ -1,9 +1,9 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 
-import { AppBrand } from "@/components/app-brand";
 import { Badge } from "@/components/ui/badge";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { UserButton } from "@/components/user-button";
 import {
   Sidebar,
   SidebarContent,
@@ -34,34 +34,16 @@ type NavGroup = {
 export type { NavItem, NavGroup };
 
 type AppSidebarProps = {
-  brand: { label: () => string; subtitle: () => string; icon: LucideIcon; href: string };
   groups: NavGroup[];
+  header?: React.ReactNode;
 };
 
-function AppSidebar({ brand, groups }: AppSidebarProps) {
+function AppSidebar({ groups, header }: AppSidebarProps) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              tooltip={brand.label()}
-              render={
-                <AppBrand
-                  label={brand.label()}
-                  subtitle={brand.subtitle()}
-                  icon={brand.icon}
-                  to={brand.href}
-                  variant="sidebar"
-                />
-              }
-            />
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+      {header && <SidebarHeader>{header}</SidebarHeader>}
       <SidebarContent>
         {groups.map((group) => (
           <SidebarGroup key={group.label()}>
@@ -119,23 +101,24 @@ export function SidebarPageHeader({ title, description, badge, actions }: Sideba
 }
 
 export function SidebarLayout({
-  brand,
   groups,
   children,
-  headerEnd,
+  sidebarHeader,
 }: {
-  brand: AppSidebarProps["brand"];
   groups: NavGroup[];
   children?: React.ReactNode;
-  headerEnd?: React.ReactNode;
+  sidebarHeader?: React.ReactNode;
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar brand={brand} groups={groups} />
+      <AppSidebar groups={groups} header={sidebarHeader} />
       <SidebarInset className="min-w-0 overflow-x-hidden">
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger />
-          <div className="ml-auto">{headerEnd ?? <LocaleToggle />}</div>
+          <div className="ml-auto flex items-center gap-2">
+            <LocaleToggle />
+            <UserButton />
+          </div>
         </header>
         <div className="flex flex-col gap-6 px-5 py-6 md:px-8">{children ?? <Outlet />}</div>
       </SidebarInset>
