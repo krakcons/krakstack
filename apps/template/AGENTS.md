@@ -18,7 +18,7 @@ The frontend is a react application that uses:
 
 - Tanstack start
 - Shadcn
-- Effect atom for state management and requesting from the effect api
+- Effect service state
 
 ### Backend
 
@@ -54,6 +54,10 @@ The backend is an effect application that uses:
 
 Use service based design where possible as an interface for related concerns. Use for crud, features, and other concerns.
 
+#### Server
+
+Use effect based httpapi, httpserver, openapi, opentelemetry, and database service with drizzle-orm. Make sure to use drizzle-orm queries not raw sql.
+
 - `src/services/example/index.ts`:
   - Main interface for the service.
   - Recommended Packages: `@/services/database`, `./schema`, `effect`
@@ -62,15 +66,41 @@ Use service based design where possible as an interface for related concerns. Us
   - Defines the schema for the service.
   - Recommended Packages: [`drizzle-orm/effect-schema`](https://orm.drizzle.team/docs/effect-schema), `effect`
 - `src/services/example/api.group.ts`:
-  - Defines the HttpApiGroup, routes, success/error schema, and request/response types.
+  - Defines the api contract with HttpApiGroup, routes, success/error schema, and request/response types.
   - Recommended Packages: `effect/unstable/httpapi`, `./schema`
 - `src/services/example/api.builder.ts`:
-  - Implements the business logic for the api of the service.
+  - Exposes the service through the api of the service based on the api group.
   - Recommended Packages: `./api`, `./schema`, `effect`, `effect/unstable/http`, `effect/unstable/httpapi`
+
+#### Frontend
+
+Use HttpClient instead of raw fetch, Reactivity for syncing state between components, IndexedDb for local persistence, and Atom for state management
+
+- `src/services/example/client/`:
+  - Defines the components for the service.
+- `src/services/example/client/form.tsx`:
+  - Defines the form for the service. Make it work for both create and update using default values.
+  - Recommended Packages: `@/components/form.tsx`, `@/services/example/schema.ts`
+- `src/services/example/client/table.tsx`:
+  - Defines the table for the service. Add as many columns and actions as possible
+  - Recommended Packages: `@/components/data-table.tsx`
+- `src/services/example/client/atom.ts`:
+  - Defines the atoms for the queries and mutations needed for the service.
+  - Recommended Packages: `@effect/atom-react`, `effect/unstable/reactivity`, `@/lib/api-client`
+
+#### Database
+
+- Edit the `src/db/schema.ts` file to define the database schema, and relations at the bottom.
 
 ### API
 
 Define the API within `src/api.ts` and merge the api groups found in services into it.
+
+### Schema
+
+All schemas should be made using effect schema.
+
+Do not use `zod` or other validation libraries.
 
 ### Documentation
 
@@ -78,6 +108,244 @@ Whenever you make an API or Schema, ensure it is documented.
 
 - API: Use `OpenAPI` from `effect/unstable/httpapi` to generate the OpenAPI spec. Use annotations to add a title, description, summary, etc.
 - Schema: Use `Schema.annotate({ ... })` to add a title, identifier, description, and examples to the schema.
+
+## Examples
+
+### Form (`src/services/example/client/form.tsx`)
+
+Reusable create/edit dialog. `useAppForm` + Effect `Schema` validator, atoms for persistence, controlled or uncontrolled `open`.
+
+```tsx
+export function AgentDialog({ agent, open, onOpenChange, trigger }: Props) {
+  const createAgent = useAtomSet(createAgentAtom);
+  const updateAgent = useAtomSet(updateAgentAtom);
+  const [error, setError] = useState("");
+  const isEditing = Boolean(agent);
+
+  const form = useAppForm({
+    defaultValues: { name: agent?.name ?? "", description: agent?.description ?? "" },
+    validators: { onSubmit: Schema.toStandardSchemaV1(CreateAgent) },
+    onSubmit: async ({ value }) => {
+      try {
+        const payload = { name: value.name.trim(), description: value.description?.trim() || null };
+        agent
+          ? await updateAgent({ params: { id: agent.id }, payload, reactivityKeys: ["agents"] })
+          : await createAgent({ payload, reactivityKeys: ["agents"] });
+        onOpenChange?.(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : m.agent_save_failed());
+      }
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger ? <DialogTrigger render={trigger} /> : null}
+      <DialogContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>{isEditing ? m.agent_edit() : m.agent_create()}</DialogTitle>
+          </DialogHeader>
+          <form.AppForm>
+            <form.AppField name="name">
+              {(f) => <f.TextField label={m.name()} autoFocus />}
+            </form.AppField>
+            <form.AppField name="description">
+              {(f) => <f.TextAreaField label={m.description()} />}
+            </form.AppField>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <DialogFooter>
+              <form.SubmitButton />
+            </DialogFooter>
+          </form.AppForm>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### Table (`src/services/example/client/table.tsx`)
+
+Tanstack table of `Agent` rows. Loaded via atom, with edit/toggle/delete row actions and the `AgentDialog` wired in for inline edits.
+
+```tsx
+export function AgentTable() {
+  const result = useAgentsAtom();
+  const updateAgent = useAtomSet(updateAgentAtom);
+  const deleteAgent = useAtomSet(deleteAgentAtom);
+  const [editing, setEditing] = useState<Agent | null>(null);
+
+  const agents = AsyncResult.match(result, {
+    onInitial: () => [],
+    onFailure: () => [],
+    onSuccess: ({ value }) => Array.from(value),
+  });
+
+  const columns: ColumnDef<Agent>[] = [
+    { accessorKey: "name", header: m.agent() },
+    {
+      accessorKey: "active",
+      header: m.active(),
+      cell: ({ row }) => (
+        <Badge variant={row.original.active ? "default" : "secondary"}>
+          {row.original.active ? m.active() : m.inactive()}
+        </Badge>
+      ),
+    },
+    createDataTableActionsColumn<Agent>([
+      { name: m.edit(), icon: <Pencil />, onClick: setEditing },
+      {
+        name: m.toggle(),
+        icon: <Power />,
+        onClick: (a) =>
+          updateAgent({
+            params: { id: a.id },
+            payload: { active: !a.active },
+            reactivityKeys: ["agents"],
+          }),
+      },
+      {
+        name: m.delete(),
+        icon: <Trash2 />,
+        variant: "destructive",
+        onClick: (a) => deleteAgent({ params: { id: a.id }, reactivityKeys: ["agents"] }),
+      },
+    ]),
+  ];
+
+  return AsyncResult.match(result, {
+    onInitial: () => <div>{m.loading()}</div>,
+    onFailure: () => <div>{m.error()}</div>,
+    onSuccess: () => (
+      <>
+        <DataTable columns={columns} data={agents} onRowClick={setEditing} />
+        {editing && (
+          <AgentDialog agent={editing} open onOpenChange={(o) => !o && setEditing(null)} />
+        )}
+      </>
+    ),
+  });
+}
+```
+
+### Atom (`src/services/example/client/atom.ts`)
+
+Optimistic CRUD atoms. Server query is wrapped with `Atom.optimistic`, and each mutation patches the cached list before the network round-trip resolves.
+
+```ts
+export type Agent = typeof AgentSchema.Type;
+export type CreateAgentPayload = typeof CreateAgent.Type;
+
+const serverAgentsAtom = ApiClient.query("agents", "listAgents", {
+  timeToLive: "5 minutes",
+  reactivityKeys: ["agents"],
+});
+
+const current = (r: AsyncResult.AsyncResult<ReadonlyArray<Agent>, unknown>) =>
+  AsyncResult.match(r, {
+    onInitial: () => [],
+    onFailure: () => [],
+    onSuccess: ({ value }) => Array.from(value),
+  });
+
+const optimisticAgent = (p: CreateAgentPayload): Agent => {
+  const now = new Date();
+  return {
+    id: `optimistic-${crypto.randomUUID()}`,
+    name: p.name,
+    description: p.description ?? null,
+    active: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
+export const allAgentsAtom = Atom.optimistic(serverAgentsAtom);
+
+export const createAgentAtom = Atom.optimisticFn(allAgentsAtom, {
+  reducer: (c, a) => AsyncResult.success([optimisticAgent(a.payload), ...current(c)]),
+  fn: ApiClient.mutation("agents", "createAgent"),
+});
+
+export const updateAgentAtom = Atom.optimisticFn(allAgentsAtom, {
+  reducer: (c, a) =>
+    AsyncResult.success(
+      current(c).map((agent) =>
+        agent.id === a.params.id ? { ...agent, ...a.payload, updatedAt: new Date() } : agent,
+      ),
+    ),
+  fn: ApiClient.mutation("agents", "updateAgent"),
+});
+
+export const deleteAgentAtom = Atom.optimisticFn(allAgentsAtom, {
+  reducer: (c, a) => AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
+  fn: ApiClient.mutation("agents", "deleteAgent"),
+});
+
+export const useAgentsAtom = () => useAtomValue(allAgentsAtom);
+```
+
+### Service (`src/services/example/index.ts`)
+
+Effect `Context.Service` exposing CRUD for the service. Each method scopes by `userId` so callers can't reach across tenants.
+
+```ts
+export class Agents extends Context.Service<Agents>()("Agents", {
+  make: Effect.gen(function* () {
+    const db = yield* DB;
+
+    const list = Effect.fn("Agents.list")(function* (userId: string) {
+      return yield* db.query.agents.findMany({ where: { userId } });
+    });
+
+    const get = Effect.fn("Agents.get")(function* (userId: string, id: string) {
+      return yield* db.query.agents.findFirst({ where: { id, userId } });
+    });
+
+    const create = Effect.fn("Agents.create")(function* (
+      userId: string,
+      input: typeof CreateAgent.Type,
+    ) {
+      const [agent] = yield* db
+        .insert(agents)
+        .values({ ...input, userId })
+        .returning();
+      return agent;
+    });
+
+    const update = Effect.fn("Agents.update")(function* (
+      userId: string,
+      id: string,
+      input: typeof UpdateAgent.Type,
+    ) {
+      const [agent] = yield* db
+        .update(agents)
+        .set({ ...input, updatedAt: new Date() })
+        .where(and(eq(agents.id, id), eq(agents.userId, userId)))
+        .returning();
+      return agent;
+    });
+
+    const _delete = Effect.fn("Agents.delete")(function* (userId: string, id: string) {
+      const [agent] = yield* db
+        .delete(agents)
+        .where(and(eq(agents.id, id), eq(agents.userId, userId)))
+        .returning();
+      return agent;
+    });
+
+    return { list, get, create, update, delete: _delete };
+  }),
+}) {
+  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.layer));
+}
+```
 
 ## Checks
 

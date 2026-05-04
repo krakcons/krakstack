@@ -3,6 +3,7 @@ import { useAtomSet } from "@effect/atom-react";
 
 import { useAppForm } from "@/components/form";
 import { createTaskAtom, updateTaskAtom, type Task } from "@/lib/atoms/tasks";
+import { CreateTask } from "@/services/task/schema";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,17 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Schema } from "effect";
 
 type TaskDialogProps = {
   task?: Task | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: ReactElement;
-};
-
-const emptyValues = {
-  title: "",
-  description: "",
 };
 
 const getErrorMessage = (isEditing: boolean, error: unknown) => {
@@ -46,14 +43,17 @@ export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }
 
   const form = useAppForm({
     defaultValues: {
-      title: task?.title ?? emptyValues.title,
-      description: task?.description ?? emptyValues.description,
+      title: task?.title ?? "",
+      description: task?.description ?? "",
+    } as (typeof CreateTask)["Encoded"],
+    validators: {
+      onSubmit: Schema.toStandardSchemaV1(CreateTask),
     },
     onSubmit: async ({ value }) => {
       setError("");
 
       const trimmedTitle = value.title.trim();
-      const trimmedDescription = value.description.trim();
+      const trimmedDescription = value.description?.trim();
 
       if (!trimmedTitle) {
         setError("Title is required.");
@@ -95,8 +95,8 @@ export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }
     if (!open) return;
 
     form.reset({
-      title: task?.title ?? emptyValues.title,
-      description: task?.description ?? emptyValues.description,
+      title: task?.title ?? "",
+      description: task?.description ?? "",
     });
     setError("");
   }, [form, open, task]);
