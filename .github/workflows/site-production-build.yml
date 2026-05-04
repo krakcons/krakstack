@@ -1,7 +1,9 @@
-name: Build
+name: Build Site
 on:
   push:
     branches: ["main"]
+    paths:
+      - "apps/site/**"
 
 env:
   REGISTRY: ghcr.io
@@ -31,8 +33,8 @@ jobs:
       - name: Build & push image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: Dockerfile
+          context: apps/site
+          file: apps/site/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
