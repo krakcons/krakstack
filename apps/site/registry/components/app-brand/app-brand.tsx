@@ -5,7 +5,8 @@ import type { LucideIcon } from "lucide-react";
 type AppBrandProps = Omit<ComponentProps<typeof Link>, "to"> & {
   label: string;
   subtitle: string;
-  icon: LucideIcon;
+  imageSrc?: string | undefined;
+  icon?: LucideIcon | undefined;
   to?: string;
   variant?: "default" | "sidebar";
 };
@@ -14,6 +15,7 @@ export function AppBrand({
   className,
   label,
   subtitle,
+  imageSrc,
   icon: Icon,
   to = "/",
   variant = "default",
@@ -29,17 +31,31 @@ export function AppBrand({
   return (
     <Link
       to={to}
-      className={["flex min-w-0 items-center gap-2 text-foreground hover:text-foreground", className]
+      className={[
+        "flex min-w-0 items-center gap-2 text-foreground hover:text-foreground",
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
       {...props}
     >
+      {imageSrc ? (
+        <img src={imageSrc} alt="" className="size-8 shrink-0 rounded-md border" />
+      ) : Icon ? (
+        <div
+          className={[
+            "flex size-8 shrink-0 items-center justify-center rounded-md",
+            iconClassName,
+          ].join(" ")}
+        >
+          <Icon className="size-4" />
+        </div>
+      ) : null}
       <div
-        className={["flex size-8 shrink-0 items-center justify-center rounded-md", iconClassName].join(" ")}
+        className={["flex min-w-0 flex-col leading-none", contentClassName]
+          .filter(Boolean)
+          .join(" ")}
       >
-        <Icon className="size-4" />
-      </div>
-      <div className={["flex min-w-0 flex-col leading-none", contentClassName].filter(Boolean).join(" ")}>
         <span className="truncate font-semibold tracking-tight">{label}</span>
         <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
       </div>

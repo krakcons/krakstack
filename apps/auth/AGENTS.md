@@ -43,11 +43,17 @@ Use service based design where possible as an interface for related concerns. Us
   - Defines the schema for the service.
   - Recommended Packages: [`drizzle-orm/effect-schema`](https://orm.drizzle.team/docs/effect-schema), `effect`
 - `src/services/example/api.ts`:
-  - Defines the HTTP API, success/error schema, and request/response types.
+  - Defines the HttpApiGroup, routes, success/error schema, and request/response types.
   - Recommended Packages: `effect/unstable/httpapi`, `./schema`
 - `src/services/example/handler.ts`:
   - Implements the business logic for the api of the service.
   - Recommended Packages: `./api`, `./schema`, `effect`, `effect/unstable/http`, `effect/unstable/httpapi`
+
+#### API
+
+Define the API within `src/api.ts` and merge the api groups found in services into it.
+
+Build strong OpenAPI specifications.
 
 ## Code patterns
 
