@@ -67,20 +67,7 @@ function renderBlock(block: string, index: number) {
   if (block.startsWith("# ")) return <h1 key={index}>{renderInline(block.slice(2))}</h1>;
 
   if (block.split("\n").some((line) => /^\s*-\s/.test(line))) {
-    return (
-      <ul key={index}>
-        {block.split("\n").map((line, i) => {
-          const match = line.match(/^(\s*)-\s(.*)$/);
-          if (!match) return null;
-          const [, indent, content] = match;
-          return (
-            <li key={i} className={indent.length > 0 ? "ml-4" : undefined}>
-              {renderInline(content)}
-            </li>
-          );
-        })}
-      </ul>
-    );
+    return <ul key={index}>{renderListNodes(parseListTree(block.split("\n")))}</ul>;
   }
 
   return <p key={index}>{renderInline(block.replace(/\n/g, " "))}</p>;
@@ -160,6 +147,47 @@ function normalizeLanguage(language?: string) {
   if (language === "ts" || language === "typescript") return "typescript";
   if (language === "tsx") return "tsx";
   return language || "text";
+}
+
+interface ListNode {
+  content: string;
+  children: ListNode[];
+}
+
+function parseListTree(lines: string[]): ListNode[] {
+  const root: ListNode[] = [];
+  const stack: { node: ListNode; indent: number }[] = [];
+
+  for (const line of lines) {
+    const match = line.match(/^(\s*)-\s(.*)$/);
+    if (!match) continue;
+    const [, indentStr, content] = match;
+    const indent = indentStr.length;
+    const node: ListNode = { content, children: [] };
+
+    while (stack.length > 0 && stack[stack.length - 1].indent >= indent) {
+      stack.pop();
+    }
+
+    if (stack.length === 0) {
+      root.push(node);
+    } else {
+      stack[stack.length - 1].node.children.push(node);
+    }
+
+    stack.push({ node, indent });
+  }
+
+  return root;
+}
+
+function renderListNodes(nodes: ListNode[]) {
+  return nodes.map((node, i) => (
+    <li key={i}>
+      {renderInline(node.content)}
+      {node.children.length > 0 && <ul>{renderListNodes(node.children)}</ul>}
+    </li>
+  ));
 }
 
 function renderInline(text: string) {
