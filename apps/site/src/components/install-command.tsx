@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const siteUrl = (import.meta.env.VITE_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const siteUrl = (
+  import.meta.env.VITE_SITE_URL ??
+  window.location.origin ??
+  "http://localhost:3000"
+).replace(/\/$/, "");
 
 export function InstallCommand({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
