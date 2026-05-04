@@ -1,6 +1,6 @@
 # AGENTS
 
-## i18n (required)
+## i18n
 
 English and French are required for all public facing strings.
 
@@ -116,24 +116,28 @@ Whenever you make an API or Schema, ensure it is documented.
 Reusable create/edit dialog. `useAppForm` + Effect `Schema` validator, atoms for persistence, controlled or uncontrolled `open`.
 
 ```tsx
-export function AgentDialog({ agent, open, onOpenChange, trigger }: Props) {
-  const createAgent = useAtomSet(createAgentAtom);
-  const updateAgent = useAtomSet(updateAgentAtom);
+export function ExampleDialog({ example, open, onOpenChange, trigger }: Props) {
+  const createExample = useAtomSet(createExampleAtom);
+  const updateExample = useAtomSet(updateExampleAtom);
   const [error, setError] = useState("");
-  const isEditing = Boolean(agent);
+  const isEditing = Boolean(example);
 
   const form = useAppForm({
-    defaultValues: { name: agent?.name ?? "", description: agent?.description ?? "" },
-    validators: { onSubmit: Schema.toStandardSchemaV1(CreateAgent) },
+    defaultValues: { name: example?.name ?? "", description: example?.description ?? "" },
+    validators: { onSubmit: Schema.toStandardSchemaV1(CreateExample) },
     onSubmit: async ({ value }) => {
       try {
         const payload = { name: value.name.trim(), description: value.description?.trim() || null };
-        agent
-          ? await updateAgent({ params: { id: agent.id }, payload, reactivityKeys: ["agents"] })
-          : await createAgent({ payload, reactivityKeys: ["agents"] });
+        example
+          ? await updateExample({
+              params: { id: example.id },
+              payload,
+              reactivityKeys: ["examples"],
+            })
+          : await createExample({ payload, reactivityKeys: ["examples"] });
         onOpenChange?.(false);
       } catch (e) {
-        setError(e instanceof Error ? e.message : m.agent_save_failed());
+        setError(e instanceof Error ? e.message : m.example_save_failed());
       }
     },
   });
@@ -149,7 +153,7 @@ export function AgentDialog({ agent, open, onOpenChange, trigger }: Props) {
           }}
         >
           <DialogHeader>
-            <DialogTitle>{isEditing ? m.agent_edit() : m.agent_create()}</DialogTitle>
+            <DialogTitle>{isEditing ? m.example_edit() : m.example_create()}</DialogTitle>
           </DialogHeader>
           <form.AppForm>
             <form.AppField name="name">
@@ -172,23 +176,23 @@ export function AgentDialog({ agent, open, onOpenChange, trigger }: Props) {
 
 ### Table (`src/services/example/client/table.tsx`)
 
-Tanstack table of `Agent` rows. Loaded via atom, with edit/toggle/delete row actions and the `AgentDialog` wired in for inline edits.
+Tanstack table of `Example` rows. Loaded via atom, with edit/toggle/delete row actions and the `ExampleDialog` wired in for inline edits.
 
 ```tsx
-export function AgentTable() {
-  const result = useAgentsAtom();
-  const updateAgent = useAtomSet(updateAgentAtom);
-  const deleteAgent = useAtomSet(deleteAgentAtom);
-  const [editing, setEditing] = useState<Agent | null>(null);
+export function ExampleTable() {
+  const result = useExamplesAtom();
+  const updateExample = useAtomSet(updateExampleAtom);
+  const deleteExample = useAtomSet(deleteExampleAtom);
+  const [editing, setEditing] = useState<Example | null>(null);
 
-  const agents = AsyncResult.match(result, {
+  const examples = AsyncResult.match(result, {
     onInitial: () => [],
     onFailure: () => [],
     onSuccess: ({ value }) => Array.from(value),
   });
 
-  const columns: ColumnDef<Agent>[] = [
-    { accessorKey: "name", header: m.agent() },
+  const columns: ColumnDef<Example>[] = [
+    { accessorKey: "name", header: m.example() },
     {
       accessorKey: "active",
       header: m.active(),
@@ -198,23 +202,23 @@ export function AgentTable() {
         </Badge>
       ),
     },
-    createDataTableActionsColumn<Agent>([
+    createDataTableActionsColumn<Example>([
       { name: m.edit(), icon: <Pencil />, onClick: setEditing },
       {
         name: m.toggle(),
         icon: <Power />,
-        onClick: (a) =>
-          updateAgent({
-            params: { id: a.id },
-            payload: { active: !a.active },
-            reactivityKeys: ["agents"],
+        onClick: (e) =>
+          updateExample({
+            params: { id: e.id },
+            payload: { active: !e.active },
+            reactivityKeys: ["examples"],
           }),
       },
       {
         name: m.delete(),
         icon: <Trash2 />,
         variant: "destructive",
-        onClick: (a) => deleteAgent({ params: { id: a.id }, reactivityKeys: ["agents"] }),
+        onClick: (e) => deleteExample({ params: { id: e.id }, reactivityKeys: ["examples"] }),
       },
     ]),
   ];
@@ -224,9 +228,9 @@ export function AgentTable() {
     onFailure: () => <div>{m.error()}</div>,
     onSuccess: () => (
       <>
-        <DataTable columns={columns} data={agents} onRowClick={setEditing} />
+        <DataTable columns={columns} data={examples} onRowClick={setEditing} />
         {editing && (
-          <AgentDialog agent={editing} open onOpenChange={(o) => !o && setEditing(null)} />
+          <ExampleDialog example={editing} open onOpenChange={(o) => !o && setEditing(null)} />
         )}
       </>
     ),
@@ -238,23 +242,23 @@ export function AgentTable() {
 
 Optimistic CRUD atoms. Server query is wrapped with `Atom.optimistic`, and each mutation patches the cached list before the network round-trip resolves.
 
-```ts
-export type Agent = typeof AgentSchema.Type;
-export type CreateAgentPayload = typeof CreateAgent.Type;
+```tsx
+export type Example = typeof ExampleSchema.Type;
+export type CreateExamplePayload = typeof CreateExample.Type;
 
-const serverAgentsAtom = ApiClient.query("agents", "listAgents", {
+const serverExamplesAtom = ApiClient.query("examples", "listExamples", {
   timeToLive: "5 minutes",
-  reactivityKeys: ["agents"],
+  reactivityKeys: ["examples"],
 });
 
-const current = (r: AsyncResult.AsyncResult<ReadonlyArray<Agent>, unknown>) =>
+const current = (r: AsyncResult.AsyncResult<ReadonlyArray<Example>, unknown>) =>
   AsyncResult.match(r, {
     onInitial: () => [],
     onFailure: () => [],
     onSuccess: ({ value }) => Array.from(value),
   });
 
-const optimisticAgent = (p: CreateAgentPayload): Agent => {
+const optimisticExample = (p: CreateExamplePayload): Example => {
   const now = new Date();
   return {
     id: `optimistic-${crypto.randomUUID()}`,
@@ -266,29 +270,29 @@ const optimisticAgent = (p: CreateAgentPayload): Agent => {
   };
 };
 
-export const allAgentsAtom = Atom.optimistic(serverAgentsAtom);
+export const allExamplesAtom = Atom.optimistic(serverExamplesAtom);
 
-export const createAgentAtom = Atom.optimisticFn(allAgentsAtom, {
-  reducer: (c, a) => AsyncResult.success([optimisticAgent(a.payload), ...current(c)]),
-  fn: ApiClient.mutation("agents", "createAgent"),
+export const createExampleAtom = Atom.optimisticFn(allExamplesAtom, {
+  reducer: (c, a) => AsyncResult.success([optimisticExample(a.payload), ...current(c)]),
+  fn: ApiClient.mutation("examples", "createExample"),
 });
 
-export const updateAgentAtom = Atom.optimisticFn(allAgentsAtom, {
+export const updateExampleAtom = Atom.optimisticFn(allExamplesAtom, {
   reducer: (c, a) =>
     AsyncResult.success(
-      current(c).map((agent) =>
-        agent.id === a.params.id ? { ...agent, ...a.payload, updatedAt: new Date() } : agent,
+      current(c).map((example) =>
+        example.id === a.params.id ? { ...example, ...a.payload, updatedAt: new Date() } : example,
       ),
     ),
-  fn: ApiClient.mutation("agents", "updateAgent"),
+  fn: ApiClient.mutation("examples", "updateExample"),
 });
 
-export const deleteAgentAtom = Atom.optimisticFn(allAgentsAtom, {
+export const deleteExampleAtom = Atom.optimisticFn(allExamplesAtom, {
   reducer: (c, a) => AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
-  fn: ApiClient.mutation("agents", "deleteAgent"),
+  fn: ApiClient.mutation("examples", "deleteExample"),
 });
 
-export const useAgentsAtom = () => useAtomValue(allAgentsAtom);
+export const useExamplesAtom = () => useAtomValue(allExamplesAtom);
 ```
 
 ### Service (`src/services/example/index.ts`)
@@ -296,48 +300,48 @@ export const useAgentsAtom = () => useAtomValue(allAgentsAtom);
 Effect `Context.Service` exposing CRUD for the service. Each method scopes by `userId` so callers can't reach across tenants.
 
 ```ts
-export class Agents extends Context.Service<Agents>()("Agents", {
+export class Examples extends Context.Service<Examples>()("Examples", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
-    const list = Effect.fn("Agents.list")(function* (userId: string) {
-      return yield* db.query.agents.findMany({ where: { userId } });
+    const list = Effect.fn("Examples.list")(function* (userId: string) {
+      return yield* db.query.examples.findMany({ where: { userId } });
     });
 
-    const get = Effect.fn("Agents.get")(function* (userId: string, id: string) {
-      return yield* db.query.agents.findFirst({ where: { id, userId } });
+    const get = Effect.fn("Examples.get")(function* (userId: string, id: string) {
+      return yield* db.query.examples.findFirst({ where: { id, userId } });
     });
 
-    const create = Effect.fn("Agents.create")(function* (
+    const create = Effect.fn("Examples.create")(function* (
       userId: string,
-      input: typeof CreateAgent.Type,
+      input: typeof CreateExample.Type,
     ) {
-      const [agent] = yield* db
-        .insert(agents)
+      const [example] = yield* db
+        .insert(examples)
         .values({ ...input, userId })
         .returning();
-      return agent;
+      return example;
     });
 
-    const update = Effect.fn("Agents.update")(function* (
+    const update = Effect.fn("Examples.update")(function* (
       userId: string,
       id: string,
-      input: typeof UpdateAgent.Type,
+      input: typeof UpdateExample.Type,
     ) {
-      const [agent] = yield* db
-        .update(agents)
+      const [example] = yield* db
+        .update(examples)
         .set({ ...input, updatedAt: new Date() })
-        .where(and(eq(agents.id, id), eq(agents.userId, userId)))
+        .where(and(eq(examples.id, id), eq(examples.userId, userId)))
         .returning();
-      return agent;
+      return example;
     });
 
-    const _delete = Effect.fn("Agents.delete")(function* (userId: string, id: string) {
-      const [agent] = yield* db
-        .delete(agents)
-        .where(and(eq(agents.id, id), eq(agents.userId, userId)))
+    const _delete = Effect.fn("Examples.delete")(function* (userId: string, id: string) {
+      const [example] = yield* db
+        .delete(examples)
+        .where(and(eq(examples.id, id), eq(examples.userId, userId)))
         .returning();
-      return agent;
+      return example;
     });
 
     return { list, get, create, update, delete: _delete };
