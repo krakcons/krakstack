@@ -21,7 +21,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/services/auth/client";
+import { AppBrand } from "@/components/app-brand";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -49,13 +50,6 @@ const adminNavGroups: NavGroup[] = [
   },
 ];
 
-const adminBrand = {
-  label: m.sidebar_brand,
-  subtitle: m.sidebar_brand_subtitle,
-  icon: Users,
-  href: "/",
-};
-
 function Admin() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const session = authClient.useSession();
@@ -82,8 +76,7 @@ function Admin() {
   if (pathname === "/admin") {
     return <DashboardPage />;
   }
-
-  return <SidebarLayout brand={adminBrand} groups={adminNavGroups} />;
+  return undefined;
 }
 
 type ClientStats = {
@@ -130,7 +123,17 @@ function DashboardPage() {
   }));
 
   return (
-    <SidebarLayout brand={adminBrand} groups={adminNavGroups}>
+    <SidebarLayout
+      sidebarHeader={
+        <AppBrand
+          label={m.sidebar_brand()}
+          subtitle={m.sidebar_brand_subtitle()}
+          icon={Users}
+          href="/"
+        />
+      }
+      groups={adminNavGroups}
+    >
       <SidebarPageHeader
         title={m.admin_dashboard()}
         description={m.admin_dashboard_description()}

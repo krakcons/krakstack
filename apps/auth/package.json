@@ -13,8 +13,8 @@
     "lint": "oxlint",
     "fmt": "oxfmt",
     "type:check": "tsc --noEmit",
-    "auth:generate": "bunx @better-auth/cli@latest generate --config ./src/lib/auth.ts --output ./src/db/auth-schema.ts",
-    "auth:migrate": "bunx @better-auth/cli@latest migrate --config ./src/lib/auth.ts",
+    "auth:generate": "bunx @better-auth/cli@latest generate --config ./src/services/auth/config.ts --output ./src/db/auth-schema.ts",
+    "auth:migrate": "bunx @better-auth/cli@latest migrate --config ./src/services/auth/config.ts",
     "shadcn:update": "for file in src/components/ui/*.tsx; do bunx shadcn@latest add -y -o $(basename \"$file\" .tsx); done"
   },
   "dependencies": {

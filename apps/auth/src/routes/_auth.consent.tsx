@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/services/auth/client";
 import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import {

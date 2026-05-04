@@ -154,5 +154,12 @@
   "admin_client_created_toast": "OAuth client created",
   "admin_client_updated_toast": "OAuth client updated",
   "admin_client_deleted_toast": "OAuth client deleted",
-  "admin_client_secret_warning": "Make sure you have copied the client secret before closing this dialog."
+  "admin_client_secret_warning": "Make sure you have copied the client secret before closing this dialog.",
+  "user_button_aria_label": "Open user menu",
+  "user_button_account": "Account",
+  "user_button_logout": "Log out",
+  "user_form_title": "Account",
+  "user_form_description": "Update the profile details associated with your account.",
+  "user_form_name_label": "Name",
+  "user_form_update_error": "Unable to update your account."
 }

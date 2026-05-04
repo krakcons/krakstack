@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/services/auth/client";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/admin/oauth/clients")({

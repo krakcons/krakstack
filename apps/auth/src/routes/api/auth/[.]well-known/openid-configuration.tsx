@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { oauthProviderOpenIdConfigMetadata } from "@better-auth/oauth-provider";
 
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth/config";
 
 const handler = oauthProviderOpenIdConfigMetadata(auth, {
   headers: {

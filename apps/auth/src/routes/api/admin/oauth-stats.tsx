@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { count } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth/config";
 import { db } from "@/services/database";
 import { oauthClient, oauthConsent, user } from "@/db/auth-schema";
 
