@@ -1,8 +1,6 @@
-# KrakStack Auth
+# AGENTS
 
-This is a KrakStack Auth application for centralized better auth and user management.
-
-## i18n (required)
+## i18n
 
 English and French are required for all public facing strings.
 
@@ -20,7 +18,7 @@ The frontend is a react application that uses:
 
 - Tanstack start
 - Shadcn
-- Effect atom for state management and requesting from the effect api
+- Effect service state
 
 ### Backend
 
@@ -29,11 +27,36 @@ The backend is an effect application that uses:
 - Postgres and drizzle-orm
 - Effect based httpapi, httpserver, openapi, opentelemetry
 
-### Patterns
+### Folder Structure
 
-#### Services
+- `public/` — Static assets (favicon, logos, manifest, robots.txt)
+- `scripts/` — Build and utility scripts (e.g. merge-messages for i18n)
+- `src/` — Application source
+  - `components/` — React components
+    - `ui/` — Shadcn UI primitives (managed by shadcn CLI)
+  - `db/` — Drizzle schema definitions (app schema + auth schema)
+  - `hooks/` — Shared React hooks
+  - `lib/` — Shared utilities, auth config
+    - `atoms/` — Effect atom definitions
+  - `messages/` — i18n source files
+    - `global/` — Hand-written translations (en.json, fr.json) — edit these
+    - `components/` — Component-specific translations — do not edit
+    - Root `en.json`/`fr.json` are generated — do not edit
+  - `paraglide/` — Generated paraglide runtime — do not edit
+  - `routes/` — TanStack Start file-based routes
+    - `api/` — API catch-all route
+    - `docs/` — Documentation pages
+  - `services/` — Effect service definitions and handlers
+
+## Patterns
+
+### Services
 
 Use service based design where possible as an interface for related concerns. Use for crud, features, and other concerns.
+
+#### Server
+
+Use effect based httpapi, httpserver, openapi, opentelemetry, and database service with drizzle-orm. Make sure to use drizzle-orm queries not raw sql.
 
 - `src/services/example/index.ts`:
   - Main interface for the service.
@@ -42,22 +65,483 @@ Use service based design where possible as an interface for related concerns. Us
 - `src/services/example/schema.ts`:
   - Defines the schema for the service.
   - Recommended Packages: [`drizzle-orm/effect-schema`](https://orm.drizzle.team/docs/effect-schema), `effect`
-- `src/services/example/api.ts`:
-  - Defines the HttpApiGroup, routes, success/error schema, and request/response types.
+- `src/services/example/api.group.ts`:
+  - Defines the api contract with HttpApiGroup, routes, success/error schema, and request/response types.
   - Recommended Packages: `effect/unstable/httpapi`, `./schema`
-- `src/services/example/handler.ts`:
-  - Implements the business logic for the api of the service.
+- `src/services/example/api.builder.ts`:
+  - Exposes the service through the api of the service based on the api group.
   - Recommended Packages: `./api`, `./schema`, `effect`, `effect/unstable/http`, `effect/unstable/httpapi`
 
-#### API
+#### Frontend
+
+Use HttpClient instead of raw fetch, Reactivity for syncing state between components, IndexedDb for local persistence, and Atom for state management
+
+- `src/services/example/client/`:
+  - Defines the components for the service.
+- `src/services/example/client/form.tsx`:
+  - Defines the form for the service. Make it work for both create and update using default values.
+  - Recommended Packages: `@/components/form.tsx`, `@/services/example/schema.ts`
+- `src/services/example/client/table.tsx`:
+  - Defines the table for the service. Add as many columns and actions as possible
+  - Recommended Packages: `@/components/data-table.tsx`
+- `src/services/example/client/atom.ts`:
+  - Defines the atoms for the queries and mutations needed for the service.
+  - Recommended Packages: `@effect/atom-react`, `effect/unstable/reactivity`, `@/lib/api-client`
+
+#### Database
+
+- Edit the `src/db/schema.ts` file to define the database schema, and relations at the bottom.
+
+### API
 
 Define the API within `src/api.ts` and merge the api groups found in services into it.
 
-Build strong OpenAPI specifications.
+### Schema
 
-## Code patterns
+All schemas should be generated from the drizzle table definition using `drizzle-orm/effect-schema` (`createSelectSchema`, `createInsertSchema`, `createUpdateSchema`), then refined/overridden as needed with Effect `Schema`.
 
-- Use opentelemetry and mark spans for tracing (see `src/services/opentelemetry.ts`)
+Do not use `zod` or other validation libraries.
+
+### Documentation
+
+Whenever you make an API or Schema, ensure it is documented.
+
+- API: Use `OpenAPI` from `effect/unstable/httpapi` to generate the OpenAPI spec. Use annotations to add a title, description, summary, etc.
+- Schema: Use `Schema.annotate({ ... })` to add a title, identifier, description, and examples to the schema.
+
+## Examples
+
+### Schema (`src/services/example/schema.ts`)
+
+Effect schemas for a service entity with CRUD payloads. Use `drizzle-orm/effect-schema` to generate schemas from the drizzle table definition, then refine/override as needed. `CreateExample`/`UpdateExample` are input types, `ExampleIdParamsSchema` handles route params. Use `Schema.toStandardSchemaV1` for form validation interop.
+
+```ts
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+} from "drizzle-orm/effect-schema";
+import { Schema } from "effect";
+
+import { examples } from "@/db/schema";
+
+export const ExampleSchema = createSelectSchema(examples).annotate({ identifier: "Example" });
+
+export const CreateExampleSchema = createInsertSchema(examples, {
+  name: Schema.NonEmptyString,
+  description: Schema.optional(Schema.String),
+}).annotate({ identifier: "CreateExample" });
+
+export const UpdateExampleSchema = createUpdateSchema(examples, {
+  name: Schema.NonEmptyString,
+  description: Schema.optional(Schema.NullOr(Schema.String)),
+  active: Schema.optional(Schema.Boolean),
+}).annotate({ identifier: "UpdateExample" });
+
+export const ExampleIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate({
+  identifier: "ExampleIdParamsSchema",
+});
+
+export const ExampleSchemaStandard = Schema.toStandardSchemaV1(ExampleSchema);
+```
+
+### API Group (`src/services/example/api.group.ts`)
+
+Defines the API contract with `HttpApiGroup`, routes, success/error schemas, and request/response types.
+
+```ts
+import { Schema } from "effect";
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
+
+import { CreateExample, Example, ExampleIdParams, UpdateExample } from "./schema";
+
+export const ExamplesApiGroup = HttpApiGroup.make("examples")
+  .add(
+    HttpApiEndpoint.get("listExamples", "/examples", {
+      success: Schema.Array(Example),
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.post("createExample", "/examples", {
+      payload: CreateExample,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get("getExample", "/examples/:id", {
+      params: ExampleIdParams,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.patch("updateExample", "/examples/:id", {
+      params: ExampleIdParams,
+      payload: UpdateExample,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.delete("deleteExample", "/examples/:id", {
+      params: ExampleIdParams,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  );
+```
+
+### API Builder (`src/services/example/api.builder.ts`)
+
+Exposes the service through the API using `HttpApiBuilder.group`, wiring handlers to the API group endpoints with auth and error mapping.
+
+```ts
+import { Effect } from "effect";
+import { HttpServerRequest } from "effect/unstable/http";
+import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
+
+import { Api } from "@/api";
+import { auth } from "@/lib/auth";
+import { Examples } from "@/services/example";
+
+const internalServerError = () => new HttpApiError.InternalServerError({});
+
+const requireUserId = Effect.gen(function* () {
+  const request = yield* HttpServerRequest.HttpServerRequest;
+  const session = yield* Effect.tryPromise({
+    try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
+    catch: internalServerError,
+  });
+
+  if (!session) {
+    return yield* new HttpApiError.Unauthorized({});
+  }
+
+  return session.user.id;
+});
+
+export const examplesHandler = HttpApiBuilder.group(Api, "examples", (handlers) =>
+  handlers
+    .handle("listExamples", () =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        return yield* examples.list(userId).pipe(Effect.mapError(internalServerError));
+      }),
+    )
+    .handle("getExample", ({ params }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+        const example = yield* examples
+          .get(userId, params.id)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.NotFound({});
+
+        return example;
+      }),
+    )
+    .handle("createExample", ({ payload }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        const example = yield* examples
+          .create(userId, payload)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.InternalServerError({});
+
+        return example;
+      }),
+    )
+    .handle("updateExample", ({ params, payload }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        const example = yield* examples
+          .update(userId, params.id, payload)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.NotFound({});
+
+        return example;
+      }),
+    )
+    .handle("deleteExample", ({ params }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        const example = yield* examples
+          .delete(userId, params.id)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.NotFound({});
+
+        return example;
+      }),
+    ),
+);
+```
+
+### Form (`src/services/example/client/form.tsx`)
+
+Reusable create/edit dialog. `useAppForm` + Effect `Schema` validator, atoms for persistence, controlled or uncontrolled `open`.
+
+```tsx
+export function ExampleDialog({ example, open, onOpenChange, trigger }: Props) {
+  const createExample = useAtomSet(createExampleAtom);
+  const updateExample = useAtomSet(updateExampleAtom);
+  const [error, setError] = useState("");
+  const isEditing = Boolean(example);
+
+  const form = useAppForm({
+    defaultValues: { name: example?.name ?? "", description: example?.description ?? "" },
+    validators: { onSubmit: Schema.toStandardSchemaV1(CreateExample) },
+    onSubmit: async ({ value }) => {
+      try {
+        const payload = { name: value.name.trim(), description: value.description?.trim() || null };
+        example
+          ? await updateExample({
+              params: { id: example.id },
+              payload,
+              reactivityKeys: ["examples"],
+            })
+          : await createExample({ payload, reactivityKeys: ["examples"] });
+        onOpenChange?.(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : m.example_save_failed());
+      }
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger ? <DialogTrigger render={trigger} /> : null}
+      <DialogContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>{isEditing ? m.example_edit() : m.example_create()}</DialogTitle>
+          </DialogHeader>
+          <form.AppForm>
+            <form.AppField name="name">
+              {(f) => <f.TextField label={m.name()} autoFocus />}
+            </form.AppField>
+            <form.AppField name="description">
+              {(f) => <f.TextAreaField label={m.description()} />}
+            </form.AppField>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <DialogFooter>
+              <form.SubmitButton />
+            </DialogFooter>
+          </form.AppForm>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### Table (`src/services/example/client/table.tsx`)
+
+Tanstack table of `Example` rows. Loaded via atom, with edit/toggle/delete row actions and the `ExampleDialog` wired in for inline edits.
+
+```tsx
+export function ExampleTable() {
+  const result = useExamplesAtom();
+  const updateExample = useAtomSet(updateExampleAtom);
+  const deleteExample = useAtomSet(deleteExampleAtom);
+  const [editing, setEditing] = useState<Example | null>(null);
+
+  const examples = AsyncResult.match(result, {
+    onInitial: () => [],
+    onFailure: () => [],
+    onSuccess: ({ value }) => Array.from(value),
+  });
+
+  const columns: ColumnDef<Example>[] = [
+    { accessorKey: "name", header: m.example() },
+    {
+      accessorKey: "active",
+      header: m.active(),
+      cell: ({ row }) => (
+        <Badge variant={row.original.active ? "default" : "secondary"}>
+          {row.original.active ? m.active() : m.inactive()}
+        </Badge>
+      ),
+    },
+    createDataTableActionsColumn<Example>([
+      { name: m.edit(), icon: <Pencil />, onClick: setEditing },
+      {
+        name: m.toggle(),
+        icon: <Power />,
+        onClick: (e) =>
+          updateExample({
+            params: { id: e.id },
+            payload: { active: !e.active },
+            reactivityKeys: ["examples"],
+          }),
+      },
+      {
+        name: m.delete(),
+        icon: <Trash2 />,
+        variant: "destructive",
+        onClick: (e) => deleteExample({ params: { id: e.id }, reactivityKeys: ["examples"] }),
+      },
+    ]),
+  ];
+
+  return AsyncResult.match(result, {
+    onInitial: () => <div>{m.loading()}</div>,
+    onFailure: () => <div>{m.error()}</div>,
+    onSuccess: () => (
+      <>
+        <DataTable columns={columns} data={examples} onRowClick={setEditing} />
+        {editing && (
+          <ExampleDialog example={editing} open onOpenChange={(o) => !o && setEditing(null)} />
+        )}
+      </>
+    ),
+  });
+}
+```
+
+### Atom (`src/services/example/client/atom.ts`)
+
+Optimistic CRUD atoms. Server query is wrapped with `Atom.optimistic`, and each mutation patches the cached list before the network round-trip resolves.
+
+```tsx
+export type Example = typeof ExampleSchema.Type;
+export type CreateExamplePayload = typeof CreateExample.Type;
+
+const serverExamplesAtom = ApiClient.query("examples", "listExamples", {
+  timeToLive: "5 minutes",
+  reactivityKeys: ["examples"],
+});
+
+const current = (r: AsyncResult.AsyncResult<ReadonlyArray<Example>, unknown>) =>
+  AsyncResult.match(r, {
+    onInitial: () => [],
+    onFailure: () => [],
+    onSuccess: ({ value }) => Array.from(value),
+  });
+
+const optimisticExample = (p: CreateExamplePayload): Example => {
+  const now = new Date();
+  return {
+    id: `optimistic-${crypto.randomUUID()}`,
+    name: p.name,
+    description: p.description ?? null,
+    active: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
+export const allExamplesAtom = Atom.optimistic(serverExamplesAtom);
+
+export const createExampleAtom = Atom.optimisticFn(allExamplesAtom, {
+  reducer: (c, a) => AsyncResult.success([optimisticExample(a.payload), ...current(c)]),
+  fn: ApiClient.mutation("examples", "createExample"),
+});
+
+export const updateExampleAtom = Atom.optimisticFn(allExamplesAtom, {
+  reducer: (c, a) =>
+    AsyncResult.success(
+      current(c).map((example) =>
+        example.id === a.params.id ? { ...example, ...a.payload, updatedAt: new Date() } : example,
+      ),
+    ),
+  fn: ApiClient.mutation("examples", "updateExample"),
+});
+
+export const deleteExampleAtom = Atom.optimisticFn(allExamplesAtom, {
+  reducer: (c, a) => AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
+  fn: ApiClient.mutation("examples", "deleteExample"),
+});
+
+export const useExamplesAtom = () => useAtomValue(allExamplesAtom);
+```
+
+### Service (`src/services/example/index.ts`)
+
+Effect `Context.Service` exposing CRUD for the service. Each method scopes by `userId` so callers can't reach across tenants.
+
+```ts
+export class Examples extends Context.Service<Examples>()("Examples", {
+  make: Effect.gen(function* () {
+    const db = yield* DB;
+
+    const list = Effect.fn("Examples.list")(function* (userId: string) {
+      return yield* db.query.examples.findMany({ where: { userId } });
+    });
+
+    const get = Effect.fn("Examples.get")(function* (userId: string, id: string) {
+      return yield* db.query.examples.findFirst({ where: { id, userId } });
+    });
+
+    const create = Effect.fn("Examples.create")(function* (
+      userId: string,
+      input: typeof CreateExample.Type,
+    ) {
+      const [example] = yield* db
+        .insert(examples)
+        .values({ ...input, userId })
+        .returning();
+      return example;
+    });
+
+    const update = Effect.fn("Examples.update")(function* (
+      userId: string,
+      id: string,
+      input: typeof UpdateExample.Type,
+    ) {
+      const [example] = yield* db
+        .update(examples)
+        .set({ ...input, updatedAt: new Date() })
+        .where(and(eq(examples.id, id), eq(examples.userId, userId)))
+        .returning();
+      return example;
+    });
+
+    const _delete = Effect.fn("Examples.delete")(function* (userId: string, id: string) {
+      const [example] = yield* db
+        .delete(examples)
+        .where(and(eq(examples.id, id), eq(examples.userId, userId)))
+        .returning();
+      return example;
+    });
+
+    return { list, get, create, update, delete: _delete };
+  }),
+}) {
+  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.layer));
+}
+```
+
+## Preferences
+
+- Prefer arrow functions `() => void` over function expressions `function () {}`
+- Never use `as any` or `as Type` in typescript unless absolutely necessary
+
+## Checks
+
+Run these on changes to ensure the code is in good shape.
+
+- `bun type:check`: Check the types of the code.
+- `bun lint`: Check the code for linting errors.
+- `bun fmt`: Format the code.
 
 <!-- intent-skills:start -->
 
