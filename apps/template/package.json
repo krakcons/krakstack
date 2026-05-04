@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3002",
     "build": "vite build",
+    "start": "bun run server.ts",
     "preview": "vite preview",
     "lint": "oxlint",
     "fmt": "oxfmt",
