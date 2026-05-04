@@ -1,6 +1,6 @@
 # KrakStack Template
 
-A full-stack web application template built with TanStack Start, Effect, Drizzle ORM, and Tailwind CSS. Ships with a task CRUD demo featuring optimistic updates, i18n, and auto-generated API documentation.
+A full-stack web application template built with TanStack Start, Effect, Drizzle ORM, and Tailwind CSS. Ships with a task CRUD demo featuring optimistic updates, i18n, and auto-generated API documentation
 
 ## Tech Stack
 
