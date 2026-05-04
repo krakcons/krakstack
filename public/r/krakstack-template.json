@@ -13,10 +13,15 @@
     "tailwindcss",
     "react"
   ],
-  "devDependencies": ["@types/bun", "drizzle-kit@beta", "typescript", "vite"],
+  "devDependencies": [
+    "@types/bun",
+    "drizzle-kit@beta",
+    "typescript",
+    "vite"
+  ],
   "files": [
     {
-      "path": "registry/templates/krakstack-template/README.md",
+      "path": "templates/krakstack-template/README.md",
       "content": "# KrakStack Template\n\nA full-stack TanStack Start template with Effect HTTP, Drizzle PostgreSQL, Paraglide i18n, shadcn UI, and a task CRUD reference implementation.\n\nSource: https://github.com/krakcons/krakstack/tree/main/apps/template\n\n## Use The Template\n\n```bash\ngit clone https://github.com/krakcons/krakstack.git\ncd krakstack/apps/template\nbun install\ncp .env.example .env\nbunx drizzle-kit push\nbun --bun run dev\n```\n\nSee the source README for database details, generated API documentation, and demo-removal notes.\n",
       "type": "registry:file",
       "target": "README.md"

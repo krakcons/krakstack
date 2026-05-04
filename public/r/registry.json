@@ -11,7 +11,7 @@
       "docs": "## Overview\n\n`app-brand` provides a small reusable brand link for app shells, home page headers, and navigation chrome. It keeps the icon container, label, and subtitle visually consistent across pages.\n\n## Usage\n\n```tsx\nimport { AppBrand } from \"@/components/app-brand\";\nimport { Blocks } from \"lucide-react\";\n\n<AppBrand label=\"Krakstack\" subtitle=\"Documentation\" icon={Blocks} />\n```",
       "files": [
         {
-          "path": "registry/components/app-brand/app-brand.tsx",
+          "path": "src/components/app-brand.tsx",
           "type": "registry:component",
           "target": "components/app-brand.tsx"
         }
@@ -26,17 +26,17 @@
       "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, pagination, and column visibility\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```",
       "files": [
         {
-          "path": "registry/components/data-table/data-table.tsx",
+          "path": "src/components/data-table.tsx",
           "type": "registry:component",
           "target": "components/data-table.tsx"
         },
         {
-          "path": "registry/components/data-table/messages/en.json",
+          "path": "src/messages/components/data-table/en.json",
           "type": "registry:file",
           "target": "./messages/components/data-table/en.json"
         },
         {
-          "path": "registry/components/data-table/messages/fr.json",
+          "path": "src/messages/components/data-table/fr.json",
           "type": "registry:file",
           "target": "./messages/components/data-table/fr.json"
         }
@@ -62,17 +62,17 @@
       "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- Localized component messages\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n</form.AppForm>\n```",
       "files": [
         {
-          "path": "registry/components/form/form.tsx",
+          "path": "src/components/form.tsx",
           "type": "registry:component",
           "target": "components/form.tsx"
         },
         {
-          "path": "registry/components/form/messages/en.json",
+          "path": "src/messages/components/form/en.json",
           "type": "registry:file",
           "target": "./messages/components/form/en.json"
         },
         {
-          "path": "registry/components/form/messages/fr.json",
+          "path": "src/messages/components/form/fr.json",
           "type": "registry:file",
           "target": "./messages/components/form/fr.json"
         }
@@ -97,17 +97,17 @@
       "docs": "## Overview\n\n`locale-toggle` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- Localized menu label and locale names\n- Icon-only trigger with accessible screen-reader text\n- Includes component-scoped message files\n\n## Usage\n\n```tsx\nimport { LocaleToggle } from \"@/components/locale-toggle\";\n\n<LocaleToggle />\n```",
       "files": [
         {
-          "path": "registry/components/locale-toggle/locale-toggle.tsx",
+          "path": "src/components/locale-toggle.tsx",
           "type": "registry:component",
           "target": "components/locale-toggle.tsx"
         },
         {
-          "path": "registry/components/locale-toggle/messages/en.json",
+          "path": "src/messages/components/locale-toggle/en.json",
           "type": "registry:file",
           "target": "./messages/components/locale-toggle/en.json"
         },
         {
-          "path": "registry/components/locale-toggle/messages/fr.json",
+          "path": "src/messages/components/locale-toggle/fr.json",
           "type": "registry:file",
           "target": "./messages/components/locale-toggle/fr.json"
         }
@@ -123,17 +123,17 @@
       "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for Better Auth projects. It reads the current user from the app-local `authClient.useSession()`, opens an account dialog for updating the user's name, and signs the user out with an optional redirect.\n\n## Features\n\n- Better Auth `useSession`, `updateUser`, and `signOut` integration\n- Account dialog with the local `form` registry block\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@/components/user-button\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```",
       "files": [
         {
-          "path": "registry/components/user-button/user-button.tsx",
+          "path": "src/components/user-button.tsx",
           "type": "registry:component",
           "target": "components/user-button.tsx"
         },
         {
-          "path": "registry/components/user-button/messages/en.json",
+          "path": "src/messages/components/user-button/en.json",
           "type": "registry:file",
           "target": "./messages/components/user-button/en.json"
         },
         {
-          "path": "registry/components/user-button/messages/fr.json",
+          "path": "src/messages/components/user-button/fr.json",
           "type": "registry:file",
           "target": "./messages/components/user-button/fr.json"
         }
@@ -149,17 +149,17 @@
       "docs": "## Overview\n\n`sign-in` provides a self-contained email/password sign-in card for Better Auth projects. It submits credentials through `authClient.signIn.email()`, displays form-level errors, and links to the sign-up route.\n\n## Features\n\n- Better Auth email/password sign-in\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n- Card-based layout ready to drop into a route\n\n## Usage\n\n```tsx\nimport { SignIn } from \"@/components/sign-in\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignIn />\n</main>\n```",
       "files": [
         {
-          "path": "registry/components/sign-in/sign-in.tsx",
+          "path": "src/components/sign-in.tsx",
           "type": "registry:component",
           "target": "components/sign-in.tsx"
         },
         {
-          "path": "registry/components/sign-in/messages/en.json",
+          "path": "src/messages/components/sign-in/en.json",
           "type": "registry:file",
           "target": "./messages/components/sign-in/en.json"
         },
         {
-          "path": "registry/components/sign-in/messages/fr.json",
+          "path": "src/messages/components/sign-in/fr.json",
           "type": "registry:file",
           "target": "./messages/components/sign-in/fr.json"
         }
@@ -175,17 +175,17 @@
       "docs": "## Overview\n\n`sign-up` provides a self-contained account creation card for Better Auth projects. It creates users through `authClient.signUp.email()`, displays form-level errors, and links back to the sign-in route.\n\n## Features\n\n- Better Auth email/password registration\n- Name, email, and password fields\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n\n## Usage\n\n```tsx\nimport { SignUp } from \"@/components/sign-up\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignUp />\n</main>\n```",
       "files": [
         {
-          "path": "registry/components/sign-up/sign-up.tsx",
+          "path": "src/components/sign-up.tsx",
           "type": "registry:component",
           "target": "components/sign-up.tsx"
         },
         {
-          "path": "registry/components/sign-up/messages/en.json",
+          "path": "src/messages/components/sign-up/en.json",
           "type": "registry:file",
           "target": "./messages/components/sign-up/en.json"
         },
         {
-          "path": "registry/components/sign-up/messages/fr.json",
+          "path": "src/messages/components/sign-up/fr.json",
           "type": "registry:file",
           "target": "./messages/components/sign-up/fr.json"
         }
@@ -198,30 +198,30 @@
       "type": "registry:lib",
       "title": "Krakstack Auth",
       "description": "A Better Auth foundation for TanStack Start that connects to Krakstack Auth via OAuth, with server config, React client, an /api/auth route handler, and an Effect auth service with HttpApiMiddleware.",
-      "docs": "## Overview\n\n`auth` installs the app-level Better Auth foundation used by the sign-in, sign-up, and user-button blocks. It connects to Krakstack Auth as an OAuth provider using the generic OAuth plugin with PKCE, and includes the server config, React client, the TanStack Start API route that forwards `/api/auth/*` requests to Better Auth, and an Effect auth service with HTTP API middleware for protecting Effect API endpoints.\n\n## Included Files\n\n- `services/auth/config.ts` - Better Auth server setup with the Krakstack Auth OAuth provider\n- `services/auth/client/index.ts` - Better Auth React client with generic OAuth support\n- `routes/api/$.tsx` - TanStack Start server route for `/api/auth/*`\n- `services/auth/index.ts` - Effect `Auth` service with `getSession` and `requireUser` methods\n- `services/auth/middleware.ts` - Effect `AuthMiddleware` that provides `CurrentUser` to downstream handlers\n\n## Usage\n\nClient-side session access:\n\n```tsx\nimport { authClient } from \"@/services/auth/client\";\n\nconst { data: session } = authClient.useSession();\n```\n\nServer code can import the configured auth instance:\n\n```ts\nimport { auth } from \"@/services/auth/config\";\n```\n\nTo initiate OAuth sign-in with Krakstack Auth:\n\n```tsx\nauthClient.signIn.oauth2({ providerId: \"krakstack-auth\", callbackURL: \"/dashboard\" });\n```\n\nApply the auth middleware to an Effect HTTP API group:\n\n```ts\nimport { AuthMiddleware } from \"@/services/auth/middleware\";\n\nconst MyGroup = HttpApiGroup.make(\"my-group\")\n  .middleware(AuthMiddleware)\n  // ...endpoints\n```\n\nAccess the current user in a handler:\n\n```ts\nimport { CurrentUser } from \"@/services/auth/middleware\";\n\nhandlers.handle(\"myEndpoint\", () =>\n  Effect.gen(function* () {\n    const user = yield* CurrentUser;\n    // user.id, user.name, user.email\n  }),\n);\n```\n\n## Environment Variables\n\n- `BETTER_AUTH_SECRET` - Secret used by Better Auth\n- `BETTER_AUTH_URL` - Public auth URL, for example `http://localhost:3000`\n- `KRAKSTACK_AUTH_CLIENT_ID` - OAuth client ID registered in Krakstack Auth\n- `KRAKSTACK_AUTH_CLIENT_SECRET` - OAuth client secret registered in Krakstack Auth\n- `KRAKSTACK_AUTH_URL` - Krakstack Auth issuer URL, for example `http://localhost:4000`",
+      "docs": "## Overview\n\n`auth` installs the app-level Better Auth foundation used by the sign-in, sign-up, and user-button blocks. It connects to Krakstack Auth as an OAuth provider using the generic OAuth plugin with PKCE, and includes the server config, React client, the TanStack Start API route that forwards `/api/auth/*` requests to Better Auth, and an Effect auth service with HTTP API middleware for protecting Effect API endpoints.\n\n## Included Files\n\n- `services/auth/config.ts` - Better Auth server setup with the Krakstack Auth OAuth provider\n- `services/auth/client/index.ts` - Better Auth React client with generic OAuth support\n- `routes/api/auth/$.tsx` - TanStack Start server route for `/api/auth/*`\n- `services/auth/index.ts` - Effect `Auth` service with `getSession` and `requireUser` methods\n- `services/auth/middleware.ts` - Effect `AuthMiddleware` that provides `CurrentUser` to downstream handlers\n\n## Usage\n\nClient-side session access:\n\n```tsx\nimport { authClient } from \"@/services/auth/client\";\n\nconst { data: session } = authClient.useSession();\n```\n\nServer code can import the configured auth instance:\n\n```ts\nimport { auth } from \"@/services/auth/config\";\n```\n\nTo initiate OAuth sign-in with Krakstack Auth:\n\n```tsx\nauthClient.signIn.oauth2({ providerId: \"krakstack-auth\", callbackURL: \"/dashboard\" });\n```\n\nApply the auth middleware to an Effect HTTP API group:\n\n```ts\nimport { AuthMiddleware } from \"@/services/auth/middleware\";\n\nconst MyGroup = HttpApiGroup.make(\"my-group\")\n  .middleware(AuthMiddleware)\n  // ...endpoints\n```\n\nAccess the current user in a handler:\n\n```ts\nimport { CurrentUser } from \"@/services/auth/middleware\";\n\nhandlers.handle(\"myEndpoint\", () =>\n  Effect.gen(function* () {\n    const user = yield* CurrentUser;\n    // user.id, user.name, user.email\n  }),\n);\n```\n\n## Environment Variables\n\n- `BETTER_AUTH_SECRET` - Secret used by Better Auth\n- `BETTER_AUTH_URL` - Public a... (line truncated to 2000 chars)",
       "files": [
         {
-          "path": "registry/auth/services/auth/config.ts",
+          "path": "src/services/auth/config.ts",
           "type": "registry:file",
           "target": "services/auth/config.ts"
         },
         {
-          "path": "registry/auth/services/auth/client/index.ts",
+          "path": "src/services/auth/client/index.ts",
           "type": "registry:file",
           "target": "services/auth/client/index.ts"
         },
         {
-          "path": "registry/auth/routes/auth.tsx",
+          "path": "src/routes/api/auth/$.tsx",
           "type": "registry:file",
           "target": "routes/api/auth/$.tsx"
         },
         {
-          "path": "registry/auth/services/index.ts",
+          "path": "src/services/auth/index.ts",
           "type": "registry:file",
           "target": "services/auth/index.ts"
         },
         {
-          "path": "registry/auth/services/middleware.ts",
+          "path": "src/services/auth/middleware.ts",
           "type": "registry:file",
           "target": "services/auth/middleware.ts"
         }
@@ -239,7 +239,7 @@
       "devDependencies": ["drizzle-kit@rc", "@types/pg"],
       "files": [
         {
-          "path": "registry/services/database.ts",
+          "path": "src/services/database.ts",
           "type": "registry:file",
           "target": "services/database.ts"
         }
@@ -254,7 +254,7 @@
       "dependencies": ["effect@beta"],
       "files": [
         {
-          "path": "registry/services/opentelemetry.ts",
+          "path": "src/services/opentelemetry.ts",
           "type": "registry:file",
           "target": "services/opentelemetry.ts"
         }
@@ -268,7 +268,7 @@
       "docs": "## Overview\n\n`krakstack-template` is the starter app used for new KrakStack projects. It combines TanStack Start, Effect, Drizzle ORM, PostgreSQL, Tailwind CSS, shadcn UI, Better Auth wiring, and Paraglide i18n in a working task CRUD application.\n\n## GitHub\n\nView the template source on GitHub: [apps/template](https://github.com/krakcons/krakstack/tree/main/apps/template).\n\n## Included Patterns\n\n- TanStack Start with file-based routing and SSR\n- Effect HTTP API with generated OpenAPI and Scalar documentation\n- Drizzle PostgreSQL schema and migration setup\n- Effect services for database and OpenTelemetry\n- Effect Atom client state with optimistic task mutations\n- Paraglide English/French i18n and localized routing\n- shadcn UI primitives plus KrakStack data table, form, locale toggle, app brand, and sidebar layout\n\n## Usage\n\nClone or copy the template from GitHub, then install and run it with Bun:\n\n```bash\ngit clone https://github.com/krakcons/krakstack.git\ncd krakstack/apps/template\nbun install\ncp .env.example .env\nbunx drizzle-kit push\nbun --bun run dev\n```\n\nOpen `http://localhost:3000` after the dev server starts. See the template README for database details and demo-removal notes.",
       "files": [
         {
-          "path": "registry/templates/krakstack-template/README.md",
+          "path": "templates/krakstack-template/README.md",
           "type": "registry:file",
           "target": "README.md"
         }
@@ -290,10 +290,10 @@
       "type": "registry:block",
       "title": "Sidebar Layout",
       "description": "A sidebar-based layout with configurable navigation groups, a brand header, page header component, locale toggle, and user button.",
-      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with brand header and navigation groups, a page header component with badges and actions, and a locale toggle in the top bar.\n\n## Features\n\n- Configurable sidebar with brand header and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Customizable header end content (defaults to `LocaleToggle` and `UserButton`)\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/sidebar-layout\";\nimport { LayoutDashboard, Users } from \"lucide-react\";\n\nconst brand = {\n  label: () => \"My App\",\n  subtitle: () => \"Admin Panel\",\n  icon: LayoutDashboard,\n  href: \"/admin\",\n};\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout brand={brand} groups={groups} />\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout brand={brand} groups={groups}>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
+      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with brand header and navigation groups, a page header component with optional badge, description, and actions, and a locale toggle in the top bar.\n\n## Features\n\n- Configurable sidebar with brand header and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Customizable header end content (defaults to `LocaleToggle` and `UserButton`)\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/sidebar-layout\";\nimport { LayoutDashboard, Users } from \"lucide-react\";\n\nconst brand = {\n  label: () => \"My App\",\n  subtitle: () => \"Admin Panel\",\n  icon: LayoutDashboard,\n  href: \"/admin\",\n};\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout brand={brand} groups={groups} />\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout brand={brand} groups={groups}>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
       "files": [
         {
-          "path": "registry/components/sidebar-layout/sidebar-layout.tsx",
+          "path": "src/components/sidebar-layout.tsx",
           "type": "registry:component",
           "target": "components/sidebar-layout.tsx"
         }
