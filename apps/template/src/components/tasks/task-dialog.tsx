@@ -3,7 +3,7 @@ import { useAtomSet } from "@effect/atom-react";
 
 import { useAppForm } from "@/components/form";
 import { createTaskAtom, updateTaskAtom, type Task } from "@/lib/atoms/tasks";
-import { CreateTask } from "@/services/task/schema";
+import { CreateTaskSchema } from "@/services/task/schema";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,9 +45,9 @@ export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }
     defaultValues: {
       title: task?.title ?? "",
       description: task?.description ?? "",
-    } as (typeof CreateTask)["Encoded"],
+    } as (typeof CreateTaskSchema)["Encoded"],
     validators: {
-      onSubmit: Schema.toStandardSchemaV1(CreateTask),
+      onSubmit: Schema.toStandardSchemaV1(CreateTaskSchema),
     },
     onSubmit: async ({ value }) => {
       setError("");

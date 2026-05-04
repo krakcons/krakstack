@@ -1,28 +1,33 @@
 import { Schema } from "effect";
 import { HttpApi, HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
 
-import { CreateTask, Task, UpdateTask, TaskIdParams } from "@/services/task/schema";
+import {
+  CreateTaskSchema,
+  TaskIdParamsSchema,
+  TaskSchema,
+  UpdateTaskSchema,
+} from "@/services/task/schema";
 
 export const Api = HttpApi.make("Api")
   .add(
     HttpApiGroup.make("tasks")
       .add(
         HttpApiEndpoint.get("listTasks", "/tasks", {
-          success: Schema.Array(Task),
+          success: Schema.Array(TaskSchema),
           error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
         }),
       )
       .add(
         HttpApiEndpoint.post("createTask", "/tasks", {
-          payload: CreateTask,
-          success: Task,
+          payload: CreateTaskSchema,
+          success: TaskSchema,
           error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
         }),
       )
       .add(
         HttpApiEndpoint.get("getTask", "/tasks/:id", {
-          params: TaskIdParams,
-          success: Task,
+          params: TaskIdParamsSchema,
+          success: TaskSchema,
           error: [
             HttpApiError.Unauthorized,
             HttpApiError.NotFound,
@@ -32,9 +37,9 @@ export const Api = HttpApi.make("Api")
       )
       .add(
         HttpApiEndpoint.patch("updateTask", "/tasks/:id", {
-          params: TaskIdParams,
-          payload: UpdateTask,
-          success: Task,
+          params: TaskIdParamsSchema,
+          payload: UpdateTaskSchema,
+          success: TaskSchema,
           error: [
             HttpApiError.Unauthorized,
             HttpApiError.NotFound,
@@ -44,8 +49,8 @@ export const Api = HttpApi.make("Api")
       )
       .add(
         HttpApiEndpoint.delete("deleteTask", "/tasks/:id", {
-          params: TaskIdParams,
-          success: Task,
+          params: TaskIdParamsSchema,
+          success: TaskSchema,
           error: [
             HttpApiError.Unauthorized,
             HttpApiError.NotFound,

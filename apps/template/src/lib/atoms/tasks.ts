@@ -2,11 +2,11 @@ import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { ApiClient } from "@/lib/api-client";
-import { CreateTask, Task as TaskSchema, UpdateTask } from "@/services/task/schema";
+import { CreateTaskSchema, TaskSchema, UpdateTaskSchema } from "@/services/task/schema";
 
 export type Task = typeof TaskSchema.Type;
-export type CreateTaskPayload = typeof CreateTask.Type;
-export type UpdateTaskPayload = typeof UpdateTask.Type;
+export type CreateTaskPayload = typeof CreateTaskSchema.Type;
+export type UpdateTaskPayload = typeof UpdateTaskSchema.Type;
 
 const serverTasksAtom = ApiClient.query("tasks", "listTasks", {
   timeToLive: "5 minutes",
@@ -51,12 +51,11 @@ export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
         task.id === args.params.id
           ? {
               ...task,
-              ...args.payload,
+              title: args.payload.title ?? task.title,
               description:
                 args.payload.description !== undefined
                   ? args.payload.description
                   : task.description,
-              title: args.payload.title ?? task.title,
               completed: args.payload.completed ?? task.completed,
               updatedAt: new Date(),
             }

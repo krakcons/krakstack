@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 
 import { tasks } from "@/db/schema";
-import { CreateTask, UpdateTask } from "@/services/task/schema";
+import { CreateTaskSchema, UpdateTaskSchema } from "@/services/task/schema";
 import { DB } from "@/services/database";
 
 export class Tasks extends Context.Service<Tasks>()("Tasks", {
@@ -32,7 +32,7 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
 
     const create = Effect.fn("Tasks.create")(function* (
       userId: string,
-      input: typeof CreateTask.Type,
+      input: typeof CreateTaskSchema.Type,
     ) {
       const [task] = yield* db
         .insert(tasks)
@@ -47,7 +47,7 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
     const update = Effect.fn("Tasks.update")(function* (
       userId: string,
       id: string,
-      input: typeof UpdateTask.Type,
+      input: typeof UpdateTaskSchema.Type,
     ) {
       const [task] = yield* db
         .update(tasks)

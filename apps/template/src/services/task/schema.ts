@@ -1,21 +1,21 @@
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+} from "drizzle-orm/effect-schema";
 import { Schema } from "effect";
 
-export const TaskSchema = Schema.Struct({
-  id: Schema.String,
-  userId: Schema.String,
-  title: Schema.String,
-  description: Schema.NullOr(Schema.String),
-  completed: Schema.Boolean,
-  createdAt: Schema.Date,
-  updatedAt: Schema.Date,
-}).annotate({ identifier: "Task" });
+import { tasks } from "@/db/schema";
 
-export const CreateTaskSchema = Schema.Struct({
+export const TaskSchema = createSelectSchema(tasks).annotate({ identifier: "Task" });
+
+export const CreateTaskSchema = createInsertSchema(tasks, {
+  userId: Schema.optional(Schema.String),
   title: Schema.NonEmptyString,
   description: Schema.optional(Schema.String),
 }).annotate({ identifier: "CreateTask" });
 
-export const UpdateTaskSchema = Schema.Struct({
+export const UpdateTaskSchema = createUpdateSchema(tasks, {
   title: Schema.optional(Schema.NonEmptyString),
   description: Schema.optional(Schema.NullOr(Schema.String)),
   completed: Schema.optional(Schema.Boolean),
