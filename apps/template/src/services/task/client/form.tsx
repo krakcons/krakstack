@@ -1,10 +1,8 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { useAtomSet } from "@effect/atom-react";
+import { Schema } from "effect";
 
 import { useAppForm } from "@/components/form";
-import { createTaskAtom, updateTaskAtom, type Task } from "@/lib/atoms/tasks";
-import { CreateTaskSchema } from "@/services/task/schema";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -15,9 +13,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Schema } from "effect";
+import { Button } from "@/components/ui/button";
+import { CreateTaskSchema } from "@/services/task/schema";
 
-type TaskDialogProps = {
+import { createTaskAtom, updateTaskAtom, type Task } from "./atom";
+
+type Props = {
   task?: Task | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -32,7 +33,7 @@ const getErrorMessage = (isEditing: boolean, error: unknown) => {
   return isEditing ? "Failed to save task." : "Failed to create task.";
 };
 
-export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }: TaskDialogProps) {
+export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }: Props) {
   const createTask = useAtomSet(createTaskAtom);
   const updateTask = useAtomSet(updateTaskAtom);
   const [internalOpen, setInternalOpen] = useState(false);

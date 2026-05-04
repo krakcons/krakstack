@@ -9,7 +9,6 @@ import {
   DataTable,
   DataTableColumnHeader,
 } from "@/components/data-table";
-import { TaskDialog } from "@/components/tasks/task-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +20,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { deleteTaskAtom, updateTaskAtom, useTasksAtom, type Task } from "@/lib/atoms/tasks";
+
+import { TaskDialog } from "./form";
+import { deleteTaskAtom, updateTaskAtom, useTasksAtom, type Task } from "./atom";
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat(undefined, {

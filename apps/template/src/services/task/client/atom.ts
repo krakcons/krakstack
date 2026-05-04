@@ -13,23 +13,20 @@ const serverTasksAtom = ApiClient.query("tasks", "listTasks", {
   reactivityKeys: ["tasks"],
 });
 
-type TasksResult = AsyncResult.AsyncResult<ReadonlyArray<Task>, unknown>;
-
-const currentTasks = (result: TasksResult): Array<Task> =>
-  AsyncResult.match(result, {
+const current = (r: AsyncResult.AsyncResult<ReadonlyArray<Task>, unknown>) =>
+  AsyncResult.match(r, {
     onInitial: () => [],
     onFailure: () => [],
     onSuccess: ({ value }) => Array.from(value),
   });
 
-const optimisticTask = (payload: CreateTaskPayload): Task => {
+const optimisticTask = (p: CreateTaskPayload): Task => {
   const now = new Date();
-
   return {
     id: `optimistic-${crypto.randomUUID()}`,
     userId: "optimistic",
-    title: payload.title,
-    description: payload.description ?? null,
+    title: p.title,
+    description: p.description ?? null,
     completed: false,
     createdAt: now,
     updatedAt: now,
@@ -39,24 +36,21 @@ const optimisticTask = (payload: CreateTaskPayload): Task => {
 export const allTasksAtom = Atom.optimistic(serverTasksAtom);
 
 export const createTaskAtom = Atom.optimisticFn(allTasksAtom, {
-  reducer: (current, args) =>
-    AsyncResult.success([optimisticTask(args.payload), ...currentTasks(current)]),
+  reducer: (c, a) => AsyncResult.success([optimisticTask(a.payload), ...current(c)]),
   fn: ApiClient.mutation("tasks", "createTask"),
 });
 
 export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
-  reducer: (current, args) =>
+  reducer: (c, a) =>
     AsyncResult.success(
-      currentTasks(current).map((task) =>
-        task.id === args.params.id
+      current(c).map((task) =>
+        task.id === a.params.id
           ? {
               ...task,
-              title: args.payload.title ?? task.title,
+              title: a.payload.title ?? task.title,
               description:
-                args.payload.description !== undefined
-                  ? args.payload.description
-                  : task.description,
-              completed: args.payload.completed ?? task.completed,
+                a.payload.description !== undefined ? a.payload.description : task.description,
+              completed: a.payload.completed ?? task.completed,
               updatedAt: new Date(),
             }
           : task,
@@ -66,8 +60,7 @@ export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
 });
 
 export const deleteTaskAtom = Atom.optimisticFn(allTasksAtom, {
-  reducer: (current, args) =>
-    AsyncResult.success(currentTasks(current).filter((task) => task.id !== args.params.id)),
+  reducer: (c, a) => AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
   fn: ApiClient.mutation("tasks", "deleteTask"),
 });
 

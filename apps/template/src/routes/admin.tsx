@@ -3,8 +3,8 @@ import { CheckSquare, LayoutDashboard } from "lucide-react";
 
 import { TableSearchSchema } from "@/components/data-table";
 import { SidebarLayout, SidebarPageHeader } from "@/components/sidebar-layout";
-import { TaskDialog } from "@/components/tasks/task-dialog";
-import { TaskTable } from "@/components/tasks/task-table";
+import { TaskDialog } from "@/services/task/client/form";
+import { TaskTable } from "@/services/task/client/table";
 import { Button } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/session";
 import { m } from "@/paraglide/messages";
