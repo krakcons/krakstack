@@ -286,6 +286,21 @@
       "devDependencies": ["@types/bun", "drizzle-kit@beta", "typescript", "vite"]
     },
     {
+      "name": "agents",
+      "type": "registry:lib",
+      "title": "AGENTS.md",
+      "description": "Project configuration and coding guidelines for AI agents, covering i18n, service patterns, Effect schemas, HTTP API groups, optimistic atoms, and lint/typecheck commands.",
+      "docs": "## Overview\n\n`agents` installs the `AGENTS.md` file that guides AI agents working in a KrakStack project. It covers i18n conventions, code architecture, Effect service patterns, schema and API documentation rules, and the commands used to validate changes.\n\n## Sections\n\n- **i18n** — Paraglide.js conventions, message file ownership, and English/French requirements\n- **Code Architecture** — Frontend (TanStack Start, shadcn, Effect atoms) and backend (Effect, Drizzle, PostgreSQL) structure\n- **Patterns** — Server services, frontend client components, database schema, API composition, schema annotations, and documentation rules\n- **Examples** — Effect schema, API group, API builder, form dialog, data table, optimistic atom, Effect service, and API entry point code\n- **Preferences** — Arrow functions, no type assertions\n- **Checks** — `bun type:check`, `bun lint`, `bun fmt`\n\n## Usage\n\nPlace `AGENTS.md` at the project root so agent tooling can read it automatically:\n\n```bash\nnpx shadcn@latest add https://krakstack.net/r/agents.json\n```\n\nAfter installation, open `AGENTS.md` and adjust the folder structure, patterns, and check commands to match your project.",
+      "files": [
+        {
+          "path": "AGENTS.md",
+          "type": "registry:file",
+          "target": "AGENTS.md"
+        }
+      ],
+      "dependencies": []
+    },
+    {
       "name": "sidebar-layout",
       "type": "registry:block",
       "title": "Sidebar Layout",

@@ -5,6 +5,7 @@ import {
   DataTablePreview,
   TableSearchSchema,
 } from "@/components/registry-previews/data-table-preview";
+import { AgentsPreview } from "@/components/registry-previews/agents-preview";
 import { FormPreview } from "@/components/registry-previews/form-preview";
 import { SignInPreview } from "@/components/registry-previews/sign-in-preview";
 import { SignUpPreview } from "@/components/registry-previews/sign-up-preview";
@@ -120,6 +121,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <SignInPreview />
     ) : slug === "sign-up" ? (
       <SignUpPreview />
+    ) : slug === "agents" ? (
+      <AgentsPreview />
     ) : null;
 
   if (!preview) return null;

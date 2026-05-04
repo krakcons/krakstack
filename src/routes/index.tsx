@@ -7,6 +7,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Activity,
   Blocks,
+  Bot,
   Database,
   FileCode2,
   Globe,
@@ -30,6 +31,7 @@ const iconByName = {
   auth: Shield,
   "service-database": Database,
   "service-opentelemetry": Activity,
+  agents: Bot,
   "krakstack-template": FileCode2,
 } as const;
 
