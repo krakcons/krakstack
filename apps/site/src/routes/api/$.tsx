@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth/config";
 
 const handler = (request: Request) => {
   const { pathname } = new URL(request.url);

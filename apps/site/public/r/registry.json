@@ -197,27 +197,37 @@
       "name": "krakstack-auth",
       "type": "registry:lib",
       "title": "Krakstack Auth",
-      "description": "A Better Auth foundation for TanStack Start that connects to Krakstack Auth via OAuth, with server config, React client, and an /api/auth route handler.",
-      "docs": "## Overview\n\n`auth` installs the app-level Better Auth foundation used by the sign-in, sign-up, and user-button blocks. It connects to Krakstack Auth as an OAuth provider using the generic OAuth plugin with PKCE, and includes the server config, React client, and the TanStack Start API route that forwards `/api/auth/*` requests to Better Auth.\n\n## Included Files\n\n- `lib/auth.ts` - Better Auth server setup with the Krakstack Auth OAuth provider\n- `lib/auth-client.ts` - Better Auth React client with generic OAuth support\n- `routes/api/$.tsx` - TanStack Start server route for `/api/auth/*`\n\n## Usage\n\n```tsx\nimport { authClient } from \"@/lib/auth-client\";\n\nconst { data: session } = authClient.useSession();\n```\n\nServer code can import the configured auth instance:\n\n```ts\nimport { auth } from \"@/lib/auth\";\n```\n\nTo initiate OAuth sign-in with Krakstack Auth:\n\n```tsx\nauthClient.signIn.oauth2({ providerId: \"krakstack-auth\", callbackURL: \"/dashboard\" });\n```\n\n## Environment Variables\n\n- `BETTER_AUTH_SECRET` - Secret used by Better Auth\n- `BETTER_AUTH_URL` - Public auth URL, for example `http://localhost:3000`\n- `KRAKSTACK_AUTH_CLIENT_ID` - OAuth client ID registered in Krakstack Auth\n- `KRAKSTACK_AUTH_CLIENT_SECRET` - OAuth client secret registered in Krakstack Auth\n- `KRAKSTACK_AUTH_URL` - Krakstack Auth issuer URL, for example `http://localhost:4000`",
+      "description": "A Better Auth foundation for TanStack Start that connects to Krakstack Auth via OAuth, with server config, React client, an /api/auth route handler, and an Effect auth service with HttpApiMiddleware.",
+      "docs": "## Overview\n\n`auth` installs the app-level Better Auth foundation used by the sign-in, sign-up, and user-button blocks. It connects to Krakstack Auth as an OAuth provider using the generic OAuth plugin with PKCE, and includes the server config, React client, the TanStack Start API route that forwards `/api/auth/*` requests to Better Auth, and an Effect auth service with HTTP API middleware for protecting Effect API endpoints.\n\n## Included Files\n\n- `services/auth/config.ts` - Better Auth server setup with the Krakstack Auth OAuth provider\n- `services/auth/client/index.ts` - Better Auth React client with generic OAuth support\n- `routes/api/$.tsx` - TanStack Start server route for `/api/auth/*`\n- `services/auth/index.ts` - Effect `Auth` service with `getSession` and `requireUser` methods\n- `services/auth/middleware.ts` - Effect `AuthMiddleware` that provides `CurrentUser` to downstream handlers\n\n## Usage\n\nClient-side session access:\n\n```tsx\nimport { authClient } from \"@/services/auth/client\";\n\nconst { data: session } = authClient.useSession();\n```\n\nServer code can import the configured auth instance:\n\n```ts\nimport { auth } from \"@/services/auth/config\";\n```\n\nTo initiate OAuth sign-in with Krakstack Auth:\n\n```tsx\nauthClient.signIn.oauth2({ providerId: \"krakstack-auth\", callbackURL: \"/dashboard\" });\n```\n\nApply the auth middleware to an Effect HTTP API group:\n\n```ts\nimport { AuthMiddleware } from \"@/services/auth/middleware\";\n\nconst MyGroup = HttpApiGroup.make(\"my-group\")\n  .middleware(AuthMiddleware)\n  // ...endpoints\n```\n\nAccess the current user in a handler:\n\n```ts\nimport { CurrentUser } from \"@/services/auth/middleware\";\n\nhandlers.handle(\"myEndpoint\", () =>\n  Effect.gen(function* () {\n    const user = yield* CurrentUser;\n    // user.id, user.name, user.email\n  }),\n);\n```\n\n## Environment Variables\n\n- `BETTER_AUTH_SECRET` - Secret used by Better Auth\n- `BETTER_AUTH_URL` - Public auth URL, for example `http://localhost:3000`\n- `KRAKSTACK_AUTH_CLIENT_ID` - OAuth client ID registered in Krakstack Auth\n- `KRAKSTACK_AUTH_CLIENT_SECRET` - OAuth client secret registered in Krakstack Auth\n- `KRAKSTACK_AUTH_URL` - Krakstack Auth issuer URL, for example `http://localhost:4000`",
       "files": [
         {
-          "path": "registry/auth/lib/auth.ts",
+          "path": "registry/auth/services/auth/config.ts",
           "type": "registry:file",
-          "target": "lib/auth.ts"
+          "target": "services/auth/config.ts"
         },
         {
-          "path": "registry/auth/lib/auth-client.ts",
+          "path": "registry/auth/services/auth/client/index.ts",
           "type": "registry:file",
-          "target": "lib/auth-client.ts"
+          "target": "services/auth/client/index.ts"
         },
         {
           "path": "registry/auth/routes/auth.tsx",
           "type": "registry:file",
           "target": "routes/api/auth/$.tsx"
+        },
+        {
+          "path": "registry/auth/services/index.ts",
+          "type": "registry:file",
+          "target": "services/auth/index.ts"
+        },
+        {
+          "path": "registry/auth/services/middleware.ts",
+          "type": "registry:file",
+          "target": "services/auth/middleware.ts"
         }
       ],
       "registryDependencies": [],
-      "dependencies": ["@tanstack/react-router", "better-auth"]
+      "dependencies": ["@tanstack/react-router", "better-auth", "effect@beta"]
     },
     {
       "name": "service-database",
