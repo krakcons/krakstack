@@ -71,7 +71,7 @@ export const UserButton = ({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="icon" className="rounded-full">
+            <Button variant="outline" size="icon">
               <UserIcon className="size-4.5" />
               <span className="sr-only">{m.user_button_aria_label()}</span>
             </Button>
