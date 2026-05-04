@@ -36,7 +36,7 @@ The backend is an effect application that uses:
     - `ui/` — Shadcn UI primitives (managed by shadcn CLI)
   - `db/` — Drizzle schema definitions (app schema + auth schema)
   - `hooks/` — Shared React hooks
-  - `lib/` — Shared utilities, auth config, registry helpers
+  - `lib/` — Shared utilities, auth config
     - `atoms/` — Effect atom definitions
   - `messages/` — i18n source files
     - `global/` — Hand-written translations (en.json, fr.json) — edit these
@@ -45,7 +45,7 @@ The backend is an effect application that uses:
   - `paraglide/` — Generated paraglide runtime — do not edit
   - `routes/` — TanStack Start file-based routes
     - `api/` — API catch-all route
-    - `docs/` — Documentation pages, including registry slug routes
+    - `docs/` — Documentation pages
   - `services/` — Effect service definitions and handlers
 
 ## Patterns
@@ -98,7 +98,7 @@ Define the API within `src/api.ts` and merge the api groups found in services in
 
 ### Schema
 
-All schemas should be made using effect schema.
+All schemas should be generated from the drizzle table definition using `drizzle-orm/effect-schema` (`createSelectSchema`, `createInsertSchema`, `createUpdateSchema`), then refined/overridden as needed with Effect `Schema`.
 
 Do not use `zod` or other validation libraries.
 
@@ -110,6 +110,185 @@ Whenever you make an API or Schema, ensure it is documented.
 - Schema: Use `Schema.annotate({ ... })` to add a title, identifier, description, and examples to the schema.
 
 ## Examples
+
+### Schema (`src/services/example/schema.ts`)
+
+Effect schemas for a service entity with CRUD payloads. Use `drizzle-orm/effect-schema` to generate schemas from the drizzle table definition, then refine/override as needed. `CreateExample`/`UpdateExample` are input types, `ExampleIdParamsSchema` handles route params. Use `Schema.toStandardSchemaV1` for form validation interop.
+
+```ts
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+} from "drizzle-orm/effect-schema";
+import { Schema } from "effect";
+
+import { examples } from "@/db/schema";
+
+export const ExampleSchema = createSelectSchema(examples).annotate({ identifier: "Example" });
+
+export const CreateExampleSchema = createInsertSchema(examples, {
+  name: Schema.NonEmptyString,
+  description: Schema.optional(Schema.String),
+}).annotate({ identifier: "CreateExample" });
+
+export const UpdateExampleSchema = createUpdateSchema(examples, {
+  name: Schema.NonEmptyString,
+  description: Schema.optional(Schema.NullOr(Schema.String)),
+  active: Schema.optional(Schema.Boolean),
+}).annotate({ identifier: "UpdateExample" });
+
+export const ExampleIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate({
+  identifier: "ExampleIdParamsSchema",
+});
+
+export const ExampleSchemaStandard = Schema.toStandardSchemaV1(ExampleSchema);
+```
+
+### API Group (`src/services/example/api.group.ts`)
+
+Defines the API contract with `HttpApiGroup`, routes, success/error schemas, and request/response types.
+
+```ts
+import { Schema } from "effect";
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
+
+import { CreateExample, Example, ExampleIdParams, UpdateExample } from "./schema";
+
+export const ExamplesApiGroup = HttpApiGroup.make("examples")
+  .add(
+    HttpApiEndpoint.get("listExamples", "/examples", {
+      success: Schema.Array(Example),
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.post("createExample", "/examples", {
+      payload: CreateExample,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.get("getExample", "/examples/:id", {
+      params: ExampleIdParams,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.patch("updateExample", "/examples/:id", {
+      params: ExampleIdParams,
+      payload: UpdateExample,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  )
+  .add(
+    HttpApiEndpoint.delete("deleteExample", "/examples/:id", {
+      params: ExampleIdParams,
+      success: Example,
+      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+    }),
+  );
+```
+
+### API Builder (`src/services/example/api.builder.ts`)
+
+Exposes the service through the API using `HttpApiBuilder.group`, wiring handlers to the API group endpoints with auth and error mapping.
+
+```ts
+import { Effect } from "effect";
+import { HttpServerRequest } from "effect/unstable/http";
+import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
+
+import { Api } from "@/api";
+import { auth } from "@/lib/auth";
+import { Examples } from "@/services/example";
+
+const internalServerError = () => new HttpApiError.InternalServerError({});
+
+const requireUserId = Effect.gen(function* () {
+  const request = yield* HttpServerRequest.HttpServerRequest;
+  const session = yield* Effect.tryPromise({
+    try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
+    catch: internalServerError,
+  });
+
+  if (!session) {
+    return yield* new HttpApiError.Unauthorized({});
+  }
+
+  return session.user.id;
+});
+
+export const examplesHandler = HttpApiBuilder.group(Api, "examples", (handlers) =>
+  handlers
+    .handle("listExamples", () =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        return yield* examples.list(userId).pipe(Effect.mapError(internalServerError));
+      }),
+    )
+    .handle("getExample", ({ params }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+        const example = yield* examples
+          .get(userId, params.id)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.NotFound({});
+
+        return example;
+      }),
+    )
+    .handle("createExample", ({ payload }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        const example = yield* examples
+          .create(userId, payload)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.InternalServerError({});
+
+        return example;
+      }),
+    )
+    .handle("updateExample", ({ params, payload }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        const example = yield* examples
+          .update(userId, params.id, payload)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.NotFound({});
+
+        return example;
+      }),
+    )
+    .handle("deleteExample", ({ params }) =>
+      Effect.gen(function* () {
+        const examples = yield* Examples;
+        const userId = yield* requireUserId;
+
+        const example = yield* examples
+          .delete(userId, params.id)
+          .pipe(Effect.mapError(internalServerError));
+
+        if (!example) return yield* new HttpApiError.NotFound({});
+
+        return example;
+      }),
+    ),
+);
+```
 
 ### Form (`src/services/example/client/form.tsx`)
 
@@ -350,6 +529,11 @@ export class Examples extends Context.Service<Examples>()("Examples", {
   static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.layer));
 }
 ```
+
+## Preferences
+
+- Prefer arrow functions `() => void` over function expressions `function () {}`
+- Never use `as any` or `as Type` in typescript unless absolutely necessary
 
 ## Checks
 

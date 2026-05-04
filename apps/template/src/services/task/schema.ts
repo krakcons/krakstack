@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-export const Task = Schema.Struct({
+export const TaskSchema = Schema.Struct({
   id: Schema.String,
   userId: Schema.String,
   title: Schema.String,
@@ -10,17 +10,19 @@ export const Task = Schema.Struct({
   updatedAt: Schema.Date,
 }).annotate({ identifier: "Task" });
 
-export const CreateTask = Schema.Struct({
+export const CreateTaskSchema = Schema.Struct({
   title: Schema.NonEmptyString,
   description: Schema.optional(Schema.String),
 }).annotate({ identifier: "CreateTask" });
 
-export const UpdateTask = Schema.Struct({
+export const UpdateTaskSchema = Schema.Struct({
   title: Schema.optional(Schema.NonEmptyString),
   description: Schema.optional(Schema.NullOr(Schema.String)),
   completed: Schema.optional(Schema.Boolean),
 }).annotate({ identifier: "UpdateTask" });
 
-export const TaskIdParams = Schema.Struct({ id: Schema.String }).annotate({
-  identifier: "TaskIdParams",
+export const TaskIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate({
+  identifier: "TaskIdParamsSchema",
 });
+
+export const TaskSchemaStandard = Schema.toStandardSchemaV1(TaskSchema);
