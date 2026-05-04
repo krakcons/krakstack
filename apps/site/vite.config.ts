@@ -26,9 +26,7 @@ const config = defineConfig({
           ],
         },
       ],
-      routeStrategies: [
-        { match: "/api/:path(.*)?", exclude: true },
-      ],
+      routeStrategies: [{ match: "/api/:path(.*)?", exclude: true }],
     }),
     tailwindcss(),
     tanstackStart(),

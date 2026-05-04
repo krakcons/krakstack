@@ -4,7 +4,18 @@ import { LocaleToggle } from "@/components/locale-toggle";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { m } from "@/paraglide/messages";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Activity, Blocks, Database, FileCode2, Globe, KeyRound, ListChecks, Shield, Table2, UserRound } from "lucide-react";
+import {
+  Activity,
+  Blocks,
+  Database,
+  FileCode2,
+  Globe,
+  KeyRound,
+  ListChecks,
+  Shield,
+  Table2,
+  UserRound,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -122,9 +133,13 @@ function Home() {
       <footer className="border-t py-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 text-sm text-muted-foreground">
           <span>Built with the sea in mind.</span>
-          <Link to="/docs/registry/$slug" params={{ slug: "data-table" }} className="transition-colors hover:text-foreground">
-             Documentation
-           </Link>
+          <Link
+            to="/docs/registry/$slug"
+            params={{ slug: "data-table" }}
+            className="transition-colors hover:text-foreground"
+          >
+            Documentation
+          </Link>
         </div>
       </footer>
     </div>
