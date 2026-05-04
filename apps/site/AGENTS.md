@@ -64,7 +64,7 @@ Use effect based httpapi, httpserver, openapi, opentelemetry, and database servi
   - Example: Crud, Tasks.list, Tasks.create, Tasks.update, Tasks.delete
 - `src/services/example/schema.ts`:
   - Defines the schema for the service.
-  - Recommended Packages: [`drizzle-orm/effect-schema`](https://orm.drizzle.team/docs/effect-schema), `effect`
+  - Recommended Packages: `effect`
 - `src/services/example/api.group.ts`:
   - Defines the api contract with HttpApiGroup, routes, success/error schema, and request/response types.
   - Recommended Packages: `effect/unstable/httpapi`, `./schema`
@@ -98,7 +98,7 @@ Define the API within `src/api.ts` and merge the api groups found in services in
 
 ### Schema
 
-All schemas should be generated from the drizzle table definition using `drizzle-orm/effect-schema` (`createSelectSchema`, `createInsertSchema`, `createUpdateSchema`), then refined/overridden as needed with Effect `Schema`.
+All schemas should be generated from the effect schema and annotated with `Schema.annotate({ ... })`.
 
 Do not use `zod` or other validation libraries.
 
@@ -113,36 +113,37 @@ Whenever you make an API or Schema, ensure it is documented.
 
 ### Schema (`src/services/example/schema.ts`)
 
-Effect schemas for a service entity with CRUD payloads. Use `drizzle-orm/effect-schema` to generate schemas from the drizzle table definition, then refine/override as needed. `CreateExample`/`UpdateExample` are input types, `ExampleIdParamsSchema` handles route params. Use `Schema.toStandardSchemaV1` for form validation interop.
+Effect schemas for a service entity with CRUD payloads.
 
 ```ts
-import {
-  createInsertSchema,
-  createSelectSchema,
-  createUpdateSchema,
-} from "drizzle-orm/effect-schema";
 import { Schema } from "effect";
 
-import { examples } from "@/db/schema";
+export const TaskSchema = Schema.Struct({
+  id: Schema.String,
+  userId: Schema.String,
+  title: Schema.String,
+  description: Schema.NullOr(Schema.String),
+  completed: Schema.Boolean,
+  createdAt: Schema.Date,
+  updatedAt: Schema.Date,
+}).annotate({ identifier: "Task" });
 
-export const ExampleSchema = createSelectSchema(examples).annotate({ identifier: "Example" });
-
-export const CreateExampleSchema = createInsertSchema(examples, {
-  name: Schema.NonEmptyString,
+export const CreateTaskSchema = Schema.Struct({
+  title: Schema.NonEmptyString,
   description: Schema.optional(Schema.String),
-}).annotate({ identifier: "CreateExample" });
+}).annotate({ identifier: "CreateTask" });
 
-export const UpdateExampleSchema = createUpdateSchema(examples, {
-  name: Schema.NonEmptyString,
+export const UpdateTaskSchema = Schema.Struct({
+  title: Schema.optional(Schema.NonEmptyString),
   description: Schema.optional(Schema.NullOr(Schema.String)),
-  active: Schema.optional(Schema.Boolean),
-}).annotate({ identifier: "UpdateExample" });
+  completed: Schema.optional(Schema.Boolean),
+}).annotate({ identifier: "UpdateTask" });
 
-export const ExampleIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate({
-  identifier: "ExampleIdParamsSchema",
+export const TaskIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate({
+  identifier: "TaskIdParamsSchema",
 });
 
-export const ExampleSchemaStandard = Schema.toStandardSchemaV1(ExampleSchema);
+export const TaskSchemaStandard = Schema.toStandardSchemaV1(TaskSchema);
 ```
 
 ### API Group (`src/services/example/api.group.ts`)
@@ -203,7 +204,7 @@ import { HttpServerRequest } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
 
 import { Api } from "@/api";
-import { auth } from "@/services/auth/config";
+import { auth } from "@/lib/auth";
 import { Examples } from "@/services/example";
 
 const internalServerError = () => new HttpApiError.InternalServerError({});
@@ -528,6 +529,27 @@ export class Examples extends Context.Service<Examples>()("Examples", {
 }) {
   static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.layer));
 }
+```
+
+### API Entry (`src/api.ts`)
+
+Defines the API for the service. Annotate with `OpenApi` to generate the OpenAPI spec. Chain groups with `.add`.
+
+```tsx
+import { HttpApi, OpenApi } from "effect/unstable/httpapi";
+
+import { TasksApiGroup } from "@/services/task/api.group";
+
+export const Api = HttpApi.make("Api")
+  .annotateMerge(
+    OpenApi.annotations({
+      title: "KrakStack API",
+      version: "1.0.0",
+      description: "API for the KrakStack template application",
+    }),
+  )
+  .add(TasksApiGroup)
+  .prefix("/api");
 ```
 
 ## Preferences

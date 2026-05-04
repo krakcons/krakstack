@@ -61,16 +61,24 @@ function renderBlock(block: string, index: number) {
     return <HighlightedCode code={code} key={index} language={language} />;
   }
 
-  if (block.startsWith("### ")) return <h3 key={index}>{block.slice(4)}</h3>;
-  if (block.startsWith("## ")) return <h2 key={index}>{block.slice(3)}</h2>;
-  if (block.startsWith("# ")) return <h1 key={index}>{block.slice(2)}</h1>;
+  if (block.startsWith("#### ")) return <h4 key={index}>{renderInline(block.slice(5))}</h4>;
+  if (block.startsWith("### ")) return <h3 key={index}>{renderInline(block.slice(4))}</h3>;
+  if (block.startsWith("## ")) return <h2 key={index}>{renderInline(block.slice(3))}</h2>;
+  if (block.startsWith("# ")) return <h1 key={index}>{renderInline(block.slice(2))}</h1>;
 
-  if (block.split("\n").every((line) => line.startsWith("- "))) {
+  if (block.split("\n").some((line) => /^\s*-\s/.test(line))) {
     return (
       <ul key={index}>
-        {block.split("\n").map((line) => (
-          <li key={line}>{renderInline(line.slice(2))}</li>
-        ))}
+        {block.split("\n").map((line, i) => {
+          const match = line.match(/^(\s*)-\s(.*)$/);
+          if (!match) return null;
+          const [, indent, content] = match;
+          return (
+            <li key={i} className={indent.length > 0 ? "ml-4" : undefined}>
+              {renderInline(content)}
+            </li>
+          );
+        })}
       </ul>
     );
   }
@@ -155,9 +163,12 @@ function normalizeLanguage(language?: string) {
 }
 
 function renderInline(text: string) {
-  return text.split(/(`[^`]+`)/g).map((part, index) => {
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
     if (part.startsWith("`") && part.endsWith("`"))
       return <code key={index}>{part.slice(1, -1)}</code>;
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
     return part;
   });
 }

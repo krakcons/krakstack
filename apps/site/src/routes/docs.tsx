@@ -1,6 +1,7 @@
 import {
   Blocks,
   Activity,
+  Bot,
   Database,
   Globe,
   KeyRound,
@@ -27,6 +28,9 @@ const iconByName = {
   "service-database": Database,
   "service-opentelemetry": Activity,
   "sidebar-layout": PanelLeft,
+  agents: Bot,
+  "app-brand": Blocks,
+  "krakstack-template": Blocks,
 } as const;
 
 const docsBrand = {
