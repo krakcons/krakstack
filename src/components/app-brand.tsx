@@ -31,6 +31,7 @@ export function AppBrand({
       to={to}
       className={[
         "flex min-w-0 items-center gap-2 text-foreground hover:text-foreground",
+        variant === "sidebar" ? "p-2" : "",
         className,
       ]
         .filter(Boolean)

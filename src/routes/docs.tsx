@@ -14,6 +14,7 @@ import {
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { createFileRoute } from "@tanstack/react-router";
 import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout";
+import { AppBrand } from "@/components/app-brand";
 
 export const Route = createFileRoute("/docs")({ component: DocsLayout });
 
@@ -33,13 +34,6 @@ const iconByName = {
   "krakstack-template": Blocks,
 } as const;
 
-const docsBrand = {
-  label: () => "Krakstack",
-  subtitle: () => "Documentation",
-  icon: Blocks,
-  href: "/",
-};
-
 const docsNavGroups: NavGroup[] = registryItems.reduce((sections, item) => {
   const title = getRegistryGroup(item);
   const navItem = {
@@ -56,5 +50,18 @@ const docsNavGroups: NavGroup[] = registryItems.reduce((sections, item) => {
 }, [] as NavGroup[]);
 
 function DocsLayout() {
-  return <SidebarLayout brand={docsBrand} groups={docsNavGroups} />;
+  return (
+    <SidebarLayout
+      sidebarHeader={
+        <AppBrand
+          label="Krakstack"
+          variant="sidebar"
+          subtitle="Documentation"
+          icon={Blocks}
+          href="/"
+        />
+      }
+      groups={docsNavGroups}
+    />
+  );
 }
