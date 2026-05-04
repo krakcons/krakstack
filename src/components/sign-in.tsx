@@ -78,7 +78,10 @@ export function SignIn() {
         </form.AppForm>
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {m.sign_in_need_account()}{" "}
-          <Link className="font-medium text-foreground underline-offset-4 hover:underline" to="/sign-up">
+          <Link
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+            to="/sign-up"
+          >
             {m.auth_sign_up()}
           </Link>
         </p>

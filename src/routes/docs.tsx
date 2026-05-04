@@ -1,4 +1,15 @@
-import { Blocks, Activity, Database, Globe, KeyRound, ListChecks, PanelLeft, Shield, Table2, UserRound } from "lucide-react";
+import {
+  Blocks,
+  Activity,
+  Database,
+  Globe,
+  KeyRound,
+  ListChecks,
+  PanelLeft,
+  Shield,
+  Table2,
+  UserRound,
+} from "lucide-react";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { createFileRoute } from "@tanstack/react-router";
 import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout";
@@ -25,23 +36,20 @@ const docsBrand = {
   href: "/",
 };
 
-const docsNavGroups: NavGroup[] = registryItems.reduce(
-  (sections, item) => {
-    const title = getRegistryGroup(item);
-    const navItem = {
-      label: () => item.title ?? item.name,
-      href: `/docs/registry/${item.name}`,
-      icon: iconByName[item.name as keyof typeof iconByName] ?? Shield,
-    };
+const docsNavGroups: NavGroup[] = registryItems.reduce((sections, item) => {
+  const title = getRegistryGroup(item);
+  const navItem = {
+    label: () => item.title ?? item.name,
+    href: `/docs/registry/${item.name}`,
+    icon: iconByName[item.name as keyof typeof iconByName] ?? Shield,
+  };
 
-    const section = sections.find((entry) => entry.label() === title);
-    if (section) section.items.push(navItem);
-    else sections.push({ label: () => title, items: [navItem] });
+  const section = sections.find((entry) => entry.label() === title);
+  if (section) section.items.push(navItem);
+  else sections.push({ label: () => title, items: [navItem] });
 
-    return sections;
-  },
-  [] as NavGroup[],
-);
+  return sections;
+}, [] as NavGroup[]);
 
 function DocsLayout() {
   return <SidebarLayout brand={docsBrand} groups={docsNavGroups} />;

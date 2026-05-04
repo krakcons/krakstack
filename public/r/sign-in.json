@@ -3,15 +3,8 @@
   "name": "sign-in",
   "title": "Sign In",
   "description": "A Better Auth email/password sign-in card with TanStack Form validation and localized labels.",
-  "dependencies": [
-    "@tanstack/react-router",
-    "better-auth",
-    "react"
-  ],
-  "registryDependencies": [
-    "card",
-    "form"
-  ],
+  "dependencies": ["@tanstack/react-router", "better-auth", "react"],
+  "registryDependencies": ["card", "form"],
   "files": [
     {
       "path": "registry/components/sign-in/sign-in.tsx",

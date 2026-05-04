@@ -3,17 +3,8 @@
   "name": "user-button",
   "title": "User Button",
   "description": "A Better Auth user menu with account editing, localized labels, and sign-out handling.",
-  "dependencies": [
-    "better-auth",
-    "lucide-react",
-    "react"
-  ],
-  "registryDependencies": [
-    "button",
-    "dialog",
-    "dropdown-menu",
-    "form"
-  ],
+  "dependencies": ["better-auth", "lucide-react", "react"],
+  "registryDependencies": ["button", "dialog", "dropdown-menu", "form"],
   "files": [
     {
       "path": "registry/components/user-button/user-button.tsx",
