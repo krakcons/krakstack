@@ -15,24 +15,6 @@ Central Better Auth server for Krakstack projects. It owns user credentials, ses
 
 ## Local Development
 
-### devenv
-
-```bash
-devenv shell
-```
-
-This provisions PostgreSQL and sets local Better Auth environment variables. The auth app runs on port `3001`.
-
-Run migrations once the database is available:
-
-```bash
-bun run auth:migrate
-```
-
-Open [http://localhost:3001](http://localhost:3001).
-
-### Manual
-
 ```bash
 cp .env.example .env
 bun install

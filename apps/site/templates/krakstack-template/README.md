@@ -15,4 +15,4 @@ bunx drizzle-kit push
 bun --bun run dev
 ```
 
-See the source README for devenv setup, database details, generated API documentation, and demo-removal notes.
+See the source README for database details, generated API documentation, and demo-removal notes.

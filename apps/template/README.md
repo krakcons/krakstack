@@ -15,60 +15,15 @@ A full-stack web application template built with TanStack Start, Effect, Drizzle
 | Forms           | TanStack Form                                    |
 | Tables          | TanStack Table                                   |
 | i18n            | Paraglide.js + inlang (English & French)         |
-| Dev Environment | devenv (Nix)                                     |
 | Linting         | Oxlint                                           |
 | Formatting      | Oxfmt                                            |
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) >= 1.0
-- PostgreSQL (provided via devenv or self-hosted)
+- PostgreSQL (self-hosted)
 
 ## Running Locally
-
-### Option A: devenv (recommended)
-
-The project includes a `devenv.nix` that auto-provisions PostgreSQL 18 with PostGIS and pgvector extensions, and starts both the dev server and Drizzle Studio as background processes.
-
-1. Install [devenv](https://devenv.sh/getting-started/)
-2. Enter the shell:
-
-```bash
-devenv shell
-```
-
-Or if you use [direnv](https://direnv.net/):
-
-```bash
-direnv allow
-```
-
-This will:
-
-- Provision PostgreSQL with a `billyhawkes` superuser and a `postgres` app user (`postgres` password)
-- Start `bun run dev` (Vite on port 3000) and `bunx drizzle-kit studio` as managed processes
-
-3. Copy the environment file:
-
-```bash
-cp .env.example .env
-```
-
-Set `DATABASE_URL` in `.env` to a valid PostgreSQL connection string:
-
-```env
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-```
-
-4. Push the database schema:
-
-```bash
-bunx drizzle-kit push
-```
-
-5. Open [http://localhost:3000](http://localhost:3000)
-
-### Option B: Manual setup
 
 1. Install [Bun](https://bun.sh/)
 
