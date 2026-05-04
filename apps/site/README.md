@@ -1,4 +1,4 @@
-Welcome to your new TanStack Start app!
+# KrakStack Auth
 
 # Getting Started
 
