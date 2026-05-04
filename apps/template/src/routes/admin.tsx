@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/session";
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/lib/auth-client";
+import { AppBrand } from "@/components/app-brand";
 
 export const Route = createFileRoute("/admin")({
   validateSearch: TableSearchSchema,
@@ -35,12 +36,15 @@ export const Route = createFileRoute("/admin")({
 function Admin() {
   return (
     <SidebarLayout
-      brand={{
-        label: m.admin_brand,
-        subtitle: m.app_name,
-        icon: LayoutDashboard,
-        href: "/",
-      }}
+      sidebarHeader={
+        <AppBrand
+          label={m.admin_brand()}
+          subtitle={m.app_name()}
+          icon={LayoutDashboard}
+          href="/"
+          variant="sidebar"
+        />
+      }
       groups={[
         {
           label: m.admin_sidebar_workspace,
