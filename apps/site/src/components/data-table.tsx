@@ -54,6 +54,7 @@ import {
   getSortedRowModel,
   type Header,
   type Row,
+  type SortingState,
   type Table as TanstackTable,
   useReactTable,
   type VisibilityState,
@@ -86,7 +87,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { z } from "zod";
+import { Schema } from "effect";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -99,19 +100,23 @@ import {
 
 const DataTableViewContext = createContext<DataTableView>("table");
 
-export const TableSearchSchema = z.object({
-  globalFilter: z.string().optional(),
-  pagination: z
-    .object({
-      pageIndex: z.number().default(0),
-      pageSize: z.number().default(10),
-    })
-    .optional(),
-  sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).optional(),
-  grouping: z.array(z.string()).optional(),
-  view: z.enum(["table", "gallery"]).optional(),
+export const TableSearchSchema = Schema.Struct({
+  globalFilter: Schema.optional(Schema.String),
+  pagination: Schema.optional(
+    Schema.Struct({
+      pageIndex: Schema.Number,
+      pageSize: Schema.Number,
+    }),
+  ),
+  sorting: Schema.optional(
+    Schema.Array(Schema.Struct({ id: Schema.String, desc: Schema.Boolean })),
+  ),
+  grouping: Schema.optional(Schema.Array(Schema.String)),
+  view: Schema.optional(Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")])),
 });
-export type TableParams = z.infer<typeof TableSearchSchema>;
+
+export const TableSearchSchemaStandard = Schema.toStandardSchemaV1(TableSearchSchema);
+export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
 type DataTableView = "table" | "gallery";
 
@@ -340,8 +345,8 @@ const DataTableRow = <TData,>({
   row,
 }: {
   canDrag: boolean;
-  dragLabel?: string;
-  onRowClick?: (row: TData) => void;
+  dragLabel?: string | undefined;
+  onRowClick?: ((row: TData) => void) | undefined;
   row: Row<TData>;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -389,9 +394,9 @@ const DataTableGalleryCard = <TData,>({
   table,
 }: {
   canDrag: boolean;
-  dragLabel?: string;
-  gallery?: DataTableGalleryConfig;
-  onRowClick?: (row: TData) => void;
+  dragLabel?: string | undefined;
+  gallery?: DataTableGalleryConfig | undefined;
+  onRowClick?: ((row: TData) => void) | undefined;
   row: Row<TData>;
   table: TanstackTable<TData>;
 }) => {
@@ -609,9 +614,8 @@ export function DataTable<TData, TValue>({
   features = DEFAULT_TABLE_FEATURES,
 }: DataTableProps<TData, TValue>) {
   const search = useSearch({
-    // @ts-ignore
     from,
-  }) as TableParams;
+  }) as TableParams | undefined;
   const navigate = useNavigate({
     from,
   });
@@ -659,8 +663,8 @@ export function DataTable<TData, TValue>({
   ) => {
     navigate({
       to: ".",
-      // @ts-ignore
-      search: (current) => updater((current ?? {}) as TableParams & Record<string, unknown>),
+      search: (current: Record<string, unknown>) =>
+        updater((current ?? {}) as TableParams & Record<string, unknown>),
     });
   };
 
@@ -681,7 +685,8 @@ export function DataTable<TData, TValue>({
       }));
     },
     onSortingChange: (updater) => {
-      const newSorting = typeof updater === "function" ? updater(sorting) : updater;
+      const newSorting =
+        typeof updater === "function" ? updater([...sorting] as SortingState) : updater;
       if (
         sorting.length === newSorting.length &&
         sorting.every(
@@ -722,7 +727,7 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
-      sorting,
+      sorting: sorting as SortingState,
       pagination,
       globalFilter,
       columnVisibility,
@@ -818,20 +823,17 @@ export function DataTable<TData, TValue>({
 
   const renderGalleryRows = (rows: Row<TData>[], canDrag: boolean) => (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {rows.map((row) => {
-        const dragLabel = grouping?.getRowLabel?.(row.original);
-        return (
-          <DataTableGalleryCard
-            key={row.id}
-            canDrag={canDrag}
-            row={row}
-            table={table}
-            {...(gallery ? { gallery } : {})}
-            {...(dragLabel ? { dragLabel } : {})}
-            {...(onRowClick ? { onRowClick } : {})}
-          />
-        );
-      })}
+      {rows.map((row) => (
+        <DataTableGalleryCard
+          canDrag={canDrag}
+          dragLabel={grouping?.getRowLabel?.(row.original)}
+          gallery={gallery}
+          key={row.id}
+          onRowClick={onRowClick}
+          row={row}
+          table={table}
+        />
+      ))}
     </div>
   );
 
@@ -852,18 +854,15 @@ export function DataTable<TData, TValue>({
             (hasChildren ? (
               renderGroupedTableSections(section.children)
             ) : section.rows.length > 0 ? (
-              section.rows.map((row) => {
-                const dragLabel = grouping?.getRowLabel?.(row.original);
-                return (
-                  <DataTableRow
-                    key={row.id}
-                    canDrag={canDragRows}
-                    row={row}
-                    {...(dragLabel ? { dragLabel } : {})}
-                    {...(onRowClick ? { onRowClick } : {})}
-                  />
-                );
-              })
+              section.rows.map((row) => (
+                <DataTableRow
+                  canDrag={canDragRows}
+                  dragLabel={grouping?.getRowLabel?.(row.original)}
+                  key={row.id}
+                  onRowClick={onRowClick}
+                  row={row}
+                />
+              ))
             ) : (
               <TableRow>
                 <TableCell
@@ -904,11 +903,11 @@ export function DataTable<TData, TValue>({
     });
 
   return (
-    <div className="min-w-0 max-w-full rounded-md">
+    <div className="w-[calc(100vw-32px)] rounded-md sm:w-full">
       <div className="flex flex-col gap-3 pb-4">
         <div className="flex flex-col gap-2 sm:flex-wrap sm:flex-row sm:items-center sm:justify-between">
           {showSearch ? (
-            <div className="relative min-w-0 flex-1 sm:min-w-sm">
+            <div className="relative flex-1 min-w-sm">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 className="pl-9"
@@ -920,7 +919,7 @@ export function DataTable<TData, TValue>({
           ) : (
             <div />
           )}
-          <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+          <div className="flex items-center gap-2 overflow-x-auto">
             {grouping?.fields.length ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -1019,7 +1018,7 @@ export function DataTable<TData, TValue>({
               renderGalleryEmptyState()
             )
           ) : (
-            <ScrollArea className="max-w-full overflow-hidden">
+            <ScrollArea>
               <Table className="min-w-full">
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -1044,10 +1043,10 @@ export function DataTable<TData, TValue>({
                     : bodyRows.length > 0
                       ? bodyRows.map((row) => (
                           <DataTableRow
-                            key={row.id}
                             canDrag={false}
+                            key={row.id}
+                            onRowClick={onRowClick}
                             row={row}
-                            {...(onRowClick ? { onRowClick } : {})}
                           />
                         ))
                       : renderTableEmptyState()}
@@ -1462,7 +1461,7 @@ export const createDataTableActionsColumn = <TData extends object>(
   actions: {
     name: string;
     icon?: ReactNode;
-    variant?: "default" | "destructive";
+    variant?: "default" | "destructive" | undefined;
     onClick: (data: TData) => void;
     visible?: (data: TData) => boolean;
   }[],
@@ -1500,7 +1499,7 @@ export const createDataTableActionsColumn = <TData extends object>(
                       e.stopPropagation();
                       action.onClick(cell.row.original);
                     }}
-                    {...(action.variant ? { variant: action.variant } : {})}
+                    variant={action.variant}
                   >
                     {action.icon}
                     {action.name}

@@ -3,23 +3,30 @@
   "name": "sign-up",
   "title": "Sign Up",
   "description": "A Better Auth email/password registration card with TanStack Form validation and localized labels.",
-  "dependencies": ["@tanstack/react-router", "better-auth", "react"],
-  "registryDependencies": ["card", "form"],
+  "dependencies": [
+    "@tanstack/react-router",
+    "better-auth",
+    "react"
+  ],
+  "registryDependencies": [
+    "card",
+    "form"
+  ],
   "files": [
     {
-      "path": "registry/components/sign-up/sign-up.tsx",
+      "path": "src/components/sign-up.tsx",
       "content": "import { Link } from \"@tanstack/react-router\";\n\nimport { ErrorMessage, useAppForm } from \"@/components/form\";\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport { authClient } from \"@/services/auth/client\";\nimport { m } from \"@/paraglide/messages\";\n\nexport function SignUp() {\n  const form = useAppForm({\n    defaultValues: {\n      name: \"\",\n      email: \"\",\n      password: \"\",\n    },\n    onSubmit: async ({ value, formApi }) => {\n      formApi.setErrorMap({});\n\n      const result = await authClient.signUp.email({\n        name: value.name,\n        email: value.email,\n        password: value.password,\n      });\n\n      if (result.error) {\n        formApi.setErrorMap({\n          onSubmit: { form: result.error.message ?? m.sign_up_error(), fields: {} },\n        });\n        return;\n      }\n\n      window.location.assign(\"/\");\n    },\n  });\n\n  return (\n    <Card className=\"w-full max-w-md\">\n      <CardHeader>\n        <CardTitle className=\"text-3xl\">{m.sign_up_title()}</CardTitle>\n        <CardDescription>{m.sign_up_description()}</CardDescription>\n      </CardHeader>\n      <CardContent>\n        <form.AppForm>\n          <form\n            className=\"flex flex-col gap-4\"\n            onSubmit={(event) => {\n              event.preventDefault();\n              event.stopPropagation();\n              form.handleSubmit();\n            }}\n          >\n            <form.AppField name=\"name\">\n              {(field) => <field.TextField label={m.field_name()} autoComplete=\"name\" required />}\n            </form.AppField>\n            <form.AppField name=\"email\">\n              {(field) => (\n                <field.TextField\n                  label={m.field_email()}\n                  type=\"email\"\n                  autoComplete=\"email\"\n                  required\n                />\n              )}\n            </form.AppField>\n            <form.AppField name=\"password\">\n              {(field) => (\n                <field.TextField\n                  label={m.field_password()}\n                  type=\"password\"\n                  autoComplete=\"new-password\"\n                  minLength={8}\n                  required\n                />\n              )}\n            </form.AppField>\n            <form.Subscribe\n              selector={(formState) =>\n                (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form\n              }\n            >\n              {(error) => (error ? <ErrorMessage text={String(error)} /> : null)}\n            </form.Subscribe>\n            <form.SubmitButton />\n          </form>\n        </form.AppForm>\n        <p className=\"mt-6 text-center text-sm text-muted-foreground\">\n          {m.sign_up_have_account()}{\" \"}\n          <Link\n            className=\"font-medium text-foreground underline-offset-4 hover:underline\"\n            to=\"/sign-in\"\n          >\n            {m.auth_sign_in()}\n          </Link>\n        </p>\n      </CardContent>\n    </Card>\n  );\n}\n",
       "type": "registry:component",
       "target": "components/sign-up.tsx"
     },
     {
-      "path": "registry/components/sign-up/messages/en.json",
+      "path": "src/messages/components/sign-up/en.json",
       "content": "{\n  \"auth_sign_in\": \"Sign in\",\n  \"sign_up_title\": \"Create account\",\n  \"sign_up_description\": \"Create an account for this site.\",\n  \"sign_up_error\": \"Unable to create account.\",\n  \"sign_up_have_account\": \"Already have an account?\",\n  \"field_name\": \"Name\",\n  \"field_email\": \"Email\",\n  \"field_password\": \"Password\"\n}\n",
       "type": "registry:file",
       "target": "./messages/components/sign-up/en.json"
     },
     {
-      "path": "registry/components/sign-up/messages/fr.json",
+      "path": "src/messages/components/sign-up/fr.json",
       "content": "{\n  \"auth_sign_in\": \"Se connecter\",\n  \"sign_up_title\": \"Créer un compte\",\n  \"sign_up_description\": \"Créez un compte pour ce site.\",\n  \"sign_up_error\": \"Impossible de créer le compte.\",\n  \"sign_up_have_account\": \"Vous avez déjà un compte ?\",\n  \"field_name\": \"Nom\",\n  \"field_email\": \"E-mail\",\n  \"field_password\": \"Mot de passe\"\n}\n",
       "type": "registry:file",
       "target": "./messages/components/sign-up/fr.json"

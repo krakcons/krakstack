@@ -3,10 +3,12 @@
   "name": "service-opentelemetry",
   "title": "OpenTelemetry",
   "description": "An Effect service that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's unstable observability and HTTP modules, with Effect Logger bridging so all application logs are sent to the collector.",
-  "dependencies": ["effect@beta"],
+  "dependencies": [
+    "effect@beta"
+  ],
   "files": [
     {
-      "path": "registry/services/opentelemetry.ts",
+      "path": "src/services/opentelemetry.ts",
       "content": "import { FetchHttpClient } from \"effect/unstable/http\";\nimport { Otlp, OtlpSerialization } from \"effect/unstable/observability\";\nimport { Config, Effect, Layer, Context } from \"effect\";\n\nconst OtelLive = Layer.unwrap(\n  Effect.gen(function* () {\n    const serviceName = yield* Config.string(\"OTEL_SERVICE_NAME\").pipe(Config.withDefault(\"app\"));\n    const otlpEndpoint = yield* Config.string(\"OTEL_EXPORTER_OTLP_ENDPOINT\").pipe(\n      Config.withDefault(\"http://localhost:4318\"),\n    );\n\n    return Otlp.layer({\n      baseUrl: otlpEndpoint,\n      resource: {\n        serviceName,\n      },\n    }).pipe(Layer.provide(OtlpSerialization.layerJson), Layer.provide(FetchHttpClient.layer));\n  }),\n);\n\nexport class OpenTelemetry extends Context.Service<OpenTelemetry>()(\"OpenTelemetry\", {\n  make: Effect.log(\"OpenTelemetry initialized\"),\n}) {\n  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provideMerge(OtelLive));\n}\n",
       "type": "registry:file",
       "target": "services/opentelemetry.ts"

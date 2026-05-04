@@ -284,11 +284,7 @@ function CreateClientDialog() {
             </form.AppField>
             <form.AppField name="scopes">
               {(field) => (
-                <field.MultiSelectField
-                  label={m.admin_column_scopes()}
-                  options={SCOPE_OPTIONS}
-                  required
-                />
+                <field.MultiSelectField label={m.admin_column_scopes()} options={SCOPE_OPTIONS} />
               )}
             </form.AppField>
             <form.Subscribe

@@ -3,40 +3,44 @@
   "name": "krakstack-auth",
   "title": "Krakstack Auth",
   "description": "A Better Auth foundation for TanStack Start that connects to Krakstack Auth via OAuth, with server config, React client, an /api/auth route handler, and an Effect auth service with HttpApiMiddleware.",
-  "dependencies": ["@tanstack/react-router", "better-auth", "effect@beta"],
+  "dependencies": [
+    "@tanstack/react-router",
+    "better-auth",
+    "effect@beta"
+  ],
   "registryDependencies": [],
   "files": [
     {
-      "path": "registry/auth/services/auth/config.ts",
+      "path": "src/services/auth/config.ts",
       "content": "import { betterAuth } from \"better-auth\";\nimport { genericOAuth } from \"better-auth/plugins\";\n\nexport const auth = betterAuth({\n  appName: \"Krakstack Site\",\n  account: {\n    encryptOAuthTokens: true,\n    storeStateStrategy: \"cookie\",\n    storeAccountCookie: true,\n  },\n  session: {\n    cookieCache: {\n      enabled: true,\n      maxAge: 60 * 60 * 24 * 7,\n      strategy: \"jwe\",\n      refreshCache: true,\n    },\n  },\n  plugins: [\n    genericOAuth({\n      config: [\n        {\n          providerId: \"krakstack-auth\",\n          clientId: process.env.KRAKSTACK_AUTH_CLIENT_ID!,\n          clientSecret: process.env.KRAKSTACK_AUTH_CLIENT_SECRET!,\n          discoveryUrl: process.env.KRAKSTACK_AUTH_URL + \"/.well-known/openid-configuration\",\n          redirectURI: process.env.BETTER_AUTH_URL + \"/api/auth/callback/krakstack-auth\",\n          scopes: [\"openid\", \"profile\", \"email\"],\n          pkce: true,\n        },\n      ],\n    }),\n  ],\n});\n\nexport type AuthSession = typeof auth.$Infer.Session;\n",
       "type": "registry:file",
       "target": "services/auth/config.ts"
     },
     {
-      "path": "registry/auth/services/auth/client/index.ts",
+      "path": "src/services/auth/client/index.ts",
       "content": "import { createAuthClient } from \"better-auth/react\";\nimport { genericOAuthClient } from \"better-auth/client/plugins\";\n\nexport const authClient = createAuthClient({\n  plugins: [genericOAuthClient()],\n});\n",
       "type": "registry:file",
       "target": "services/auth/client/index.ts"
     },
     {
-      "path": "registry/auth/routes/auth.tsx",
+      "path": "src/routes/api/auth/$.tsx",
       "content": "import { auth } from \"@/services/auth/config\";\nimport { createFileRoute } from \"@tanstack/react-router\";\n\nexport const Route = createFileRoute(\"/api/auth/$\")({\n  server: {\n    handlers: {\n      GET: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n      POST: async ({ request }: { request: Request }) => {\n        return await auth.handler(request);\n      },\n    },\n  },\n});\n",
       "type": "registry:file",
       "target": "routes/api/auth/$.tsx"
     },
     {
-      "path": "registry/auth/services/index.ts",
+      "path": "src/services/auth/index.ts",
       "content": "import { Context, Effect, Layer } from \"effect\";\nimport { HttpServerRequest } from \"effect/unstable/http\";\nimport { HttpApiError } from \"effect/unstable/httpapi\";\n\nimport { auth } from \"@/services/auth/config\";\n\nconst internalServerError = () => new HttpApiError.InternalServerError({});\n\nexport class Auth extends Context.Service<Auth>()(\"Auth\", {\n  make: Effect.gen(function* () {\n    const getSession = Effect.fn(\"Auth.getSession\")(function* () {\n      const request = yield* HttpServerRequest.HttpServerRequest;\n      const session = yield* Effect.tryPromise({\n        try: () => auth.api.getSession({ headers: new Headers(request.headers) }),\n        catch: internalServerError,\n      });\n      return session;\n    });\n\n    const requireUser = Effect.fn(\"Auth.requireUser\")(function* () {\n      const session = yield* getSession();\n      if (!session) {\n        return yield* new HttpApiError.Unauthorized({});\n      }\n      return {\n        id: session.user.id,\n        name: session.user.name,\n        email: session.user.email,\n      };\n    });\n\n    return { getSession, requireUser };\n  }),\n}) {\n  static readonly layer = Layer.effect(this, this.make);\n}\n",
       "type": "registry:file",
       "target": "services/auth/index.ts"
     },
     {
-      "path": "registry/auth/services/middleware.ts",
+      "path": "src/services/auth/middleware.ts",
       "content": "import { Context, Effect, Layer, Schema } from \"effect\";\nimport { HttpApiMiddleware } from \"effect/unstable/httpapi\";\n\nimport { Auth } from \"@/services/auth\";\n\nexport class CurrentUser extends Context.Service<\n  CurrentUser,\n  {\n    id: string;\n    name: string;\n    email: string;\n  }\n>()(\"site/CurrentUser\") {}\n\nexport class Unauthorized extends Schema.TaggedErrorClass<Unauthorized>()(\n  \"Unauthorized\",\n  {\n    message: Schema.String,\n  },\n  { httpApiStatus: 401 },\n) {}\n\nexport class AuthMiddleware extends HttpApiMiddleware.Service<\n  AuthMiddleware,\n  {\n    provides: CurrentUser;\n  }\n>()(\"site/AuthMiddleware\", {\n  error: Unauthorized,\n}) {}\n\nexport const AuthMiddlewareLive = Layer.effect(\n  AuthMiddleware,\n  Effect.gen(function* () {\n    const authService = yield* Auth;\n    return (httpEffect) =>\n      Effect.gen(function* () {\n        const user = yield* authService\n          .requireUser()\n          .pipe(Effect.mapError(() => new Unauthorized({ message: \"Authentication required\" })));\n        return yield* Effect.provideService(httpEffect, CurrentUser, user);\n      });\n  }),\n).pipe(Layer.provide(Auth.layer));\n",
       "type": "registry:file",
       "target": "services/auth/middleware.ts"
     }
   ],
-  "docs": "## Overview\n\n`auth` installs the app-level Better Auth foundation used by the sign-in, sign-up, and user-button blocks. It connects to Krakstack Auth as an OAuth provider using the generic OAuth plugin with PKCE, and includes the server config, React client, the TanStack Start API route that forwards `/api/auth/*` requests to Better Auth, and an Effect auth service with HTTP API middleware for protecting Effect API endpoints.\n\n## Included Files\n\n- `services/auth/config.ts` - Better Auth server setup with the Krakstack Auth OAuth provider\n- `services/auth/client/index.ts` - Better Auth React client with generic OAuth support\n- `routes/api/$.tsx` - TanStack Start server route for `/api/auth/*`\n- `services/auth/index.ts` - Effect `Auth` service with `getSession` and `requireUser` methods\n- `services/auth/middleware.ts` - Effect `AuthMiddleware` that provides `CurrentUser` to downstream handlers\n\n## Usage\n\nClient-side session access:\n\n```tsx\nimport { authClient } from \"@/services/auth/client\";\n\nconst { data: session } = authClient.useSession();\n```\n\nServer code can import the configured auth instance:\n\n```ts\nimport { auth } from \"@/services/auth/config\";\n```\n\nTo initiate OAuth sign-in with Krakstack Auth:\n\n```tsx\nauthClient.signIn.oauth2({ providerId: \"krakstack-auth\", callbackURL: \"/dashboard\" });\n```\n\nApply the auth middleware to an Effect HTTP API group:\n\n```ts\nimport { AuthMiddleware } from \"@/services/auth/middleware\";\n\nconst MyGroup = HttpApiGroup.make(\"my-group\")\n  .middleware(AuthMiddleware)\n  // ...endpoints\n```\n\nAccess the current user in a handler:\n\n```ts\nimport { CurrentUser } from \"@/services/auth/middleware\";\n\nhandlers.handle(\"myEndpoint\", () =>\n  Effect.gen(function* () {\n    const user = yield* CurrentUser;\n    // user.id, user.name, user.email\n  }),\n);\n```\n\n## Environment Variables\n\n- `BETTER_AUTH_SECRET` - Secret used by Better Auth\n- `BETTER_AUTH_URL` - Public auth URL, for example `http://localhost:3000`\n- `KRAKSTACK_AUTH_CLIENT_ID` - OAuth client ID registered in Krakstack Auth\n- `KRAKSTACK_AUTH_CLIENT_SECRET` - OAuth client secret registered in Krakstack Auth\n- `KRAKSTACK_AUTH_URL` - Krakstack Auth issuer URL, for example `http://localhost:4000`",
+  "docs": "## Overview\n\n`auth` installs the app-level Better Auth foundation used by the sign-in, sign-up, and user-button blocks. It connects to Krakstack Auth as an OAuth provider using the generic OAuth plugin with PKCE, and includes the server config, React client, the TanStack Start API route that forwards `/api/auth/*` requests to Better Auth, and an Effect auth service with HTTP API middleware for protecting Effect API endpoints.\n\n## Included Files\n\n- `services/auth/config.ts` - Better Auth server setup with the Krakstack Auth OAuth provider\n- `services/auth/client/index.ts` - Better Auth React client with generic OAuth support\n- `routes/api/auth/$.tsx` - TanStack Start server route for `/api/auth/*`\n- `services/auth/index.ts` - Effect `Auth` service with `getSession` and `requireUser` methods\n- `services/auth/middleware.ts` - Effect `AuthMiddleware` that provides `CurrentUser` to downstream handlers\n\n## Usage\n\nClient-side session access:\n\n```tsx\nimport { authClient } from \"@/services/auth/client\";\n\nconst { data: session } = authClient.useSession();\n```\n\nServer code can import the configured auth instance:\n\n```ts\nimport { auth } from \"@/services/auth/config\";\n```\n\nTo initiate OAuth sign-in with Krakstack Auth:\n\n```tsx\nauthClient.signIn.oauth2({ providerId: \"krakstack-auth\", callbackURL: \"/dashboard\" });\n```\n\nApply the auth middleware to an Effect HTTP API group:\n\n```ts\nimport { AuthMiddleware } from \"@/services/auth/middleware\";\n\nconst MyGroup = HttpApiGroup.make(\"my-group\")\n  .middleware(AuthMiddleware)\n  // ...endpoints\n```\n\nAccess the current user in a handler:\n\n```ts\nimport { CurrentUser } from \"@/services/auth/middleware\";\n\nhandlers.handle(\"myEndpoint\", () =>\n  Effect.gen(function* () {\n    const user = yield* CurrentUser;\n    // user.id, user.name, user.email\n  }),\n);\n```\n\n## Environment Variables\n\n- `BETTER_AUTH_SECRET` - Secret used by Better Auth\n- `BETTER_AUTH_URL` - Public a... (line truncated to 2000 chars)",
   "type": "registry:lib"
 }

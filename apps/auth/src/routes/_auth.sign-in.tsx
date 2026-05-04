@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/lib/auth-client";
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/_auth/sign-in")({
 });
 
 function SignIn() {
+  const navigate = useNavigate();
   const form = useAppForm({
     defaultValues: {
       email: "",
@@ -30,7 +31,16 @@ function SignIn() {
         return;
       }
 
-      window.location.assign(result.data?.url ?? "/");
+      const url = result.data?.url;
+      if (
+        url &&
+        URL.canParse(url) &&
+        new URL(url, window.location.origin).origin !== window.location.origin
+      ) {
+        window.location.assign(url);
+      } else {
+        navigate({ to: url ?? "/admin" });
+      }
     },
   });
 

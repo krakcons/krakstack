@@ -284,4 +284,3 @@ function UnbanUserDialog({ user, onClose }: { user: User; onClose: () => void })
     </AlertDialog>
   );
 }
-
