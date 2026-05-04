@@ -4,6 +4,7 @@ import { admin, jwt } from "better-auth/plugins";
 import { oauthProvider } from "@better-auth/oauth-provider";
 
 import { db } from "@/services/database";
+import { schema } from "@/db/schema";
 
 const parseCsv = (value: string | undefined) =>
   value
@@ -20,6 +21,7 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   database: drizzleAdapter(db, {
     provider: "pg",
+    schema,
   }),
   trustedOrigins,
   emailAndPassword: {

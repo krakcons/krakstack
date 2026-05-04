@@ -45,9 +45,7 @@ const adminNavGroups: NavGroup[] = [
   },
   {
     label: m.sidebar_group_oauth,
-    items: [
-      { label: m.sidebar_nav_clients, href: "/admin/oauth/clients", icon: KeyRound },
-    ],
+    items: [{ label: m.sidebar_nav_clients, href: "/admin/oauth/clients", icon: KeyRound }],
   },
 ];
 

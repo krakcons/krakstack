@@ -4,7 +4,6 @@ import { PgClient } from "@effect/sql-pg";
 import { types } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 
-// @ts-ignore - TODO: Setup your own schema and remove this comment
 import { relations } from "@/db/schema";
 
 const PgLive = PgClient.layer({
