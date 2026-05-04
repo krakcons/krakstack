@@ -20,7 +20,7 @@ import { useAppForm } from "@/components/form";
 import { cn } from "@/lib/utils";
 import { LogOutIcon, UserCircleIcon, UserIcon } from "lucide-react";
 import { type ComponentProps, useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/services/auth/client";
 
 type UserFormType = {
   name: string;

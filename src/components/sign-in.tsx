@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 import { ErrorMessage, useAppForm } from "@/components/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/services/auth/client";
 import { m } from "@/paraglide/messages";
 
 export function SignIn() {

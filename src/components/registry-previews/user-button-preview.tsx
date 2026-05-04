@@ -1,7 +1,7 @@
 import { UserButton } from "@/components/user-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/services/auth/client";
 
 export function UserButtonPreview() {
   return (

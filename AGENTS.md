@@ -203,7 +203,7 @@ import { HttpServerRequest } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
 
 import { Api } from "@/api";
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth/config";
 import { Examples } from "@/services/example";
 
 const internalServerError = () => new HttpApiError.InternalServerError({});

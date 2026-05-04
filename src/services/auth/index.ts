@@ -2,7 +2,7 @@ import { Context, Effect, Layer } from "effect";
 import { HttpServerRequest } from "effect/unstable/http";
 import { HttpApiError } from "effect/unstable/httpapi";
 
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth/config";
 
 const internalServerError = () => new HttpApiError.InternalServerError({});
 
