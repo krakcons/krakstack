@@ -6,7 +6,7 @@
     "@/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --port 3003",
     "build": "vite build",
     "start": "drizzle-kit migrate && bun run server.ts",
     "preview": "vite preview",
