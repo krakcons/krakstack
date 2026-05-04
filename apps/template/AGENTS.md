@@ -27,6 +27,27 @@ The backend is an effect application that uses:
 - Postgres and drizzle-orm
 - Effect based httpapi, httpserver, openapi, opentelemetry
 
+### Folder Structure
+
+- `public/` — Static assets (favicon, logos, manifest, robots.txt)
+- `scripts/` — Build and utility scripts (e.g. merge-messages for i18n)
+- `src/` — Application source
+  - `components/` — React components
+    - `ui/` — Shadcn UI primitives (managed by shadcn CLI)
+  - `db/` — Drizzle schema definitions (app schema + auth schema)
+  - `hooks/` — Shared React hooks
+  - `lib/` — Shared utilities, auth config, registry helpers
+    - `atoms/` — Effect atom definitions
+  - `messages/` — i18n source files
+    - `global/` — Hand-written translations (en.json, fr.json) — edit these
+    - `components/` — Component-specific translations — do not edit
+    - Root `en.json`/`fr.json` are generated — do not edit
+  - `paraglide/` — Generated paraglide runtime — do not edit
+  - `routes/` — TanStack Start file-based routes
+    - `api/` — API catch-all route
+    - `docs/` — Documentation pages, including registry slug routes
+  - `services/` — Effect service definitions and handlers
+
 ## Patterns
 
 ### Services
