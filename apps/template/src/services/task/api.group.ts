@@ -2,6 +2,8 @@ import { Schema } from "effect";
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
 import { OpenApi } from "effect/unstable/httpapi";
 
+import { AuthMiddleware } from "@/services/auth/middleware";
+
 import { CreateTaskSchema, TaskIdParamsSchema, TaskSchema, UpdateTaskSchema } from "./schema";
 
 export const TasksApiGroup = HttpApiGroup.make("tasks")
@@ -70,4 +72,5 @@ export const TasksApiGroup = HttpApiGroup.make("tasks")
         description: "Deletes a task by its ID for the authenticated user",
       }),
     ),
-  );
+  )
+  .middleware(AuthMiddleware);

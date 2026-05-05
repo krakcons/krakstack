@@ -2,14 +2,14 @@ import { and, eq } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 
 import { tasks } from "@/db/schema";
-import { CreateTaskSchema, UpdateTaskSchema } from "@/services/task/schema";
 import { DB } from "@/services/database";
+import { CreateTaskSchema, UpdateTaskSchema } from "@/services/task/schema";
 
 export class Tasks extends Context.Service<Tasks>()("Tasks", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
-    const list = Effect.fn("Tasks.list")(function* (userId: string) {
+    const list = Effect.fn("Tasks.list")(function* ({ userId }: { userId: string }) {
       const tasks = yield* db.query.tasks.findMany({
         where: {
           userId,
@@ -19,7 +19,7 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
       return tasks;
     });
 
-    const get = Effect.fn("Tasks.get")(function* (userId: string, id: string) {
+    const get = Effect.fn("Tasks.get")(function* ({ userId, id }: { userId: string; id: string }) {
       const task = yield* db.query.tasks.findFirst({
         where: {
           id,
@@ -30,13 +30,16 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
       return task;
     });
 
-    const create = Effect.fn("Tasks.create")(function* (
-      userId: string,
-      input: typeof CreateTaskSchema.Type,
-    ) {
+    const create = Effect.fn("Tasks.create")(function* ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: typeof CreateTaskSchema.Type;
+    }) {
       const [task] = yield* db
         .insert(tasks)
-        .values({ ...input, userId })
+        .values({ ...payload, userId })
         .returning();
 
       if (!task) return undefined;
@@ -44,14 +47,18 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
       return task;
     });
 
-    const update = Effect.fn("Tasks.update")(function* (
-      userId: string,
-      id: string,
-      input: typeof UpdateTaskSchema.Type,
-    ) {
+    const update = Effect.fn("Tasks.update")(function* ({
+      userId,
+      id,
+      payload,
+    }: {
+      userId: string;
+      id: string;
+      payload: typeof UpdateTaskSchema.Type;
+    }) {
       const [task] = yield* db
         .update(tasks)
-        .set({ ...input, updatedAt: new Date() })
+        .set({ ...payload, updatedAt: new Date() })
         .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
         .returning();
 
@@ -60,7 +67,13 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
       return task;
     });
 
-    const _delete = Effect.fn("Tasks.delete")(function* (userId: string, id: string) {
+    const _delete = Effect.fn("Tasks.delete")(function* ({
+      userId,
+      id,
+    }: {
+      userId: string;
+      id: string;
+    }) {
       const [task] = yield* db
         .delete(tasks)
         .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))

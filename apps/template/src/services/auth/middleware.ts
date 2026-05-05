@@ -1,5 +1,5 @@
-import { Context, Effect, Layer, Schema } from "effect";
-import { HttpApiMiddleware } from "effect/unstable/httpapi";
+import { Context, Effect, Layer } from "effect";
+import { HttpApiError, HttpApiMiddleware } from "effect/unstable/httpapi";
 
 import { Auth } from "@/services/auth";
 
@@ -12,21 +12,13 @@ export class CurrentUser extends Context.Service<
   }
 >()("site/CurrentUser") {}
 
-export class Unauthorized extends Schema.TaggedErrorClass<Unauthorized>()(
-  "Unauthorized",
-  {
-    message: Schema.String,
-  },
-  { httpApiStatus: 401 },
-) {}
-
 export class AuthMiddleware extends HttpApiMiddleware.Service<
   AuthMiddleware,
   {
     provides: CurrentUser;
   }
 >()("site/AuthMiddleware", {
-  error: Unauthorized,
+  error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError],
 }) {}
 
 export const AuthMiddlewareLive = Layer.effect(
@@ -35,9 +27,7 @@ export const AuthMiddlewareLive = Layer.effect(
     const authService = yield* Auth;
     return (httpEffect) =>
       Effect.gen(function* () {
-        const user = yield* authService
-          .requireUser()
-          .pipe(Effect.mapError(() => new Unauthorized({ message: "Authentication required" })));
+        const user = yield* authService.requireUser();
         return yield* Effect.provideService(httpEffect, CurrentUser, user);
       });
   }),
