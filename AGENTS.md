@@ -154,6 +154,8 @@ Defines the API contract with `HttpApiGroup`, routes, success/error schemas, and
 import { Schema } from "effect";
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
 
+import { AuthMiddleware } from "@/services/auth/middleware";
+
 import { CreateExample, Example, ExampleIdParams, UpdateExample } from "./schema";
 
 export const ExamplesApiGroup = HttpApiGroup.make("examples")
@@ -191,7 +193,8 @@ export const ExamplesApiGroup = HttpApiGroup.make("examples")
       success: Example,
       error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
     }),
-  );
+  )
+  .middleware(AuthMiddleware);
 ```
 
 ### API Builder (`src/services/example/api.builder.ts`)
@@ -200,45 +203,30 @@ Exposes the service through the API using `HttpApiBuilder.group`, wiring handler
 
 ```ts
 import { Effect } from "effect";
-import { HttpServerRequest } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
 
 import { Api } from "@/api";
-import { auth } from "@/lib/auth";
+import { CurrentUser } from "@/services/auth/middleware";
 import { Examples } from "@/services/example";
 
 const internalServerError = () => new HttpApiError.InternalServerError({});
-
-const requireUserId = Effect.gen(function* () {
-  const request = yield* HttpServerRequest.HttpServerRequest;
-  const session = yield* Effect.tryPromise({
-    try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
-    catch: internalServerError,
-  });
-
-  if (!session) {
-    return yield* new HttpApiError.Unauthorized({});
-  }
-
-  return session.user.id;
-});
 
 export const examplesHandler = HttpApiBuilder.group(Api, "examples", (handlers) =>
   handlers
     .handle("listExamples", () =>
       Effect.gen(function* () {
         const examples = yield* Examples;
-        const userId = yield* requireUserId;
+        const user = yield* CurrentUser;
 
-        return yield* examples.list(userId).pipe(Effect.mapError(internalServerError));
+        return yield* examples.list({ userId: user.id }).pipe(Effect.mapError(internalServerError));
       }),
     )
     .handle("getExample", ({ params }) =>
       Effect.gen(function* () {
         const examples = yield* Examples;
-        const userId = yield* requireUserId;
+        const user = yield* CurrentUser;
         const example = yield* examples
-          .get(userId, params.id)
+          .get({ userId: user.id, id: params.id })
           .pipe(Effect.mapError(internalServerError));
 
         if (!example) return yield* new HttpApiError.NotFound({});
@@ -249,10 +237,10 @@ export const examplesHandler = HttpApiBuilder.group(Api, "examples", (handlers) 
     .handle("createExample", ({ payload }) =>
       Effect.gen(function* () {
         const examples = yield* Examples;
-        const userId = yield* requireUserId;
+        const user = yield* CurrentUser;
 
         const example = yield* examples
-          .create(userId, payload)
+          .create({ userId: user.id, payload })
           .pipe(Effect.mapError(internalServerError));
 
         if (!example) return yield* new HttpApiError.InternalServerError({});
@@ -263,10 +251,10 @@ export const examplesHandler = HttpApiBuilder.group(Api, "examples", (handlers) 
     .handle("updateExample", ({ params, payload }) =>
       Effect.gen(function* () {
         const examples = yield* Examples;
-        const userId = yield* requireUserId;
+        const user = yield* CurrentUser;
 
         const example = yield* examples
-          .update(userId, params.id, payload)
+          .update({ userId: user.id, id: params.id, payload })
           .pipe(Effect.mapError(internalServerError));
 
         if (!example) return yield* new HttpApiError.NotFound({});
@@ -277,10 +265,10 @@ export const examplesHandler = HttpApiBuilder.group(Api, "examples", (handlers) 
     .handle("deleteExample", ({ params }) =>
       Effect.gen(function* () {
         const examples = yield* Examples;
-        const userId = yield* requireUserId;
+        const user = yield* CurrentUser;
 
         const example = yield* examples
-          .delete(userId, params.id)
+          .delete({ userId: user.id, id: params.id })
           .pipe(Effect.mapError(internalServerError));
 
         if (!example) return yield* new HttpApiError.NotFound({});
@@ -477,46 +465,65 @@ export const useExamplesAtom = () => useAtomValue(allExamplesAtom);
 
 ### Service (`src/services/example/index.ts`)
 
-Effect `Context.Service` exposing CRUD for the service. Each method scopes by `userId` so callers can't reach across tenants.
+Effect `Context.Service` exposing CRUD for the service. Each method accepts object inputs and scopes by `userId` so callers can't reach across tenants.
 
 ```ts
 export class Examples extends Context.Service<Examples>()("Examples", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
-    const list = Effect.fn("Examples.list")(function* (userId: string) {
+    const list = Effect.fn("Examples.list")(function* ({ userId }: { userId: string }) {
       return yield* db.query.examples.findMany({ where: { userId } });
     });
 
-    const get = Effect.fn("Examples.get")(function* (userId: string, id: string) {
+    const get = Effect.fn("Examples.get")(function* ({
+      userId,
+      id,
+    }: {
+      userId: string;
+      id: string;
+    }) {
       return yield* db.query.examples.findFirst({ where: { id, userId } });
     });
 
-    const create = Effect.fn("Examples.create")(function* (
-      userId: string,
-      input: typeof CreateExample.Type,
-    ) {
+    const create = Effect.fn("Examples.create")(function* ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: typeof CreateExample.Type;
+    }) {
       const [example] = yield* db
         .insert(examples)
-        .values({ ...input, userId })
+        .values({ ...payload, userId })
         .returning();
       return example;
     });
 
-    const update = Effect.fn("Examples.update")(function* (
-      userId: string,
-      id: string,
-      input: typeof UpdateExample.Type,
-    ) {
+    const update = Effect.fn("Examples.update")(function* ({
+      userId,
+      id,
+      payload,
+    }: {
+      userId: string;
+      id: string;
+      payload: typeof UpdateExample.Type;
+    }) {
       const [example] = yield* db
         .update(examples)
-        .set({ ...input, updatedAt: new Date() })
+        .set({ ...payload, updatedAt: new Date() })
         .where(and(eq(examples.id, id), eq(examples.userId, userId)))
         .returning();
       return example;
     });
 
-    const _delete = Effect.fn("Examples.delete")(function* (userId: string, id: string) {
+    const _delete = Effect.fn("Examples.delete")(function* ({
+      userId,
+      id,
+    }: {
+      userId: string;
+      id: string;
+    }) {
       const [example] = yield* db
         .delete(examples)
         .where(and(eq(examples.id, id), eq(examples.userId, userId)))
