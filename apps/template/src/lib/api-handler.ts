@@ -8,9 +8,8 @@ import { OpenTelemetry } from "@/services/opentelemetry";
 
 const docsLayer = HttpApiScalar.layer(Api, { path: "/api/docs" });
 const allRoutes = Layer.mergeAll(apiLayer, docsLayer);
-
-const { handler } = HttpRouter.toWebHandler(
-  Layer.provide(Layer.provide(allRoutes, OpenTelemetry.layer), HttpServer.layerServices),
+const appLayer = Layer.mergeAll(allRoutes, OpenTelemetry.layer).pipe(
+  Layer.provide(HttpServer.layerServices),
 );
 
-export { handler };
+export const { handler } = HttpRouter.toWebHandler(appLayer);
