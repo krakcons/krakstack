@@ -112,10 +112,12 @@ const EXCLUDE_PATTERNS = (process.env.ASSET_PRELOAD_EXCLUDE_PATTERNS ?? "")
 const VERBOSE = process.env.ASSET_PRELOAD_VERBOSE_LOGGING === "true";
 
 // Optional ETag feature
-const ENABLE_ETAG = (process.env.ASSET_PRELOAD_ENABLE_ETAG ?? "true") === "true";
+const ENABLE_ETAG =
+  (process.env.ASSET_PRELOAD_ENABLE_ETAG ?? "true") === "true";
 
 // Optional Gzip feature
-const ENABLE_GZIP = (process.env.ASSET_PRELOAD_ENABLE_GZIP ?? "true") === "true";
+const ENABLE_GZIP =
+  (process.env.ASSET_PRELOAD_ENABLE_GZIP ?? "true") === "true";
 const GZIP_MIN_BYTES = Number(process.env.ASSET_PRELOAD_GZIP_MIN_SIZE ?? 1024); // 1KB
 const GZIP_TYPES = (
   process.env.ASSET_PRELOAD_GZIP_MIME_TYPES ??
@@ -131,7 +133,9 @@ const GZIP_TYPES = (
  */
 function convertGlobToRegExp(globPattern: string): RegExp {
   // Escape regex special chars except *, then replace * with .*
-  const escapedPattern = globPattern.replace(/[-/\\^$+?.()|[\]{}]/g, "\\$&").replace(/\*/g, ".*");
+  const escapedPattern = globPattern
+    .replace(/[-/\\^$+?.()|[\]{}]/g, "\\$&")
+    .replace(/\*/g, ".*");
   return new RegExp(`^${escapedPattern}$`, "i");
 }
 
@@ -157,8 +161,8 @@ interface AssetMetadata {
  */
 interface InMemoryAsset {
   raw: Uint8Array;
-  gz?: Uint8Array;
-  etag?: string;
+  gz?: Uint8Array | undefined;
+  etag?: string | undefined;
   type: string;
   immutable: boolean;
   size: number;
@@ -206,7 +210,10 @@ function isMimeTypeCompressible(mimeType: string): boolean {
 /**
  * Conditionally compress data based on size and MIME type
  */
-function compressDataIfAppropriate(data: Uint8Array, mimeType: string): Uint8Array | undefined {
+function compressDataIfAppropriate(
+  data: Uint8Array,
+  mimeType: string,
+): Uint8Array | undefined {
   if (!ENABLE_GZIP) return undefined;
   if (data.byteLength < GZIP_MIN_BYTES) return undefined;
   if (!isMimeTypeCompressible(mimeType)) return undefined;
@@ -220,7 +227,9 @@ function compressDataIfAppropriate(data: Uint8Array, mimeType: string): Uint8Arr
 /**
  * Create response handler function with ETag and Gzip support
  */
-function createResponseHandler(asset: InMemoryAsset): (req: Request) => Response {
+function createResponseHandler(
+  asset: InMemoryAsset,
+): (req: Request) => Response {
   return (req: Request) => {
     const headers: Record<string, string> = {
       "Content-Type": asset.type,
@@ -240,7 +249,11 @@ function createResponseHandler(asset: InMemoryAsset): (req: Request) => Response
       headers.ETag = asset.etag;
     }
 
-    if (ENABLE_GZIP && asset.gz && req.headers.get("accept-encoding")?.includes("gzip")) {
+    if (
+      ENABLE_GZIP &&
+      asset.gz &&
+      req.headers.get("accept-encoding")?.includes("gzip")
+    ) {
       headers["Content-Encoding"] = "gzip";
       headers["Content-Length"] = String(asset.gz.byteLength);
       const gzCopy = new Uint8Array(asset.gz);
@@ -270,19 +283,28 @@ function createCompositeGlobPattern(): Bun.Glob {
  * Initialize static routes with intelligent preloading strategy
  * Small files are loaded into memory, large files are served on-demand
  */
-async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadResult> {
-  const routes: Record<string, (req: Request) => Response | Promise<Response>> = {};
+async function initializeStaticRoutes(
+  clientDirectory: string,
+): Promise<PreloadResult> {
+  const routes: Record<string, (req: Request) => Response | Promise<Response>> =
+    {};
   const loaded: AssetMetadata[] = [];
   const skipped: AssetMetadata[] = [];
 
   log.info(`Loading static assets from ${clientDirectory}...`);
   if (VERBOSE) {
-    console.log(`Max preload size: ${(MAX_PRELOAD_BYTES / 1024 / 1024).toFixed(2)} MB`);
+    console.log(
+      `Max preload size: ${(MAX_PRELOAD_BYTES / 1024 / 1024).toFixed(2)} MB`,
+    );
     if (INCLUDE_PATTERNS.length > 0) {
-      console.log(`Include patterns: ${process.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? ""}`);
+      console.log(
+        `Include patterns: ${process.env.ASSET_PRELOAD_INCLUDE_PATTERNS ?? ""}`,
+      );
     }
     if (EXCLUDE_PATTERNS.length > 0) {
-      console.log(`Exclude patterns: ${process.env.ASSET_PRELOAD_EXCLUDE_PATTERNS ?? ""}`);
+      console.log(
+        `Exclude patterns: ${process.env.ASSET_PRELOAD_EXCLUDE_PATTERNS ?? ""}`,
+      );
     }
   }
 
@@ -353,10 +375,15 @@ async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadR
 
     // Show detailed file overview only when verbose mode is enabled
     if (VERBOSE && (loaded.length > 0 || skipped.length > 0)) {
-      const allFiles = [...loaded, ...skipped].sort((a, b) => a.route.localeCompare(b.route));
+      const allFiles = [...loaded, ...skipped].sort((a, b) =>
+        a.route.localeCompare(b.route),
+      );
 
       // Calculate max path length for alignment
-      const maxPathLength = Math.min(Math.max(...allFiles.map((f) => f.route.length)), 60);
+      const maxPathLength = Math.min(
+        Math.max(...allFiles.map((f) => f.route.length)),
+        60,
+      );
 
       // Format file size with KB and actual gzip size
       const formatFileSize = (bytes: number, gzBytes?: number) => {
@@ -382,7 +409,9 @@ async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadR
 
       if (loaded.length > 0) {
         console.log("\n📁 Preloaded into memory:");
-        console.log("Path                                          │    Size │ Gzip Size");
+        console.log(
+          "Path                                          │    Size │ Gzip Size",
+        );
         loaded
           .sort((a, b) => a.route.localeCompare(b.route))
           .forEach((file) => {
@@ -396,7 +425,9 @@ async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadR
 
       if (skipped.length > 0) {
         console.log("\n💾 Served on-demand:");
-        console.log("Path                                          │    Size │ Gzip Size");
+        console.log(
+          "Path                                          │    Size │ Gzip Size",
+        );
         skipped
           .sort((a, b) => a.route.localeCompare(b.route))
           .forEach((file) => {
@@ -412,7 +443,9 @@ async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadR
     // Show detailed verbose info if enabled
     if (VERBOSE) {
       if (loaded.length > 0 || skipped.length > 0) {
-        const allFiles = [...loaded, ...skipped].sort((a, b) => a.route.localeCompare(b.route));
+        const allFiles = [...loaded, ...skipped].sort((a, b) =>
+          a.route.localeCompare(b.route),
+        );
         console.log("\n📊 Detailed file information:");
         console.log(
           "Status       │ Path                            │ MIME Type                    │ Reason",
@@ -426,7 +459,10 @@ async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadR
               : !isPreloaded
                 ? "filtered"
                 : "preloaded";
-          const route = file.route.length > 30 ? file.route.substring(0, 27) + "..." : file.route;
+          const route =
+            file.route.length > 30
+              ? file.route.substring(0, 27) + "..."
+              : file.route;
           console.log(
             `${status.padEnd(12)} │ ${route.padEnd(30)} │ ${file.type.padEnd(28)} │ ${reason.padEnd(10)}`,
           );
@@ -454,7 +490,9 @@ async function initializeStaticRoutes(clientDirectory: string): Promise<PreloadR
       );
     }
   } catch (error) {
-    log.error(`Failed to load static files from ${clientDirectory}: ${String(error)}`);
+    log.error(
+      `Failed to load static files from ${clientDirectory}: ${String(error)}`,
+    );
   }
 
   return { routes, loaded, skipped };
@@ -503,7 +541,9 @@ async function initializeServer() {
 
     // Global error handler
     error(error) {
-      log.error(`Uncaught server error: ${error instanceof Error ? error.message : String(error)}`);
+      log.error(
+        `Uncaught server error: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return new Response("Internal Server Error", { status: 500 });
     },
   });

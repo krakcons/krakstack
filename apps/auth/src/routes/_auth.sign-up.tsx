@@ -2,8 +2,15 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
-import { ErrorMessage, useAppForm } from "@/components/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAppForm } from "@/components/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_auth/sign-up")({
   component: SignUp,
@@ -11,6 +18,34 @@ export const Route = createFileRoute("/_auth/sign-up")({
 
 function SignUp() {
   const navigate = useNavigate();
+  const setFormError = (message: string) => {
+    form.setErrorMap({
+      onSubmit: {
+        form: message,
+        fields: {},
+      },
+    });
+  };
+
+  const signUpWithGoogle = async () => {
+    try {
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/admin",
+        errorCallbackURL: "/sign-up",
+      });
+
+      if (result.error) {
+        setFormError(result.error.message ?? m.sign_up_error());
+        return;
+      }
+
+      if (result.data?.url) window.location.assign(result.data.url);
+    } catch {
+      setFormError(m.sign_up_error());
+    }
+  };
+
   const form = useAppForm({
     defaultValues: {
       name: "",
@@ -18,22 +53,35 @@ function SignUp() {
       password: "",
     },
     onSubmit: async ({ value, formApi }) => {
-      formApi.setErrorMap({});
+      formApi.setErrorMap({ onSubmit: undefined });
 
-      const result = await authClient.signUp.email({
-        name: value.name,
-        email: value.email,
-        password: value.password,
-      });
+      try {
+        const result = await authClient.signUp.email({
+          name: value.name.trim(),
+          email: value.email.trim(),
+          password: value.password,
+        });
 
-      if (result.error) {
+        if (result.error) {
+          formApi.setErrorMap({
+            onSubmit: {
+              form: result.error.message ?? m.sign_up_error(),
+              fields: {},
+            },
+          });
+          return;
+        }
+
+        navigate({ to: "/admin" });
+      } catch {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? m.sign_up_error(), fields: {} },
+          onSubmit: {
+            form: m.sign_up_error(),
+            fields: {},
+          },
         });
         return;
       }
-
-      navigate({ to: "/admin" });
     },
   });
 
@@ -54,7 +102,13 @@ function SignUp() {
             }}
           >
             <form.AppField name="name">
-              {(field) => <field.TextField label={m.field_name()} autoComplete="name" required />}
+              {(field) => (
+                <field.TextField
+                  label={m.field_name()}
+                  autoComplete="name"
+                  required
+                />
+              )}
             </form.AppField>
             <form.AppField name="email">
               {(field) => (
@@ -77,20 +131,29 @@ function SignUp() {
                 />
               )}
             </form.AppField>
-            <form.Subscribe
-              selector={(formState) =>
-                (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form
-              }
-            >
-              {(error) => (error ? <ErrorMessage text={String(error)} /> : null)}
-            </form.Subscribe>
+            <form.FormError />
             <form.SubmitButton />
           </form>
         </form.AppForm>
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="text-muted-foreground flex items-center gap-3 text-xs">
+            <span className="bg-border h-px flex-1" />
+            {m.auth_or_continue_with()}
+            <span className="bg-border h-px flex-1" />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={signUpWithGoogle}
+          >
+            {m.auth_continue_with_google()}
+          </Button>
+        </div>
+        <p className="text-muted-foreground mt-6 text-center text-sm">
           {m.sign_up_have_account()}{" "}
           <Link
-            className="font-medium text-foreground underline-offset-4 hover:underline"
+            className="text-foreground font-medium underline-offset-4 hover:underline"
             to="/sign-in"
           >
             {m.auth_sign_in()}

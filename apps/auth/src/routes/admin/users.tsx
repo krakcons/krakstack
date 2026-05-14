@@ -51,7 +51,10 @@ function useUsers() {
       const result = await authClient.admin.listUsers({
         query: { limit: 100 },
       });
-      if (result.error) throw new Error(result.error.message ?? m.admin_error_access_required());
+      if (result.error)
+        throw new Error(
+          result.error.message ?? m.admin_error_access_required(),
+        );
       const data = result.data as { users: User[]; total: number } | undefined;
       return { users: data?.users ?? [], total: data?.total ?? 0 };
     },
@@ -63,7 +66,8 @@ function useBanUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       const result = await authClient.admin.banUser({ userId });
-      if (result.error) throw new Error(result.error.message ?? m.admin_error_ban());
+      if (result.error)
+        throw new Error(result.error.message ?? m.admin_error_ban());
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -76,7 +80,8 @@ function useUnbanUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       const result = await authClient.admin.unbanUser({ userId });
-      if (result.error) throw new Error(result.error.message ?? m.admin_error_unban());
+      if (result.error)
+        throw new Error(result.error.message ?? m.admin_error_unban());
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -99,7 +104,11 @@ function UsersPage() {
         description={`${m.admin_users_description()} ${total === 1 ? m.admin_users_count_single() : m.admin_users_count({ count: total.toString() })}`}
         badge={{ label: m.admin_badge_admin() }}
         actions={
-          <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
+          <Button
+            disabled={isLoading}
+            onClick={() => void refetch()}
+            variant="outline"
+          >
             {isLoading ? (
               <Loader2 className="animate-spin" data-icon="inline-start" />
             ) : (
@@ -112,17 +121,26 @@ function UsersPage() {
 
       {error ? <ErrorMessage text={error.message} /> : null}
       <DataTable
-        columns={userColumns({ onBan: setBanningUser, onUnban: setUnbanningUser })}
+        columns={userColumns({
+          onBan: setBanningUser,
+          onUnban: setUnbanningUser,
+        })}
         data={users}
         exportFileName="users.csv"
         features={{ gallery: false }}
         from="/admin/users"
       />
       {banningUser ? (
-        <BanUserDialog user={banningUser} onClose={() => setBanningUser(null)} />
+        <BanUserDialog
+          user={banningUser}
+          onClose={() => setBanningUser(null)}
+        />
       ) : null}
       {unbanningUser ? (
-        <UnbanUserDialog user={unbanningUser} onClose={() => setUnbanningUser(null)} />
+        <UnbanUserDialog
+          user={unbanningUser}
+          onClose={() => setUnbanningUser(null)}
+        />
       ) : null}
     </>
   );
@@ -140,16 +158,22 @@ const userColumns = ({
     header: m.admin_column_user(),
     cell: ({ row }) => (
       <div className="flex min-w-48 items-center gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
+        <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-full">
           {row.original.image ? (
-            <img alt={row.original.name} className="size-8 rounded-full" src={row.original.image} />
+            <img
+              alt={row.original.name}
+              className="size-8 rounded-full"
+              src={row.original.image}
+            />
           ) : (
-            <UserIcon className="size-4 text-muted-foreground" />
+            <UserIcon className="text-muted-foreground size-4" />
           )}
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="font-medium">{row.original.name}</span>
-          <span className="truncate text-xs text-muted-foreground">{row.original.email}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {row.original.email}
+          </span>
         </div>
       </div>
     ),
@@ -169,11 +193,19 @@ const userColumns = ({
     header: m.admin_column_role(),
     cell: ({ row }) => {
       const role = row.original.role;
-      if (!role) return <span className="text-muted-foreground">{m.admin_column_role_none()}</span>;
+      if (!role)
+        return (
+          <span className="text-muted-foreground">
+            {m.admin_column_role_none()}
+          </span>
+        );
       return (
         <div className="flex flex-wrap gap-1.5">
           {role.split(",").map((r) => (
-            <Badge key={r.trim()} variant={r.trim() === "admin" ? "default" : "outline"}>
+            <Badge
+              key={r.trim()}
+              variant={r.trim() === "admin" ? "default" : "outline"}
+            >
               {r.trim()}
             </Badge>
           ))}
@@ -195,7 +227,7 @@ const userColumns = ({
     accessorKey: "createdAt",
     header: m.admin_column_created(),
     cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">
+      <span className="text-muted-foreground text-sm">
         {new Date(row.original.createdAt).toLocaleDateString()}
       </span>
     ),
@@ -251,7 +283,13 @@ function BanUserDialog({ user, onClose }: { user: User; onClose: () => void }) {
   );
 }
 
-function UnbanUserDialog({ user, onClose }: { user: User; onClose: () => void }) {
+function UnbanUserDialog({
+  user,
+  onClose,
+}: {
+  user: User;
+  onClose: () => void;
+}) {
   const unbanUser = useUnbanUser();
 
   return (
@@ -263,7 +301,9 @@ function UnbanUserDialog({ user, onClose }: { user: User; onClose: () => void })
             {m.admin_unban_description({ name: user.name, email: user.email })}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {unbanUser.error ? <ErrorMessage text={unbanUser.error.message} /> : null}
+        {unbanUser.error ? (
+          <ErrorMessage text={unbanUser.error.message} />
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={unbanUser.isPending}>
             {m.form_block_navigation_cancel()}

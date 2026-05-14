@@ -10,13 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AccountSecurityRouteImport } from './routes/account.security'
+import { Route as AccountOrganizationsRouteImport } from './routes/account.organizations'
+import { Route as AccountApiKeysRouteImport } from './routes/account.api-keys'
 import { Route as AuthSignUpRouteImport } from './routes/_auth.sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth.sign-in'
 import { Route as AuthConsentRouteImport } from './routes/_auth.consent'
+import { Route as Auth2faRouteImport } from './routes/_auth.2fa'
 import { Route as DotwellKnownOpenidConfigurationRouteImport } from './routes/[.]well-known/openid-configuration'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -28,6 +34,11 @@ import { Route as DotwellKnownOauthAuthorizationServerApiAuthRouteImport } from 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -44,10 +55,30 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
+} as any)
+const AccountSecurityRoute = AccountSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountOrganizationsRoute = AccountOrganizationsRouteImport.update({
+  id: '/organizations',
+  path: '/organizations',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountApiKeysRoute = AccountApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => AccountRoute,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/sign-up',
@@ -62,6 +93,11 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
 const AuthConsentRoute = AuthConsentRouteImport.update({
   id: '/consent',
   path: '/consent',
+  getParentRoute: () => AuthRoute,
+} as any)
+const Auth2faRoute = Auth2faRouteImport.update({
+  id: '/2fa',
+  path: '/2fa',
   getParentRoute: () => AuthRoute,
 } as any)
 const DotwellKnownOpenidConfigurationRoute =
@@ -106,13 +142,19 @@ const DotwellKnownOauthAuthorizationServerApiAuthRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
   '/.well-known/openid-configuration': typeof DotwellKnownOpenidConfigurationRoute
+  '/2fa': typeof Auth2faRoute
   '/consent': typeof AuthConsentRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/account/api-keys': typeof AccountApiKeysRoute
+  '/account/organizations': typeof AccountOrganizationsRoute
+  '/account/security': typeof AccountSecurityRoute
   '/admin/users': typeof AdminUsersRoute
+  '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
@@ -124,10 +166,15 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
   '/.well-known/openid-configuration': typeof DotwellKnownOpenidConfigurationRoute
+  '/2fa': typeof Auth2faRoute
   '/consent': typeof AuthConsentRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/account/api-keys': typeof AccountApiKeysRoute
+  '/account/organizations': typeof AccountOrganizationsRoute
+  '/account/security': typeof AccountSecurityRoute
   '/admin/users': typeof AdminUsersRoute
+  '/account': typeof AccountIndexRoute
   '/admin': typeof AdminIndexRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
@@ -139,13 +186,19 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
+  '/account': typeof AccountRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
   '/.well-known/openid-configuration': typeof DotwellKnownOpenidConfigurationRoute
+  '/_auth/2fa': typeof Auth2faRoute
   '/_auth/consent': typeof AuthConsentRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
+  '/account/api-keys': typeof AccountApiKeysRoute
+  '/account/organizations': typeof AccountOrganizationsRoute
+  '/account/security': typeof AccountSecurityRoute
   '/admin/users': typeof AdminUsersRoute
+  '/account/': typeof AccountIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
@@ -157,13 +210,19 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/admin'
     | '/.well-known/oauth-authorization-server'
     | '/.well-known/openid-configuration'
+    | '/2fa'
     | '/consent'
     | '/sign-in'
     | '/sign-up'
+    | '/account/api-keys'
+    | '/account/organizations'
+    | '/account/security'
     | '/admin/users'
+    | '/account/'
     | '/admin/'
     | '/admin/oauth/clients'
     | '/api/admin/oauth-stats'
@@ -175,10 +234,15 @@ export interface FileRouteTypes {
     | '/'
     | '/.well-known/oauth-authorization-server'
     | '/.well-known/openid-configuration'
+    | '/2fa'
     | '/consent'
     | '/sign-in'
     | '/sign-up'
+    | '/account/api-keys'
+    | '/account/organizations'
+    | '/account/security'
     | '/admin/users'
+    | '/account'
     | '/admin'
     | '/admin/oauth/clients'
     | '/api/admin/oauth-stats'
@@ -189,13 +253,19 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/account'
     | '/admin'
     | '/.well-known/oauth-authorization-server'
     | '/.well-known/openid-configuration'
+    | '/_auth/2fa'
     | '/_auth/consent'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
+    | '/account/api-keys'
+    | '/account/organizations'
+    | '/account/security'
     | '/admin/users'
+    | '/account/'
     | '/admin/'
     | '/admin/oauth/clients'
     | '/api/admin/oauth-stats'
@@ -207,6 +277,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  AccountRoute: typeof AccountRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
   DotwellKnownOpenidConfigurationRoute: typeof DotwellKnownOpenidConfigurationRoute
@@ -222,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -245,12 +323,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/account/': {
+      id: '/account/'
+      path: '/'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/account/security': {
+      id: '/account/security'
+      path: '/security'
+      fullPath: '/account/security'
+      preLoaderRoute: typeof AccountSecurityRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/organizations': {
+      id: '/account/organizations'
+      path: '/organizations'
+      fullPath: '/account/organizations'
+      preLoaderRoute: typeof AccountOrganizationsRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/api-keys': {
+      id: '/account/api-keys'
+      path: '/api-keys'
+      fullPath: '/account/api-keys'
+      preLoaderRoute: typeof AccountApiKeysRouteImport
+      parentRoute: typeof AccountRoute
     }
     '/_auth/sign-up': {
       id: '/_auth/sign-up'
@@ -271,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/consent'
       fullPath: '/consent'
       preLoaderRoute: typeof AuthConsentRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/2fa': {
+      id: '/_auth/2fa'
+      path: '/2fa'
+      fullPath: '/2fa'
+      preLoaderRoute: typeof Auth2faRouteImport
       parentRoute: typeof AuthRoute
     }
     '/.well-known/openid-configuration': {
@@ -326,18 +439,37 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthRouteChildren {
+  Auth2faRoute: typeof Auth2faRoute
   AuthConsentRoute: typeof AuthConsentRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  Auth2faRoute: Auth2faRoute,
   AuthConsentRoute: AuthConsentRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface AccountRouteChildren {
+  AccountApiKeysRoute: typeof AccountApiKeysRoute
+  AccountOrganizationsRoute: typeof AccountOrganizationsRoute
+  AccountSecurityRoute: typeof AccountSecurityRoute
+  AccountIndexRoute: typeof AccountIndexRoute
+}
+
+const AccountRouteChildren: AccountRouteChildren = {
+  AccountApiKeysRoute: AccountApiKeysRoute,
+  AccountOrganizationsRoute: AccountOrganizationsRoute,
+  AccountSecurityRoute: AccountSecurityRoute,
+  AccountIndexRoute: AccountIndexRoute,
+}
+
+const AccountRouteWithChildren =
+  AccountRoute._addFileChildren(AccountRouteChildren)
 
 interface AdminRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
@@ -371,6 +503,7 @@ const DotwellKnownOauthAuthorizationServerRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  AccountRoute: AccountRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   DotwellKnownOauthAuthorizationServerRoute:
     DotwellKnownOauthAuthorizationServerRouteWithChildren,

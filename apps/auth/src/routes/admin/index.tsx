@@ -74,7 +74,7 @@ function DashboardPage() {
       />
 
       {error ? (
-        <p className="text-sm text-destructive">{error.message}</p>
+        <p className="text-destructive text-sm">{error.message}</p>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -83,14 +83,14 @@ function DashboardPage() {
                 <CardDescription>{m.admin_total_users()}</CardDescription>
                 <CardTitle className="text-3xl font-bold tabular-nums">
                   {isLoading ? (
-                    <Loader2 className="animate-spin size-6" />
+                    <Loader2 className="size-6 animate-spin" />
                   ) : (
                     (stats?.totalUsers ?? 0).toLocaleString()
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   <Users className="size-4" />
                   <span>{m.admin_registered_users()}</span>
                 </div>
@@ -101,14 +101,14 @@ function DashboardPage() {
                 <CardDescription>{m.admin_oauth_clients()}</CardDescription>
                 <CardTitle className="text-3xl font-bold tabular-nums">
                   {isLoading ? (
-                    <Loader2 className="animate-spin size-6" />
+                    <Loader2 className="size-6 animate-spin" />
                   ) : (
                     (stats?.totalClients ?? 0).toLocaleString()
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   <KeyRound className="size-4" />
                   <span>{m.admin_registered_clients()}</span>
                 </div>
@@ -120,16 +120,34 @@ function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>{m.admin_oauth_client_users()}</CardTitle>
-                <CardDescription>{m.admin_oauth_client_users_description()}</CardDescription>
+                <CardDescription>
+                  {m.admin_oauth_client_users_description()}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <ChartContainer
+                  config={chartConfig}
+                  className="min-h-[200px] w-full"
+                >
                   <BarChart accessibilityLayer data={chartData}>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tickLine={false}
+                      axisLine={false}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="userCount" fill="var(--color-userCount)" radius={4} />
+                    <Bar
+                      dataKey="userCount"
+                      fill="var(--color-userCount)"
+                      radius={4}
+                    />
                   </BarChart>
                 </ChartContainer>
               </CardContent>

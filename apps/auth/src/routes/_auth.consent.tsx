@@ -16,8 +16,11 @@ import {
 export const Route = createFileRoute("/_auth/consent")({
   validateSearch: (search: Record<string, unknown>) => ({
     clientId:
-      typeof search.client_id === "string" ? search.client_id : m.consent_connected_application(),
-    scope: typeof search.scope === "string" ? search.scope : "openid profile email",
+      typeof search.client_id === "string"
+        ? search.client_id
+        : m.consent_connected_application(),
+    scope:
+      typeof search.scope === "string" ? search.scope : "openid profile email",
   }),
   component: Consent,
 });
@@ -29,7 +32,7 @@ function Consent() {
     defaultValues: {},
     onSubmitMeta: { accept: true },
     onSubmit: async ({ meta, formApi }) => {
-      formApi.setErrorMap({});
+      formApi.setErrorMap({ onSubmit: undefined });
 
       const result = await authClient.oauth2.consent({
         accept: meta.accept,
@@ -38,7 +41,10 @@ function Consent() {
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? m.consent_error(), fields: {} },
+          onSubmit: {
+            form: result.error.message ?? m.consent_error(),
+            fields: {},
+          },
         });
         return;
       }
@@ -56,24 +62,21 @@ function Consent() {
       <form.AppForm>
         <CardContent className="space-y-4">
           <div className="rounded-md border p-4">
-            <p className="text-sm font-medium">{m.consent_requested_scopes()}</p>
+            <p className="text-sm font-medium">
+              {m.consent_requested_scopes()}
+            </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {scopes.map((item) => (
-                <span className="rounded-md border px-3 py-1 text-sm" key={item}>
+                <span
+                  className="rounded-md border px-3 py-1 text-sm"
+                  key={item}
+                >
                   {item}
                 </span>
               ))}
             </div>
           </div>
-          <form.Subscribe
-            selector={(formState) =>
-              (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form
-            }
-          >
-            {(error) =>
-              error ? <p className="text-sm text-destructive">{String(error)}</p> : null
-            }
-          </form.Subscribe>
+          <form.FormError />
         </CardContent>
         <CardFooter className="gap-3">
           <form.Subscribe selector={(formState) => formState.isSubmitting}>

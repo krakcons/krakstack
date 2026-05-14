@@ -1,10 +1,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { admin, jwt } from "better-auth/plugins";
+import { admin, jwt, organization, twoFactor } from "better-auth/plugins";
 import { oauthProvider } from "@better-auth/oauth-provider";
+import { apiKey } from "@better-auth/api-key";
 
-import { db } from "@/services/database";
-import { schema } from "@/db/schema";
+import { db } from "../../services/database";
+import { schema } from "../../db/schema";
 
 const parseCsv = (value: string | undefined) =>
   value
@@ -15,6 +16,9 @@ const parseCsv = (value: string | undefined) =>
 const trustedOrigins = parseCsv(process.env.BETTER_AUTH_TRUSTED_ORIGINS);
 
 const validAudiences = parseCsv(process.env.BETTER_AUTH_VALID_AUDIENCES);
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 export const auth = betterAuth({
   appName: "Krakstack Auth",
@@ -27,6 +31,16 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  ...(googleClientId && googleClientSecret
+    ? {
+        socialProviders: {
+          google: {
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
+          },
+        },
+      }
+    : {}),
   account: {
     encryptOAuthTokens: true,
   },
@@ -39,10 +53,33 @@ export const auth = betterAuth({
   plugins: [
     admin(),
     jwt(),
+    twoFactor({
+      issuer: "Krakstack Auth",
+    }),
+    organization({
+      allowUserToCreateOrganization: true,
+      organizationLimit: 10,
+      membershipLimit: 100,
+    }),
+    apiKey([
+      {
+        configId: "user",
+        defaultPrefix: "user_",
+        references: "user",
+      },
+      {
+        configId: "organization",
+        defaultPrefix: "org_",
+        references: "organization",
+      },
+    ]),
     oauthProvider({
       loginPage: "/sign-in",
       consentPage: "/consent",
       allowDynamicClientRegistration: false,
+      silenceWarnings: {
+        oauthAuthServerConfig: true,
+      },
       clientPrivileges: async ({ user }) => {
         const role = (user as { role?: unknown } | undefined)?.role;
         if (typeof role !== "string") return false;

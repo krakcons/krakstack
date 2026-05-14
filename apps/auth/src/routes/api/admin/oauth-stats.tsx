@@ -20,9 +20,11 @@ export const Route = createFileRoute("/api/admin/oauth-stats")({
           });
         }
 
-        const role = (session.user as Record<string, unknown> | undefined)?.role;
+        const role = (session.user as Record<string, unknown> | undefined)
+          ?.role;
         const isAdmin =
-          typeof role === "string" && role.split(",").some((item) => item.trim() === "admin");
+          typeof role === "string" &&
+          role.split(",").some((item) => item.trim() === "admin");
 
         if (!isAdmin) {
           return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -50,9 +52,13 @@ export const Route = createFileRoute("/api/admin/oauth-stats")({
             .from(oauthConsent)
             .groupBy(oauthConsent.clientId);
 
-          const [{ count: totalUsers }] = await db.select({ count: count() }).from(user);
+          const [{ count: totalUsers }] = await db
+            .select({ count: count() })
+            .from(user);
 
-          const consentMap = new Map(consentCounts.map((c) => [c.clientId, c.userCount]));
+          const consentMap = new Map(
+            consentCounts.map((c) => [c.clientId, c.userCount]),
+          );
 
           const clientStats = clients.map((c) => ({
             ...c,
@@ -69,10 +75,13 @@ export const Route = createFileRoute("/api/admin/oauth-stats")({
           );
         } catch (err) {
           console.error("Failed to fetch OAuth stats:", err);
-          return new Response(JSON.stringify({ error: "Internal server error" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Internal server error" }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
         }
       },
     },

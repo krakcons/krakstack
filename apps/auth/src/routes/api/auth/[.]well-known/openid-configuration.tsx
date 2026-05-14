@@ -10,7 +10,9 @@ const handler = oauthProviderOpenIdConfigMetadata(auth, {
   },
 });
 
-export const Route = createFileRoute("/api/auth/.well-known/openid-configuration")({
+export const Route = createFileRoute(
+  "/api/auth/.well-known/openid-configuration",
+)({
   server: {
     handlers: {
       GET: ({ request }) => handler(request),

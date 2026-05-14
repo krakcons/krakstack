@@ -1,7 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Check, Copy, Loader2, Pencil, Plus, RefreshCw, Trash, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Loader2,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash,
+  TriangleAlert,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -77,7 +86,8 @@ function useOAuthClients() {
     queryKey: ["admin", "oauth", "clients"],
     queryFn: async () => {
       const result = await authClient.oauth2.getClients();
-      if (result.error) throw new Error(result.error.message ?? m.admin_error_fetch_clients());
+      if (result.error)
+        throw new Error(result.error.message ?? m.admin_error_fetch_clients());
       return (result.data ?? []) as OAuthClient[];
     },
   });
@@ -87,11 +97,16 @@ function useDeleteClient() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (clientId: string) => {
-      const result = await authClient.oauth2.deleteClient({ client_id: clientId });
-      if (result.error) throw new Error(result.error.message ?? m.admin_error_delete_client());
+      const result = await authClient.oauth2.deleteClient({
+        client_id: clientId,
+      });
+      if (result.error)
+        throw new Error(result.error.message ?? m.admin_error_delete_client());
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "oauth", "clients"],
+      });
       toast.success(m.admin_client_deleted_toast());
     },
   });
@@ -100,7 +115,9 @@ function useDeleteClient() {
 function ClientsPage() {
   const { data: clients = [], isLoading, error, refetch } = useOAuthClients();
   const [editingClient, setEditingClient] = useState<OAuthClient | null>(null);
-  const [deletingClient, setDeletingClient] = useState<OAuthClient | null>(null);
+  const [deletingClient, setDeletingClient] = useState<OAuthClient | null>(
+    null,
+  );
 
   return (
     <>
@@ -110,7 +127,11 @@ function ClientsPage() {
         badge={{ label: m.admin_badge_oauth() }}
         actions={
           <>
-            <Button disabled={isLoading} onClick={() => void refetch()} variant="outline">
+            <Button
+              disabled={isLoading}
+              onClick={() => void refetch()}
+              variant="outline"
+            >
               {isLoading ? (
                 <Loader2 className="animate-spin" data-icon="inline-start" />
               ) : (
@@ -125,17 +146,26 @@ function ClientsPage() {
 
       {error ? <ErrorMessage text={error.message} /> : null}
       <DataTable
-        columns={clientColumns({ onEdit: setEditingClient, onDelete: setDeletingClient })}
+        columns={clientColumns({
+          onEdit: setEditingClient,
+          onDelete: setDeletingClient,
+        })}
         data={clients}
         exportFileName="oauth-clients.csv"
         features={{ gallery: false }}
         from="/admin/oauth/clients"
       />
       {editingClient ? (
-        <UpdateClientDialog client={editingClient} onClose={() => setEditingClient(null)} />
+        <UpdateClientDialog
+          client={editingClient}
+          onClose={() => setEditingClient(null)}
+        />
       ) : null}
       {deletingClient ? (
-        <DeleteClientDialog client={deletingClient} onClose={() => setDeletingClient(null)} />
+        <DeleteClientDialog
+          client={deletingClient}
+          onClose={() => setDeletingClient(null)}
+        />
       ) : null}
     </>
   );
@@ -153,8 +183,12 @@ const clientColumns = ({
     header: m.admin_column_client(),
     cell: ({ row }) => (
       <div className="flex min-w-48 flex-col gap-1">
-        <span className="font-medium">{row.original.client_name ?? row.original.client_id}</span>
-        <code className="truncate text-xs text-muted-foreground">{row.original.client_id}</code>
+        <span className="font-medium">
+          {row.original.client_name ?? row.original.client_id}
+        </span>
+        <code className="text-muted-foreground truncate text-xs">
+          {row.original.client_id}
+        </code>
       </div>
     ),
   },
@@ -166,7 +200,9 @@ const clientColumns = ({
   {
     accessorKey: "scope",
     header: m.admin_column_scopes(),
-    cell: ({ row }) => <ListCell items={row.original.scope?.split(" ").filter(Boolean) ?? []} />,
+    cell: ({ row }) => (
+      <ListCell items={row.original.scope?.split(" ").filter(Boolean) ?? []} />
+    ),
   },
   {
     id: "flags",
@@ -179,7 +215,9 @@ const clientColumns = ({
         {row.original.skip_consent ? (
           <Badge variant="secondary">{m.admin_flag_skip_consent()}</Badge>
         ) : null}
-        {row.original.require_pkce ? <Badge variant="secondary">PKCE</Badge> : null}
+        {row.original.require_pkce ? (
+          <Badge variant="secondary">PKCE</Badge>
+        ) : null}
         {row.original.disabled ? (
           <Badge variant="destructive">{m.admin_flag_disabled()}</Badge>
         ) : null}
@@ -187,7 +225,11 @@ const clientColumns = ({
     ),
   },
   createDataTableActionsColumn<OAuthClient>([
-    { name: m.admin_action_edit(), icon: <Pencil className="size-4" />, onClick: onEdit },
+    {
+      name: m.admin_action_edit(),
+      icon: <Pencil className="size-4" />,
+      onClick: onEdit,
+    },
     {
       name: m.actions_delete(),
       icon: <Trash className="size-4" />,
@@ -198,7 +240,8 @@ const clientColumns = ({
 ];
 
 function ListCell({ items }: { items: string[] }) {
-  if (items.length === 0) return <span className="text-muted-foreground">{m.admin_none()}</span>;
+  if (items.length === 0)
+    return <span className="text-muted-foreground">{m.admin_none()}</span>;
 
   return (
     <div className="flex max-w-md flex-col gap-1">
@@ -215,7 +258,9 @@ function CreateClientDialog() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [createdClientId, setCreatedClientId] = useState<string | null>(null);
-  const [createdClientSecret, setCreatedClientSecret] = useState<string | null>(null);
+  const [createdClientSecret, setCreatedClientSecret] = useState<string | null>(
+    null,
+  );
   const form = useAppForm({
     defaultValues: {
       clientName: "",
@@ -225,7 +270,7 @@ function CreateClientDialog() {
     onSubmit: async ({ value, formApi }) => {
       setCreatedClientId(null);
       setCreatedClientSecret(null);
-      formApi.setErrorMap({});
+      formApi.setErrorMap({ onSubmit: undefined });
 
       const result = await authClient.oauth2.createClient({
         client_name: value.clientName,
@@ -239,14 +284,19 @@ function CreateClientDialog() {
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? m.admin_error_create_client(), fields: {} },
+          onSubmit: {
+            form: result.error.message ?? m.admin_error_create_client(),
+            fields: {},
+          },
         });
         return;
       }
 
       setCreatedClientId(result.data.client_id);
       setCreatedClientSecret(result.data.client_secret ?? null);
-      void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "oauth", "clients"],
+      });
       toast.success(m.admin_client_created_toast());
       form.reset();
     },
@@ -261,7 +311,9 @@ function CreateClientDialog() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{m.admin_create_client_title()}</DialogTitle>
-          <DialogDescription>{m.admin_create_client_description()}</DialogDescription>
+          <DialogDescription>
+            {m.admin_create_client_description()}
+          </DialogDescription>
         </DialogHeader>
         <form.AppForm>
           <form
@@ -273,7 +325,12 @@ function CreateClientDialog() {
             }}
           >
             <form.AppField name="clientName">
-              {(field) => <field.TextField label={m.admin_field_display_name()} required />}
+              {(field) => (
+                <field.TextField
+                  label={m.admin_field_display_name()}
+                  required
+                />
+              )}
             </form.AppField>
             <form.AppField name="redirectUris">
               {(field) => (
@@ -287,18 +344,18 @@ function CreateClientDialog() {
             </form.AppField>
             <form.AppField name="scopes">
               {(field) => (
-                <field.MultiSelectField label={m.admin_column_scopes()} options={SCOPE_OPTIONS} />
+                <field.MultiSelectField
+                  label={m.admin_column_scopes()}
+                  options={SCOPE_OPTIONS}
+                />
               )}
             </form.AppField>
-            <form.Subscribe
-              selector={(formState) =>
-                (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form
-              }
-            >
-              {(submitError) => (submitError ? <ErrorMessage text={String(submitError)} /> : null)}
-            </form.Subscribe>
+            <form.FormError />
             {createdClientId ? (
-              <CredentialCard clientId={createdClientId} clientSecret={createdClientSecret} />
+              <CredentialCard
+                clientId={createdClientId}
+                clientSecret={createdClientSecret}
+              />
             ) : null}
             <form.SubmitButton />
           </form>
@@ -308,7 +365,13 @@ function CreateClientDialog() {
   );
 }
 
-function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose: () => void }) {
+function UpdateClientDialog({
+  client,
+  onClose,
+}: {
+  client: OAuthClient;
+  onClose: () => void;
+}) {
   const queryClient = useQueryClient();
   const form = useAppForm({
     defaultValues: {
@@ -317,7 +380,7 @@ function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose:
       scopes: client.scope?.split(" ").filter(Boolean) ?? [],
     } satisfies ClientUpdateFormValues,
     onSubmit: async ({ value, formApi }) => {
-      formApi.setErrorMap({});
+      formApi.setErrorMap({ onSubmit: undefined });
 
       const result = await authClient.oauth2.updateClient({
         client_id: client.client_id,
@@ -330,12 +393,17 @@ function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose:
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? m.admin_error_update_client(), fields: {} },
+          onSubmit: {
+            form: result.error.message ?? m.admin_error_update_client(),
+            fields: {},
+          },
         });
         return;
       }
 
-      void queryClient.invalidateQueries({ queryKey: ["admin", "oauth", "clients"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "oauth", "clients"],
+      });
       toast.success(m.admin_client_updated_toast());
       onClose();
     },
@@ -360,7 +428,9 @@ function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose:
             }}
           >
             <form.AppField name="clientName">
-              {(field) => <field.TextField label={m.admin_field_display_name()} />}
+              {(field) => (
+                <field.TextField label={m.admin_field_display_name()} />
+              )}
             </form.AppField>
             <form.AppField name="redirectUris">
               {(field) => (
@@ -373,16 +443,13 @@ function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose:
             </form.AppField>
             <form.AppField name="scopes">
               {(field) => (
-                <field.MultiSelectField label={m.admin_column_scopes()} options={SCOPE_OPTIONS} />
+                <field.MultiSelectField
+                  label={m.admin_column_scopes()}
+                  options={SCOPE_OPTIONS}
+                />
               )}
             </form.AppField>
-            <form.Subscribe
-              selector={(formState) =>
-                (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form
-              }
-            >
-              {(submitError) => (submitError ? <ErrorMessage text={String(submitError)} /> : null)}
-            </form.Subscribe>
+            <form.FormError />
             <form.SubmitButton />
           </form>
         </form.AppForm>
@@ -391,7 +458,13 @@ function UpdateClientDialog({ client, onClose }: { client: OAuthClient; onClose:
   );
 }
 
-function DeleteClientDialog({ client, onClose }: { client: OAuthClient; onClose: () => void }) {
+function DeleteClientDialog({
+  client,
+  onClose,
+}: {
+  client: OAuthClient;
+  onClose: () => void;
+}) {
   const deleteClient = useDeleteClient();
 
   return (
@@ -400,10 +473,14 @@ function DeleteClientDialog({ client, onClose }: { client: OAuthClient; onClose:
         <AlertDialogHeader>
           <AlertDialogTitle>{m.admin_delete_client_title()}</AlertDialogTitle>
           <AlertDialogDescription>
-            {m.admin_delete_client_description({ name: client.client_name ?? client.client_id })}
+            {m.admin_delete_client_description({
+              name: client.client_name ?? client.client_id,
+            })}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {deleteClient.error ? <ErrorMessage text={deleteClient.error.message} /> : null}
+        {deleteClient.error ? (
+          <ErrorMessage text={deleteClient.error.message} />
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleteClient.isPending}>
             {m.form_block_navigation_cancel()}
@@ -436,7 +513,12 @@ function CopyButton({ value }: { value: string }) {
   };
 
   return (
-    <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={handleCopy}>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-7 shrink-0"
+      onClick={handleCopy}
+    >
       {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
     </Button>
   );
@@ -452,25 +534,29 @@ function CredentialCard({
   return (
     <div className="flex flex-col gap-3 rounded-lg border p-4">
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{m.admin_client_credentials_title()}</span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-sm font-medium">
+          {m.admin_client_credentials_title()}
+        </span>
+        <span className="text-muted-foreground text-xs">
           {m.admin_client_credentials_description()}
         </span>
       </div>
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+        <div className="bg-muted/50 flex items-center gap-2 rounded-md border px-3 py-2">
+          <span className="text-muted-foreground shrink-0 text-xs font-medium">
             {m.admin_client_id_label()}
           </span>
           <code className="min-w-0 flex-1 truncate text-xs">{clientId}</code>
           <CopyButton value={clientId} />
         </div>
         {clientSecret ? (
-          <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
-            <span className="shrink-0 text-xs font-medium text-muted-foreground">
+          <div className="bg-muted/50 flex items-center gap-2 rounded-md border px-3 py-2">
+            <span className="text-muted-foreground shrink-0 text-xs font-medium">
               {m.admin_client_secret_label()}
             </span>
-            <code className="min-w-0 flex-1 truncate text-xs">{clientSecret}</code>
+            <code className="min-w-0 flex-1 truncate text-xs">
+              {clientSecret}
+            </code>
             <CopyButton value={clientSecret} />
           </div>
         ) : null}
