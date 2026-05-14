@@ -109,6 +109,27 @@ Whenever you make an API or Schema, ensure it is documented.
 - API: Use `OpenAPI` from `effect/unstable/httpapi` to generate the OpenAPI spec. Use annotations to add a title, description, summary, etc.
 - Schema: Use `Schema.annotate({ ... })` to add a title, identifier, description, and examples to the schema.
 
+## Testing
+
+Use Vitest with `@effect/vitest` for tests.
+
+- Add tests beside the code when practical using `*.test.ts` / `*.test.tsx`.
+- Import `describe`, `expect`, and `it` from `@effect/vitest`.
+- Use `it.effect` for Effect programs and provide dependencies with `Effect.provide(...)`.
+- Prefer fresh per-test layers so mutable state does not leak. Use suite-shared layers only for expensive resources and reset state between tests.
+- Backend/service tests should use the real Postgres test database through `TEST_DATABASE_URL`; never point tests at `DATABASE_URL`.
+- The test database is provided externally. Set `TEST_DATABASE_URL` in `.env` or the shell before running tests.
+- Expose service `testLayer`s for tests, backed by `DB.testLayer` where database access is needed.
+- Run migrations against the test database before DB tests and reset affected tables between tests.
+- Use Drizzle queries for test setup and cleanup where possible; avoid raw SQL unless a migration/lifecycle task requires it.
+
+Run checks after testing changes:
+
+- `bun run test`
+- `bun type:check`
+- `bun lint`
+- `bun fmt`
+
 ## Examples
 
 ### Schema (`src/services/example/schema.ts`)
