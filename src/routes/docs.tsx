@@ -10,6 +10,7 @@ import {
   Shield,
   Table2,
   UserRound,
+  Wrench,
 } from "lucide-react";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { createFileRoute } from "@tanstack/react-router";
@@ -30,6 +31,7 @@ const iconByName = {
   "service-opentelemetry": Activity,
   "sidebar-layout": PanelLeft,
   agents: Bot,
+  "lint-format": Wrench,
   "app-brand": Blocks,
   "krakstack-template": Blocks,
 } as const;

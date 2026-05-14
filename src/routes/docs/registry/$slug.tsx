@@ -7,6 +7,7 @@ import {
 } from "@/components/registry-previews/data-table-preview";
 import { AgentsPreview } from "@/components/registry-previews/agents-preview";
 import { FormPreview } from "@/components/registry-previews/form-preview";
+import { LintFormatPreview } from "@/components/registry-previews/lint-format-preview";
 import { SignInPreview } from "@/components/registry-previews/sign-in-preview";
 import { SignUpPreview } from "@/components/registry-previews/sign-up-preview";
 import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
@@ -123,6 +124,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <SignUpPreview />
     ) : slug === "agents" ? (
       <AgentsPreview />
+    ) : slug === "lint-format" ? (
+      <LintFormatPreview />
     ) : null;
 
   if (!preview) return null;

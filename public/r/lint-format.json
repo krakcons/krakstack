@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "lint-format",
+  "title": "Lint & Format Config",
+  "description": "Production-ready Oxfmt and Oxlint configuration for KrakStack projects, including Tailwind class sorting, React/TypeScript linting, and Effect-friendly rules.",
+  "dependencies": [],
+  "devDependencies": ["oxfmt", "oxlint"],
+  "files": [
+    {
+      "path": ".oxfmtrc.json",
+      "content": "{\n  \"$schema\": \"./node_modules/oxfmt/configuration_schema.json\",\n  \"printWidth\": 80,\n  \"sortTailwindcss\": true\n}\n",
+      "type": "registry:file",
+      "target": "~/.oxfmtrc.json"
+    },
+    {
+      "path": ".oxlintrc.json",
+      "content": "{\n  \"$schema\": \"./node_modules/oxlint/configuration_schema.json\",\n  \"plugins\": [\"typescript\", \"unicorn\", \"oxc\", \"eslint\", \"react\"],\n  \"categories\": {\n    \"correctness\": \"error\"\n  },\n  \"env\": {\n    \"builtin\": true,\n    \"browser\": true,\n    \"node\": true\n  },\n  \"rules\": {\n    \"eslint/require-yield\": \"off\"\n  },\n  \"overrides\": [\n    {\n      \"files\": [\n        \"**/*.test.ts\",\n        \"**/*.test.tsx\",\n        \"**/*.spec.ts\",\n        \"**/*.spec.tsx\"\n      ],\n      \"env\": {\n        \"vitest\": true\n      }\n    }\n  ]\n}\n",
+      "type": "registry:file",
+      "target": "~/.oxlintrc.json"
+    }
+  ],
+  "docs": "## Overview\n\n`lint-format` installs root-level Oxfmt and Oxlint configuration for KrakStack projects. It keeps formatting boring and consistent while enabling useful correctness checks for React, TypeScript, and Effect code.\n\n## Included Files\n\n- `.oxfmtrc.json` — Oxfmt config with 80-column formatting and Tailwind CSS class sorting\n- `.oxlintrc.json` — Oxlint config for React, TypeScript, browser, and Node code\n\n## Choices\n\n- Uses JSON config files so CLI tooling can load them reliably across Node and Bun runtimes\n- Enables `sortTailwindcss` for shadcn/Tailwind projects\n- Disables `eslint/require-yield` because Effect uses generator functions as a DSL\n- Enables Vitest globals only in test files\n\n## Usage\n\nInstall the registry item:\n\n```bash\nnpx shadcn@latest add https://krakstack.net/r/lint-format.json\n```\n\nRecommended package scripts:\n\n```json\n{\n  \"scripts\": {\n    \"lint\": \"oxlint\",\n    \"fmt\": \"oxfmt\",\n    \"fmt:check\": \"oxfmt --check .\"\n  }\n}\n```\n\nRun checks locally or in CI:\n\n```bash\nbun run fmt:check\nbun run lint\n```",
+  "type": "registry:lib"
+}
