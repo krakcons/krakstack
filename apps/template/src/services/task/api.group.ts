@@ -1,10 +1,19 @@
 import { Schema } from "effect";
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
+import {
+  HttpApiEndpoint,
+  HttpApiError,
+  HttpApiGroup,
+} from "effect/unstable/httpapi";
 import { OpenApi } from "effect/unstable/httpapi";
 
 import { AuthMiddleware } from "@/services/auth/middleware";
 
-import { CreateTaskSchema, TaskIdParamsSchema, TaskSchema, UpdateTaskSchema } from "./schema";
+import {
+  CreateTaskSchema,
+  TaskIdParamsSchema,
+  TaskSchema,
+  UpdateTaskSchema,
+} from "./schema";
 
 export const TasksApiGroup = HttpApiGroup.make("tasks")
   .annotateMerge(
@@ -20,7 +29,8 @@ export const TasksApiGroup = HttpApiGroup.make("tasks")
     }).annotateMerge(
       OpenApi.annotations({
         summary: "List all tasks",
-        description: "Returns a list of all tasks belonging to the authenticated user",
+        description:
+          "Returns a list of all tasks belonging to the authenticated user",
       }),
     ),
   )
@@ -40,11 +50,16 @@ export const TasksApiGroup = HttpApiGroup.make("tasks")
     HttpApiEndpoint.get("getTask", "/tasks/:id", {
       params: TaskIdParamsSchema,
       success: TaskSchema,
-      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.Unauthorized,
+        HttpApiError.NotFound,
+        HttpApiError.InternalServerError,
+      ],
     }).annotateMerge(
       OpenApi.annotations({
         summary: "Get a task by ID",
-        description: "Retrieves a single task by its ID for the authenticated user",
+        description:
+          "Retrieves a single task by its ID for the authenticated user",
       }),
     ),
   )
@@ -53,11 +68,16 @@ export const TasksApiGroup = HttpApiGroup.make("tasks")
       params: TaskIdParamsSchema,
       payload: UpdateTaskSchema,
       success: TaskSchema,
-      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.Unauthorized,
+        HttpApiError.NotFound,
+        HttpApiError.InternalServerError,
+      ],
     }).annotateMerge(
       OpenApi.annotations({
         summary: "Update a task",
-        description: "Partially updates an existing task by its ID for the authenticated user",
+        description:
+          "Partially updates an existing task by its ID for the authenticated user",
       }),
     ),
   )
@@ -65,7 +85,11 @@ export const TasksApiGroup = HttpApiGroup.make("tasks")
     HttpApiEndpoint.delete("deleteTask", "/tasks/:id", {
       params: TaskIdParamsSchema,
       success: TaskSchema,
-      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.Unauthorized,
+        HttpApiError.NotFound,
+        HttpApiError.InternalServerError,
+      ],
     }).annotateMerge(
       OpenApi.annotations({
         summary: "Delete a task",

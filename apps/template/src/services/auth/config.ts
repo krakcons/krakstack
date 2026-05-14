@@ -23,8 +23,11 @@ export const auth = betterAuth({
           providerId: "krakstack-auth",
           clientId: process.env.KRAKSTACK_AUTH_CLIENT_ID!,
           clientSecret: process.env.KRAKSTACK_AUTH_CLIENT_SECRET!,
-          discoveryUrl: process.env.KRAKSTACK_AUTH_URL + "/.well-known/openid-configuration",
-          redirectURI: process.env.BETTER_AUTH_URL + "/api/auth/callback/krakstack-auth",
+          discoveryUrl:
+            process.env.KRAKSTACK_AUTH_URL +
+            "/.well-known/openid-configuration",
+          redirectURI:
+            process.env.BETTER_AUTH_URL + "/api/auth/callback/krakstack-auth",
           scopes: ["openid", "profile", "email"],
           pkce: true,
         },

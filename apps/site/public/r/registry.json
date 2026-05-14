@@ -52,7 +52,11 @@
         "select",
         "table"
       ],
-      "dependencies": ["@dnd-kit/core", "@tanstack/react-router", "@tanstack/react-table"]
+      "dependencies": [
+        "@dnd-kit/core",
+        "@tanstack/react-router",
+        "@tanstack/react-table"
+      ]
     },
     {
       "name": "form",
@@ -87,7 +91,12 @@
         "label",
         "textarea"
       ],
-      "dependencies": ["lucide-react", "react", "@tanstack/react-form", "@tanstack/react-router"]
+      "dependencies": [
+        "lucide-react",
+        "react",
+        "@tanstack/react-form",
+        "@tanstack/react-router"
+      ]
     },
     {
       "name": "locale-toggle",
@@ -235,7 +244,12 @@
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-database` provides a Drizzle PostgreSQL client as an Effect service. It reads `DATABASE_URL`, configures pg type parsing for date and interval types, and exposes a reusable layer for application programs.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { DB } from \"@/services/database\";\nimport { users } from \"@/db/schema\";\n\nconst program = Effect.gen(function* () {\n  const db = yield* DB;\n  return yield* db.select().from(users);\n});\n\nconst usersList = await Effect.runPromise(\n  program.pipe(Effect.provide(DB.layer)),\n);\n```",
-      "dependencies": ["effect@beta", "@effect/sql-pg@beta", "pg", "drizzle-orm@rc"],
+      "dependencies": [
+        "effect@beta",
+        "@effect/sql-pg@beta",
+        "pg",
+        "drizzle-orm@rc"
+      ],
       "devDependencies": ["drizzle-kit@rc", "@types/pg"],
       "files": [
         {
@@ -283,7 +297,12 @@
         "tailwindcss",
         "react"
       ],
-      "devDependencies": ["@types/bun", "drizzle-kit@beta", "typescript", "vite"]
+      "devDependencies": [
+        "@types/bun",
+        "drizzle-kit@beta",
+        "typescript",
+        "vite"
+      ]
     },
     {
       "name": "agents",
@@ -298,6 +317,27 @@
           "target": "AGENTS.md"
         }
       ],
+      "dependencies": []
+    },
+    {
+      "name": "lint-format",
+      "type": "registry:lib",
+      "title": "Lint & Format Config",
+      "description": "Production-ready Oxfmt and Oxlint configuration for KrakStack projects, including Tailwind class sorting, React/TypeScript linting, and Effect-friendly rules.",
+      "docs": "## Overview\n\n`lint-format` installs root-level Oxfmt and Oxlint configuration for KrakStack projects. It keeps formatting boring and consistent while enabling useful correctness checks for React, TypeScript, and Effect code.\n\n## Included Files\n\n- `.oxfmtrc.json` — Oxfmt config with 80-column formatting and Tailwind CSS class sorting\n- `.oxlintrc.json` — Oxlint config for React, TypeScript, browser, and Node code\n\n## Choices\n\n- Uses JSON config files so CLI tooling can load them reliably across Node and Bun runtimes\n- Enables `sortTailwindcss` for shadcn/Tailwind projects\n- Disables `eslint/require-yield` because Effect uses generator functions as a DSL\n- Enables Vitest globals only in test files\n\n## Usage\n\nInstall the registry item:\n\n```bash\nnpx shadcn@latest add https://krakstack.net/r/lint-format.json\n```\n\nRecommended package scripts:\n\n```json\n{\n  \"scripts\": {\n    \"lint\": \"oxlint\",\n    \"fmt\": \"oxfmt\",\n    \"fmt:check\": \"oxfmt --check .\"\n  }\n}\n```\n\nRun checks locally or in CI:\n\n```bash\nbun run fmt:check\nbun run lint\n```",
+      "files": [
+        {
+          "path": ".oxfmtrc.json",
+          "type": "registry:file",
+          "target": "~/.oxfmtrc.json"
+        },
+        {
+          "path": ".oxlintrc.json",
+          "type": "registry:file",
+          "target": "~/.oxlintrc.json"
+        }
+      ],
+      "devDependencies": ["oxfmt", "oxlint"],
       "dependencies": []
     },
     {

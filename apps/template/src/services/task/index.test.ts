@@ -83,10 +83,22 @@ describe("Tasks", () => {
 
       if (!created) throw new Error("Expected task to be created");
 
-      const deletedByOtherUser = yield* tasks.delete({ userId: "user-b", id: created.id });
-      const afterOtherUserDelete = yield* tasks.get({ userId: "user-a", id: created.id });
-      const deletedByOwner = yield* tasks.delete({ userId: "user-a", id: created.id });
-      const afterOwnerDelete = yield* tasks.get({ userId: "user-a", id: created.id });
+      const deletedByOtherUser = yield* tasks.delete({
+        userId: "user-b",
+        id: created.id,
+      });
+      const afterOtherUserDelete = yield* tasks.get({
+        userId: "user-a",
+        id: created.id,
+      });
+      const deletedByOwner = yield* tasks.delete({
+        userId: "user-a",
+        id: created.id,
+      });
+      const afterOwnerDelete = yield* tasks.get({
+        userId: "user-a",
+        id: created.id,
+      });
 
       expect(deletedByOtherUser).toBeUndefined();
       expect(afterOtherUserDelete?.id).toBe(created.id);

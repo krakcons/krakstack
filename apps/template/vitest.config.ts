@@ -13,6 +13,11 @@ export default defineConfig({
     env: {
       TEST_DATABASE_URL: process.env.TEST_DATABASE_URL ?? env.TEST_DATABASE_URL,
     },
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "tests/**/*.test.ts", "tests/**/*.test.tsx"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "tests/**/*.test.ts",
+      "tests/**/*.test.tsx",
+    ],
   },
 });

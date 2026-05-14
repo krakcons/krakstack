@@ -15,6 +15,7 @@
     "registry:build": "shadcn build",
     "lint": "oxlint",
     "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check .",
     "auth:generate": "bunx @better-auth/cli@latest generate --config ./src/services/auth/config.ts --output ./src/db/auth-schema.ts",
     "shadcn:update": "for file in src/components/ui/*.tsx; do bunx shadcn@latest add -y -o $(basename \"$file\" .tsx); done"
   },

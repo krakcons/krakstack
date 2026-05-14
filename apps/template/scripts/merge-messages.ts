@@ -14,7 +14,10 @@ for await (const file of glob.scan(".")) {
 }
 
 for (const [lang, messages] of Object.entries(messagesByLang)) {
-  await Bun.write(`src/messages/${lang}.json`, JSON.stringify(messages, null, 2));
+  await Bun.write(
+    `src/messages/${lang}.json`,
+    JSON.stringify(messages, null, 2),
+  );
   console.log(`[merge-messages] ${lang}: wrote messages/${lang}.json`);
 }
 

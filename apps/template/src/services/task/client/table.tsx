@@ -22,7 +22,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 import { TaskDialog } from "./form";
-import { deleteTaskAtom, updateTaskAtom, useTasksAtom, type Task } from "./atom";
+import {
+  deleteTaskAtom,
+  updateTaskAtom,
+  useTasksAtom,
+  type Task,
+} from "./atom";
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat(undefined, {
@@ -47,12 +52,14 @@ export function TaskTable({ from = "/" }: { from?: "/" | "/admin" }) {
   const columns: ColumnDef<Task>[] = [
     {
       accessorKey: "title",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Task" />,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Task" />
+      ),
       cell: ({ row }) => (
         <div className="flex min-w-52 flex-col gap-1">
           <span className="font-medium">{row.original.title}</span>
           {row.original.description ? (
-            <span className="line-clamp-2 text-sm text-muted-foreground">
+            <span className="text-muted-foreground line-clamp-2 text-sm">
               {row.original.description}
             </span>
           ) : null}
@@ -61,7 +68,9 @@ export function TaskTable({ from = "/" }: { from?: "/" | "/admin" }) {
     },
     {
       accessorKey: "completed",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
       cell: ({ row }) => (
         <Badge variant={row.original.completed ? "default" : "secondary"}>
           {row.original.completed ? (
@@ -75,9 +84,13 @@ export function TaskTable({ from = "/" }: { from?: "/" | "/admin" }) {
     },
     {
       accessorKey: "updatedAt",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Updated" />
+      ),
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">{formatDate(row.original.updatedAt)}</span>
+        <span className="text-muted-foreground text-sm">
+          {formatDate(row.original.updatedAt)}
+        </span>
       ),
     },
     createDataTableActionsColumn<Task>([
@@ -131,10 +144,14 @@ export function TaskTable({ from = "/" }: { from?: "/" | "/admin" }) {
 
   return AsyncResult.match(tasksResult, {
     onInitial: () => (
-      <div className="rounded-xl border bg-card p-6 text-muted-foreground">Loading tasks...</div>
+      <div className="bg-card text-muted-foreground rounded-xl border p-6">
+        Loading tasks...
+      </div>
     ),
     onFailure: () => (
-      <div className="rounded-xl border bg-card p-6 text-destructive">Unable to load tasks.</div>
+      <div className="bg-card text-destructive rounded-xl border p-6">
+        Unable to load tasks.
+      </div>
     ),
     onSuccess: () => {
       return (
@@ -172,7 +189,10 @@ export function TaskTable({ from = "/" }: { from?: "/" | "/admin" }) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={confirmDelete}
+                >
                   Delete
                 </AlertDialogAction>
               </AlertDialogFooter>

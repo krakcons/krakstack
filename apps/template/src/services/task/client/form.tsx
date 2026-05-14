@@ -33,7 +33,12 @@ const getErrorMessage = (isEditing: boolean, error: unknown) => {
   return isEditing ? "Failed to save task." : "Failed to create task.";
 };
 
-export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }: Props) {
+export function TaskDialog({
+  task,
+  open: controlledOpen,
+  onOpenChange,
+  trigger,
+}: Props) {
   const createTask = useAtomSet(createTaskAtom);
   const updateTask = useAtomSet(updateTaskAtom);
   const [internalOpen, setInternalOpen] = useState(false);
@@ -125,26 +130,39 @@ export function TaskDialog({ task, open: controlledOpen, onOpenChange, trigger }
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit task" : "Create task"}</DialogTitle>
             <DialogDescription>
-              {isEditing ? "Update the task details." : "Add a task to the list."}
+              {isEditing
+                ? "Update the task details."
+                : "Add a task to the list."}
             </DialogDescription>
           </DialogHeader>
 
           <form.AppForm>
             <form.AppField name="title">
               {(field) => (
-                <field.TextField label="Title" placeholder="Ship the table view" autoFocus />
+                <field.TextField
+                  label="Title"
+                  placeholder="Ship the table view"
+                  autoFocus
+                />
               )}
             </form.AppField>
             <form.AppField name="description">
               {(field) => (
-                <field.TextAreaField label="Description" placeholder="Optional details" />
+                <field.TextAreaField
+                  label="Description"
+                  placeholder="Optional details"
+                />
               )}
             </form.AppField>
 
-            <div className="min-h-5 text-sm text-destructive">{error || null}</div>
+            <div className="text-destructive min-h-5 text-sm">
+              {error || null}
+            </div>
 
             <DialogFooter>
-              <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+              <DialogClose render={<Button type="button" variant="outline" />}>
+                Cancel
+              </DialogClose>
               <form.SubmitButton />
             </DialogFooter>
           </form.AppForm>

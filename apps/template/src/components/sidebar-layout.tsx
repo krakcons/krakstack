@@ -39,7 +39,9 @@ type AppSidebarProps = {
 };
 
 function AppSidebar({ groups, header }: AppSidebarProps) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   return (
     <Sidebar collapsible="icon">
@@ -75,11 +77,19 @@ function AppSidebar({ groups, header }: AppSidebarProps) {
 type SidebarPageHeaderProps = {
   title: string;
   description?: string;
-  badge?: { label: string; variant?: "default" | "secondary" | "outline" | "destructive" };
+  badge?: {
+    label: string;
+    variant?: "default" | "secondary" | "outline" | "destructive";
+  };
   actions?: React.ReactNode;
 };
 
-export function SidebarPageHeader({ title, description, badge, actions }: SidebarPageHeaderProps) {
+export function SidebarPageHeader({
+  title,
+  description,
+  badge,
+  actions,
+}: SidebarPageHeaderProps) {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-2">
@@ -91,7 +101,9 @@ export function SidebarPageHeader({ title, description, badge, actions }: Sideba
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
           {description ? (
-            <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
+            <p className="text-muted-foreground max-w-2xl text-sm">
+              {description}
+            </p>
           ) : null}
         </div>
       </div>
@@ -113,14 +125,16 @@ export function SidebarLayout({
     <SidebarProvider>
       <AppSidebar groups={groups} header={sidebarHeader} />
       <SidebarInset className="min-w-0 overflow-x-hidden">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur">
           <SidebarTrigger />
           <div className="ml-auto flex items-center gap-2">
             <LocaleToggle />
             <UserButton />
           </div>
         </header>
-        <div className="flex flex-col gap-6 px-5 py-6 md:px-8">{children ?? <Outlet />}</div>
+        <div className="flex flex-col gap-6 px-5 py-6 md:px-8">
+          {children ?? <Outlet />}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

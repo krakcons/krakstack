@@ -48,7 +48,9 @@ function Admin() {
       groups={[
         {
           label: m.admin_sidebar_workspace,
-          items: [{ label: m.admin_sidebar_tasks, href: "/admin", icon: CheckSquare }],
+          items: [
+            { label: m.admin_sidebar_tasks, href: "/admin", icon: CheckSquare },
+          ],
         },
       ]}
     >
@@ -56,7 +58,11 @@ function Admin() {
         badge={{ label: m.admin_badge(), variant: "outline" }}
         title={m.admin_title()}
         description={m.admin_description()}
-        actions={<TaskDialog trigger={<Button type="button">{m.tasks_create()}</Button>} />}
+        actions={
+          <TaskDialog
+            trigger={<Button type="button">{m.tasks_create()}</Button>}
+          />
+        }
       />
       <TaskTable from="/admin" />
     </SidebarLayout>

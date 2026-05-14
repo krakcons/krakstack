@@ -77,18 +77,28 @@ export const UserButton = ({
             </Button>
           }
         />
-        <DropdownMenuContent className="min-w-56 rounded-lg" side={side} align="end" sideOffset={4}>
+        <DropdownMenuContent
+          className="min-w-56 rounded-lg"
+          side={side}
+          align="end"
+          sideOffset={4}
+        >
           <DropdownMenuGroup>
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserIcon className="size-4.5" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   {displayName && (
-                    <span className="truncate font-medium text-foreground">{displayName}</span>
+                    <span className="text-foreground truncate font-medium">
+                      {displayName}
+                    </span>
                   )}
                   {displayEmail && (
                     <span
-                      className={cn("truncate text-xs", displayName && "text-muted-foreground")}
+                      className={cn(
+                        "truncate text-xs",
+                        displayName && "text-muted-foreground",
+                      )}
                     >
                       {displayEmail}
                     </span>
@@ -97,7 +107,10 @@ export const UserButton = ({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={isPending} onClick={() => setAccountDialog(true)}>
+            <DropdownMenuItem
+              disabled={isPending}
+              onClick={() => setAccountDialog(true)}
+            >
               <UserCircleIcon />
               {m.user_button_account()}
             </DropdownMenuItem>
@@ -124,7 +137,11 @@ export const UserButton = ({
               try {
                 await updateUser(data);
               } catch (error) {
-                setFormError(error instanceof Error ? error.message : m.user_form_update_error());
+                setFormError(
+                  error instanceof Error
+                    ? error.message
+                    : m.user_form_update_error(),
+                );
               }
             }}
           />
@@ -160,11 +177,15 @@ const UserForm = ({
       <form.AppForm>
         <form.AppField name="name">
           {(field) => (
-            <field.TextField label={m.user_form_name_label()} autoComplete="name" required />
+            <field.TextField
+              label={m.user_form_name_label()}
+              autoComplete="name"
+              required
+            />
           )}
         </form.AppField>
         {error && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-destructive text-sm">
             {error}
           </p>
         )}
@@ -174,7 +195,9 @@ const UserForm = ({
   );
 };
 
-const isAuthErrorResult = (result: unknown): result is { error: { message?: string } } => {
+const isAuthErrorResult = (
+  result: unknown,
+): result is { error: { message?: string } } => {
   return (
     typeof result === "object" &&
     result !== null &&

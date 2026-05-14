@@ -14,7 +14,9 @@ export const tasksHandler = HttpApiBuilder.group(Api, "tasks", (handlers) =>
         const tasks = yield* Tasks;
         const user = yield* CurrentUser;
 
-        return yield* tasks.list({ userId: user.id }).pipe(Effect.mapError(internalServerError));
+        return yield* tasks
+          .list({ userId: user.id })
+          .pipe(Effect.mapError(internalServerError));
       }),
     )
     .handle("getTask", ({ params }) =>

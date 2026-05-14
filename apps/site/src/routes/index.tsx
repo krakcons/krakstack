@@ -16,6 +16,7 @@ import {
   Shield,
   Table2,
   UserRound,
+  Wrench,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -32,6 +33,7 @@ const iconByName = {
   "service-database": Database,
   "service-opentelemetry": Activity,
   agents: Bot,
+  "lint-format": Wrench,
   "krakstack-template": FileCode2,
 } as const;
 

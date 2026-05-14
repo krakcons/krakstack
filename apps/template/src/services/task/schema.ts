@@ -46,11 +46,13 @@ export const UpdateTaskSchema = Schema.Struct({
   examples: [{ title: "Buy groceries", completed: true }],
 });
 
-export const TaskIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate({
-  identifier: "TaskIdParamsSchema",
-  title: "Task ID Params",
-  description: "Path parameters for task endpoints requiring an ID",
-  examples: [{ id: "1" }],
-});
+export const TaskIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate(
+  {
+    identifier: "TaskIdParamsSchema",
+    title: "Task ID Params",
+    description: "Path parameters for task endpoints requiring an ID",
+    examples: [{ id: "1" }],
+  },
+);
 
 export const TaskSchemaStandard = Schema.toStandardSchemaV1(TaskSchema);

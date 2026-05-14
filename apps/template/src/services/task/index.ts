@@ -9,7 +9,11 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
-    const list = Effect.fn("Tasks.list")(function* ({ userId }: { userId: string }) {
+    const list = Effect.fn("Tasks.list")(function* ({
+      userId,
+    }: {
+      userId: string;
+    }) {
       const tasks = yield* db.query.tasks.findMany({
         where: {
           userId,
@@ -19,7 +23,13 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
       return tasks;
     });
 
-    const get = Effect.fn("Tasks.get")(function* ({ userId, id }: { userId: string; id: string }) {
+    const get = Effect.fn("Tasks.get")(function* ({
+      userId,
+      id,
+    }: {
+      userId: string;
+      id: string;
+    }) {
       const task = yield* db.query.tasks.findFirst({
         where: {
           id,

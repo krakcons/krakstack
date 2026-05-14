@@ -2,7 +2,11 @@ import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { ApiClient } from "@/lib/api-client";
-import { CreateTaskSchema, TaskSchema, UpdateTaskSchema } from "@/services/task/schema";
+import {
+  CreateTaskSchema,
+  TaskSchema,
+  UpdateTaskSchema,
+} from "@/services/task/schema";
 
 export type Task = typeof TaskSchema.Type;
 export type CreateTaskPayload = typeof CreateTaskSchema.Type;
@@ -36,7 +40,8 @@ const optimisticTask = (p: CreateTaskPayload): Task => {
 export const allTasksAtom = Atom.optimistic(serverTasksAtom);
 
 export const createTaskAtom = Atom.optimisticFn(allTasksAtom, {
-  reducer: (c, a) => AsyncResult.success([optimisticTask(a.payload), ...current(c)]),
+  reducer: (c, a) =>
+    AsyncResult.success([optimisticTask(a.payload), ...current(c)]),
   fn: ApiClient.mutation("tasks", "createTask"),
 });
 
@@ -49,7 +54,9 @@ export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
               ...task,
               title: a.payload.title ?? task.title,
               description:
-                a.payload.description !== undefined ? a.payload.description : task.description,
+                a.payload.description !== undefined
+                  ? a.payload.description
+                  : task.description,
               completed: a.payload.completed ?? task.completed,
               updatedAt: new Date(),
             }
@@ -60,7 +67,8 @@ export const updateTaskAtom = Atom.optimisticFn(allTasksAtom, {
 });
 
 export const deleteTaskAtom = Atom.optimisticFn(allTasksAtom, {
-  reducer: (c, a) => AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
+  reducer: (c, a) =>
+    AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
   fn: ApiClient.mutation("tasks", "deleteTask"),
 });
 

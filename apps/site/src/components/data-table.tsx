@@ -1349,6 +1349,7 @@ export function DataTableRelationshipCell({
         {value.length > 0 ? (
           value.map((option) => (
             <Badge
+              key={option.value}
               variant="outline"
               onClick={() => option.href && navigate({ to: option.href })}
               className="max-w-48"
