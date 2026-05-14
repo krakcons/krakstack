@@ -93,5 +93,9 @@ export class Tasks extends Context.Service<Tasks>()("Tasks", {
     };
   }),
 }) {
-  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.layer));
+  static readonly baseLayer = Layer.effect(this, this.make);
+
+  static readonly layer = this.baseLayer.pipe(Layer.provide(DB.layer));
+
+  static readonly testLayer = this.baseLayer.pipe(Layer.provide(DB.testLayer));
 }
