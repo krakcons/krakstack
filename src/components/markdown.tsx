@@ -11,7 +11,7 @@ export function Markdown({ content }: MarkdownProps) {
   const blocks = parseBlocks(content);
 
   return (
-    <div className="prose prose-slate max-w-none prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-[#1d2e45] prose-pre:text-[#e8efff]">
+    <div className="prose prose-slate prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-[#1d2e45] prose-pre:text-[#e8efff] max-w-none">
       {blocks.map((block, index) => renderBlock(block, index))}
     </div>
   );
@@ -57,30 +57,46 @@ function renderBlock(block: string, index: number) {
   if (block.startsWith("```")) {
     const lines = block.split("\n");
     const language = normalizeLanguage(lines[0]?.slice(3).trim());
-    const code = lines.slice(1, lines.at(-1) === "```" ? -1 : undefined).join("\n");
+    const code = lines
+      .slice(1, lines.at(-1) === "```" ? -1 : undefined)
+      .join("\n");
     return <HighlightedCode code={code} key={index} language={language} />;
   }
 
-  if (block.startsWith("#### ")) return <h4 key={index}>{renderInline(block.slice(5))}</h4>;
-  if (block.startsWith("### ")) return <h3 key={index}>{renderInline(block.slice(4))}</h3>;
-  if (block.startsWith("## ")) return <h2 key={index}>{renderInline(block.slice(3))}</h2>;
-  if (block.startsWith("# ")) return <h1 key={index}>{renderInline(block.slice(2))}</h1>;
+  if (block.startsWith("#### "))
+    return <h4 key={index}>{renderInline(block.slice(5))}</h4>;
+  if (block.startsWith("### "))
+    return <h3 key={index}>{renderInline(block.slice(4))}</h3>;
+  if (block.startsWith("## "))
+    return <h2 key={index}>{renderInline(block.slice(3))}</h2>;
+  if (block.startsWith("# "))
+    return <h1 key={index}>{renderInline(block.slice(2))}</h1>;
 
   if (block.split("\n").some((line) => /^\s*-\s/.test(line))) {
-    return <ul key={index}>{renderListNodes(parseListTree(block.split("\n")))}</ul>;
+    return (
+      <ul key={index}>{renderListNodes(parseListTree(block.split("\n")))}</ul>
+    );
   }
 
   return <p key={index}>{renderInline(block.replace(/\n/g, " "))}</p>;
 }
 
-function HighlightedCode({ code, language }: { code: string; language: string }) {
+function HighlightedCode({
+  code,
+  language,
+}: {
+  code: string;
+  language: string;
+}) {
   const [html, setHtml] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     getHighlighter()
-      .then((highlighter) => highlighter.codeToHtml(code, { lang: language, theme: "github-dark" }))
+      .then((highlighter) =>
+        highlighter.codeToHtml(code, { lang: language, theme: "github-dark" }),
+      )
       .then((highlighted) => {
         if (active) setHtml(highlighted);
       })

@@ -1,8 +1,18 @@
 import { betterAuth } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
 
+const parseCsv = (value: string | undefined) =>
+  value
+    ?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+
 export const auth = betterAuth({
   appName: "Krakstack Site",
+  trustedOrigins: parseCsv(process.env.BETTER_AUTH_TRUSTED_ORIGINS),
+  advanced: {
+    cookiePrefix: "krakstack-site",
+  },
   account: {
     encryptOAuthTokens: true,
     storeStateStrategy: "cookie",
@@ -23,8 +33,11 @@ export const auth = betterAuth({
           providerId: "krakstack-auth",
           clientId: process.env.KRAKSTACK_AUTH_CLIENT_ID!,
           clientSecret: process.env.KRAKSTACK_AUTH_CLIENT_SECRET!,
-          discoveryUrl: process.env.KRAKSTACK_AUTH_URL + "/.well-known/openid-configuration",
-          redirectURI: process.env.BETTER_AUTH_URL + "/api/auth/callback/krakstack-auth",
+          discoveryUrl:
+            process.env.KRAKSTACK_AUTH_URL +
+            "/.well-known/openid-configuration",
+          redirectURI:
+            process.env.BETTER_AUTH_URL + "/api/auth/callback/krakstack-auth",
           scopes: ["openid", "profile", "email"],
           pkce: true,
         },

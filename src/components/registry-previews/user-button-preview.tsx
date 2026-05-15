@@ -1,5 +1,11 @@
 import { UserButton } from "@/components/user-button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/services/auth/client";
 
@@ -8,7 +14,9 @@ export function UserButtonPreview() {
     <Card className="bg-[var(--surface-strong)]">
       <CardHeader>
         <CardTitle>User Menu</CardTitle>
-        <CardDescription>This preview uses the site-local Better Auth client.</CardDescription>
+        <CardDescription>
+          This preview uses the site-local Better Auth client.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-center py-12">
         <UserButton

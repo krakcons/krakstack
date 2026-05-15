@@ -128,13 +128,18 @@
       "name": "user-button",
       "type": "registry:block",
       "title": "User Button",
-      "description": "A Better Auth user menu with account editing, localized labels, and sign-out handling.",
-      "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for Better Auth projects. It reads the current user from the app-local `authClient.useSession()`, opens an account dialog for updating the user's name, and signs the user out with an optional redirect.\n\n## Features\n\n- Better Auth `useSession`, `updateUser`, and `signOut` integration\n- Account dialog with the local `form` registry block\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@/components/user-button\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```",
+      "description": "A Better Auth user menu with a central-auth-backed account dialog, localized labels, and sign-out handling.",
+      "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for apps that use Krakstack Auth as a central identity provider. It reads the visible app session from the app-local `authClient.useSession()`, then uses `centralAuthClient` for central account mutations like profile updates, linked accounts, password settings, two-factor authentication, and user API keys.\n\n## Features\n\n- App-local Better Auth session display\n- Central Krakstack Auth account mutations through `centralAuthClient`\n- Profile, linked accounts, password, 2FA, and API-key dialogs\n- Reconnect state when the app session exists but the central auth session is missing\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@/components/user-button\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`.",
       "files": [
         {
           "path": "src/components/user-button.tsx",
           "type": "registry:component",
           "target": "components/user-button.tsx"
+        },
+        {
+          "path": "src/services/auth/client/central.ts",
+          "type": "registry:file",
+          "target": "services/auth/client/central.ts"
         },
         {
           "path": "src/messages/components/user-button/en.json",
@@ -147,8 +152,23 @@
           "target": "./messages/components/user-button/fr.json"
         }
       ],
-      "registryDependencies": ["button", "dialog", "dropdown-menu", "form"],
-      "dependencies": ["better-auth", "lucide-react", "react"]
+      "registryDependencies": [
+        "badge",
+        "button",
+        "@krak/data-table",
+        "dialog",
+        "dropdown-menu",
+        "form",
+        "separator"
+      ],
+      "dependencies": [
+        "@better-auth/api-key",
+        "@tanstack/react-table",
+        "better-auth",
+        "lucide-react",
+        "react",
+        "react-qr-code"
+      ]
     },
     {
       "name": "sign-in",
@@ -218,6 +238,11 @@
           "path": "src/services/auth/client/index.ts",
           "type": "registry:file",
           "target": "services/auth/client/index.ts"
+        },
+        {
+          "path": "src/services/auth/client/central.ts",
+          "type": "registry:file",
+          "target": "services/auth/client/central.ts"
         },
         {
           "path": "src/routes/api/auth/$.tsx",

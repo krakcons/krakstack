@@ -19,7 +19,8 @@ export function useRegistryItem(slug: string, fallback: RegistryItemMetadata) {
       })
       .then((metadata) => setItem(metadata))
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
         setItem(fallback);
       });
 

@@ -52,7 +52,9 @@ export function AppBrand({
           .join(" ")}
       >
         <span className="truncate font-semibold tracking-tight">{label}</span>
-        <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
+        <span className="text-muted-foreground truncate text-xs">
+          {subtitle}
+        </span>
       </div>
     </Link>
   );

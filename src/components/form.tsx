@@ -7,7 +7,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createFormHook, createFormHookContexts, useStore } from "@tanstack/react-form";
+import {
+  createFormHook,
+  createFormHookContexts,
+  useStore,
+} from "@tanstack/react-form";
 import { Block } from "@tanstack/react-router";
 import { Loader2, Plus, Trash, Languages } from "lucide-react";
 import type { InputHTMLAttributes, JSX } from "react";
@@ -38,7 +42,7 @@ import { Badge } from "@/components/ui/badge";
 
 export const ErrorMessage = ({ text }: { text: string }) => {
   return (
-    <em role="alert" className="text-sm text-destructive">
+    <em role="alert" className="text-destructive text-sm">
       {text}
     </em>
   );
@@ -63,7 +67,8 @@ export function FieldError({ errors = [] }: { errors?: any[] }) {
   ) : null;
 }
 
-const { fieldContext, useFieldContext, formContext, useFormContext } = createFormHookContexts();
+const { fieldContext, useFieldContext, formContext, useFormContext } =
+  createFormHookContexts();
 
 export type DefaultFormOptions = {
   legend?: string;
@@ -74,13 +79,16 @@ export type DefaultOptions = {
   description?: string;
 };
 
-const TextField = ({ children, ...props }: React.ComponentProps<"input"> & DefaultOptions) => {
+const TextField = ({
+  children,
+  ...props
+}: React.ComponentProps<"input"> & DefaultOptions) => {
   const field = useFieldContext<string>();
   const invalid = !field.state.meta.isValid;
 
   return (
     <Field data-invalid={invalid}>
-      <div className="flex items-center gap-2 w-full">
+      <div className="flex w-full items-center gap-2">
         <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
         {children}
       </div>
@@ -91,7 +99,9 @@ const TextField = ({ children, ...props }: React.ComponentProps<"input"> & Defau
         {...props}
         aria-invalid={invalid}
       />
-      {props.description && <FieldDescription>{props.description}</FieldDescription>}
+      {props.description && (
+        <FieldDescription>{props.description}</FieldDescription>
+      )}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -106,7 +116,7 @@ const TextAreaField = ({
 
   return (
     <Field data-invalid={invalid}>
-      <div className="flex items-center gap-2 w-full">
+      <div className="flex w-full items-center gap-2">
         <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
         {children}
       </div>
@@ -117,7 +127,9 @@ const TextAreaField = ({
         {...props}
         aria-invalid={invalid}
       />
-      {props.description && <FieldDescription>{props.description}</FieldDescription>}
+      {props.description && (
+        <FieldDescription>{props.description}</FieldDescription>
+      )}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -140,7 +152,9 @@ const CheckboxField = (props: DefaultOptions) => {
         />
         <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
       </div>
-      {props.description && <FieldDescription>{props.description}</FieldDescription>}
+      {props.description && (
+        <FieldDescription>{props.description}</FieldDescription>
+      )}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -180,7 +194,9 @@ const SelectField = ({
           </SelectGroup>
         </SelectContent>
       </Select>
-      {props.description && <FieldDescription>{props.description}</FieldDescription>}
+      {props.description && (
+        <FieldDescription>{props.description}</FieldDescription>
+      )}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -218,7 +234,7 @@ const KeyValueField = (props: DefaultOptions) => {
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
       {keyValues.map(([key, value], index) => (
-        <div key={index} className="flex flex-row items-center gap-2 w-full">
+        <div key={index} className="flex w-full flex-row items-center gap-2">
           <Input
             id={field.name}
             placeholder={m.key_value_field_key()}
@@ -234,7 +250,7 @@ const KeyValueField = (props: DefaultOptions) => {
             id={field.name}
             name={field.name}
             type="text"
-            className="flex-1 w-auto"
+            className="w-auto flex-1"
             placeholder={m.key_value_field_value()}
             value={value}
             onChange={(e) => {
@@ -270,7 +286,9 @@ const KeyValueField = (props: DefaultOptions) => {
           {m.key_value_field_add()}
         </Button>
       </div>
-      {props.description && <FieldDescription>{props.description}</FieldDescription>}
+      {props.description && (
+        <FieldDescription>{props.description}</FieldDescription>
+      )}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -311,7 +329,9 @@ const MultiSelectField = ({
           </SelectGroup>
         </SelectContent>
       </Select>
-      {props.description && <FieldDescription>{props.description}</FieldDescription>}
+      {props.description && (
+        <FieldDescription>{props.description}</FieldDescription>
+      )}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -342,7 +362,9 @@ const FileField = ({
         required={required}
         aria-invalid={invalid}
       />
-      <FieldDescription>{m.form_accepts({ accepts: accept as string })}</FieldDescription>
+      <FieldDescription>
+        {m.form_accepts({ accepts: accept as string })}
+      </FieldDescription>
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -372,7 +394,7 @@ const ImageField = ({
 
   return (
     <Field data-invalid={invalid}>
-      <Label htmlFor={field.name} className="items-start flex-col">
+      <Label htmlFor={field.name} className="flex-col items-start">
         {label}
         {imageUrl ? (
           <img
@@ -401,7 +423,9 @@ const ImageField = ({
           type="file"
           accept="image/*"
           onChange={(event) => {
-            field.handleChange(event.target.files ? event.target.files[0] : null);
+            field.handleChange(
+              event.target.files ? event.target.files[0] : null,
+            );
           }}
           aria-invalid={invalid}
         />
@@ -435,16 +459,23 @@ export const BlockNavigation = () => {
   const form = useFormContext();
   const shouldBlock = useStore(
     form.store,
-    (formState) => formState.isDirty && !(formState.isSubmitting || formState.isSubmitted),
+    (formState) =>
+      formState.isDirty && !(formState.isSubmitting || formState.isSubmitted),
   );
 
   return (
-    <Block enableBeforeUnload={() => shouldBlock} shouldBlockFn={() => shouldBlock} withResolver>
+    <Block
+      enableBeforeUnload={() => shouldBlock}
+      shouldBlockFn={() => shouldBlock}
+      withResolver
+    >
       {({ status, proceed, reset }) => (
         <AlertDialog open={status === "blocked"}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{m.form_block_navigation_title()}</AlertDialogTitle>
+              <AlertDialogTitle>
+                {m.form_block_navigation_title()}
+              </AlertDialogTitle>
               <AlertDialogDescription>
                 {m.form_block_navigation_description()}
               </AlertDialogDescription>
@@ -478,6 +509,28 @@ const SubmitButton = () => {
   );
 };
 
+const getFormErrorText = (error: unknown) => {
+  if (!error) return undefined;
+
+  if (typeof error === "object" && "form" in error) {
+    const formError = error.form;
+    return formError ? String(formError) : undefined;
+  }
+
+  return String(error);
+};
+
+const FormError = () => {
+  const form = useFormContext();
+  return (
+    <form.Subscribe
+      selector={(formState) => getFormErrorText(formState.errorMap.onSubmit)}
+    >
+      {(error) => (error ? <ErrorMessage text={error} /> : null)}
+    </form.Subscribe>
+  );
+};
+
 export const FieldWrapper = ({
   children,
   legend,
@@ -498,7 +551,7 @@ export const FieldWrapper = ({
   return (
     <FieldSet>
       {legend && (
-        <FieldLegend className="gap-2 flex items-center">
+        <FieldLegend className="flex items-center gap-2">
           {legend}
           {localized && editingLocale && locales && (
             <Badge variant="outline">
@@ -522,7 +575,7 @@ const RevertButton = ({ original }: { original: string }) => {
       <div className="flex flex-1 justify-end">
         <Button
           variant="link"
-          className="-mr-4 py-0 h-auto"
+          className="-mr-4 h-auto py-0"
           onClick={() => field.handleChange(original)}
         >
           {m.form_revert()}
@@ -548,6 +601,7 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
   },
   formComponents: {
     SubmitButton,
+    FormError,
     FieldWrapper,
     BlockNavigation,
   },

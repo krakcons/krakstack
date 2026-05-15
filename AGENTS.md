@@ -160,9 +160,11 @@ export const UpdateTaskSchema = Schema.Struct({
   completed: Schema.optional(Schema.Boolean),
 }).annotate({ identifier: "UpdateTask" });
 
-export const TaskIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate({
-  identifier: "TaskIdParamsSchema",
-});
+export const TaskIdParamsSchema = Schema.Struct({ id: Schema.String }).annotate(
+  {
+    identifier: "TaskIdParamsSchema",
+  },
+);
 
 export const TaskSchemaStandard = Schema.toStandardSchemaV1(TaskSchema);
 ```
@@ -173,11 +175,20 @@ Defines the API contract with `HttpApiGroup`, routes, success/error schemas, and
 
 ```ts
 import { Schema } from "effect";
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
+import {
+  HttpApiEndpoint,
+  HttpApiError,
+  HttpApiGroup,
+} from "effect/unstable/httpapi";
 
 import { AuthMiddleware } from "@/services/auth/middleware";
 
-import { CreateExample, Example, ExampleIdParams, UpdateExample } from "./schema";
+import {
+  CreateExample,
+  Example,
+  ExampleIdParams,
+  UpdateExample,
+} from "./schema";
 
 export const ExamplesApiGroup = HttpApiGroup.make("examples")
   .add(
@@ -197,7 +208,11 @@ export const ExamplesApiGroup = HttpApiGroup.make("examples")
     HttpApiEndpoint.get("getExample", "/examples/:id", {
       params: ExampleIdParams,
       success: Example,
-      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.Unauthorized,
+        HttpApiError.NotFound,
+        HttpApiError.InternalServerError,
+      ],
     }),
   )
   .add(
@@ -205,14 +220,22 @@ export const ExamplesApiGroup = HttpApiGroup.make("examples")
       params: ExampleIdParams,
       payload: UpdateExample,
       success: Example,
-      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.Unauthorized,
+        HttpApiError.NotFound,
+        HttpApiError.InternalServerError,
+      ],
     }),
   )
   .add(
     HttpApiEndpoint.delete("deleteExample", "/examples/:id", {
       params: ExampleIdParams,
       success: Example,
-      error: [HttpApiError.Unauthorized, HttpApiError.NotFound, HttpApiError.InternalServerError],
+      error: [
+        HttpApiError.Unauthorized,
+        HttpApiError.NotFound,
+        HttpApiError.InternalServerError,
+      ],
     }),
   )
   .middleware(AuthMiddleware);
@@ -232,71 +255,76 @@ import { Examples } from "@/services/example";
 
 const internalServerError = () => new HttpApiError.InternalServerError({});
 
-export const examplesHandler = HttpApiBuilder.group(Api, "examples", (handlers) =>
-  handlers
-    .handle("listExamples", () =>
-      Effect.gen(function* () {
-        const examples = yield* Examples;
-        const user = yield* CurrentUser;
+export const examplesHandler = HttpApiBuilder.group(
+  Api,
+  "examples",
+  (handlers) =>
+    handlers
+      .handle("listExamples", () =>
+        Effect.gen(function* () {
+          const examples = yield* Examples;
+          const user = yield* CurrentUser;
 
-        return yield* examples.list({ userId: user.id }).pipe(Effect.mapError(internalServerError));
-      }),
-    )
-    .handle("getExample", ({ params }) =>
-      Effect.gen(function* () {
-        const examples = yield* Examples;
-        const user = yield* CurrentUser;
-        const example = yield* examples
-          .get({ userId: user.id, id: params.id })
-          .pipe(Effect.mapError(internalServerError));
+          return yield* examples
+            .list({ userId: user.id })
+            .pipe(Effect.mapError(internalServerError));
+        }),
+      )
+      .handle("getExample", ({ params }) =>
+        Effect.gen(function* () {
+          const examples = yield* Examples;
+          const user = yield* CurrentUser;
+          const example = yield* examples
+            .get({ userId: user.id, id: params.id })
+            .pipe(Effect.mapError(internalServerError));
 
-        if (!example) return yield* new HttpApiError.NotFound({});
+          if (!example) return yield* new HttpApiError.NotFound({});
 
-        return example;
-      }),
-    )
-    .handle("createExample", ({ payload }) =>
-      Effect.gen(function* () {
-        const examples = yield* Examples;
-        const user = yield* CurrentUser;
+          return example;
+        }),
+      )
+      .handle("createExample", ({ payload }) =>
+        Effect.gen(function* () {
+          const examples = yield* Examples;
+          const user = yield* CurrentUser;
 
-        const example = yield* examples
-          .create({ userId: user.id, payload })
-          .pipe(Effect.mapError(internalServerError));
+          const example = yield* examples
+            .create({ userId: user.id, payload })
+            .pipe(Effect.mapError(internalServerError));
 
-        if (!example) return yield* new HttpApiError.InternalServerError({});
+          if (!example) return yield* new HttpApiError.InternalServerError({});
 
-        return example;
-      }),
-    )
-    .handle("updateExample", ({ params, payload }) =>
-      Effect.gen(function* () {
-        const examples = yield* Examples;
-        const user = yield* CurrentUser;
+          return example;
+        }),
+      )
+      .handle("updateExample", ({ params, payload }) =>
+        Effect.gen(function* () {
+          const examples = yield* Examples;
+          const user = yield* CurrentUser;
 
-        const example = yield* examples
-          .update({ userId: user.id, id: params.id, payload })
-          .pipe(Effect.mapError(internalServerError));
+          const example = yield* examples
+            .update({ userId: user.id, id: params.id, payload })
+            .pipe(Effect.mapError(internalServerError));
 
-        if (!example) return yield* new HttpApiError.NotFound({});
+          if (!example) return yield* new HttpApiError.NotFound({});
 
-        return example;
-      }),
-    )
-    .handle("deleteExample", ({ params }) =>
-      Effect.gen(function* () {
-        const examples = yield* Examples;
-        const user = yield* CurrentUser;
+          return example;
+        }),
+      )
+      .handle("deleteExample", ({ params }) =>
+        Effect.gen(function* () {
+          const examples = yield* Examples;
+          const user = yield* CurrentUser;
 
-        const example = yield* examples
-          .delete({ userId: user.id, id: params.id })
-          .pipe(Effect.mapError(internalServerError));
+          const example = yield* examples
+            .delete({ userId: user.id, id: params.id })
+            .pipe(Effect.mapError(internalServerError));
 
-        if (!example) return yield* new HttpApiError.NotFound({});
+          if (!example) return yield* new HttpApiError.NotFound({});
 
-        return example;
-      }),
-    ),
+          return example;
+        }),
+      ),
 );
 ```
 
@@ -312,11 +340,17 @@ export function ExampleDialog({ example, open, onOpenChange, trigger }: Props) {
   const isEditing = Boolean(example);
 
   const form = useAppForm({
-    defaultValues: { name: example?.name ?? "", description: example?.description ?? "" },
+    defaultValues: {
+      name: example?.name ?? "",
+      description: example?.description ?? "",
+    },
     validators: { onSubmit: Schema.toStandardSchemaV1(CreateExample) },
     onSubmit: async ({ value }) => {
       try {
-        const payload = { name: value.name.trim(), description: value.description?.trim() || null };
+        const payload = {
+          name: value.name.trim(),
+          description: value.description?.trim() || null,
+        };
         example
           ? await updateExample({
               params: { id: example.id },
@@ -342,7 +376,9 @@ export function ExampleDialog({ example, open, onOpenChange, trigger }: Props) {
           }}
         >
           <DialogHeader>
-            <DialogTitle>{isEditing ? m.example_edit() : m.example_create()}</DialogTitle>
+            <DialogTitle>
+              {isEditing ? m.example_edit() : m.example_create()}
+            </DialogTitle>
           </DialogHeader>
           <form.AppForm>
             <form.AppField name="name">
@@ -407,7 +443,8 @@ export function ExampleTable() {
         name: m.delete(),
         icon: <Trash2 />,
         variant: "destructive",
-        onClick: (e) => deleteExample({ params: { id: e.id }, reactivityKeys: ["examples"] }),
+        onClick: (e) =>
+          deleteExample({ params: { id: e.id }, reactivityKeys: ["examples"] }),
       },
     ]),
   ];
@@ -419,7 +456,11 @@ export function ExampleTable() {
       <>
         <DataTable columns={columns} data={examples} onRowClick={setEditing} />
         {editing && (
-          <ExampleDialog example={editing} open onOpenChange={(o) => !o && setEditing(null)} />
+          <ExampleDialog
+            example={editing}
+            open
+            onOpenChange={(o) => !o && setEditing(null)}
+          />
         )}
       </>
     ),
@@ -462,7 +503,8 @@ const optimisticExample = (p: CreateExamplePayload): Example => {
 export const allExamplesAtom = Atom.optimistic(serverExamplesAtom);
 
 export const createExampleAtom = Atom.optimisticFn(allExamplesAtom, {
-  reducer: (c, a) => AsyncResult.success([optimisticExample(a.payload), ...current(c)]),
+  reducer: (c, a) =>
+    AsyncResult.success([optimisticExample(a.payload), ...current(c)]),
   fn: ApiClient.mutation("examples", "createExample"),
 });
 
@@ -470,14 +512,17 @@ export const updateExampleAtom = Atom.optimisticFn(allExamplesAtom, {
   reducer: (c, a) =>
     AsyncResult.success(
       current(c).map((example) =>
-        example.id === a.params.id ? { ...example, ...a.payload, updatedAt: new Date() } : example,
+        example.id === a.params.id
+          ? { ...example, ...a.payload, updatedAt: new Date() }
+          : example,
       ),
     ),
   fn: ApiClient.mutation("examples", "updateExample"),
 });
 
 export const deleteExampleAtom = Atom.optimisticFn(allExamplesAtom, {
-  reducer: (c, a) => AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
+  reducer: (c, a) =>
+    AsyncResult.success(current(c).filter((x) => x.id !== a.params.id)),
   fn: ApiClient.mutation("examples", "deleteExample"),
 });
 
@@ -493,7 +538,11 @@ export class Examples extends Context.Service<Examples>()("Examples", {
   make: Effect.gen(function* () {
     const db = yield* DB;
 
-    const list = Effect.fn("Examples.list")(function* ({ userId }: { userId: string }) {
+    const list = Effect.fn("Examples.list")(function* ({
+      userId,
+    }: {
+      userId: string;
+    }) {
       return yield* db.query.examples.findMany({ where: { userId } });
     });
 
@@ -555,7 +604,9 @@ export class Examples extends Context.Service<Examples>()("Examples", {
     return { list, get, create, update, delete: _delete };
   }),
 }) {
-  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.layer));
+  static readonly layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(DB.layer),
+  );
 }
 ```
 

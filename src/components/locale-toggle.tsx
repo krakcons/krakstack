@@ -1,4 +1,9 @@
-import { setLocale, getLocale, locales, type Locale } from "@/paraglide/runtime";
+import {
+  setLocale,
+  getLocale,
+  locales,
+  type Locale,
+} from "@/paraglide/runtime";
 import { Button } from "@/components/ui/button";
 import { m } from "@/paraglide/messages";
 import {
@@ -23,7 +28,11 @@ export const LocaleToggle = () => {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="icon" className="focus-visible:ring-0">
+          <Button
+            variant="outline"
+            size="icon"
+            className="focus-visible:ring-0"
+          >
             <Languages className="size-4" />
             <span className="sr-only">{m.locale_toggle_label()}</span>
           </Button>
@@ -32,7 +41,10 @@ export const LocaleToggle = () => {
       <DropdownMenuContent className="w-32">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{m.locale_toggle_label()}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={locale} onValueChange={(v) => setLocale(v as Locale)}>
+          <DropdownMenuRadioGroup
+            value={locale}
+            onValueChange={(v) => setLocale(v as Locale)}
+          >
             {locales.map((l) => (
               <DropdownMenuRadioItem key={l} value={l}>
                 {localeLabels[l]}

@@ -1,5 +1,11 @@
 import { SignUp } from "@/components/sign-up";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export function SignUpPreview() {
   return (
@@ -7,7 +13,8 @@ export function SignUpPreview() {
       <CardHeader>
         <CardTitle>Sign Up Form</CardTitle>
         <CardDescription>
-          This preview renders the site-local Better Auth email/password registration component.
+          This preview renders the site-local Better Auth email/password
+          registration component.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex justify-center py-8">
