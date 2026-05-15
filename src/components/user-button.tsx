@@ -1,6 +1,11 @@
 import type { ApiKey } from "@better-auth/api-key/client";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
+  type UseNavigateResult,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
+import {
   KeyRound,
   LogOutIcon,
   ShieldCheck,
@@ -76,6 +81,10 @@ export const UserButton = ({
   side = "bottom",
   renderUnauthenticated,
 }: UserDropdownProps) => {
+  const navigate = useNavigate();
+  const currentSiteHref = useRouterState({
+    select: (state) => `${import.meta.env.VITE_SITE_URL}${state.location.href}`,
+  });
   const { data: session, isPending, refetch } = authClient.useSession();
   const centralSession = centralAuthClient.useSession();
   const [settingsDialog, setSettingsDialog] = useState<SettingsDialog | null>(
@@ -93,13 +102,15 @@ export const UserButton = ({
   const displayImage = session.user.image?.trim() ?? "";
 
   const signOut = async () => {
-    const redirectUrl = new URL(signOutRedirect, window.location.origin);
+    const redirectUrl = signOutRedirect.startsWith("http")
+      ? signOutRedirect
+      : `${import.meta.env.VITE_SITE_URL}${signOutRedirect.startsWith("/") ? signOutRedirect : `/${signOutRedirect}`}`;
 
     await Promise.allSettled([
       authClient.signOut(),
       centralAuthClient.signOut(),
     ]);
-    window.location.assign(redirectUrl.href);
+    await navigate({ href: redirectUrl });
   };
 
   const updateUser = async (values: UserFormType) => {
@@ -123,7 +134,7 @@ export const UserButton = ({
     setCentralAuthError(null);
     const result = await authClient.signIn.oauth2({
       providerId: "krakstack-auth",
-      callbackURL: window.location.href,
+      callbackURL: currentSiteHref,
     });
 
     if (result.error) {
@@ -133,7 +144,7 @@ export const UserButton = ({
       return;
     }
 
-    if (result.data?.url) window.location.assign(result.data.url);
+    if (result.data?.url) await navigate({ href: result.data.url });
   };
 
   return (
@@ -210,7 +221,9 @@ export const UserButton = ({
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl">{m.user_form_title()}</DialogTitle>
+            <DialogTitle className="text-2xl">
+              {m.user_form_title()}
+            </DialogTitle>
             <DialogDescription>{m.user_form_description()}</DialogDescription>
           </DialogHeader>
           <Separator />
@@ -253,7 +266,10 @@ export const UserButton = ({
                 }}
               />
               <Separator />
-              <ConnectedAccounts />
+              <ConnectedAccounts
+                currentSiteHref={currentSiteHref}
+                navigate={navigate}
+              />
               <Separator />
               <PasswordSettings />
             </div>
@@ -273,7 +289,9 @@ export const UserButton = ({
             <DialogTitle className="text-2xl">
               {m.user_security_title()}
             </DialogTitle>
-            <DialogDescription>{m.user_security_description()}</DialogDescription>
+            <DialogDescription>
+              {m.user_security_description()}
+            </DialogDescription>
           </DialogHeader>
           <Separator />
           <AccountSecuritySettings />
@@ -292,7 +310,9 @@ export const UserButton = ({
             <DialogTitle className="text-2xl">
               {m.user_api_keys_title()}
             </DialogTitle>
-            <DialogDescription>{m.user_api_keys_description()}</DialogDescription>
+            <DialogDescription>
+              {m.user_api_keys_description()}
+            </DialogDescription>
           </DialogHeader>
           <Separator />
           <ApiKeyManager />
@@ -302,7 +322,13 @@ export const UserButton = ({
   );
 };
 
-function ConnectedAccounts() {
+function ConnectedAccounts({
+  currentSiteHref,
+  navigate,
+}: {
+  currentSiteHref: string;
+  navigate: UseNavigateResult<string>;
+}) {
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -344,7 +370,7 @@ function ConnectedAccounts() {
 
     const result = await centralAuthClient.linkSocial({
       provider: "google",
-      callbackURL: window.location.href,
+      callbackURL: currentSiteHref,
     });
 
     if (result.error) {
@@ -354,7 +380,7 @@ function ConnectedAccounts() {
     }
 
     if (result.data?.url) {
-      window.location.assign(result.data.url);
+      await navigate({ href: result.data.url });
       return;
     }
 

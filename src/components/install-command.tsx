@@ -10,18 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const getSiteUrl = () =>
-  (
-    import.meta.env.VITE_SITE_URL ??
-    (typeof window !== "undefined"
-      ? window.location.origin
-      : "http://localhost:3003")
-  ).replace(/\/$/, "");
-
 export function InstallCommand({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const installCommand = `bunx --bun shadcn@latest add ${getSiteUrl()}/r/${slug}.json`;
+  const installCommand = `bunx --bun shadcn@latest add ${import.meta.env.VITE_SITE_URL}/r/${slug}.json`;
 
   useEffect(() => {
     return () => {

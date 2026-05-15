@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 import { ErrorMessage, useAppForm } from "@/components/form";
 import {
@@ -12,6 +12,7 @@ import { authClient } from "@/services/auth/client";
 import { m } from "@/paraglide/messages";
 
 export function SignIn() {
+  const navigate = useNavigate();
   const form = useAppForm({
     defaultValues: {
       email: "",
@@ -35,7 +36,7 @@ export function SignIn() {
         return;
       }
 
-      window.location.assign(result.data?.url ?? "/");
+      navigate({ href: result.data?.url ?? "/" });
     },
   });
 

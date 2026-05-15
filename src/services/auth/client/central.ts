@@ -12,9 +12,7 @@ export const centralAuthClient = createAuthClient({
   },
   plugins: [
     twoFactorClient({
-      onTwoFactorRedirect: () => {
-        window.location.href = `${import.meta.env.VITE_KRAKSTACK_AUTH_URL}/2fa`;
-      },
+      twoFactorPage: `${import.meta.env.VITE_KRAKSTACK_AUTH_URL}/2fa`,
     }),
     organizationClient(),
     apiKeyClient(),
