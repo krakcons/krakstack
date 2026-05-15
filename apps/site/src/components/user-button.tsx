@@ -8,7 +8,7 @@ import {
   UserCircleIcon,
   UserIcon,
 } from "lucide-react";
-import QRCode from "react-qr-code";
+import { QRCode } from "react-qr-code";
 import {
   type ComponentProps,
   type ReactNode,
@@ -1006,31 +1006,32 @@ function VerifyTotpSetup({
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-6 md:grid-cols-[180px_1fr]">
-        <div className="rounded-lg bg-white p-4">
-          <QRCode value={setup.totpURI} className="size-full" />
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col items-center gap-4 rounded-lg border p-4 text-center sm:p-6">
+        <div className="rounded-xl border bg-white p-3">
+          <QRCode
+            value={setup.totpURI}
+            title={m.user_two_factor_scan_title()}
+            className="size-44 max-w-full"
+          />
         </div>
-        <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium">
-            {m.user_two_factor_scan_title()}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            {m.user_two_factor_scan_description()}
-          </p>
-          <div className="grid gap-2 rounded-lg border p-3 font-mono text-sm sm:grid-cols-2">
-            {setup.backupCodes.map((code) => (
-              <span key={code}>{code}</span>
-            ))}
-          </div>
-          <p className="text-muted-foreground text-sm">
-            {m.user_two_factor_backup_codes_warning()}
-          </p>
+        <p className="text-muted-foreground max-w-md text-sm">
+          {m.user_two_factor_scan_description()}
+        </p>
+      </div>
+      <div className="flex flex-col gap-3 rounded-lg border p-4">
+        <div className="bg-muted/40 grid gap-2 rounded-md p-3 font-mono text-sm sm:grid-cols-2">
+          {setup.backupCodes.map((code) => (
+            <span key={code}>{code}</span>
+          ))}
         </div>
+        <p className="text-muted-foreground text-sm">
+          {m.user_two_factor_backup_codes_warning()}
+        </p>
       </div>
       <form.AppForm>
         <form
-          className="flex max-w-md flex-col gap-4"
+          className="flex w-full max-w-sm flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
