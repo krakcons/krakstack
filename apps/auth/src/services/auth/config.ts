@@ -1,6 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { admin, jwt, organization, twoFactor } from "better-auth/plugins";
+import {
+  admin,
+  jwt,
+  openAPI,
+  organization,
+  twoFactor,
+} from "better-auth/plugins";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { apiKey } from "@better-auth/api-key";
 
@@ -54,6 +60,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    openAPI(),
     admin(),
     jwt(),
     twoFactor({

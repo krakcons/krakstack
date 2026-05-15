@@ -44,10 +44,49 @@ const authRoutesLayer = HttpRouter.add("*", "/api/auth/*", authHandlerEffect);
 
 const apiHandlersLayer = Layer.mergeAll(authApiHandler, adminApiHandler);
 
+const scalarDocsConfig = {
+  theme: "default",
+  sources: [
+    {
+      title: "KrakStack API",
+      slug: "krakstack-api",
+      url: "/api/openapi.json",
+    },
+    {
+      title: "Better Auth",
+      slug: "better-auth",
+      url: "/api/auth/open-api/generate-schema",
+    },
+  ],
+};
+
+const docsHtml = `<!doctype html>
+<html>
+  <head>
+    <title>KrakStack Auth API Docs</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script>
+      Scalar.createApiReference('#app', ${JSON.stringify(scalarDocsConfig)})
+    </script>
+  </body>
+</html>`;
+
+const docsLayer = HttpRouter.add(
+  "GET",
+  "/api/docs",
+  Effect.succeed(HttpServerResponse.html(docsHtml)),
+);
+
 const apiLayer = Layer.mergeAll(
   HttpApiBuilder.layer(Api, {
     openapiPath: "/api/openapi.json",
   }).pipe(Layer.provide(apiHandlersLayer)),
+  docsLayer,
   authRoutesLayer,
 ).pipe(Layer.provide(platformLayer));
 
