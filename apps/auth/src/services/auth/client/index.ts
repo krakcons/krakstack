@@ -14,9 +14,7 @@ export const authClient = createAuthClient({
     emailOTPClient(),
     organizationClient(),
     twoFactorClient({
-      onTwoFactorRedirect: () => {
-        window.location.href = "/2fa";
-      },
+      twoFactorPage: "/2fa",
     }),
     apiKeyClient(),
     oauthProviderClient(),

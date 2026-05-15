@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/_auth/consent")({
 });
 
 function Consent() {
+  const navigate = useNavigate();
   const { clientId, scope } = Route.useSearch();
   const scopes = scope.split(" ").filter(Boolean);
   const form = useAppForm({
@@ -49,7 +50,7 @@ function Consent() {
         return;
       }
 
-      window.location.assign(result.data?.url ?? "/");
+      navigate({ href: result.data?.url ?? "/" });
     },
   });
 

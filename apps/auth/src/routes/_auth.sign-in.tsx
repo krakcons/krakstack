@@ -1,4 +1,9 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  createFileRoute,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
@@ -28,11 +33,14 @@ const hasTwoFactorRedirect = (data: unknown) => {
 
 function SignIn() {
   const navigate = useNavigate();
-  const redirectTarget = getRedirectTarget();
+  const searchString = useRouterState({
+    select: (state) => state.location.searchStr,
+  });
+  const redirectTarget = getRedirectTarget(searchString);
   const finishSignIn = (url: string | null | undefined) => {
     const target = url ?? redirectTarget;
     if (shouldUseDocumentRedirect(target)) {
-      window.location.assign(target);
+      navigate({ href: target });
     } else {
       navigate({ to: target });
     }
@@ -72,9 +80,9 @@ function SignIn() {
         }
 
         if (hasTwoFactorRedirect(result.data)) {
-          const twoFactorUrl = new URL("/2fa", window.location.origin);
-          twoFactorUrl.searchParams.set("callbackURL", redirectTarget);
-          window.location.assign(twoFactorUrl.href);
+          navigate({
+            href: `${import.meta.env.VITE_SITE_URL}/2fa?callbackURL=${encodeURIComponent(redirectTarget)}`,
+          });
           return;
         }
 
@@ -187,11 +195,11 @@ function SignIn() {
   );
 }
 
-const getRedirectTarget = () => {
-  const oauthTarget = getOAuthAuthorizeTarget();
+const getRedirectTarget = (searchString: string) => {
+  const oauthTarget = getOAuthAuthorizeTarget(searchString);
   if (oauthTarget) return oauthTarget;
 
-  const search = new URLSearchParams(window.location.search);
+  const search = new URLSearchParams(searchString);
   return (
     search.get("callbackURL") ??
     search.get("redirectTo") ??
@@ -200,20 +208,19 @@ const getRedirectTarget = () => {
   );
 };
 
-const getOAuthAuthorizeTarget = () => {
-  if (!window.location.search) return null;
+const getOAuthAuthorizeTarget = (searchString: string) => {
+  if (!searchString) return null;
 
-  const search = new URLSearchParams(window.location.search);
+  const search = new URLSearchParams(searchString);
   if (!search.has("sig")) return null;
 
-  return `/api/auth/oauth2/authorize${window.location.search}`;
+  return `/api/auth/oauth2/authorize${searchString}`;
 };
 
 const shouldUseDocumentRedirect = (target: string) => {
-  if (!URL.canParse(target, window.location.origin)) return false;
-
-  const url = new URL(target, window.location.origin);
-  return (
-    url.origin !== window.location.origin || url.pathname.startsWith("/api/")
-  );
+  const siteUrl = import.meta.env.VITE_SITE_URL;
+  if (target.startsWith("/api/")) return true;
+  if (target.startsWith("/")) return false;
+  if (target.startsWith(siteUrl)) return target.slice(siteUrl.length).startsWith("/api/");
+  return target.startsWith("http://") || target.startsWith("https://");
 };

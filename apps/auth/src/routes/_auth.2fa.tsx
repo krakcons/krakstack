@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useState } from "react";
 
@@ -27,9 +31,12 @@ export const Route = createFileRoute("/_auth/2fa")({
 
 function TwoFactorVerify() {
   const navigate = useNavigate();
+  const searchString = useRouterState({
+    select: (state) => state.location.searchStr,
+  });
   const [mode, setMode] = useState<"totp" | "email" | "backup">("totp");
   const [emailCodeSent, setEmailCodeSent] = useState(false);
-  const redirectTarget = getRedirectTarget();
+  const redirectTarget = getRedirectTarget(searchString);
   const form = useAppForm({
     defaultValues: {
       code: "",
@@ -67,7 +74,7 @@ function TwoFactorVerify() {
 
       const target = getResultRedirectUrl(result.data) ?? redirectTarget;
       if (shouldUseDocumentRedirect(target)) {
-        window.location.assign(target);
+        navigate({ href: target });
       } else {
         navigate({ to: target });
       }
@@ -198,11 +205,11 @@ function TwoFactorVerify() {
   );
 }
 
-const getRedirectTarget = () => {
-  const oauthTarget = getOAuthAuthorizeTarget();
+const getRedirectTarget = (searchString: string) => {
+  const oauthTarget = getOAuthAuthorizeTarget(searchString);
   if (oauthTarget) return oauthTarget;
 
-  const search = new URLSearchParams(window.location.search);
+  const search = new URLSearchParams(searchString);
   return (
     search.get("callbackURL") ??
     search.get("redirectTo") ??
@@ -211,13 +218,13 @@ const getRedirectTarget = () => {
   );
 };
 
-const getOAuthAuthorizeTarget = () => {
-  if (!window.location.search) return null;
+const getOAuthAuthorizeTarget = (searchString: string) => {
+  if (!searchString) return null;
 
-  const search = new URLSearchParams(window.location.search);
+  const search = new URLSearchParams(searchString);
   if (!search.has("sig")) return null;
 
-  return `/api/auth/oauth2/authorize${window.location.search}`;
+  return `/api/auth/oauth2/authorize${searchString}`;
 };
 
 const getResultRedirectUrl = (data: unknown) => {
@@ -229,10 +236,9 @@ const getResultRedirectUrl = (data: unknown) => {
 };
 
 const shouldUseDocumentRedirect = (target: string) => {
-  if (!URL.canParse(target, window.location.origin)) return false;
-
-  const url = new URL(target, window.location.origin);
-  return (
-    url.origin !== window.location.origin || url.pathname.startsWith("/api/")
-  );
+  const siteUrl = import.meta.env.VITE_SITE_URL;
+  if (target.startsWith("/api/")) return true;
+  if (target.startsWith("/")) return false;
+  if (target.startsWith(siteUrl)) return target.slice(siteUrl.length).startsWith("/api/");
+  return target.startsWith("http://") || target.startsWith("https://");
 };

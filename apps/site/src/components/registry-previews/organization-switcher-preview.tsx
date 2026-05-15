@@ -1,3 +1,5 @@
+import { useNavigate } from "@tanstack/react-router";
+
 import { OrganizationSwitcher } from "@/components/organization-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +12,8 @@ import {
 import { authClient } from "@/services/auth/client";
 
 export function OrganizationSwitcherPreview() {
+  const navigate = useNavigate();
+
   return (
     <Card className="bg-[var(--surface-strong)]">
       <CardHeader>
@@ -29,7 +33,7 @@ export function OrganizationSwitcherPreview() {
                   callbackURL: "/docs/registry/organization-switcher",
                 });
                 if (result.data?.url) {
-                  window.location.assign(result.data.url);
+                  navigate({ href: result.data.url });
                 }
               }}
             >

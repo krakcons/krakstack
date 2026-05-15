@@ -40,7 +40,7 @@ function SignUp() {
         return;
       }
 
-      if (result.data?.url) window.location.assign(result.data.url);
+      if (result.data?.url) navigate({ href: result.data.url });
     } catch {
       setFormError(m.sign_up_error());
     }

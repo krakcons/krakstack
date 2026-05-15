@@ -12,12 +12,15 @@ import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
 
 export const Route = createFileRoute("/_auth/reset-password")({
+  validateSearch: (search) => ({
+    token: typeof search.token === "string" ? search.token : "",
+  }),
   component: ResetPassword,
 });
 
 function ResetPassword() {
   const navigate = useNavigate();
-  const token = new URLSearchParams(window.location.search).get("token") ?? "";
+  const { token } = Route.useSearch();
   const form = useAppForm({
     defaultValues: {
       password: "",
