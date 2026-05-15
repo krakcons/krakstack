@@ -13,6 +13,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AuthSignUpRouteImport } from './routes/_auth.sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth.sign-in'
@@ -20,12 +21,7 @@ import { Route as AuthConsentRouteImport } from './routes/_auth.consent'
 import { Route as Auth2faRouteImport } from './routes/_auth.2fa'
 import { Route as DotwellKnownOpenidConfigurationRouteImport } from './routes/[.]well-known/openid-configuration'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
-import { Route as ApiAuthVerifyPasswordRouteImport } from './routes/api/auth/verify-password'
-import { Route as ApiAuthSetPasswordRouteImport } from './routes/api/auth/set-password'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiAdminOauthStatsRouteImport } from './routes/api/admin/oauth-stats'
 import { Route as AdminOauthClientsRouteImport } from './routes/admin/oauth/clients'
-import { Route as ApiAuthDotwellKnownOpenidConfigurationRouteImport } from './routes/api/auth/[.]well-known/openid-configuration'
 import { Route as DotwellKnownOauthAuthorizationServerApiAuthRouteImport } from './routes/[.]well-known/oauth-authorization-server/api/auth'
 
 const AdminRoute = AdminRouteImport.update({
@@ -46,6 +42,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
@@ -84,37 +85,11 @@ const DotwellKnownOauthAuthorizationServerRoute =
     path: '/.well-known/oauth-authorization-server',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiAuthVerifyPasswordRoute = ApiAuthVerifyPasswordRouteImport.update({
-  id: '/api/auth/verify-password',
-  path: '/api/auth/verify-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthSetPasswordRoute = ApiAuthSetPasswordRouteImport.update({
-  id: '/api/auth/set-password',
-  path: '/api/auth/set-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAdminOauthStatsRoute = ApiAdminOauthStatsRouteImport.update({
-  id: '/api/admin/oauth-stats',
-  path: '/api/admin/oauth-stats',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminOauthClientsRoute = AdminOauthClientsRouteImport.update({
   id: '/oauth/clients',
   path: '/oauth/clients',
   getParentRoute: () => AdminRoute,
 } as any)
-const ApiAuthDotwellKnownOpenidConfigurationRoute =
-  ApiAuthDotwellKnownOpenidConfigurationRouteImport.update({
-    id: '/api/auth/.well-known/openid-configuration',
-    path: '/api/auth/.well-known/openid-configuration',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const DotwellKnownOauthAuthorizationServerApiAuthRoute =
   DotwellKnownOauthAuthorizationServerApiAuthRouteImport.update({
     id: '/api/auth',
@@ -132,14 +107,10 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/$': typeof ApiSplatRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
-  '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/auth/set-password': typeof ApiAuthSetPasswordRoute
-  '/api/auth/verify-password': typeof ApiAuthVerifyPasswordRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
-  '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -150,14 +121,10 @@ export interface FileRoutesByTo {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/$': typeof ApiSplatRoute
   '/admin': typeof AdminIndexRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
-  '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/auth/set-password': typeof ApiAuthSetPasswordRoute
-  '/api/auth/verify-password': typeof ApiAuthVerifyPasswordRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
-  '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -171,14 +138,10 @@ export interface FileRoutesById {
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/$': typeof ApiSplatRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
-  '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/auth/set-password': typeof ApiAuthSetPasswordRoute
-  '/api/auth/verify-password': typeof ApiAuthVerifyPasswordRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
-  '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -192,14 +155,10 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/admin/users'
+    | '/api/$'
     | '/admin/'
     | '/admin/oauth/clients'
-    | '/api/admin/oauth-stats'
-    | '/api/auth/$'
-    | '/api/auth/set-password'
-    | '/api/auth/verify-password'
     | '/.well-known/oauth-authorization-server/api/auth'
-    | '/api/auth/.well-known/openid-configuration'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -210,14 +169,10 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/admin/users'
+    | '/api/$'
     | '/admin'
     | '/admin/oauth/clients'
-    | '/api/admin/oauth-stats'
-    | '/api/auth/$'
-    | '/api/auth/set-password'
-    | '/api/auth/verify-password'
     | '/.well-known/oauth-authorization-server/api/auth'
-    | '/api/auth/.well-known/openid-configuration'
   id:
     | '__root__'
     | '/'
@@ -230,14 +185,10 @@ export interface FileRouteTypes {
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/admin/users'
+    | '/api/$'
     | '/admin/'
     | '/admin/oauth/clients'
-    | '/api/admin/oauth-stats'
-    | '/api/auth/$'
-    | '/api/auth/set-password'
-    | '/api/auth/verify-password'
     | '/.well-known/oauth-authorization-server/api/auth'
-    | '/api/auth/.well-known/openid-configuration'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -246,11 +197,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
   DotwellKnownOpenidConfigurationRoute: typeof DotwellKnownOpenidConfigurationRoute
-  ApiAdminOauthStatsRoute: typeof ApiAdminOauthStatsRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiAuthSetPasswordRoute: typeof ApiAuthSetPasswordRoute
-  ApiAuthVerifyPasswordRoute: typeof ApiAuthVerifyPasswordRoute
-  ApiAuthDotwellKnownOpenidConfigurationRoute: typeof ApiAuthDotwellKnownOpenidConfigurationRoute
+  ApiSplatRoute: typeof ApiSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -282,6 +229,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
       id: '/admin/users'
@@ -332,47 +286,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/verify-password': {
-      id: '/api/auth/verify-password'
-      path: '/api/auth/verify-password'
-      fullPath: '/api/auth/verify-password'
-      preLoaderRoute: typeof ApiAuthVerifyPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/set-password': {
-      id: '/api/auth/set-password'
-      path: '/api/auth/set-password'
-      fullPath: '/api/auth/set-password'
-      preLoaderRoute: typeof ApiAuthSetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/admin/oauth-stats': {
-      id: '/api/admin/oauth-stats'
-      path: '/api/admin/oauth-stats'
-      fullPath: '/api/admin/oauth-stats'
-      preLoaderRoute: typeof ApiAdminOauthStatsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/oauth/clients': {
       id: '/admin/oauth/clients'
       path: '/oauth/clients'
       fullPath: '/admin/oauth/clients'
       preLoaderRoute: typeof AdminOauthClientsRouteImport
       parentRoute: typeof AdminRoute
-    }
-    '/api/auth/.well-known/openid-configuration': {
-      id: '/api/auth/.well-known/openid-configuration'
-      path: '/api/auth/.well-known/openid-configuration'
-      fullPath: '/api/auth/.well-known/openid-configuration'
-      preLoaderRoute: typeof ApiAuthDotwellKnownOpenidConfigurationRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-authorization-server/api/auth': {
       id: '/.well-known/oauth-authorization-server/api/auth'
@@ -436,12 +355,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotwellKnownOauthAuthorizationServerRoute:
     DotwellKnownOauthAuthorizationServerRouteWithChildren,
   DotwellKnownOpenidConfigurationRoute: DotwellKnownOpenidConfigurationRoute,
-  ApiAdminOauthStatsRoute: ApiAdminOauthStatsRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiAuthSetPasswordRoute: ApiAuthSetPasswordRoute,
-  ApiAuthVerifyPasswordRoute: ApiAuthVerifyPasswordRoute,
-  ApiAuthDotwellKnownOpenidConfigurationRoute:
-    ApiAuthDotwellKnownOpenidConfigurationRoute,
+  ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
