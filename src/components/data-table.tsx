@@ -1638,7 +1638,7 @@ export const createDataTableActionsColumn = <TData extends object>(
                       e.stopPropagation();
                       action.onClick(cell.row.original);
                     }}
-                    variant={action.variant}
+                    {...(action.variant ? { variant: action.variant } : {})}
                   >
                     {action.icon}
                     {action.name}

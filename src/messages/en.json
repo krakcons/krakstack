@@ -131,5 +131,21 @@
   "user_account_current_password": "Current password",
   "user_account_password_change_submit": "Change password",
   "user_account_password_change_success": "Your password has been updated.",
-  "user_account_password_change_error": "Could not change your password."
+  "user_account_password_change_error": "Could not change your password.",
+  "organizations_title": "Organizations",
+  "organizations_description": "Create, edit, and switch between organizations you belong to.",
+  "organization_create_title": "Create organization",
+  "organization_create_description": "Create a workspace for team-based access.",
+  "organization_edit_title": "Edit organization",
+  "organization_edit_description": "Update the active organization's name and slug.",
+  "organization_name": "Organization name",
+  "organization_slug": "Organization slug",
+  "organization_slug_description": "Leave blank to generate one from the name.",
+  "organization_create_error": "Could not create the organization.",
+  "organization_update_error": "Could not update the organization.",
+  "organization_switcher_empty": "You do not belong to any organizations yet.",
+  "organization_switcher_no_other_organizations": "No other organizations.",
+  "organization_switcher_label": "Organization",
+  "organization_switcher_manage": "Manage organization",
+  "organization_loading": "Loading..."
 }

@@ -3,13 +3,14 @@ import { InstallCommand } from "@/components/install-command";
 import { Markdown } from "@/components/markdown";
 import {
   DataTablePreview,
-  TableSearchSchema,
+  TableSearchSchemaStandard,
 } from "@/components/registry-previews/data-table-preview";
 import { AgentsPreview } from "@/components/registry-previews/agents-preview";
 import { FormPreview } from "@/components/registry-previews/form-preview";
 import { LintFormatPreview } from "@/components/registry-previews/lint-format-preview";
 import { SignInPreview } from "@/components/registry-previews/sign-in-preview";
 import { SignUpPreview } from "@/components/registry-previews/sign-up-preview";
+import { OrganizationSwitcherPreview } from "@/components/registry-previews/organization-switcher-preview";
 import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
 import {
   Card,
@@ -22,8 +23,8 @@ import { getRegistryGroup, getRegistryItem } from "@/lib/registry";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/docs/registry/$slug")({
-  validateSearch: TableSearchSchema,
-  loader: ({ params }) => {
+  validateSearch: TableSearchSchemaStandard,
+  loader: ({ params }): RegistryItem => {
     const item = getRegistryItem(params.slug);
     if (!item) throw notFound();
     return item;
@@ -132,6 +133,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <FormPreview />
     ) : slug === "user-button" ? (
       <UserButtonPreview />
+    ) : slug === "organization-switcher" ? (
+      <OrganizationSwitcherPreview />
     ) : slug === "sign-in" ? (
       <SignInPreview />
     ) : slug === "sign-up" ? (
