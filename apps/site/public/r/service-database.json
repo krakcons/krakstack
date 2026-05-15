@@ -9,7 +9,10 @@
     "pg",
     "drizzle-orm@rc"
   ],
-  "devDependencies": ["drizzle-kit@rc", "@types/pg"],
+  "devDependencies": [
+    "drizzle-kit@rc",
+    "@types/pg"
+  ],
   "files": [
     {
       "path": "src/services/database.ts",

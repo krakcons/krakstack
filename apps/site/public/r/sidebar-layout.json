@@ -3,7 +3,11 @@
   "name": "sidebar-layout",
   "title": "Sidebar Layout",
   "description": "A sidebar-based layout with configurable navigation groups, a brand header, page header component, organization switcher, locale toggle, and user button.",
-  "dependencies": ["@tanstack/react-router", "lucide-react", "react"],
+  "dependencies": [
+    "@tanstack/react-router",
+    "lucide-react",
+    "react"
+  ],
   "registryDependencies": [
     "badge",
     "sidebar",

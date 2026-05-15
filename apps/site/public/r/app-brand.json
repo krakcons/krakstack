@@ -3,7 +3,10 @@
   "name": "app-brand",
   "title": "App Brand",
   "description": "A compact TanStack Router brand link with a semantic icon, app name, and subtitle.",
-  "dependencies": ["@tanstack/react-router", "lucide-react"],
+  "dependencies": [
+    "@tanstack/react-router",
+    "lucide-react"
+  ],
   "files": [
     {
       "path": "src/components/app-brand.tsx",
