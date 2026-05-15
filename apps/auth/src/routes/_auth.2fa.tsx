@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useState } from "react";
 
-import { useAppForm } from "@/components/form";
+import { FieldError, useAppForm } from "@/components/form";
 import {
   Card,
   CardContent,
@@ -10,6 +11,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
 
@@ -81,18 +89,52 @@ function TwoFactorVerify() {
             }}
           >
             <form.AppField name="code">
-              {(field) => (
-                <field.TextField
-                  label={
-                    useBackupCode
-                      ? m.two_factor_backup_code()
-                      : m.two_factor_code()
-                  }
-                  autoComplete="one-time-code"
-                  inputMode="numeric"
-                  required
-                />
-              )}
+              {(field) => {
+                const invalid = !field.state.meta.isValid;
+
+                if (useBackupCode) {
+                  return (
+                    <field.TextField
+                      label={m.two_factor_backup_code()}
+                      autoComplete="one-time-code"
+                      required
+                    />
+                  );
+                }
+
+                return (
+                  <Field data-invalid={invalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      {m.two_factor_code()}
+                    </FieldLabel>
+                    <InputOTP
+                      id={field.name}
+                      name={field.name}
+                      maxLength={6}
+                      value={field.state.value ?? ""}
+                      onChange={(value) => field.handleChange(value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      pattern={REGEXP_ONLY_DIGITS}
+                      required
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} aria-invalid={invalid} />
+                        <InputOTPSlot index={1} aria-invalid={invalid} />
+                        <InputOTPSlot index={2} aria-invalid={invalid} />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={3} aria-invalid={invalid} />
+                        <InputOTPSlot index={4} aria-invalid={invalid} />
+                        <InputOTPSlot index={5} aria-invalid={invalid} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                    <FieldError errors={field.getMeta().errors} />
+                  </Field>
+                );
+              }}
             </form.AppField>
             <form.AppField name="trustDevice">
               {(field) => (
