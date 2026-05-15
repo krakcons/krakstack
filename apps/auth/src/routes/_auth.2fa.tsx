@@ -49,14 +49,11 @@ function TwoFactorVerify() {
         return;
       }
 
-      if (
-        URL.canParse(redirectTarget, window.location.origin) &&
-        new URL(redirectTarget, window.location.origin).origin !==
-          window.location.origin
-      ) {
-        window.location.assign(redirectTarget);
+      const target = getResultRedirectUrl(result.data) ?? redirectTarget;
+      if (shouldUseDocumentRedirect(target)) {
+        window.location.assign(target);
       } else {
-        navigate({ to: redirectTarget });
+        navigate({ to: target });
       }
     },
   });
@@ -123,11 +120,40 @@ function TwoFactorVerify() {
 }
 
 const getRedirectTarget = () => {
+  const oauthTarget = getOAuthAuthorizeTarget();
+  if (oauthTarget) return oauthTarget;
+
   const search = new URLSearchParams(window.location.search);
   return (
     search.get("callbackURL") ??
     search.get("redirectTo") ??
     search.get("returnTo") ??
     "/admin"
+  );
+};
+
+const getOAuthAuthorizeTarget = () => {
+  if (!window.location.search) return null;
+
+  const search = new URLSearchParams(window.location.search);
+  if (!search.has("sig")) return null;
+
+  return `/api/auth/oauth2/authorize${window.location.search}`;
+};
+
+const getResultRedirectUrl = (data: unknown) => {
+  if (typeof data !== "object" || data === null || !("url" in data))
+    return null;
+
+  const url = data.url;
+  return typeof url === "string" ? url : null;
+};
+
+const shouldUseDocumentRedirect = (target: string) => {
+  if (!URL.canParse(target, window.location.origin)) return false;
+
+  const url = new URL(target, window.location.origin);
+  return (
+    url.origin !== window.location.origin || url.pathname.startsWith("/api/")
   );
 };

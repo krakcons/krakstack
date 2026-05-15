@@ -31,11 +31,7 @@ function SignIn() {
   const redirectTarget = getRedirectTarget();
   const finishSignIn = (url: string | null | undefined) => {
     const target = url ?? redirectTarget;
-    if (
-      target &&
-      URL.canParse(target, window.location.origin) &&
-      new URL(target, window.location.origin).origin !== window.location.origin
-    ) {
+    if (shouldUseDocumentRedirect(target)) {
       window.location.assign(target);
     } else {
       navigate({ to: target });
@@ -184,11 +180,32 @@ function SignIn() {
 }
 
 const getRedirectTarget = () => {
+  const oauthTarget = getOAuthAuthorizeTarget();
+  if (oauthTarget) return oauthTarget;
+
   const search = new URLSearchParams(window.location.search);
   return (
     search.get("callbackURL") ??
     search.get("redirectTo") ??
     search.get("returnTo") ??
     "/admin"
+  );
+};
+
+const getOAuthAuthorizeTarget = () => {
+  if (!window.location.search) return null;
+
+  const search = new URLSearchParams(window.location.search);
+  if (!search.has("sig")) return null;
+
+  return `/api/auth/oauth2/authorize${window.location.search}`;
+};
+
+const shouldUseDocumentRedirect = (target: string) => {
+  if (!URL.canParse(target, window.location.origin)) return false;
+
+  const url = new URL(target, window.location.origin);
+  return (
+    url.origin !== window.location.origin || url.pathname.startsWith("/api/")
   );
 };
