@@ -137,5 +137,11 @@
   "two_factor_use_totp": "Utiliser le code d'authentification",
   "two_factor_scan_title": "Scannez ce code QR",
   "two_factor_scan_description": "Ajoutez ce compte à votre application d'authentification, puis saisissez le code généré ci-dessous.",
-  "two_factor_backup_codes_warning": "Enregistrez ces codes de secours maintenant. Ils ne sont affichés que pendant la configuration."
+  "two_factor_backup_codes_warning": "Enregistrez ces codes de secours maintenant. Ils ne sont affichés que pendant la configuration.",
+  "user_account_password_change_title": "Modifier le mot de passe",
+  "user_account_password_change_description": "Mettez à jour le mot de passe utilisé pour vous connecter avec votre courriel.",
+  "user_account_current_password": "Mot de passe actuel",
+  "user_account_password_change_submit": "Modifier le mot de passe",
+  "user_account_password_change_success": "Votre mot de passe a été mis à jour.",
+  "user_account_password_change_error": "Impossible de modifier votre mot de passe."
 }

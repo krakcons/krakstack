@@ -266,5 +266,11 @@
   "user_profile_title": "Profil",
   "user_profile_description": "Mettez à jour les informations de votre profil public.",
   "user_profile_photo_label": "URL de la photo de profil",
-  "user_account_password_connected_description": "La connexion par mot de passe est activée pour ce compte."
+  "user_account_password_connected_description": "La connexion par mot de passe est activée pour ce compte.",
+  "user_account_password_change_title": "Modifier le mot de passe",
+  "user_account_password_change_description": "Mettez à jour le mot de passe utilisé pour vous connecter avec votre courriel.",
+  "user_account_current_password": "Mot de passe actuel",
+  "user_account_password_change_submit": "Modifier le mot de passe",
+  "user_account_password_change_success": "Votre mot de passe a été mis à jour.",
+  "user_account_password_change_error": "Impossible de modifier votre mot de passe."
 }

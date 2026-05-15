@@ -487,40 +487,124 @@ function PasswordSettings() {
         <p className="text-muted-foreground text-sm">{m.user_loading()}</p>
       ) : null}
       {hasPassword && passwordAccount ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">{m.user_account_password_title()}</p>
-              <Badge>{m.user_account_connected()}</Badge>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">{m.user_account_password_title()}</p>
+                <Badge>{m.user_account_connected()}</Badge>
+              </div>
+              <p className="text-muted-foreground text-sm">
+                {m.user_account_password_connected_description()}
+              </p>
             </div>
-            <p className="text-muted-foreground text-sm">
-              {m.user_account_password_connected_description()}
-            </p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canRevokeAccount}
+              onClick={() => setRevokingAccount(passwordAccount)}
+            >
+              {canRevokeAccount
+                ? m.user_account_revoke()
+                : m.user_account_only_method()}
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!canRevokeAccount}
-            onClick={() => setRevokingAccount(passwordAccount)}
-          >
-            {canRevokeAccount
-              ? m.user_account_revoke()
-              : m.user_account_only_method()}
-          </Button>
+          {revokingAccount ? (
+            <RevokeAccountForm
+              account={revokingAccount}
+              requirePassword
+              onCancel={() => setRevokingAccount(null)}
+              onRevoke={revokePassword}
+            />
+          ) : null}
+          <Separator />
+          <ChangePasswordForm />
         </div>
       ) : (
         <SetPasswordForm onSaved={loadAccounts} />
       )}
-      {revokingAccount ? (
-        <RevokeAccountForm
-          account={revokingAccount}
-          requirePassword
-          onCancel={() => setRevokingAccount(null)}
-          onRevoke={revokePassword}
-        />
-      ) : null}
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
     </section>
+  );
+}
+
+function ChangePasswordForm() {
+  const [saved, setSaved] = useState(false);
+  const form = useAppForm({
+    defaultValues: { currentPassword: "", newPassword: "" },
+    onSubmit: async ({ value, formApi }) => {
+      setSaved(false);
+      formApi.setErrorMap({ onSubmit: undefined });
+      const result = await authClient.changePassword({
+        currentPassword: value.currentPassword,
+        newPassword: value.newPassword,
+      });
+
+      if (result.error) {
+        formApi.setErrorMap({
+          onSubmit: {
+            form:
+              result.error.message ?? m.user_account_password_change_error(),
+            fields: {},
+          },
+        });
+        return;
+      }
+
+      form.reset();
+      setSaved(true);
+    },
+  });
+
+  return (
+    <form.AppForm>
+      <form
+        className="flex w-full flex-col gap-3 sm:max-w-md"
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          form.handleSubmit();
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <h3 className="text-sm font-medium">
+            {m.user_account_password_change_title()}
+          </h3>
+          <p className="text-muted-foreground text-sm">
+            {m.user_account_password_change_description()}
+          </p>
+        </div>
+        <form.AppField name="currentPassword">
+          {(field) => (
+            <field.TextField
+              label={m.user_account_current_password()}
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="newPassword">
+          {(field) => (
+            <field.TextField
+              label={m.user_account_new_password()}
+              type="password"
+              autoComplete="new-password"
+              required
+            />
+          )}
+        </form.AppField>
+        <form.FormError />
+        {saved ? (
+          <p className="text-sm text-green-600">
+            {m.user_account_password_change_success()}
+          </p>
+        ) : null}
+        <Button type="submit" className="self-start">
+          {m.user_account_password_change_submit()}
+        </Button>
+      </form>
+    </form.AppForm>
   );
 }
 

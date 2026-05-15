@@ -137,5 +137,11 @@
   "two_factor_use_totp": "Use authenticator code",
   "two_factor_scan_title": "Scan this QR code",
   "two_factor_scan_description": "Add this account to your authenticator app, then enter the generated code below.",
-  "two_factor_backup_codes_warning": "Save these backup codes now. They are shown only during setup."
+  "two_factor_backup_codes_warning": "Save these backup codes now. They are shown only during setup.",
+  "user_account_password_change_title": "Change password",
+  "user_account_password_change_description": "Update the password used to sign in with your email.",
+  "user_account_current_password": "Current password",
+  "user_account_password_change_submit": "Change password",
+  "user_account_password_change_success": "Your password has been updated.",
+  "user_account_password_change_error": "Could not change your password."
 }
