@@ -136,20 +136,6 @@ export const UserButton = ({
     if (result.data?.url) window.location.assign(result.data.url);
   };
 
-  const dialogTitle =
-    settingsDialog === "account"
-      ? m.user_form_title()
-      : settingsDialog === "security"
-        ? m.user_security_title()
-        : m.user_api_keys_title();
-
-  const dialogDescription =
-    settingsDialog === "account"
-      ? m.user_form_description()
-      : settingsDialog === "security"
-        ? m.user_security_description()
-        : m.user_api_keys_description();
-
   return (
     <>
       <DropdownMenu>
@@ -215,15 +201,17 @@ export const UserButton = ({
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog
-        open={settingsDialog !== null}
+        open={settingsDialog === "account"}
         onOpenChange={(open) => {
-          if (!open) setSettingsDialog(null);
+          setSettingsDialog((current) =>
+            open ? "account" : current === "account" ? null : current,
+          );
         }}
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl">{dialogTitle}</DialogTitle>
-            <DialogDescription>{dialogDescription}</DialogDescription>
+            <DialogTitle className="text-2xl">{m.user_form_title()}</DialogTitle>
+            <DialogDescription>{m.user_form_description()}</DialogDescription>
           </DialogHeader>
           <Separator />
           {centralSession.isPending ? (
@@ -244,7 +232,7 @@ export const UserButton = ({
                 {m.user_central_auth_reconnect()}
               </Button>
             </div>
-          ) : settingsDialog === "account" ? (
+          ) : (
             <div className="flex flex-col gap-6">
               <UserForm
                 defaultValues={{
@@ -269,9 +257,45 @@ export const UserButton = ({
               <Separator />
               <PasswordSettings />
             </div>
-          ) : null}
-          {settingsDialog === "security" ? <AccountSecuritySettings /> : null}
-          {settingsDialog === "apiKeys" ? <ApiKeyManager /> : null}
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={settingsDialog === "security"}
+        onOpenChange={(open) => {
+          setSettingsDialog((current) =>
+            open ? "security" : current === "security" ? null : current,
+          );
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {m.user_security_title()}
+            </DialogTitle>
+            <DialogDescription>{m.user_security_description()}</DialogDescription>
+          </DialogHeader>
+          <Separator />
+          <AccountSecuritySettings />
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={settingsDialog === "apiKeys"}
+        onOpenChange={(open) => {
+          setSettingsDialog((current) =>
+            open ? "apiKeys" : current === "apiKeys" ? null : current,
+          );
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {m.user_api_keys_title()}
+            </DialogTitle>
+            <DialogDescription>{m.user_api_keys_description()}</DialogDescription>
+          </DialogHeader>
+          <Separator />
+          <ApiKeyManager />
         </DialogContent>
       </Dialog>
     </>

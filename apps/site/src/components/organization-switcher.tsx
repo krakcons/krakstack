@@ -179,44 +179,72 @@ export function OrganizationSwitcher({
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog
-        open={dialog !== null}
+        open={dialog === "create"}
         onOpenChange={(open) => {
-          if (!open) setDialog(null);
+          setDialog((current) =>
+            open ? "create" : current === "create" ? null : current,
+          );
         }}
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="text-2xl">
-              {dialog === "create"
-                ? m.organization_create_title()
-                : dialog === "apiKeys"
-                  ? m.user_api_keys_title()
-                  : m.organization_switcher_manage()}
+              {m.organization_create_title()}
             </DialogTitle>
             <DialogDescription>
-              {dialog === "create"
-                ? m.organization_create_description()
-                : dialog === "apiKeys"
-                  ? activeOrganization.data?.name
-                  : m.organization_edit_description()}
+              {m.organization_create_description()}
             </DialogDescription>
           </DialogHeader>
           <Separator />
-          {dialog === "create" ? (
-            <CreateOrganizationSection
-              onCreated={async () => {
-                await refresh();
-                setDialog(null);
-              }}
-            />
-          ) : null}
-          {dialog === "manage" && activeOrganization.data ? (
+          <CreateOrganizationSection
+            onCreated={async () => {
+              await refresh();
+              setDialog(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={dialog === "manage"}
+        onOpenChange={(open) => {
+          setDialog((current) =>
+            open ? "manage" : current === "manage" ? null : current,
+          );
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {m.organization_switcher_manage()}
+            </DialogTitle>
+            <DialogDescription>{m.organization_edit_description()}</DialogDescription>
+          </DialogHeader>
+          <Separator />
+          {activeOrganization.data ? (
             <EditOrganizationSection
               organization={activeOrganization.data}
               onUpdated={refresh}
             />
           ) : null}
-          {dialog === "apiKeys" && activeOrganization.data ? (
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={dialog === "apiKeys"}
+        onOpenChange={(open) => {
+          setDialog((current) =>
+            open ? "apiKeys" : current === "apiKeys" ? null : current,
+          );
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {m.user_api_keys_title()}
+            </DialogTitle>
+            <DialogDescription>{activeOrganization.data?.name}</DialogDescription>
+          </DialogHeader>
+          <Separator />
+          {activeOrganization.data ? (
             <OrganizationApiKeyManager organization={activeOrganization.data} />
           ) : null}
         </DialogContent>
