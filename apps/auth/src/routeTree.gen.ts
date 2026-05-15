@@ -20,6 +20,8 @@ import { Route as AuthConsentRouteImport } from './routes/_auth.consent'
 import { Route as Auth2faRouteImport } from './routes/_auth.2fa'
 import { Route as DotwellKnownOpenidConfigurationRouteImport } from './routes/[.]well-known/openid-configuration'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
+import { Route as ApiAuthVerifyPasswordRouteImport } from './routes/api/auth/verify-password'
+import { Route as ApiAuthSetPasswordRouteImport } from './routes/api/auth/set-password'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAdminOauthStatsRouteImport } from './routes/api/admin/oauth-stats'
 import { Route as AdminOauthClientsRouteImport } from './routes/admin/oauth/clients'
@@ -82,6 +84,16 @@ const DotwellKnownOauthAuthorizationServerRoute =
     path: '/.well-known/oauth-authorization-server',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAuthVerifyPasswordRoute = ApiAuthVerifyPasswordRouteImport.update({
+  id: '/api/auth/verify-password',
+  path: '/api/auth/verify-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSetPasswordRoute = ApiAuthSetPasswordRouteImport.update({
+  id: '/api/auth/set-password',
+  path: '/api/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -124,6 +136,8 @@ export interface FileRoutesByFullPath {
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/set-password': typeof ApiAuthSetPasswordRoute
+  '/api/auth/verify-password': typeof ApiAuthVerifyPasswordRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
   '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
@@ -140,6 +154,8 @@ export interface FileRoutesByTo {
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/set-password': typeof ApiAuthSetPasswordRoute
+  '/api/auth/verify-password': typeof ApiAuthVerifyPasswordRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
   '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
@@ -159,6 +175,8 @@ export interface FileRoutesById {
   '/admin/oauth/clients': typeof AdminOauthClientsRoute
   '/api/admin/oauth-stats': typeof ApiAdminOauthStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/set-password': typeof ApiAuthSetPasswordRoute
+  '/api/auth/verify-password': typeof ApiAuthVerifyPasswordRoute
   '/.well-known/oauth-authorization-server/api/auth': typeof DotwellKnownOauthAuthorizationServerApiAuthRoute
   '/api/auth/.well-known/openid-configuration': typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
@@ -178,6 +196,8 @@ export interface FileRouteTypes {
     | '/admin/oauth/clients'
     | '/api/admin/oauth-stats'
     | '/api/auth/$'
+    | '/api/auth/set-password'
+    | '/api/auth/verify-password'
     | '/.well-known/oauth-authorization-server/api/auth'
     | '/api/auth/.well-known/openid-configuration'
   fileRoutesByTo: FileRoutesByTo
@@ -194,6 +214,8 @@ export interface FileRouteTypes {
     | '/admin/oauth/clients'
     | '/api/admin/oauth-stats'
     | '/api/auth/$'
+    | '/api/auth/set-password'
+    | '/api/auth/verify-password'
     | '/.well-known/oauth-authorization-server/api/auth'
     | '/api/auth/.well-known/openid-configuration'
   id:
@@ -212,6 +234,8 @@ export interface FileRouteTypes {
     | '/admin/oauth/clients'
     | '/api/admin/oauth-stats'
     | '/api/auth/$'
+    | '/api/auth/set-password'
+    | '/api/auth/verify-password'
     | '/.well-known/oauth-authorization-server/api/auth'
     | '/api/auth/.well-known/openid-configuration'
   fileRoutesById: FileRoutesById
@@ -224,6 +248,8 @@ export interface RootRouteChildren {
   DotwellKnownOpenidConfigurationRoute: typeof DotwellKnownOpenidConfigurationRoute
   ApiAdminOauthStatsRoute: typeof ApiAdminOauthStatsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAuthSetPasswordRoute: typeof ApiAuthSetPasswordRoute
+  ApiAuthVerifyPasswordRoute: typeof ApiAuthVerifyPasswordRoute
   ApiAuthDotwellKnownOpenidConfigurationRoute: typeof ApiAuthDotwellKnownOpenidConfigurationRoute
 }
 
@@ -304,6 +330,20 @@ declare module '@tanstack/react-router' {
       path: '/.well-known/oauth-authorization-server'
       fullPath: '/.well-known/oauth-authorization-server'
       preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/verify-password': {
+      id: '/api/auth/verify-password'
+      path: '/api/auth/verify-password'
+      fullPath: '/api/auth/verify-password'
+      preLoaderRoute: typeof ApiAuthVerifyPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/set-password': {
+      id: '/api/auth/set-password'
+      path: '/api/auth/set-password'
+      fullPath: '/api/auth/set-password'
+      preLoaderRoute: typeof ApiAuthSetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -398,6 +438,8 @@ const rootRouteChildren: RootRouteChildren = {
   DotwellKnownOpenidConfigurationRoute: DotwellKnownOpenidConfigurationRoute,
   ApiAdminOauthStatsRoute: ApiAdminOauthStatsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAuthSetPasswordRoute: ApiAuthSetPasswordRoute,
+  ApiAuthVerifyPasswordRoute: ApiAuthVerifyPasswordRoute,
   ApiAuthDotwellKnownOpenidConfigurationRoute:
     ApiAuthDotwellKnownOpenidConfigurationRoute,
 }
