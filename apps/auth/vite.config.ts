@@ -5,11 +5,16 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { trustedOrigins } from "./src/lib/trusted-origins";
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   server: {
     port: Number(process.env.PORT) || 3000,
+    cors: {
+      origin: trustedOrigins,
+      credentials: true,
+    },
   },
   plugins: [
     paraglideVitePlugin({

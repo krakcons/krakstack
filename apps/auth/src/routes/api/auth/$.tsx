@@ -1,16 +1,29 @@
 import { auth } from "@/services/auth/config";
+import { trustedOrigins } from "@/lib/trusted-origins";
 import { createFileRoute } from "@tanstack/react-router";
 
+const isDev = process.env.NODE_ENV === "development";
+
 function corsHeaders(request: Request): Record<string, string> {
-  return {
-    "Access-Control-Allow-Origin": request.headers.get("origin") ?? "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  const origin = request.headers.get("origin");
+  const allowedOrigin =
+    origin && trustedOrigins.includes(origin) ? origin : null;
+
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
     "Access-Control-Allow-Headers":
-      request.headers.get("access-control-request-headers") ?? "*",
+      request.headers.get("access-control-request-headers") ??
+      "Content-Type, Authorization",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
-    Vary: "Origin",
+    Vary: "Origin, Access-Control-Request-Headers",
   };
+
+  if (allowedOrigin) {
+    headers["Access-Control-Allow-Origin"] = allowedOrigin;
+  }
+
+  return headers;
 }
 
 function withCors(response: Response, request: Request): Response {
@@ -25,36 +38,54 @@ function withCors(response: Response, request: Request): Response {
   });
 }
 
+function withCorsAndError(
+  request: Request,
+  fn: () => Promise<Response>,
+): Promise<Response> {
+  return fn().catch((error: unknown) => {
+    if (isDev) {
+      console.error("[Auth] error:", error);
+    }
+    return withCors(json({ error: "Internal server error" }, 500), request);
+  });
+}
+
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {
       OPTIONS: async ({ request }) => {
-        console.log("[CORS] OPTIONS", request.url);
-        console.log("[CORS] Origin:", request.headers.get("origin"));
-        console.log(
-          "[CORS] ACRH:",
-          request.headers.get("access-control-request-headers"),
-        );
+        if (isDev) {
+          console.log("[CORS] OPTIONS", request.url);
+          console.log("[CORS] Origin:", request.headers.get("origin"));
+          console.log(
+            "[CORS] ACRH:",
+            request.headers.get("access-control-request-headers"),
+          );
+        }
         return new Response(null, {
           status: 204,
           headers: corsHeaders(request),
         });
       },
       GET: async ({ request }) => {
-        const res = await auth.handler(request);
-        return withCors(res, request);
+        return withCorsAndError(request, async () => {
+          const res = await auth.handler(request);
+          return withCors(res, request);
+        });
       },
       POST: async ({ request }) => {
-        const url = new URL(request.url);
-        let res: Response;
-        if (url.pathname.endsWith("/api/auth/set-password")) {
-          res = await handleSetPassword(request);
-        } else if (url.pathname.endsWith("/api/auth/verify-password")) {
-          res = await handleVerifyPassword(request);
-        } else {
-          res = await auth.handler(request);
-        }
-        return withCors(res, request);
+        return withCorsAndError(request, async () => {
+          const url = new URL(request.url);
+          let res: Response;
+          if (url.pathname.endsWith("/api/auth/set-password")) {
+            res = await handleSetPassword(request);
+          } else if (url.pathname.endsWith("/api/auth/verify-password")) {
+            res = await handleVerifyPassword(request);
+          } else {
+            res = await auth.handler(request);
+          }
+          return withCors(res, request);
+        });
       },
     },
   },
@@ -73,7 +104,7 @@ const readStringField = async (request: Request, field: string) => {
     return null;
   }
 
-  const value = Object.entries(body).find(([key]) => key === field)?.[1];
+  const value = (body as Record<string, unknown>)[field];
   return typeof value === "string" ? value : null;
 };
 

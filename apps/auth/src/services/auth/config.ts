@@ -6,14 +6,9 @@ import { apiKey } from "@better-auth/api-key";
 
 import { db } from "../../services/database";
 import { schema } from "../../db/schema";
+import { parseCsv, trustedOrigins } from "@/lib/trusted-origins";
 
-const parseCsv = (value: string | undefined) =>
-  value
-    ?.split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const trustedOrigins = parseCsv(process.env.BETTER_AUTH_TRUSTED_ORIGINS);
+const isDev = process.env.NODE_ENV === "development";
 
 const validAudiences = parseCsv(process.env.BETTER_AUTH_VALID_AUDIENCES);
 
@@ -29,6 +24,11 @@ export const auth = betterAuth({
   }),
   advanced: {
     cookiePrefix: "krakstack-auth",
+    defaultCookieAttributes: {
+      sameSite: isDev ? "lax" : "none",
+      secure: !isDev,
+      httpOnly: true,
+    },
   },
   trustedOrigins,
   emailAndPassword: {
