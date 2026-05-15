@@ -27,7 +27,8 @@ export const Route = createFileRoute("/_auth/2fa")({
 
 function TwoFactorVerify() {
   const navigate = useNavigate();
-  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [mode, setMode] = useState<"totp" | "email" | "backup">("totp");
+  const [emailCodeSent, setEmailCodeSent] = useState(false);
   const redirectTarget = getRedirectTarget();
   const form = useAppForm({
     defaultValues: {
@@ -37,15 +38,22 @@ function TwoFactorVerify() {
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
 
-      const result = useBackupCode
-        ? await authClient.twoFactor.verifyBackupCode({
-            code: value.code.trim(),
-            trustDevice: value.trustDevice,
-          })
-        : await authClient.twoFactor.verifyTotp({
-            code: value.code.trim(),
-            trustDevice: value.trustDevice,
-          });
+      const code = value.code.trim();
+      const result =
+        mode === "backup"
+          ? await authClient.twoFactor.verifyBackupCode({
+              code,
+              trustDevice: value.trustDevice,
+            })
+          : mode === "email"
+            ? await authClient.twoFactor.verifyOtp({
+                code,
+                trustDevice: value.trustDevice,
+              })
+            : await authClient.twoFactor.verifyTotp({
+                code,
+                trustDevice: value.trustDevice,
+              });
 
       if (result.error) {
         formApi.setErrorMap({
@@ -66,6 +74,23 @@ function TwoFactorVerify() {
     },
   });
 
+  const sendEmailCode = async () => {
+    form.setErrorMap({ onSubmit: undefined });
+    const result = await authClient.twoFactor.sendOtp();
+    if (result.error) {
+      form.setErrorMap({
+        onSubmit: {
+          form: result.error.message ?? m.two_factor_send_email_code_error(),
+          fields: {},
+        },
+      });
+      return;
+    }
+
+    setEmailCodeSent(true);
+    setMode("email");
+  };
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -73,9 +98,11 @@ function TwoFactorVerify() {
           {m.two_factor_verify_title()}
         </CardTitle>
         <CardDescription>
-          {useBackupCode
+          {mode === "backup"
             ? m.two_factor_verify_backup_description()
-            : m.two_factor_verify_description()}
+            : mode === "email"
+              ? m.two_factor_verify_email_description()
+              : m.two_factor_verify_description()}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -92,7 +119,7 @@ function TwoFactorVerify() {
               {(field) => {
                 const invalid = !field.state.meta.isValid;
 
-                if (useBackupCode) {
+                if (mode === "backup") {
                   return (
                     <field.TextField
                       label={m.two_factor_backup_code()}
@@ -105,7 +132,9 @@ function TwoFactorVerify() {
                 return (
                   <Field data-invalid={invalid}>
                     <FieldLabel htmlFor={field.name}>
-                      {m.two_factor_code()}
+                      {mode === "email"
+                        ? m.two_factor_email_code()
+                        : m.two_factor_code()}
                     </FieldLabel>
                     <InputOTP
                       id={field.name}
@@ -142,14 +171,22 @@ function TwoFactorVerify() {
               )}
             </form.AppField>
             <form.FormError />
+            {emailCodeSent && mode === "email" ? (
+              <p className="text-muted-foreground text-sm">
+                {m.two_factor_email_code_sent()}
+              </p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-3">
               <form.SubmitButton />
+              <Button type="button" variant="ghost" onClick={sendEmailCode}>
+                {m.two_factor_send_email_code()}
+              </Button>
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setUseBackupCode(!useBackupCode)}
+                onClick={() => setMode(mode === "backup" ? "totp" : "backup")}
               >
-                {useBackupCode
+                {mode === "backup"
                   ? m.two_factor_use_totp()
                   : m.two_factor_use_backup_code()}
               </Button>

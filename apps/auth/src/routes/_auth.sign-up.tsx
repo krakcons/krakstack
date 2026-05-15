@@ -72,7 +72,10 @@ function SignUp() {
           return;
         }
 
-        navigate({ to: "/admin" });
+        navigate({
+          to: "/verify-email",
+          search: { email: value.email.trim() },
+        });
       } catch {
         formApi.setErrorMap({
           onSubmit: {

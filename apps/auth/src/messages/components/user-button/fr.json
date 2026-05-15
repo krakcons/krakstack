@@ -6,6 +6,9 @@
   "user_button_logout": "Se déconnecter",
   "user_form_title": "Compte",
   "user_form_description": "Mettez à jour les informations de profil associées à votre compte.",
+  "user_central_auth_required": "Reconnectez-vous à Krakstack Auth pour gérer les paramètres de votre compte central.",
+  "user_central_auth_reconnect": "Reconnecter le compte",
+  "user_central_auth_reconnect_error": "Impossible de se reconnecter à Krakstack Auth.",
   "user_profile_title": "Profil",
   "user_profile_description": "Mettez à jour les informations de votre profil public.",
   "user_profile_photo_label": "URL de la photo de profil",
@@ -29,10 +32,7 @@
   "user_two_factor_backup_codes_warning": "Enregistrez ces codes de secours maintenant. Ils ne sont affichés que pendant la configuration.",
   "user_api_keys_title": "Clés API",
   "user_api_keys_description": "Créez et gérez des clés API pour votre compte utilisateur.",
-  "user_api_keys_user_title": "Clés API utilisateur",
-  "user_api_keys_user_description": "Clés appartenant à votre compte utilisateur.",
   "user_api_keys_load_error": "Impossible de charger les clés API.",
-  "user_api_keys_empty": "Aucune clé API pour le moment.",
   "user_api_key_name": "Nom de la clé",
   "user_api_key_status": "Statut",
   "user_api_key_create_error": "Impossible de créer la clé API.",
@@ -66,5 +66,11 @@
   "user_account_password_set": "Définir le mot de passe",
   "user_account_new_password": "Nouveau mot de passe",
   "user_account_password_set_error": "Impossible de définir votre mot de passe.",
-  "user_account_password_verify_error": "Impossible de vérifier votre mot de passe."
+  "user_account_password_verify_error": "Impossible de vérifier votre mot de passe.",
+  "user_account_password_change_title": "Modifier le mot de passe",
+  "user_account_password_change_description": "Mettez à jour le mot de passe utilisé pour vous connecter avec votre courriel.",
+  "user_account_current_password": "Mot de passe actuel",
+  "user_account_password_change_submit": "Modifier le mot de passe",
+  "user_account_password_change_success": "Votre mot de passe a été mis à jour.",
+  "user_account_password_change_error": "Impossible de modifier votre mot de passe."
 }

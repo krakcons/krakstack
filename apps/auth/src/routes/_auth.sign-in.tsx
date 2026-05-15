@@ -147,7 +147,15 @@ function SignIn() {
               )}
             </form.AppField>
             <form.FormError />
-            <form.SubmitButton />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <form.SubmitButton />
+              <Link
+                className="text-foreground text-sm font-medium underline-offset-4 hover:underline"
+                to="/forgot-password"
+              >
+                {m.sign_in_forgot_password()}
+              </Link>
+            </div>
           </form>
         </form.AppForm>
         <div className="mt-4 flex flex-col gap-3">

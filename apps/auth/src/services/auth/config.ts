@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import {
   admin,
+  emailOTP,
   jwt,
   openAPI,
   organization,
@@ -13,6 +14,11 @@ import { apiKey } from "@better-auth/api-key";
 import { db } from "../../services/database";
 import { schema } from "../../db/schema";
 import { parseCsv, trustedOrigins } from "@/lib/trusted-origins";
+import {
+  sendResetPasswordEmail,
+  sendEmailVerificationOtpEmail,
+  sendTwoFactorOtpEmail,
+} from "@/services/auth/email";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -39,6 +45,12 @@ export const auth = betterAuth({
   trustedOrigins,
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    sendResetPassword: async ({ user, url }, request) => {
+      await sendResetPasswordEmail({ request, to: user.email, url });
+    },
   },
   ...(googleClientId && googleClientSecret
     ? {
@@ -63,8 +75,34 @@ export const auth = betterAuth({
     openAPI(),
     admin(),
     jwt(),
+    emailOTP({
+      overrideDefaultEmailVerification: true,
+      sendVerificationOnSignUp: true,
+      storeOTP: "encrypted",
+      allowedAttempts: 5,
+      sendVerificationOTP: async ({ email, otp, type }, context) => {
+        await sendEmailVerificationOtpEmail({
+          request: context?.request,
+          to: email,
+          otp,
+          type,
+        });
+      },
+    }),
     twoFactor({
       issuer: "Krakstack Auth",
+      otpOptions: {
+        sendOTP: async ({ user, otp }, context) => {
+          await sendTwoFactorOtpEmail({
+            request: context?.request,
+            to: user.email,
+            otp,
+          });
+        },
+        period: 5,
+        allowedAttempts: 5,
+        storeOTP: "encrypted",
+      },
     }),
     organization({
       allowUserToCreateOrganization: true,

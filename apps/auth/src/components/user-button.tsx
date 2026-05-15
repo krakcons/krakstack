@@ -8,7 +8,7 @@ import {
   UserCircleIcon,
   UserIcon,
 } from "lucide-react";
-import QRCode from "react-qr-code";
+import { QRCode } from "react-qr-code";
 import {
   type ComponentProps,
   type ReactNode,
@@ -43,6 +43,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
+import { centralAuthClient } from "@/services/auth/client/central";
 
 type UserFormType = {
   name: string;
@@ -76,10 +77,12 @@ export const UserButton = ({
   renderUnauthenticated,
 }: UserDropdownProps) => {
   const { data: session, isPending, refetch } = authClient.useSession();
+  const centralSession = centralAuthClient.useSession();
   const [settingsDialog, setSettingsDialog] = useState<SettingsDialog | null>(
     null,
   );
   const [formError, setFormError] = useState<string | null>(null);
+  const [centralAuthError, setCentralAuthError] = useState<string | null>(null);
 
   if (!session) {
     return <>{renderUnauthenticated?.()}</>;
@@ -90,13 +93,18 @@ export const UserButton = ({
   const displayImage = session.user.image?.trim() ?? "";
 
   const signOut = async () => {
-    await authClient.signOut();
-    window.location.assign(signOutRedirect);
+    const redirectUrl = new URL(signOutRedirect, window.location.origin);
+
+    await Promise.allSettled([
+      authClient.signOut(),
+      centralAuthClient.signOut(),
+    ]);
+    window.location.assign(redirectUrl.href);
   };
 
   const updateUser = async (values: UserFormType) => {
     setFormError(null);
-    const result = await authClient.updateUser({
+    const result = await centralAuthClient.updateUser({
       name: values.name.trim(),
       image: values.image.trim(),
     });
@@ -105,24 +113,28 @@ export const UserButton = ({
       throw new Error(result.error.message || m.user_form_update_error());
     }
 
+    await centralSession.refetch();
     await refetch();
 
     setSettingsDialog(null);
   };
 
-  const dialogTitle =
-    settingsDialog === "account"
-      ? m.user_form_title()
-      : settingsDialog === "security"
-        ? m.user_security_title()
-        : m.user_api_keys_title();
+  const reconnectCentralAuth = async () => {
+    setCentralAuthError(null);
+    const result = await authClient.signIn.oauth2({
+      providerId: "krakstack-auth",
+      callbackURL: window.location.href,
+    });
 
-  const dialogDescription =
-    settingsDialog === "account"
-      ? m.user_form_description()
-      : settingsDialog === "security"
-        ? m.user_security_description()
-        : m.user_api_keys_description();
+    if (result.error) {
+      setCentralAuthError(
+        result.error.message ?? m.user_central_auth_reconnect_error(),
+      );
+      return;
+    }
+
+    if (result.data?.url) window.location.assign(result.data.url);
+  };
 
   return (
     <>
@@ -189,18 +201,40 @@ export const UserButton = ({
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog
-        open={settingsDialog !== null}
+        open={settingsDialog === "account"}
         onOpenChange={(open) => {
-          if (!open) setSettingsDialog(null);
+          setSettingsDialog((current) =>
+            open ? "account" : current === "account" ? null : current,
+          );
         }}
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl">{dialogTitle}</DialogTitle>
-            <DialogDescription>{dialogDescription}</DialogDescription>
+            <DialogTitle className="text-2xl">
+              {m.user_form_title()}
+            </DialogTitle>
+            <DialogDescription>{m.user_form_description()}</DialogDescription>
           </DialogHeader>
           <Separator />
-          {settingsDialog === "account" ? (
+          {centralSession.isPending ? (
+            <p className="text-muted-foreground text-sm">{m.user_loading()}</p>
+          ) : !centralSession.data ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-muted-foreground text-sm">
+                {m.user_central_auth_required()}
+              </p>
+              {centralAuthError ? (
+                <p className="text-destructive text-sm">{centralAuthError}</p>
+              ) : null}
+              <Button
+                type="button"
+                className="self-start"
+                onClick={reconnectCentralAuth}
+              >
+                {m.user_central_auth_reconnect()}
+              </Button>
+            </div>
+          ) : (
             <div className="flex flex-col gap-6">
               <UserForm
                 defaultValues={{
@@ -225,9 +259,49 @@ export const UserButton = ({
               <Separator />
               <PasswordSettings />
             </div>
-          ) : null}
-          {settingsDialog === "security" ? <AccountSecuritySettings /> : null}
-          {settingsDialog === "apiKeys" ? <ApiKeyManager /> : null}
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={settingsDialog === "security"}
+        onOpenChange={(open) => {
+          setSettingsDialog((current) =>
+            open ? "security" : current === "security" ? null : current,
+          );
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {m.user_security_title()}
+            </DialogTitle>
+            <DialogDescription>
+              {m.user_security_description()}
+            </DialogDescription>
+          </DialogHeader>
+          <Separator />
+          <AccountSecuritySettings />
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={settingsDialog === "apiKeys"}
+        onOpenChange={(open) => {
+          setSettingsDialog((current) =>
+            open ? "apiKeys" : current === "apiKeys" ? null : current,
+          );
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {m.user_api_keys_title()}
+            </DialogTitle>
+            <DialogDescription>
+              {m.user_api_keys_description()}
+            </DialogDescription>
+          </DialogHeader>
+          <Separator />
+          <ApiKeyManager />
         </DialogContent>
       </Dialog>
     </>
@@ -246,7 +320,7 @@ function ConnectedAccounts() {
   const loadAccounts = async () => {
     setLoading(true);
     setError(null);
-    const result = await authClient.listAccounts();
+    const result = await centralAuthClient.listAccounts();
 
     if (result.error) {
       setError(result.error.message ?? m.user_accounts_load_error());
@@ -274,9 +348,9 @@ function ConnectedAccounts() {
     setError(null);
     setIsLinking(true);
 
-    const result = await authClient.linkSocial({
+    const result = await centralAuthClient.linkSocial({
       provider: "google",
-      callbackURL: window.location.pathname + window.location.search,
+      callbackURL: window.location.href,
     });
 
     if (result.error) {
@@ -295,7 +369,7 @@ function ConnectedAccounts() {
 
   const revokeAccount = async (account: LinkedAccount) => {
     setError(null);
-    const result = await authClient.unlinkAccount({
+    const result = await centralAuthClient.unlinkAccount({
       providerId: account.providerId,
       accountId: account.accountId,
     });
@@ -435,7 +509,7 @@ function PasswordSettings() {
   const loadAccounts = async () => {
     setLoading(true);
     setError(null);
-    const result = await authClient.listAccounts();
+    const result = await centralAuthClient.listAccounts();
 
     if (result.error) {
       setError(result.error.message ?? m.user_accounts_load_error());
@@ -459,7 +533,7 @@ function PasswordSettings() {
 
   const revokePassword = async (account: LinkedAccount) => {
     setError(null);
-    const result = await authClient.unlinkAccount({
+    const result = await centralAuthClient.unlinkAccount({
       providerId: account.providerId,
       accountId: account.accountId,
     });
@@ -535,7 +609,7 @@ function ChangePasswordForm() {
     onSubmit: async ({ value, formApi }) => {
       setSaved(false);
       formApi.setErrorMap({ onSubmit: undefined });
-      const result = await authClient.changePassword({
+      const result = await centralAuthClient.changePassword({
         currentPassword: value.currentPassword,
         newPassword: value.newPassword,
       });
@@ -613,7 +687,7 @@ function SetPasswordForm({ onSaved }: { onSaved: () => Promise<void> }) {
     defaultValues: { password: "" },
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
-      const result = await authClient.$fetch("/set-password", {
+      const result = await centralAuthClient.$fetch("/set-password", {
         method: "POST",
         body: { newPassword: value.password },
       });
@@ -679,7 +753,7 @@ function RevokeAccountForm({
       formApi.setErrorMap({ onSubmit: undefined });
 
       if (requirePassword) {
-        const verified = await authClient.$fetch("/verify-password", {
+        const verified = await centralAuthClient.$fetch("/verify-password", {
           method: "POST",
           body: { password: value.password },
         });
@@ -827,7 +901,7 @@ const UserForm = ({
 };
 
 function AccountSecuritySettings() {
-  const session = authClient.useSession();
+  const session = centralAuthClient.useSession();
   const [setup, setSetup] = useState<TotpSetup | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const twoFactorEnabled = hasTwoFactorEnabled(session.data?.user);
@@ -884,7 +958,7 @@ function EnableTotpForm({
     defaultValues: { password: "" },
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
-      const result = await authClient.twoFactor.enable({
+      const result = await centralAuthClient.twoFactor.enable({
         password: value.password,
       });
 
@@ -943,7 +1017,7 @@ function VerifyTotpSetup({
     defaultValues: { code: "" },
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
-      const result = await authClient.twoFactor.verifyTotp({
+      const result = await centralAuthClient.twoFactor.verifyTotp({
         code: value.code.trim(),
       });
 
@@ -962,31 +1036,32 @@ function VerifyTotpSetup({
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-6 md:grid-cols-[180px_1fr]">
-        <div className="rounded-lg bg-white p-4">
-          <QRCode value={setup.totpURI} className="size-full" />
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col items-center gap-4 rounded-lg border p-4 text-center sm:p-6">
+        <div className="rounded-xl border bg-white p-3">
+          <QRCode
+            value={setup.totpURI}
+            title={m.user_two_factor_scan_title()}
+            className="size-44 max-w-full"
+          />
         </div>
-        <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium">
-            {m.user_two_factor_scan_title()}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            {m.user_two_factor_scan_description()}
-          </p>
-          <div className="grid gap-2 rounded-lg border p-3 font-mono text-sm sm:grid-cols-2">
-            {setup.backupCodes.map((code) => (
-              <span key={code}>{code}</span>
-            ))}
-          </div>
-          <p className="text-muted-foreground text-sm">
-            {m.user_two_factor_backup_codes_warning()}
-          </p>
+        <p className="text-muted-foreground max-w-md text-sm">
+          {m.user_two_factor_scan_description()}
+        </p>
+      </div>
+      <div className="flex flex-col gap-3 rounded-lg border p-4">
+        <div className="bg-muted/40 grid gap-2 rounded-md p-3 font-mono text-sm sm:grid-cols-2">
+          {setup.backupCodes.map((code) => (
+            <span key={code}>{code}</span>
+          ))}
         </div>
+        <p className="text-muted-foreground text-sm">
+          {m.user_two_factor_backup_codes_warning()}
+        </p>
       </div>
       <form.AppForm>
         <form
-          className="flex max-w-md flex-col gap-4"
+          className="flex w-full max-w-sm flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -1016,7 +1091,7 @@ function DisableTotpForm({ onDisabled }: { onDisabled: () => Promise<void> }) {
     defaultValues: { password: "" },
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
-      const result = await authClient.twoFactor.disable({
+      const result = await centralAuthClient.twoFactor.disable({
         password: value.password,
       });
 
@@ -1070,7 +1145,7 @@ function ApiKeyManager() {
   const loadKeys = async () => {
     setLoading(true);
     setError(null);
-    const result = await authClient.apiKey.list({
+    const result = await centralAuthClient.apiKey.list({
       query: { configId: "user" },
     });
 
@@ -1093,7 +1168,7 @@ function ApiKeyManager() {
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
       setCreatedKey(null);
-      const result = await authClient.apiKey.create({
+      const result = await centralAuthClient.apiKey.create({
         configId: "user",
         name: value.name.trim(),
       });
@@ -1115,7 +1190,7 @@ function ApiKeyManager() {
   });
 
   const deleteKey = async (key: ApiKeySummary) => {
-    const result = await authClient.apiKey.delete({
+    const result = await centralAuthClient.apiKey.delete({
       configId: "user",
       keyId: key.id,
     });
@@ -1168,6 +1243,7 @@ function ApiKeyManager() {
       ) : null}
       <Separator />
       <DataTable
+        from="/"
         columns={apiKeyColumns({ onDelete: deleteKey })}
         data={keys}
         exportFileName="api-keys.csv"

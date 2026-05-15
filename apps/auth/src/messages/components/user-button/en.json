@@ -6,6 +6,9 @@
   "user_button_logout": "Log out",
   "user_form_title": "Account",
   "user_form_description": "Update the profile details associated with your account.",
+  "user_central_auth_required": "Reconnect to Krakstack Auth to manage your central account settings.",
+  "user_central_auth_reconnect": "Reconnect account",
+  "user_central_auth_reconnect_error": "Could not reconnect to Krakstack Auth.",
   "user_profile_title": "Profile",
   "user_profile_description": "Update your public profile details.",
   "user_profile_photo_label": "Profile photo URL",
@@ -29,10 +32,7 @@
   "user_two_factor_backup_codes_warning": "Save these backup codes now. They are shown only during setup.",
   "user_api_keys_title": "API keys",
   "user_api_keys_description": "Create and manage API keys for your user account.",
-  "user_api_keys_user_title": "User API keys",
-  "user_api_keys_user_description": "Keys owned by your user account.",
   "user_api_keys_load_error": "Could not load API keys.",
-  "user_api_keys_empty": "No API keys yet.",
   "user_api_key_name": "Key name",
   "user_api_key_status": "Status",
   "user_api_key_create_error": "Could not create the API key.",
@@ -66,5 +66,11 @@
   "user_account_password_set": "Set password",
   "user_account_new_password": "New password",
   "user_account_password_set_error": "Could not set your password.",
-  "user_account_password_verify_error": "Could not verify your password."
+  "user_account_password_verify_error": "Could not verify your password.",
+  "user_account_password_change_title": "Change password",
+  "user_account_password_change_description": "Update the password used to sign in with your email.",
+  "user_account_current_password": "Current password",
+  "user_account_password_change_submit": "Change password",
+  "user_account_password_change_success": "Your password has been updated.",
+  "user_account_password_change_error": "Could not change your password."
 }

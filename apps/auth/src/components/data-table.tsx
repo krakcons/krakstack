@@ -58,6 +58,7 @@ import {
   getSortedRowModel,
   type Header,
   type Row,
+  type SortingState,
   type Table as TanstackTable,
   useReactTable,
   type VisibilityState,
@@ -90,7 +91,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { z } from "zod";
+import { Schema } from "effect";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -103,19 +104,26 @@ import {
 
 const DataTableViewContext = createContext<DataTableView>("table");
 
-export const TableSearchSchema = z.object({
-  globalFilter: z.string().optional(),
-  pagination: z
-    .object({
-      pageIndex: z.number().default(0),
-      pageSize: z.number().default(10),
-    })
-    .optional(),
-  sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).optional(),
-  grouping: z.array(z.string()).optional(),
-  view: z.enum(["table", "gallery"]).optional(),
+export const TableSearchSchema = Schema.Struct({
+  globalFilter: Schema.optional(Schema.String),
+  pagination: Schema.optional(
+    Schema.Struct({
+      pageIndex: Schema.Number,
+      pageSize: Schema.Number,
+    }),
+  ),
+  sorting: Schema.optional(
+    Schema.Array(Schema.Struct({ id: Schema.String, desc: Schema.Boolean })),
+  ),
+  grouping: Schema.optional(Schema.Array(Schema.String)),
+  view: Schema.optional(
+    Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")]),
+  ),
 });
-export type TableParams = z.infer<typeof TableSearchSchema>;
+
+export const TableSearchSchemaStandard =
+  Schema.toStandardSchemaV1(TableSearchSchema);
+export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
 type DataTableView = "table" | "gallery";
 
@@ -153,7 +161,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   exportFileName?: string;
   onRowClick?: (row: TData) => void;
-  from?: ValidateFromPath;
+  from: ValidateFromPath;
   grouping?: DataTableGrouping<TData>;
   gallery?: DataTableGalleryConfig;
   features?: {
@@ -664,11 +672,11 @@ export function DataTable<TData, TValue>({
   features = DEFAULT_TABLE_FEATURES,
 }: DataTableProps<TData, TValue>) {
   const search = useSearch({
-    // @ts-ignore
     from,
-    strict: from !== undefined,
-  }) as TableParams;
-  const navigate = useNavigate(from ? { from } : {});
+  }) as TableParams | undefined;
+  const navigate = useNavigate({
+    from,
+  });
 
   const {
     pagination = { pageIndex: 0, pageSize: 10 },
@@ -719,8 +727,7 @@ export function DataTable<TData, TValue>({
   ) => {
     navigate({
       to: ".",
-      // @ts-ignore
-      search: (current) =>
+      search: (current: Record<string, unknown>) =>
         updater((current ?? {}) as TableParams & Record<string, unknown>),
     });
   };
@@ -744,7 +751,9 @@ export function DataTable<TData, TValue>({
     },
     onSortingChange: (updater) => {
       const newSorting =
-        typeof updater === "function" ? updater(sorting) : updater;
+        typeof updater === "function"
+          ? updater([...sorting] as SortingState)
+          : updater;
       if (
         sorting.length === newSorting.length &&
         sorting.every(
@@ -787,7 +796,7 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
-      sorting,
+      sorting: sorting as SortingState,
       pagination,
       globalFilter,
       columnVisibility,
@@ -1589,7 +1598,7 @@ export const createDataTableActionsColumn = <TData extends object>(
   actions: {
     name: string;
     icon?: ReactNode;
-    variant?: "default" | "destructive";
+    variant?: "default" | "destructive" | undefined;
     onClick: (data: TData) => void;
     visible?: (data: TData) => boolean;
   }[],
