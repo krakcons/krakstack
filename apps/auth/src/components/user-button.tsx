@@ -46,6 +46,7 @@ import { authClient } from "@/services/auth/client";
 
 type UserFormType = {
   name: string;
+  image: string;
 };
 
 type TotpSetup = {
@@ -54,6 +55,12 @@ type TotpSetup = {
 };
 
 type ApiKeySummary = Omit<ApiKey, "key">;
+
+type LinkedAccount = {
+  id: string;
+  providerId: string;
+  accountId: string;
+};
 
 type UserDropdownProps = {
   signOutRedirect?: string;
@@ -80,6 +87,7 @@ export const UserButton = ({
 
   const displayName = session.user.name.trim();
   const displayEmail = session.user.email.trim();
+  const displayImage = session.user.image?.trim() ?? "";
 
   const signOut = async () => {
     await authClient.signOut();
@@ -88,7 +96,10 @@ export const UserButton = ({
 
   const updateUser = async (values: UserFormType) => {
     setFormError(null);
-    const result = await authClient.updateUser(values);
+    const result = await authClient.updateUser({
+      name: values.name.trim(),
+      image: values.image.trim(),
+    });
 
     if (isAuthErrorResult(result)) {
       throw new Error(result.error.message || m.user_form_update_error());
@@ -190,23 +201,30 @@ export const UserButton = ({
           </DialogHeader>
           <Separator />
           {settingsDialog === "account" ? (
-            <UserForm
-              defaultValues={{
-                name: displayName ?? "",
-              }}
-              error={formError}
-              onSubmit={async (data) => {
-                try {
-                  await updateUser(data);
-                } catch (error) {
-                  setFormError(
-                    error instanceof Error
-                      ? error.message
-                      : m.user_form_update_error(),
-                  );
-                }
-              }}
-            />
+            <div className="flex flex-col gap-6">
+              <UserForm
+                defaultValues={{
+                  name: displayName ?? "",
+                  image: displayImage,
+                }}
+                error={formError}
+                onSubmit={async (data) => {
+                  try {
+                    await updateUser(data);
+                  } catch (error) {
+                    setFormError(
+                      error instanceof Error
+                        ? error.message
+                        : m.user_form_update_error(),
+                    );
+                  }
+                }}
+              />
+              <Separator />
+              <ConnectedAccounts />
+              <Separator />
+              <PasswordSettings />
+            </div>
           ) : null}
           {settingsDialog === "security" ? <AccountSecuritySettings /> : null}
           {settingsDialog === "apiKeys" ? <ApiKeyManager /> : null}
@@ -214,6 +232,435 @@ export const UserButton = ({
       </Dialog>
     </>
   );
+};
+
+function ConnectedAccounts() {
+  const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isLinking, setIsLinking] = useState(false);
+  const [revokingAccount, setRevokingAccount] = useState<LinkedAccount | null>(
+    null,
+  );
+
+  const loadAccounts = async () => {
+    setLoading(true);
+    setError(null);
+    const result = await authClient.listAccounts();
+
+    if (result.error) {
+      setError(result.error.message ?? m.user_accounts_load_error());
+      setLoading(false);
+      return;
+    }
+
+    setAccounts(result.data ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void loadAccounts();
+  }, []);
+
+  const googleAccount = accounts.find(
+    (account) => account.providerId === "google",
+  );
+  const hasPassword = accounts.some(
+    (account) => account.providerId === "credential",
+  );
+  const canRevokeAccount = accounts.length > 1;
+
+  const linkGoogle = async () => {
+    setError(null);
+    setIsLinking(true);
+
+    const result = await authClient.linkSocial({
+      provider: "google",
+      callbackURL: window.location.pathname + window.location.search,
+    });
+
+    if (result.error) {
+      setError(result.error.message ?? m.user_account_google_link_error());
+      setIsLinking(false);
+      return;
+    }
+
+    if (result.data?.url) {
+      window.location.assign(result.data.url);
+      return;
+    }
+
+    setIsLinking(false);
+  };
+
+  const revokeAccount = async (account: LinkedAccount) => {
+    setError(null);
+    const result = await authClient.unlinkAccount({
+      providerId: account.providerId,
+      accountId: account.accountId,
+    });
+
+    if (result.error) {
+      setError(result.error.message ?? m.user_account_revoke_error());
+      return;
+    }
+
+    setRevokingAccount(null);
+    await loadAccounts();
+  };
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-sm leading-none font-medium">
+          {m.user_accounts_title()}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          {m.user_accounts_description()}
+        </p>
+      </div>
+      {loading ? (
+        <p className="text-muted-foreground text-sm">{m.user_loading()}</p>
+      ) : null}
+      <AccountProviderRow
+        initial="G"
+        title={m.user_account_google_title()}
+        description={m.user_account_google_description()}
+        account={googleAccount}
+        connected={Boolean(googleAccount)}
+        canRevoke={canRevokeAccount}
+        connectLabel={m.user_account_google_connect()}
+        revokeLabel={m.user_account_revoke()}
+        onlyMethodLabel={m.user_account_only_method()}
+        isConnecting={isLinking}
+        renderDisconnected={undefined}
+        onConnect={linkGoogle}
+        onRevoke={(account) => setRevokingAccount(account)}
+      />
+      {revokingAccount ? (
+        <RevokeAccountForm
+          account={revokingAccount}
+          requirePassword={hasPassword}
+          onCancel={() => setRevokingAccount(null)}
+          onRevoke={revokeAccount}
+        />
+      ) : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+    </section>
+  );
+}
+
+function AccountProviderRow({
+  initial,
+  title,
+  description,
+  account,
+  connected,
+  canRevoke,
+  connectLabel,
+  revokeLabel,
+  onlyMethodLabel,
+  isConnecting,
+  renderDisconnected,
+  onConnect,
+  onRevoke,
+}: {
+  initial: string;
+  title: ReactNode;
+  description: ReactNode;
+  account: LinkedAccount | undefined;
+  connected: boolean;
+  canRevoke: boolean;
+  connectLabel: ReactNode;
+  revokeLabel: ReactNode;
+  onlyMethodLabel: ReactNode;
+  isConnecting?: boolean;
+  renderDisconnected: ReactNode | undefined;
+  onConnect: () => void;
+  onRevoke: (account: LinkedAccount) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="bg-background flex size-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold">
+            {initial}
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium">{title}</p>
+              <Badge variant={connected ? "default" : "secondary"}>
+                {connected
+                  ? m.user_account_connected()
+                  : m.user_account_not_connected()}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground text-sm">{description}</p>
+          </div>
+        </div>
+        {connected && account ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!canRevoke}
+            onClick={() => onRevoke(account)}
+          >
+            {canRevoke ? revokeLabel : onlyMethodLabel}
+          </Button>
+        ) : renderDisconnected ? (
+          renderDisconnected
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isConnecting}
+            onClick={onConnect}
+          >
+            {connectLabel}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PasswordSettings() {
+  const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [revokingAccount, setRevokingAccount] = useState<LinkedAccount | null>(
+    null,
+  );
+
+  const loadAccounts = async () => {
+    setLoading(true);
+    setError(null);
+    const result = await authClient.listAccounts();
+
+    if (result.error) {
+      setError(result.error.message ?? m.user_accounts_load_error());
+      setLoading(false);
+      return;
+    }
+
+    setAccounts(result.data ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void loadAccounts();
+  }, []);
+
+  const passwordAccount = accounts.find(
+    (account) => account.providerId === "credential",
+  );
+  const hasPassword = Boolean(passwordAccount);
+  const canRevokeAccount = accounts.length > 1;
+
+  const revokePassword = async (account: LinkedAccount) => {
+    setError(null);
+    const result = await authClient.unlinkAccount({
+      providerId: account.providerId,
+      accountId: account.accountId,
+    });
+
+    if (result.error) {
+      setError(result.error.message ?? m.user_account_revoke_error());
+      return;
+    }
+
+    setRevokingAccount(null);
+    await loadAccounts();
+  };
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-sm leading-none font-medium">
+          {m.user_account_password_title()}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          {m.user_account_password_description()}
+        </p>
+      </div>
+      {loading ? (
+        <p className="text-muted-foreground text-sm">{m.user_loading()}</p>
+      ) : null}
+      {hasPassword && passwordAccount ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium">{m.user_account_password_title()}</p>
+              <Badge>{m.user_account_connected()}</Badge>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {m.user_account_password_connected_description()}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!canRevokeAccount}
+            onClick={() => setRevokingAccount(passwordAccount)}
+          >
+            {canRevokeAccount
+              ? m.user_account_revoke()
+              : m.user_account_only_method()}
+          </Button>
+        </div>
+      ) : (
+        <SetPasswordForm onSaved={loadAccounts} />
+      )}
+      {revokingAccount ? (
+        <RevokeAccountForm
+          account={revokingAccount}
+          requirePassword
+          onCancel={() => setRevokingAccount(null)}
+          onRevoke={revokePassword}
+        />
+      ) : null}
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+    </section>
+  );
+}
+
+function SetPasswordForm({ onSaved }: { onSaved: () => Promise<void> }) {
+  const form = useAppForm({
+    defaultValues: { password: "" },
+    onSubmit: async ({ value, formApi }) => {
+      formApi.setErrorMap({ onSubmit: undefined });
+      const result = await authClient.$fetch("/set-password", {
+        method: "POST",
+        body: { newPassword: value.password },
+      });
+
+      if (result.error) {
+        formApi.setErrorMap({
+          onSubmit: {
+            form: result.error.message ?? m.user_account_password_set_error(),
+            fields: {},
+          },
+        });
+        return;
+      }
+
+      form.reset();
+      await onSaved();
+    },
+  });
+
+  return (
+    <form.AppForm>
+      <form
+        className="flex w-full flex-col gap-3 sm:max-w-sm"
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          form.handleSubmit();
+        }}
+      >
+        <form.AppField name="password">
+          {(field) => (
+            <field.TextField
+              label={m.user_account_new_password()}
+              type="password"
+              autoComplete="new-password"
+              required
+            />
+          )}
+        </form.AppField>
+        <form.FormError />
+        <Button type="submit" className="self-start">
+          {m.user_account_password_set()}
+        </Button>
+      </form>
+    </form.AppForm>
+  );
+}
+
+function RevokeAccountForm({
+  account,
+  requirePassword,
+  onCancel,
+  onRevoke,
+}: {
+  account: LinkedAccount;
+  requirePassword: boolean;
+  onCancel: () => void;
+  onRevoke: (account: LinkedAccount) => Promise<void>;
+}) {
+  const form = useAppForm({
+    defaultValues: { password: "" },
+    onSubmit: async ({ value, formApi }) => {
+      formApi.setErrorMap({ onSubmit: undefined });
+
+      if (requirePassword) {
+        const verified = await authClient.$fetch("/verify-password", {
+          method: "POST",
+          body: { password: value.password },
+        });
+
+        if (verified.error) {
+          formApi.setErrorMap({
+            onSubmit: {
+              form: m.user_account_password_verify_error(),
+              fields: {},
+            },
+          });
+          return;
+        }
+      }
+
+      await onRevoke(account);
+    },
+  });
+
+  return (
+    <form.AppForm>
+      <form
+        className="bg-muted/40 flex flex-col gap-3 rounded-lg border p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          form.handleSubmit();
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <h3 className="text-sm font-medium">{m.user_account_revoke()}</h3>
+          <p className="text-muted-foreground text-sm">
+            {m.user_account_revoke_description({
+              provider: providerName(account.providerId),
+            })}
+          </p>
+        </div>
+        {requirePassword ? (
+          <form.AppField name="password">
+            {(field) => (
+              <field.TextField
+                label={m.user_field_password()}
+                type="password"
+                autoComplete="current-password"
+                required
+              />
+            )}
+          </form.AppField>
+        ) : null}
+        <form.FormError />
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            {m.user_account_cancel()}
+          </Button>
+          <Button type="submit">{m.user_account_confirm_revoke()}</Button>
+        </div>
+      </form>
+    </form.AppForm>
+  );
+}
+
+const providerName = (providerId: string) => {
+  if (providerId === "google") return m.user_account_google_title();
+  if (providerId === "credential") return m.user_account_password_title();
+  return providerId;
 };
 
 const UserForm = ({
@@ -231,32 +678,67 @@ const UserForm = ({
   });
 
   return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        form.handleSubmit();
-      }}
-    >
-      <form.AppForm>
-        <form.AppField name="name">
-          {(field) => (
-            <field.TextField
-              label={m.user_form_name_label()}
-              autoComplete="name"
-              required
-            />
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-sm leading-none font-medium">
+          {m.user_profile_title()}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          {m.user_profile_description()}
+        </p>
+      </div>
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          form.handleSubmit();
+        }}
+      >
+        <form.AppForm>
+          <div className="flex flex-wrap items-center gap-4">
+            {defaultValues.image ? (
+              <img
+                src={defaultValues.image}
+                alt=""
+                className="size-16 rounded-full border object-cover"
+              />
+            ) : (
+              <span className="bg-muted flex size-16 items-center justify-center rounded-full border">
+                <UserIcon className="size-7" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <form.AppField name="image">
+                {(field) => (
+                  <field.TextField
+                    label={m.user_profile_photo_label()}
+                    type="url"
+                    autoComplete="photo"
+                    placeholder="https://example.com/avatar.png"
+                  />
+                )}
+              </form.AppField>
+            </div>
+          </div>
+          <form.AppField name="name">
+            {(field) => (
+              <field.TextField
+                label={m.user_form_name_label()}
+                autoComplete="name"
+                required
+              />
+            )}
+          </form.AppField>
+          {error && (
+            <p role="alert" className="text-destructive text-sm">
+              {error}
+            </p>
           )}
-        </form.AppField>
-        {error && (
-          <p role="alert" className="text-destructive text-sm">
-            {error}
-          </p>
-        )}
-        <form.SubmitButton />
-      </form.AppForm>
-    </form>
+          <form.SubmitButton />
+        </form.AppForm>
+      </form>
+    </section>
   );
 };
 
