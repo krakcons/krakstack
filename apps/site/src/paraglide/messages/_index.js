@@ -134,6 +134,22 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} User_Account_Password_Change_SubmitInputs */
 /** @typedef {{}} User_Account_Password_Change_SuccessInputs */
 /** @typedef {{}} User_Account_Password_Change_ErrorInputs */
+/** @typedef {{}} Organizations_TitleInputs */
+/** @typedef {{}} Organizations_DescriptionInputs */
+/** @typedef {{}} Organization_Create_TitleInputs */
+/** @typedef {{}} Organization_Create_DescriptionInputs */
+/** @typedef {{}} Organization_Edit_TitleInputs */
+/** @typedef {{}} Organization_Edit_DescriptionInputs */
+/** @typedef {{}} Organization_NameInputs */
+/** @typedef {{}} Organization_SlugInputs */
+/** @typedef {{}} Organization_Slug_DescriptionInputs */
+/** @typedef {{}} Organization_Create_ErrorInputs */
+/** @typedef {{}} Organization_Update_ErrorInputs */
+/** @typedef {{}} Organization_Switcher_EmptyInputs */
+/** @typedef {{}} Organization_Switcher_No_Other_OrganizationsInputs */
+/** @typedef {{}} Organization_Switcher_LabelInputs */
+/** @typedef {{}} Organization_Switcher_ManageInputs */
+/** @typedef {{}} Organization_LoadingInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -1983,4 +1999,228 @@ export const user_account_password_change_error = /** @type {((inputs?: User_Acc
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.user_account_password_change_error(inputs)
 	return __fr.user_account_password_change_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Organizations" |
+*
+* @param {Organizations_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organizations_title = /** @type {((inputs?: Organizations_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organizations_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organizations_title(inputs)
+	return __fr.organizations_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Create, edit, and switch between organizations you belong to." |
+*
+* @param {Organizations_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organizations_description = /** @type {((inputs?: Organizations_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organizations_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organizations_description(inputs)
+	return __fr.organizations_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Create organization" |
+*
+* @param {Organization_Create_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_create_title = /** @type {((inputs?: Organization_Create_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Create_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_create_title(inputs)
+	return __fr.organization_create_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Create a workspace for team-based access." |
+*
+* @param {Organization_Create_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_create_description = /** @type {((inputs?: Organization_Create_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Create_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_create_description(inputs)
+	return __fr.organization_create_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Edit organization" |
+*
+* @param {Organization_Edit_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_edit_title = /** @type {((inputs?: Organization_Edit_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Edit_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_edit_title(inputs)
+	return __fr.organization_edit_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Update the active organization's name and slug." |
+*
+* @param {Organization_Edit_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_edit_description = /** @type {((inputs?: Organization_Edit_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Edit_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_edit_description(inputs)
+	return __fr.organization_edit_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Organization name" |
+*
+* @param {Organization_NameInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_name = /** @type {((inputs?: Organization_NameInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_NameInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_name(inputs)
+	return __fr.organization_name(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Organization slug" |
+*
+* @param {Organization_SlugInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_slug = /** @type {((inputs?: Organization_SlugInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_SlugInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_slug(inputs)
+	return __fr.organization_slug(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Leave blank to generate one from the name." |
+*
+* @param {Organization_Slug_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_slug_description = /** @type {((inputs?: Organization_Slug_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Slug_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_slug_description(inputs)
+	return __fr.organization_slug_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not create the organization." |
+*
+* @param {Organization_Create_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_create_error = /** @type {((inputs?: Organization_Create_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Create_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_create_error(inputs)
+	return __fr.organization_create_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not update the organization." |
+*
+* @param {Organization_Update_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_update_error = /** @type {((inputs?: Organization_Update_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Update_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_update_error(inputs)
+	return __fr.organization_update_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "You do not belong to any organizations yet." |
+*
+* @param {Organization_Switcher_EmptyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_switcher_empty = /** @type {((inputs?: Organization_Switcher_EmptyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Switcher_EmptyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_switcher_empty(inputs)
+	return __fr.organization_switcher_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No other organizations." |
+*
+* @param {Organization_Switcher_No_Other_OrganizationsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_switcher_no_other_organizations = /** @type {((inputs?: Organization_Switcher_No_Other_OrganizationsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Switcher_No_Other_OrganizationsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_switcher_no_other_organizations(inputs)
+	return __fr.organization_switcher_no_other_organizations(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Organization" |
+*
+* @param {Organization_Switcher_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_switcher_label = /** @type {((inputs?: Organization_Switcher_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Switcher_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_switcher_label(inputs)
+	return __fr.organization_switcher_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Manage organization" |
+*
+* @param {Organization_Switcher_ManageInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_switcher_manage = /** @type {((inputs?: Organization_Switcher_ManageInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Switcher_ManageInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_switcher_manage(inputs)
+	return __fr.organization_switcher_manage(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Loading..." |
+*
+* @param {Organization_LoadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_loading = /** @type {((inputs?: Organization_LoadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_LoadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_loading(inputs)
+	return __fr.organization_loading(inputs)
 });

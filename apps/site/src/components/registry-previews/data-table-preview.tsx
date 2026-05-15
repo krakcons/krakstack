@@ -2,6 +2,7 @@ import {
   DataTable,
   DataTableColumnHeader,
   TableSearchSchema,
+  TableSearchSchemaStandard,
   createDataTableActionsColumn,
 } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
 
-export { TableSearchSchema };
+export { TableSearchSchema, TableSearchSchemaStandard };
 
 type Project = {
   id: string;

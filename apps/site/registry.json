@@ -171,6 +171,51 @@
       ]
     },
     {
+      "name": "organization-switcher",
+      "type": "registry:block",
+      "title": "Organization Switcher",
+      "description": "A Better Auth organization switcher backed by the central Krakstack Auth client, with organization creation, editing, active organization switching, and organization API keys.",
+      "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `centralAuthClient` so the active organization, memberships, and organization API keys stay scoped to the central auth service rather than the app-local session.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- Edit the active organization's name and slug\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@/components/organization-switcher\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
+      "files": [
+        {
+          "path": "src/components/organization-switcher.tsx",
+          "type": "registry:component",
+          "target": "components/organization-switcher.tsx"
+        },
+        {
+          "path": "src/services/auth/client/central.ts",
+          "type": "registry:file",
+          "target": "services/auth/client/central.ts"
+        },
+        {
+          "path": "src/messages/components/organization-switcher/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/organization-switcher/en.json"
+        },
+        {
+          "path": "src/messages/components/organization-switcher/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/organization-switcher/fr.json"
+        }
+      ],
+      "registryDependencies": [
+        "badge",
+        "button",
+        "@krak/data-table",
+        "dialog",
+        "dropdown-menu",
+        "form",
+        "separator"
+      ],
+      "dependencies": [
+        "@better-auth/api-key",
+        "@tanstack/react-table",
+        "better-auth",
+        "lucide-react",
+        "react"
+      ]
+    },
+    {
       "name": "sign-in",
       "type": "registry:block",
       "title": "Sign In",
@@ -369,8 +414,8 @@
       "name": "sidebar-layout",
       "type": "registry:block",
       "title": "Sidebar Layout",
-      "description": "A sidebar-based layout with configurable navigation groups, a brand header, page header component, locale toggle, and user button.",
-      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with an optional header slot and navigation groups, a page header component with optional badge, description, and actions, and a locale toggle in the top bar.\n\n## Features\n\n- Configurable sidebar with `sidebarHeader` slot and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Customizable header end content (defaults to `LocaleToggle` and `UserButton`)\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/sidebar-layout\";\nimport { AppBrand } from \"@/components/app-brand\";\nimport { LayoutDashboard, Users, Blocks } from \"lucide-react\";\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout\n  sidebarHeader={\n    <AppBrand\n      label=\"My App\"\n      subtitle=\"Admin Panel\"\n      icon={Blocks}\n      variant=\"sidebar\"\n      href=\"/admin\"\n    />\n  }\n  groups={groups}\n/>\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout\n  sidebarHeader={<AppBrand label=\"My App\" subtitle=\"Admin Panel\" icon={Blocks} variant=\"sidebar\" href=\"/admin\" />}\n  groups={groups}\n>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
+      "description": "A sidebar-based layout with configurable navigation groups, a brand header, page header component, organization switcher, locale toggle, and user button.",
+      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with an optional header slot and navigation groups, a page header component with optional badge, description, and actions, plus organization, locale, and user controls in the top bar.\n\n## Features\n\n- Configurable sidebar with `sidebarHeader` slot and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Header controls for `OrganizationSwitcher`, `LocaleToggle`, and `UserButton`\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/sidebar-layout\";\nimport { AppBrand } from \"@/components/app-brand\";\nimport { LayoutDashboard, Users, Blocks } from \"lucide-react\";\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout\n  sidebarHeader={\n    <AppBrand\n      label=\"My App\"\n      subtitle=\"Admin Panel\"\n      icon={Blocks}\n      variant=\"sidebar\"\n      href=\"/admin\"\n    />\n  }\n  groups={groups}\n/>\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout\n  sidebarHeader={<AppBrand label=\"My App\" subtitle=\"Admin Panel\" icon={Blocks} variant=\"sidebar\" href=\"/admin\" />}\n  groups={groups}\n>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
       "files": [
         {
           "path": "src/components/sidebar-layout.tsx",
@@ -383,6 +428,7 @@
         "sidebar",
         "@krak/app-brand",
         "@krak/locale-toggle",
+        "@krak/organization-switcher",
         "@krak/user-button"
       ],
       "dependencies": ["@tanstack/react-router", "lucide-react", "react"]

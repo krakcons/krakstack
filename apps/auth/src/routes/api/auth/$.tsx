@@ -1,77 +1,60 @@
 import { auth } from "@/services/auth/config";
 import { createFileRoute } from "@tanstack/react-router";
 
-const parseCsv = (value: string | undefined) =>
-  value
-    ?.split(",")
-    .map((item) => item.trim())
-    .filter(Boolean) ?? [];
+function corsHeaders(request: Request): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": request.headers.get("origin") ?? "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers":
+      request.headers.get("access-control-request-headers") ?? "*",
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  };
+}
 
-const allowedOrigins = new Set([
-  process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
-  ...parseCsv(process.env.BETTER_AUTH_TRUSTED_ORIGINS),
-]);
-
-const corsHeaders = {
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Allow-Credentials": "true",
-};
-
-const corsOrigin = (request: Request) => {
-  const origin = request.headers.get("origin");
-  if (!origin || !allowedOrigins.has(origin)) return null;
-  return origin;
-};
-
-const withCors = async (request: Request, handler: () => Promise<Response>) => {
-  const origin = corsOrigin(request);
-
-  if (request.method === "OPTIONS") {
-    if (!origin) return new Response("CORS not allowed", { status: 403 });
-    return new Response(null, {
-      status: 204,
-      headers: {
-        ...corsHeaders,
-        "Access-Control-Allow-Origin": origin,
-      },
-    });
+function withCors(response: Response, request: Request): Response {
+  const headers = new Headers(response.headers);
+  for (const [k, v] of Object.entries(corsHeaders(request))) {
+    headers.set(k, v);
   }
-
-  const response = await handler();
-  if (!origin) return response;
-
-  const corsResponse = new Response(response.body, response);
-  for (const [key, value] of Object.entries(corsHeaders)) {
-    corsResponse.headers.set(key, value);
-  }
-  corsResponse.headers.set("Access-Control-Allow-Origin", origin);
-  return corsResponse;
-};
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {
-      GET: async ({ request }: { request: Request }) => {
-        return await withCors(request, () => auth.handler(request));
-      },
-      OPTIONS: async ({ request }: { request: Request }) => {
-        return await withCors(request, async () => new Response(null));
-      },
-      POST: async ({ request }: { request: Request }) => {
-        return await withCors(request, async () => {
-          const url = new URL(request.url);
-
-          if (url.pathname.endsWith("/api/auth/set-password")) {
-            return handleSetPassword(request);
-          }
-
-          if (url.pathname.endsWith("/api/auth/verify-password")) {
-            return handleVerifyPassword(request);
-          }
-
-          return await auth.handler(request);
+      OPTIONS: async ({ request }) => {
+        console.log("[CORS] OPTIONS", request.url);
+        console.log("[CORS] Origin:", request.headers.get("origin"));
+        console.log(
+          "[CORS] ACRH:",
+          request.headers.get("access-control-request-headers"),
+        );
+        return new Response(null, {
+          status: 204,
+          headers: corsHeaders(request),
         });
+      },
+      GET: async ({ request }) => {
+        const res = await auth.handler(request);
+        return withCors(res, request);
+      },
+      POST: async ({ request }) => {
+        const url = new URL(request.url);
+        let res: Response;
+        if (url.pathname.endsWith("/api/auth/set-password")) {
+          res = await handleSetPassword(request);
+        } else if (url.pathname.endsWith("/api/auth/verify-password")) {
+          res = await handleVerifyPassword(request);
+        } else {
+          res = await auth.handler(request);
+        }
+        return withCors(res, request);
       },
     },
   },
