@@ -1,7 +1,13 @@
 import { Link } from "@tanstack/react-router";
 
 import { ErrorMessage, useAppForm } from "@/components/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { authClient } from "@/services/auth/client";
 import { m } from "@/paraglide/messages";
 
@@ -21,7 +27,10 @@ export function SignIn() {
 
       if (result.error) {
         formApi.setErrorMap({
-          onSubmit: { form: result.error.message ?? m.sign_in_error(), fields: {} },
+          onSubmit: {
+            form: result.error.message ?? m.sign_in_error(),
+            fields: {},
+          },
         });
         return;
       }
@@ -68,18 +77,21 @@ export function SignIn() {
             </form.AppField>
             <form.Subscribe
               selector={(formState) =>
-                (formState.errorMap.onSubmit as { form?: unknown } | undefined)?.form
+                (formState.errorMap.onSubmit as { form?: unknown } | undefined)
+                  ?.form
               }
             >
-              {(error) => (error ? <ErrorMessage text={String(error)} /> : null)}
+              {(error) =>
+                error ? <ErrorMessage text={String(error)} /> : null
+              }
             </form.Subscribe>
             <form.SubmitButton />
           </form>
         </form.AppForm>
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-6 text-center text-sm">
           {m.sign_in_need_account()}{" "}
           <Link
-            className="font-medium text-foreground underline-offset-4 hover:underline"
+            className="text-foreground font-medium underline-offset-4 hover:underline"
             to="/sign-up"
           >
             {m.auth_sign_up()}

@@ -37,7 +37,11 @@ export const AuthMiddlewareLive = Layer.effect(
       Effect.gen(function* () {
         const user = yield* authService
           .requireUser()
-          .pipe(Effect.mapError(() => new Unauthorized({ message: "Authentication required" })));
+          .pipe(
+            Effect.mapError(
+              () => new Unauthorized({ message: "Authentication required" }),
+            ),
+          );
         return yield* Effect.provideService(httpEffect, CurrentUser, user);
       });
   }),

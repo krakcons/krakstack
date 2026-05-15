@@ -67,6 +67,73 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Field_NameInputs */
 /** @typedef {{}} Field_EmailInputs */
 /** @typedef {{}} Field_PasswordInputs */
+/** @typedef {{}} User_Button_SecurityInputs */
+/** @typedef {{}} User_Button_Api_KeysInputs */
+/** @typedef {{}} User_Central_Auth_RequiredInputs */
+/** @typedef {{}} User_Central_Auth_ReconnectInputs */
+/** @typedef {{}} User_Central_Auth_Reconnect_ErrorInputs */
+/** @typedef {{}} User_Profile_TitleInputs */
+/** @typedef {{}} User_Profile_DescriptionInputs */
+/** @typedef {{}} User_Profile_Photo_LabelInputs */
+/** @typedef {{}} User_Field_PasswordInputs */
+/** @typedef {{}} User_Security_TitleInputs */
+/** @typedef {{}} User_Security_DescriptionInputs */
+/** @typedef {{}} User_Two_Factor_TitleInputs */
+/** @typedef {{}} User_Two_Factor_DescriptionInputs */
+/** @typedef {{}} User_Two_Factor_EnabledInputs */
+/** @typedef {{}} User_Two_Factor_DisabledInputs */
+/** @typedef {{}} User_Two_Factor_Enabled_MessageInputs */
+/** @typedef {{}} User_Two_Factor_Disabled_MessageInputs */
+/** @typedef {{}} User_Two_Factor_Enable_ErrorInputs */
+/** @typedef {{}} User_Two_Factor_Disable_ErrorInputs */
+/** @typedef {{}} User_Two_Factor_Verify_ErrorInputs */
+/** @typedef {{}} User_Two_Factor_CodeInputs */
+/** @typedef {{}} User_Two_Factor_Scan_TitleInputs */
+/** @typedef {{}} User_Two_Factor_Scan_DescriptionInputs */
+/** @typedef {{}} User_Two_Factor_Backup_Codes_WarningInputs */
+/** @typedef {{}} User_Api_Keys_TitleInputs */
+/** @typedef {{}} User_Api_Keys_DescriptionInputs */
+/** @typedef {{}} User_Api_Keys_Load_ErrorInputs */
+/** @typedef {{}} User_Api_Key_NameInputs */
+/** @typedef {{}} User_Api_Key_StatusInputs */
+/** @typedef {{}} User_Api_Key_Create_ErrorInputs */
+/** @typedef {{}} User_Api_Key_Delete_ErrorInputs */
+/** @typedef {{}} User_Api_Key_Created_TitleInputs */
+/** @typedef {{}} User_Api_Key_Created_DescriptionInputs */
+/** @typedef {{}} User_Api_Key_EnabledInputs */
+/** @typedef {{}} User_Api_Key_DisabledInputs */
+/** @typedef {{}} User_Api_Key_HiddenInputs */
+/** @typedef {{ start: NonNullable<unknown> }} User_Api_Key_Starts_WithInputs */
+/** @typedef {{}} User_LoadingInputs */
+/** @typedef {{}} User_DeleteInputs */
+/** @typedef {{}} User_Accounts_TitleInputs */
+/** @typedef {{}} User_Accounts_DescriptionInputs */
+/** @typedef {{}} User_Account_Google_TitleInputs */
+/** @typedef {{}} User_Account_Google_DescriptionInputs */
+/** @typedef {{}} User_Account_Google_ConnectInputs */
+/** @typedef {{}} User_Account_Google_Link_ErrorInputs */
+/** @typedef {{}} User_Accounts_Load_ErrorInputs */
+/** @typedef {{}} User_Account_ConnectedInputs */
+/** @typedef {{}} User_Account_Not_ConnectedInputs */
+/** @typedef {{}} User_Account_RevokeInputs */
+/** @typedef {{}} User_Account_Confirm_RevokeInputs */
+/** @typedef {{ provider: NonNullable<unknown> }} User_Account_Revoke_DescriptionInputs */
+/** @typedef {{}} User_Account_Revoke_ErrorInputs */
+/** @typedef {{}} User_Account_Only_MethodInputs */
+/** @typedef {{}} User_Account_CancelInputs */
+/** @typedef {{}} User_Account_Password_TitleInputs */
+/** @typedef {{}} User_Account_Password_DescriptionInputs */
+/** @typedef {{}} User_Account_Password_Connected_DescriptionInputs */
+/** @typedef {{}} User_Account_Password_SetInputs */
+/** @typedef {{}} User_Account_New_PasswordInputs */
+/** @typedef {{}} User_Account_Password_Set_ErrorInputs */
+/** @typedef {{}} User_Account_Password_Verify_ErrorInputs */
+/** @typedef {{}} User_Account_Password_Change_TitleInputs */
+/** @typedef {{}} User_Account_Password_Change_DescriptionInputs */
+/** @typedef {{}} User_Account_Current_PasswordInputs */
+/** @typedef {{}} User_Account_Password_Change_SubmitInputs */
+/** @typedef {{}} User_Account_Password_Change_SuccessInputs */
+/** @typedef {{}} User_Account_Password_Change_ErrorInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -978,4 +1045,942 @@ export const field_password = /** @type {((inputs?: Field_PasswordInputs, option
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.field_password(inputs)
 	return __fr.field_password(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Security" |
+*
+* @param {User_Button_SecurityInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_button_security = /** @type {((inputs?: User_Button_SecurityInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Button_SecurityInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_button_security(inputs)
+	return __fr.user_button_security(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "API keys" |
+*
+* @param {User_Button_Api_KeysInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_button_api_keys = /** @type {((inputs?: User_Button_Api_KeysInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Button_Api_KeysInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_button_api_keys(inputs)
+	return __fr.user_button_api_keys(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Reconnect to Krakstack Auth to manage your central account settings." |
+*
+* @param {User_Central_Auth_RequiredInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_central_auth_required = /** @type {((inputs?: User_Central_Auth_RequiredInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Central_Auth_RequiredInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_central_auth_required(inputs)
+	return __fr.user_central_auth_required(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Reconnect account" |
+*
+* @param {User_Central_Auth_ReconnectInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_central_auth_reconnect = /** @type {((inputs?: User_Central_Auth_ReconnectInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Central_Auth_ReconnectInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_central_auth_reconnect(inputs)
+	return __fr.user_central_auth_reconnect(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not reconnect to Krakstack Auth." |
+*
+* @param {User_Central_Auth_Reconnect_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_central_auth_reconnect_error = /** @type {((inputs?: User_Central_Auth_Reconnect_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Central_Auth_Reconnect_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_central_auth_reconnect_error(inputs)
+	return __fr.user_central_auth_reconnect_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Profile" |
+*
+* @param {User_Profile_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_profile_title = /** @type {((inputs?: User_Profile_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Profile_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_profile_title(inputs)
+	return __fr.user_profile_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Update your public profile details." |
+*
+* @param {User_Profile_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_profile_description = /** @type {((inputs?: User_Profile_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Profile_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_profile_description(inputs)
+	return __fr.user_profile_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Profile photo URL" |
+*
+* @param {User_Profile_Photo_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_profile_photo_label = /** @type {((inputs?: User_Profile_Photo_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Profile_Photo_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_profile_photo_label(inputs)
+	return __fr.user_profile_photo_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Password" |
+*
+* @param {User_Field_PasswordInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_field_password = /** @type {((inputs?: User_Field_PasswordInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Field_PasswordInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_field_password(inputs)
+	return __fr.user_field_password(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Security" |
+*
+* @param {User_Security_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_security_title = /** @type {((inputs?: User_Security_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Security_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_security_title(inputs)
+	return __fr.user_security_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Protect your account with authenticator app verification." |
+*
+* @param {User_Security_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_security_description = /** @type {((inputs?: User_Security_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Security_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_security_description(inputs)
+	return __fr.user_security_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Two-factor authentication" |
+*
+* @param {User_Two_Factor_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_title = /** @type {((inputs?: User_Two_Factor_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_title(inputs)
+	return __fr.user_two_factor_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Use a time-based one-time password from your authenticator app." |
+*
+* @param {User_Two_Factor_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_description = /** @type {((inputs?: User_Two_Factor_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_description(inputs)
+	return __fr.user_two_factor_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Enabled" |
+*
+* @param {User_Two_Factor_EnabledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_enabled = /** @type {((inputs?: User_Two_Factor_EnabledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_EnabledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_enabled(inputs)
+	return __fr.user_two_factor_enabled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Disabled" |
+*
+* @param {User_Two_Factor_DisabledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_disabled = /** @type {((inputs?: User_Two_Factor_DisabledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_DisabledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_disabled(inputs)
+	return __fr.user_two_factor_disabled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Two-factor authentication is enabled." |
+*
+* @param {User_Two_Factor_Enabled_MessageInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_enabled_message = /** @type {((inputs?: User_Two_Factor_Enabled_MessageInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Enabled_MessageInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_enabled_message(inputs)
+	return __fr.user_two_factor_enabled_message(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Two-factor authentication is disabled." |
+*
+* @param {User_Two_Factor_Disabled_MessageInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_disabled_message = /** @type {((inputs?: User_Two_Factor_Disabled_MessageInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Disabled_MessageInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_disabled_message(inputs)
+	return __fr.user_two_factor_disabled_message(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not start two-factor setup." |
+*
+* @param {User_Two_Factor_Enable_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_enable_error = /** @type {((inputs?: User_Two_Factor_Enable_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Enable_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_enable_error(inputs)
+	return __fr.user_two_factor_enable_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not disable two-factor authentication." |
+*
+* @param {User_Two_Factor_Disable_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_disable_error = /** @type {((inputs?: User_Two_Factor_Disable_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Disable_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_disable_error(inputs)
+	return __fr.user_two_factor_disable_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not verify the code." |
+*
+* @param {User_Two_Factor_Verify_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_verify_error = /** @type {((inputs?: User_Two_Factor_Verify_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Verify_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_verify_error(inputs)
+	return __fr.user_two_factor_verify_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Authentication code" |
+*
+* @param {User_Two_Factor_CodeInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_code = /** @type {((inputs?: User_Two_Factor_CodeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_CodeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_code(inputs)
+	return __fr.user_two_factor_code(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Scan this QR code" |
+*
+* @param {User_Two_Factor_Scan_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_scan_title = /** @type {((inputs?: User_Two_Factor_Scan_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Scan_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_scan_title(inputs)
+	return __fr.user_two_factor_scan_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Add this account to your authenticator app, then enter the generated code below." |
+*
+* @param {User_Two_Factor_Scan_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_scan_description = /** @type {((inputs?: User_Two_Factor_Scan_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Scan_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_scan_description(inputs)
+	return __fr.user_two_factor_scan_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Save these backup codes now. They are shown only during setup." |
+*
+* @param {User_Two_Factor_Backup_Codes_WarningInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_two_factor_backup_codes_warning = /** @type {((inputs?: User_Two_Factor_Backup_Codes_WarningInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Two_Factor_Backup_Codes_WarningInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_two_factor_backup_codes_warning(inputs)
+	return __fr.user_two_factor_backup_codes_warning(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "API keys" |
+*
+* @param {User_Api_Keys_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_keys_title = /** @type {((inputs?: User_Api_Keys_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Keys_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_keys_title(inputs)
+	return __fr.user_api_keys_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Create and manage API keys for your user account." |
+*
+* @param {User_Api_Keys_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_keys_description = /** @type {((inputs?: User_Api_Keys_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Keys_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_keys_description(inputs)
+	return __fr.user_api_keys_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not load API keys." |
+*
+* @param {User_Api_Keys_Load_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_keys_load_error = /** @type {((inputs?: User_Api_Keys_Load_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Keys_Load_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_keys_load_error(inputs)
+	return __fr.user_api_keys_load_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Key name" |
+*
+* @param {User_Api_Key_NameInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_name = /** @type {((inputs?: User_Api_Key_NameInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_NameInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_name(inputs)
+	return __fr.user_api_key_name(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Status" |
+*
+* @param {User_Api_Key_StatusInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_status = /** @type {((inputs?: User_Api_Key_StatusInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_StatusInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_status(inputs)
+	return __fr.user_api_key_status(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not create the API key." |
+*
+* @param {User_Api_Key_Create_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_create_error = /** @type {((inputs?: User_Api_Key_Create_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_Create_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_create_error(inputs)
+	return __fr.user_api_key_create_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not delete the API key." |
+*
+* @param {User_Api_Key_Delete_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_delete_error = /** @type {((inputs?: User_Api_Key_Delete_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_Delete_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_delete_error(inputs)
+	return __fr.user_api_key_delete_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "API key created" |
+*
+* @param {User_Api_Key_Created_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_created_title = /** @type {((inputs?: User_Api_Key_Created_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_Created_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_created_title(inputs)
+	return __fr.user_api_key_created_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Copy this key now. You will not be able to see it again." |
+*
+* @param {User_Api_Key_Created_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_created_description = /** @type {((inputs?: User_Api_Key_Created_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_Created_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_created_description(inputs)
+	return __fr.user_api_key_created_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Enabled" |
+*
+* @param {User_Api_Key_EnabledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_enabled = /** @type {((inputs?: User_Api_Key_EnabledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_EnabledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_enabled(inputs)
+	return __fr.user_api_key_enabled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Disabled" |
+*
+* @param {User_Api_Key_DisabledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_disabled = /** @type {((inputs?: User_Api_Key_DisabledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_DisabledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_disabled(inputs)
+	return __fr.user_api_key_disabled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Secret hidden" |
+*
+* @param {User_Api_Key_HiddenInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_hidden = /** @type {((inputs?: User_Api_Key_HiddenInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_HiddenInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_hidden(inputs)
+	return __fr.user_api_key_hidden(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Starts with {start}" |
+*
+* @param {User_Api_Key_Starts_WithInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_api_key_starts_with = /** @type {((inputs: User_Api_Key_Starts_WithInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Api_Key_Starts_WithInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_api_key_starts_with(inputs)
+	return __fr.user_api_key_starts_with(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Loading..." |
+*
+* @param {User_LoadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_loading = /** @type {((inputs?: User_LoadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_LoadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_loading(inputs)
+	return __fr.user_loading(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Delete" |
+*
+* @param {User_DeleteInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_delete = /** @type {((inputs?: User_DeleteInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_DeleteInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_delete(inputs)
+	return __fr.user_delete(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Accounts" |
+*
+* @param {User_Accounts_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_accounts_title = /** @type {((inputs?: User_Accounts_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Accounts_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_accounts_title(inputs)
+	return __fr.user_accounts_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Connect external sign-in providers to this account." |
+*
+* @param {User_Accounts_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_accounts_description = /** @type {((inputs?: User_Accounts_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Accounts_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_accounts_description(inputs)
+	return __fr.user_accounts_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Google" |
+*
+* @param {User_Account_Google_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_google_title = /** @type {((inputs?: User_Account_Google_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Google_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_google_title(inputs)
+	return __fr.user_account_google_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Use your Google account as a sign-in option." |
+*
+* @param {User_Account_Google_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_google_description = /** @type {((inputs?: User_Account_Google_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Google_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_google_description(inputs)
+	return __fr.user_account_google_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Connect Google" |
+*
+* @param {User_Account_Google_ConnectInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_google_connect = /** @type {((inputs?: User_Account_Google_ConnectInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Google_ConnectInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_google_connect(inputs)
+	return __fr.user_account_google_connect(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not connect Google." |
+*
+* @param {User_Account_Google_Link_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_google_link_error = /** @type {((inputs?: User_Account_Google_Link_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Google_Link_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_google_link_error(inputs)
+	return __fr.user_account_google_link_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not load connected accounts." |
+*
+* @param {User_Accounts_Load_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_accounts_load_error = /** @type {((inputs?: User_Accounts_Load_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Accounts_Load_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_accounts_load_error(inputs)
+	return __fr.user_accounts_load_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Connected" |
+*
+* @param {User_Account_ConnectedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_connected = /** @type {((inputs?: User_Account_ConnectedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_ConnectedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_connected(inputs)
+	return __fr.user_account_connected(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Not connected" |
+*
+* @param {User_Account_Not_ConnectedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_not_connected = /** @type {((inputs?: User_Account_Not_ConnectedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Not_ConnectedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_not_connected(inputs)
+	return __fr.user_account_not_connected(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Revoke" |
+*
+* @param {User_Account_RevokeInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_revoke = /** @type {((inputs?: User_Account_RevokeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_RevokeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_revoke(inputs)
+	return __fr.user_account_revoke(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Revoke account" |
+*
+* @param {User_Account_Confirm_RevokeInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_confirm_revoke = /** @type {((inputs?: User_Account_Confirm_RevokeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Confirm_RevokeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_confirm_revoke(inputs)
+	return __fr.user_account_confirm_revoke(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Revoke {provider} from this account. You will not be able to use it to sign in unless you connect it again." |
+*
+* @param {User_Account_Revoke_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_revoke_description = /** @type {((inputs: User_Account_Revoke_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Revoke_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_revoke_description(inputs)
+	return __fr.user_account_revoke_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not revoke this account." |
+*
+* @param {User_Account_Revoke_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_revoke_error = /** @type {((inputs?: User_Account_Revoke_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Revoke_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_revoke_error(inputs)
+	return __fr.user_account_revoke_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Only sign-in method" |
+*
+* @param {User_Account_Only_MethodInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_only_method = /** @type {((inputs?: User_Account_Only_MethodInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Only_MethodInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_only_method(inputs)
+	return __fr.user_account_only_method(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Cancel" |
+*
+* @param {User_Account_CancelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_cancel = /** @type {((inputs?: User_Account_CancelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_CancelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_cancel(inputs)
+	return __fr.user_account_cancel(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Password" |
+*
+* @param {User_Account_Password_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_title = /** @type {((inputs?: User_Account_Password_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_title(inputs)
+	return __fr.user_account_password_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Use an email and password as a sign-in option." |
+*
+* @param {User_Account_Password_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_description = /** @type {((inputs?: User_Account_Password_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_description(inputs)
+	return __fr.user_account_password_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Password sign-in is enabled for this account." |
+*
+* @param {User_Account_Password_Connected_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_connected_description = /** @type {((inputs?: User_Account_Password_Connected_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Connected_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_connected_description(inputs)
+	return __fr.user_account_password_connected_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Set password" |
+*
+* @param {User_Account_Password_SetInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_set = /** @type {((inputs?: User_Account_Password_SetInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_SetInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_set(inputs)
+	return __fr.user_account_password_set(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "New password" |
+*
+* @param {User_Account_New_PasswordInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_new_password = /** @type {((inputs?: User_Account_New_PasswordInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_New_PasswordInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_new_password(inputs)
+	return __fr.user_account_new_password(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not set your password." |
+*
+* @param {User_Account_Password_Set_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_set_error = /** @type {((inputs?: User_Account_Password_Set_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Set_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_set_error(inputs)
+	return __fr.user_account_password_set_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not verify your password." |
+*
+* @param {User_Account_Password_Verify_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_verify_error = /** @type {((inputs?: User_Account_Password_Verify_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Verify_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_verify_error(inputs)
+	return __fr.user_account_password_verify_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Change password" |
+*
+* @param {User_Account_Password_Change_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_change_title = /** @type {((inputs?: User_Account_Password_Change_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Change_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_change_title(inputs)
+	return __fr.user_account_password_change_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Update the password used to sign in with your email." |
+*
+* @param {User_Account_Password_Change_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_change_description = /** @type {((inputs?: User_Account_Password_Change_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Change_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_change_description(inputs)
+	return __fr.user_account_password_change_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Current password" |
+*
+* @param {User_Account_Current_PasswordInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_current_password = /** @type {((inputs?: User_Account_Current_PasswordInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Current_PasswordInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_current_password(inputs)
+	return __fr.user_account_current_password(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Change password" |
+*
+* @param {User_Account_Password_Change_SubmitInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_change_submit = /** @type {((inputs?: User_Account_Password_Change_SubmitInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Change_SubmitInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_change_submit(inputs)
+	return __fr.user_account_password_change_submit(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Your password has been updated." |
+*
+* @param {User_Account_Password_Change_SuccessInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_change_success = /** @type {((inputs?: User_Account_Password_Change_SuccessInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Change_SuccessInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_change_success(inputs)
+	return __fr.user_account_password_change_success(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not change your password." |
+*
+* @param {User_Account_Password_Change_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_account_password_change_error = /** @type {((inputs?: User_Account_Password_Change_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Account_Password_Change_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_account_password_change_error(inputs)
+	return __fr.user_account_password_change_error(inputs)
 });

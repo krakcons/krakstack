@@ -43,7 +43,11 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { useNavigate, useSearch, type ValidateFromPath } from "@tanstack/react-router";
+import {
+  useNavigate,
+  useSearch,
+  type ValidateFromPath,
+} from "@tanstack/react-router";
 import {
   type Column,
   type ColumnDef,
@@ -112,10 +116,13 @@ export const TableSearchSchema = Schema.Struct({
     Schema.Array(Schema.Struct({ id: Schema.String, desc: Schema.Boolean })),
   ),
   grouping: Schema.optional(Schema.Array(Schema.String)),
-  view: Schema.optional(Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")])),
+  view: Schema.optional(
+    Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")]),
+  ),
 });
 
-export const TableSearchSchemaStandard = Schema.toStandardSchemaV1(TableSearchSchema);
+export const TableSearchSchemaStandard =
+  Schema.toStandardSchemaV1(TableSearchSchema);
 export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
 type DataTableView = "table" | "gallery";
@@ -229,7 +236,9 @@ const buildGroupedSections = <TData,>(
   });
 
   return Array.from(groups.entries()).map(([groupId, groupRows]) => {
-    const key = parentKey ? `${parentKey}::${field.id}:${groupId}` : `${field.id}:${groupId}`;
+    const key = parentKey
+      ? `${parentKey}::${field.id}:${groupId}`
+      : `${field.id}:${groupId}`;
 
     return {
       key,
@@ -287,9 +296,15 @@ const GroupHeaderRow = <TData,>({
           className="flex items-center gap-3"
           style={{ paddingLeft: `${section.depth * GROUP_INDENT_PX}px` }}
         >
-          {collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+          {collapsed ? (
+            <ChevronRight className="size-4" />
+          ) : (
+            <ChevronDown className="size-4" />
+          )}
           <div className="min-w-0 flex-1 text-left">{label}</div>
-          <span className="ml-auto text-muted-foreground text-sm">{section.rows.length}</span>
+          <span className="text-muted-foreground ml-auto text-sm">
+            {section.rows.length}
+          </span>
         </div>
       </TableCell>
     </TableRow>
@@ -331,9 +346,15 @@ const GroupHeaderCard = <TData,>({
       ref={setNodeRef}
       type="button"
     >
-      {collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+      {collapsed ? (
+        <ChevronRight className="size-4" />
+      ) : (
+        <ChevronDown className="size-4" />
+      )}
       <div className="min-w-0 flex-1">{label}</div>
-      <span className="text-muted-foreground text-sm">{section.rows.length}</span>
+      <span className="text-muted-foreground text-sm">
+        {section.rows.length}
+      </span>
     </button>
   );
 };
@@ -361,7 +382,11 @@ const DataTableRow = <TData,>({
 
   return (
     <TableRow
-      className={cn("h-16", onRowClick && "cursor-pointer", isDragging && "opacity-50")}
+      className={cn(
+        "h-16",
+        onRowClick && "cursor-pointer",
+        isDragging && "opacity-50",
+      )}
       data-state={row.getIsSelected() && "selected"}
       key={row.id}
       onClick={() => {
@@ -376,7 +401,7 @@ const DataTableRow = <TData,>({
       {row.getVisibleCells().map((cell) => (
         <TableCell
           key={cell.id}
-          className="min-w-32 align-center whitespace-normal wrap-break-words"
+          className="align-center wrap-break-words min-w-32 whitespace-normal"
         >
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
@@ -414,12 +439,16 @@ const DataTableGalleryCard = <TData,>({
     ? row.getVisibleCells().find((cell) => cell.column.id === gallery.name)
     : null;
   const descriptionCell = gallery?.description
-    ? row.getVisibleCells().find((cell) => cell.column.id === gallery.description)
+    ? row
+        .getVisibleCells()
+        .find((cell) => cell.column.id === gallery.description)
     : null;
   const tagCell = gallery?.tag
     ? row.getVisibleCells().find((cell) => cell.column.id === gallery.tag)
     : null;
-  const actionCell = row.getVisibleCells().find((cell) => cell.column.id === "actions");
+  const actionCell = row
+    .getVisibleCells()
+    .find((cell) => cell.column.id === "actions");
 
   if (gallery) {
     const tagValue = tagCell
@@ -447,7 +476,10 @@ const DataTableGalleryCard = <TData,>({
           {actionCell || tagCell ? (
             <CardAction onClick={(event) => event.stopPropagation()}>
               {actionCell
-                ? flexRender(actionCell.column.columnDef.cell, actionCell.getContext())
+                ? flexRender(
+                    actionCell.column.columnDef.cell,
+                    actionCell.getContext(),
+                  )
                 : null}
               {tagCell ? (
                 <Badge variant="secondary" className="gap-1">
@@ -458,13 +490,19 @@ const DataTableGalleryCard = <TData,>({
             </CardAction>
           ) : null}
           {nameCell ? (
-            <CardTitle className="text-base min-w-0">
-              {flexRender(nameCell.column.columnDef.cell, nameCell.getContext())}
+            <CardTitle className="min-w-0 text-base">
+              {flexRender(
+                nameCell.column.columnDef.cell,
+                nameCell.getContext(),
+              )}
             </CardTitle>
           ) : null}
           {descriptionCell ? (
-            <CardDescription className="min-w-0 line-clamp-2">
-              {flexRender(descriptionCell.column.columnDef.cell, descriptionCell.getContext())}
+            <CardDescription className="line-clamp-2 min-w-0">
+              {flexRender(
+                descriptionCell.column.columnDef.cell,
+                descriptionCell.getContext(),
+              )}
             </CardDescription>
           ) : null}
         </CardHeader>
@@ -472,7 +510,9 @@ const DataTableGalleryCard = <TData,>({
     );
   }
 
-  const contentCells = row.getVisibleCells().filter((cell) => cell.column.id !== "actions");
+  const contentCells = row
+    .getVisibleCells()
+    .filter((cell) => cell.column.id !== "actions");
 
   return (
     <Card
@@ -494,7 +534,10 @@ const DataTableGalleryCard = <TData,>({
       <CardHeader>
         {actionCell ? (
           <CardAction onClick={(event) => event.stopPropagation()}>
-            {flexRender(actionCell.column.columnDef.cell, actionCell.getContext())}
+            {flexRender(
+              actionCell.column.columnDef.cell,
+              actionCell.getContext(),
+            )}
           </CardAction>
         ) : null}
         {contentCells.length > 0 && (
@@ -503,7 +546,10 @@ const DataTableGalleryCard = <TData,>({
               {getColumnDisplayName(table, contentCells[0].column.id)}
             </CardDescription>
             <CardTitle className="text-base">
-              {flexRender(contentCells[0].column.columnDef.cell, contentCells[0].getContext())}
+              {flexRender(
+                contentCells[0].column.columnDef.cell,
+                contentCells[0].getContext(),
+              )}
             </CardTitle>
           </div>
         )}
@@ -552,7 +598,10 @@ const getHeaderName = (header: Header<any, unknown>): string => {
 export const getHeaderNames = (headers: Header<any, unknown>[]): string[] =>
   headers.map((header) => getHeaderName(header));
 
-const getColumnDisplayName = <TData,>(table: TanstackTable<TData>, columnId: string) => {
+const getColumnDisplayName = <TData,>(
+  table: TanstackTable<TData>,
+  columnId: string,
+) => {
   const header = table
     .getFlatHeaders()
     .find((currentHeader) => currentHeader.column.id === columnId);
@@ -562,17 +611,26 @@ const getColumnDisplayName = <TData,>(table: TanstackTable<TData>, columnId: str
 const escapeCsvValue = (value: string) => {
   if (value === null || value === undefined) return "";
   const stringValue = String(value);
-  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+  if (
+    stringValue.includes(",") ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }
   return stringValue;
 };
 
-const getCsvBlob = <TData,>(table: TanstackTable<TData>, rows: Row<TData>[]): Blob => {
+const getCsvBlob = <TData,>(
+  table: TanstackTable<TData>,
+  rows: Row<TData>[],
+): Blob => {
   const exportableColumns = table
     .getVisibleLeafColumns()
     .filter((column) => column.id !== "actions");
-  const headerNames = exportableColumns.map((column) => getColumnDisplayName(table, column.id));
+  const headerNames = exportableColumns.map((column) =>
+    getColumnDisplayName(table, column.id),
+  );
   const data = rows.map((row) =>
     exportableColumns.map((column) => {
       const value = row.getValue(column.id);
@@ -642,14 +700,18 @@ export function DataTable<TData, TValue>({
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [collapsedGroups, setCollapsedGroups] = useState<
+    Record<string, boolean>
+  >({});
   const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(globalFilter);
   const deferredSearchInput = useDeferredValue(searchInput);
-  const availableGroupFieldIds = grouping?.fields.map((field) => field.id) ?? [];
+  const availableGroupFieldIds =
+    grouping?.fields.map((field) => field.id) ?? [];
   const activeGrouping =
-    urlGrouping?.filter((groupId) => availableGroupFieldIds.includes(groupId)) ??
-    getDefaultGrouping(grouping);
+    urlGrouping?.filter((groupId) =>
+      availableGroupFieldIds.includes(groupId),
+    ) ?? getDefaultGrouping(grouping);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -659,7 +721,9 @@ export function DataTable<TData, TValue>({
   );
 
   const updateTableSearch = (
-    updater: (current: TableParams & Record<string, unknown>) => Record<string, unknown>,
+    updater: (
+      current: TableParams & Record<string, unknown>,
+    ) => Record<string, unknown>,
   ) => {
     navigate({
       to: ".",
@@ -672,7 +736,8 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     onPaginationChange: (updater) => {
-      const newPagination = typeof updater === "function" ? updater(pagination) : updater;
+      const newPagination =
+        typeof updater === "function" ? updater(pagination) : updater;
       if (
         pagination.pageIndex === newPagination.pageIndex &&
         pagination.pageSize === newPagination.pageSize
@@ -686,12 +751,15 @@ export function DataTable<TData, TValue>({
     },
     onSortingChange: (updater) => {
       const newSorting =
-        typeof updater === "function" ? updater([...sorting] as SortingState) : updater;
+        typeof updater === "function"
+          ? updater([...sorting] as SortingState)
+          : updater;
       if (
         sorting.length === newSorting.length &&
         sorting.every(
           (sortState, i) =>
-            sortState.id === newSorting[i]?.id && sortState.desc === newSorting[i]?.desc,
+            sortState.id === newSorting[i]?.id &&
+            sortState.desc === newSorting[i]?.desc,
         )
       ) {
         return;
@@ -709,7 +777,8 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onGlobalFilterChange: (updater) => {
-      const newGlobalFilter = typeof updater === "function" ? updater(globalFilter) : updater;
+      const newGlobalFilter =
+        typeof updater === "function" ? updater(globalFilter) : updater;
       if (globalFilter === newGlobalFilter) {
         return;
       }
@@ -750,7 +819,9 @@ export function DataTable<TData, TValue>({
   const activeGroupingFields = useMemo(
     () =>
       activeGrouping
-        .map((groupId) => grouping?.fields.find((field) => field.id === groupId))
+        .map((groupId) =>
+          grouping?.fields.find((field) => field.id === groupId),
+        )
         .filter((field): field is DataTableGroupingField<TData> => !!field),
     [activeGrouping, grouping],
   );
@@ -762,7 +833,9 @@ export function DataTable<TData, TValue>({
     [activeGroupingFields, bodyRows],
   );
   const colSpan = Math.max(table.getVisibleLeafColumns().length, 1);
-  const canDragRows = activeGroupingFields.some((field) => !!field.onMoveToGroup);
+  const canDragRows = activeGroupingFields.some(
+    (field) => !!field.onMoveToGroup,
+  );
   const hasExportableRows = exportRows.length > 0;
 
   const addGroupingField = (fieldId: string) => {
@@ -837,7 +910,9 @@ export function DataTable<TData, TValue>({
     </div>
   );
 
-  const renderGroupedTableSections = (sections: GroupSection<TData>[]): ReactNode =>
+  const renderGroupedTableSections = (
+    sections: GroupSection<TData>[],
+  ): ReactNode =>
     sections.map((section) => {
       const isCollapsed = collapsedGroups[section.key] ?? false;
       const hasChildren = section.children.length > 0;
@@ -866,11 +941,14 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell
-                  className="h-16 text-muted-foreground"
+                  className="text-muted-foreground h-16"
                   colSpan={colSpan}
-                  style={{ paddingLeft: `${(section.depth + 1) * GROUP_INDENT_PX + 16}px` }}
+                  style={{
+                    paddingLeft: `${(section.depth + 1) * GROUP_INDENT_PX + 16}px`,
+                  }}
                 >
-                  {section.field.renderEmptyGroup?.(section.groupId) ?? m.table_empty()}
+                  {section.field.renderEmptyGroup?.(section.groupId) ??
+                    m.table_empty()}
                 </TableCell>
               </TableRow>
             ))}
@@ -878,7 +956,9 @@ export function DataTable<TData, TValue>({
       );
     });
 
-  const renderGroupedGallerySections = (sections: GroupSection<TData>[]): ReactNode =>
+  const renderGroupedGallerySections = (
+    sections: GroupSection<TData>[],
+  ): ReactNode =>
     sections.map((section) => {
       const isCollapsed = collapsedGroups[section.key] ?? false;
       const hasChildren = section.children.length > 0;
@@ -896,7 +976,8 @@ export function DataTable<TData, TValue>({
               : section.rows.length > 0
                 ? renderGalleryRows(section.rows, canDragRows)
                 : renderGalleryEmptyState(
-                    section.field.renderEmptyGroup?.(section.groupId) ?? m.table_empty(),
+                    section.field.renderEmptyGroup?.(section.groupId) ??
+                      m.table_empty(),
                   ))}
         </div>
       );
@@ -905,9 +986,9 @@ export function DataTable<TData, TValue>({
   return (
     <div className="w-[calc(100vw-32px)] rounded-md sm:w-full">
       <div className="flex flex-col gap-3 pb-4">
-        <div className="flex flex-col gap-2 sm:flex-wrap sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           {showSearch ? (
-            <div className="relative flex-1 min-w-sm">
+            <div className="relative min-w-sm flex-1">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 className="pl-9"
@@ -926,7 +1007,9 @@ export function DataTable<TData, TValue>({
                   render={
                     <Button className="h-8" size="sm" variant="outline">
                       <Rows3 />
-                      <span className="hidden sm:inline">{m.table_group_by()}</span>
+                      <span className="hidden sm:inline">
+                        {m.table_group_by()}
+                      </span>
                     </Button>
                   }
                 />
@@ -938,7 +1021,9 @@ export function DataTable<TData, TValue>({
                       <DropdownMenuCheckboxItem
                         checked={activeGrouping.includes(field.id)}
                         key={field.id}
-                        onCheckedChange={(value) => toggleGroupingField(field.id, !!value)}
+                        onCheckedChange={(value) =>
+                          toggleGroupingField(field.id, !!value)
+                        }
                       >
                         {field.label}
                       </DropdownMenuCheckboxItem>
@@ -949,9 +1034,14 @@ export function DataTable<TData, TValue>({
             ) : null}
             <DataTableSortDropdown table={table} />
             {showGallery ? (
-              <DataTableDisplayModeSwitch onChange={setView} value={currentView} />
+              <DataTableDisplayModeSwitch
+                onChange={setView}
+                value={currentView}
+              />
             ) : null}
-            {showColumnVisibility ? <DataTableViewOptions table={table} /> : null}
+            {showColumnVisibility ? (
+              <DataTableViewOptions table={table} />
+            ) : null}
             {showExport ? (
               <Button
                 disabled={!hasExportableRows}
@@ -977,7 +1067,10 @@ export function DataTable<TData, TValue>({
 
           const dragType = active.data.current?.type;
 
-          if (dragType !== "row" || over.data.current?.type !== "group-target") {
+          if (
+            dragType !== "row" ||
+            over.data.current?.type !== "group-target"
+          ) {
             return;
           }
 
@@ -1008,7 +1101,9 @@ export function DataTable<TData, TValue>({
           {isGalleryView ? (
             hasActiveGrouping ? (
               groupedSections.length > 0 ? (
-                <div className="space-y-4">{renderGroupedGallerySections(groupedSections)}</div>
+                <div className="space-y-4">
+                  {renderGroupedGallerySections(groupedSections)}
+                </div>
               ) : (
                 renderGalleryEmptyState()
               )
@@ -1028,7 +1123,10 @@ export function DataTable<TData, TValue>({
                           <TableHead key={header.id} className="h-12 min-w-32">
                             {header.isPlaceholder
                               ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
                           </TableHead>
                         );
                       })}
@@ -1057,7 +1155,7 @@ export function DataTable<TData, TValue>({
           )}
           <DragOverlay>
             {activeDragLabel ? (
-              <div className="rounded-md border bg-background px-3 py-2 text-sm shadow-sm">
+              <div className="bg-background rounded-md border px-3 py-2 text-sm shadow-sm">
                 {activeDragLabel}
               </div>
             ) : null}
@@ -1082,12 +1180,17 @@ function DataTableDisplayModeSwitch({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button className="h-8" size="sm" variant="outline" />}>
+      <DropdownMenuTrigger
+        render={<Button className="h-8" size="sm" variant="outline" />}
+      >
         <Rows3 />
         {m.table_view()}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuRadioGroup value={value} onValueChange={(v) => onChange(v as DataTableView)}>
+        <DropdownMenuRadioGroup
+          value={value}
+          onValueChange={(v) => onChange(v as DataTableView)}
+        >
           <DropdownMenuRadioItem value="table">
             <Rows3 />
             {m.table_table_view()}
@@ -1102,12 +1205,22 @@ function DataTableDisplayModeSwitch({
   );
 }
 
-function DataTableSortDropdown<TData>({ table }: { table: TanstackTable<TData> }) {
+function DataTableSortDropdown<TData>({
+  table,
+}: {
+  table: TanstackTable<TData>;
+}) {
   const sorting = table.getState().sorting;
-  const sortableColumns = table.getAllColumns().filter((column) => column.getCanSort());
+  const sortableColumns = table
+    .getAllColumns()
+    .filter((column) => column.getCanSort());
   const columnLabels = useMemo(
     () =>
-      new Map(table.getFlatHeaders().map((header) => [header.column.id, getHeaderName(header)])),
+      new Map(
+        table
+          .getFlatHeaders()
+          .map((header) => [header.column.id, getHeaderName(header)]),
+      ),
     [table],
   );
 
@@ -1184,15 +1297,26 @@ function DataTableSortDropdown<TData>({ table }: { table: TanstackTable<TData> }
   );
 }
 
-function DataTableViewOptions<TData>({ table }: { table: TanstackTable<TData> }) {
+function DataTableViewOptions<TData>({
+  table,
+}: {
+  table: TanstackTable<TData>;
+}) {
   const columnLabels = useMemo(
     () =>
-      new Map(table.getFlatHeaders().map((header) => [header.column.id, getHeaderName(header)])),
+      new Map(
+        table
+          .getFlatHeaders()
+          .map((header) => [header.column.id, getHeaderName(header)]),
+      ),
     [table],
   );
   const columns = table
     .getAllColumns()
-    .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide());
+    .filter(
+      (column) =>
+        typeof column.accessorFn !== "undefined" && column.getCanHide(),
+    );
 
   if (columns.length === 0) {
     return null;
@@ -1242,7 +1366,9 @@ interface DataTableRelationshipCellProps {
   from: ValidateFromPath;
 }
 
-export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
+export function DataTablePagination<TData>({
+  table,
+}: DataTablePaginationProps<TData>) {
   const selectedRows = table.getFilteredSelectedRowModel().rows.length;
 
   return (
@@ -1257,7 +1383,7 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
       </div>
       <div className="flex items-center gap-4 sm:justify-end">
         <div className="flex items-center gap-2">
-          <Label htmlFor="page-size" className="text-sm sm:block hidden">
+          <Label htmlFor="page-size" className="hidden text-sm sm:block">
             {m.table_page_size()}
           </Label>
           <Select
@@ -1344,8 +1470,11 @@ export function DataTableRelationshipCell({
   });
 
   return (
-    <div className="flex flex-col gap-2" onClick={(event) => event.stopPropagation()}>
-      <div className="flex items-center flex-wrap gap-2">
+    <div
+      className="flex flex-col gap-2"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex flex-wrap items-center gap-2">
         {value.length > 0 ? (
           value.map((option) => (
             <Badge
@@ -1355,7 +1484,7 @@ export function DataTableRelationshipCell({
               className="max-w-48"
             >
               {option.href && <LinkIcon className="size-3.5 min-w-3.5" />}
-              <span className="truncate justify-start">{option.label}</span>
+              <span className="justify-start truncate">{option.label}</span>
             </Badge>
           ))
         ) : (
@@ -1405,7 +1534,10 @@ export function DataTableRelationshipCell({
   );
 }
 
-interface DataTableColumnHeaderProps<TData, TValue> extends HTMLAttributes<HTMLDivElement> {
+interface DataTableColumnHeaderProps<
+  TData,
+  TValue,
+> extends HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>;
   title: string;
 }
@@ -1424,7 +1556,11 @@ export function DataTableColumnHeader<TData, TValue>({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="data-[state=open]:bg-accent -ml-3 h-8"
+            >
               <span className="text-sm">{title}</span>
               {column.getIsSorted() === "desc" ? (
                 <ArrowDown />
@@ -1439,16 +1575,16 @@ export function DataTableColumnHeader<TData, TValue>({
         <DropdownMenuContent align="start">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-              <ArrowUp className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <ArrowUp className="text-muted-foreground/70 h-3.5 w-3.5" />
               {m.table_sort_asc()}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-              <ArrowDown className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <ArrowDown className="text-muted-foreground/70 h-3.5 w-3.5" />
               {m.table_sort_desc()}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-              <EyeOff className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <EyeOff className="text-muted-foreground/70 h-3.5 w-3.5" />
               {m.table_sort_hide()}
             </DropdownMenuItem>
           </DropdownMenuGroup>
@@ -1475,7 +1611,9 @@ export const createDataTableActionsColumn = <TData extends object>(
   return {
     id: "actions",
     enableHiding: false,
-    header: ({ column }: any) => <DataTableColumnHeader title={title} column={column} />,
+    header: ({ column }: any) => (
+      <DataTableColumnHeader title={title} column={column} />
+    ),
     cell: ({ cell }: any) => (
       <DropdownMenu>
         <DropdownMenuTrigger

@@ -1,6 +1,12 @@
 import { useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useState } from "react";
 
 const interestOptions = [
@@ -29,7 +35,9 @@ type FormValues = {
 };
 
 export function FormPreview() {
-  const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(null);
+  const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(
+    null,
+  );
   const form = useAppForm({
     defaultValues: {
       name: "Ada Lovelace",
@@ -45,8 +53,14 @@ export function FormPreview() {
     onSubmit: async ({ value }) => {
       setSubmitted({
         ...value,
-        attachment: value.attachment instanceof File ? value.attachment.name : "No file selected",
-        heroImage: value.heroImage instanceof File ? value.heroImage.name : "No image selected",
+        attachment:
+          value.attachment instanceof File
+            ? value.attachment.name
+            : "No file selected",
+        heroImage:
+          value.heroImage instanceof File
+            ? value.heroImage.name
+            : "No image selected",
       });
     },
   });
@@ -57,7 +71,8 @@ export function FormPreview() {
         <CardHeader>
           <CardTitle>Lead Capture</CardTitle>
           <CardDescription>
-            This form uses the exported field and form components from `useAppForm`.
+            This form uses the exported field and form components from
+            `useAppForm`.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -76,7 +91,9 @@ export function FormPreview() {
                 localized={false}
               >
                 <form.AppField name="name">
-                  {(field) => <field.TextField label="Name" placeholder="Ada Lovelace" />}
+                  {(field) => (
+                    <field.TextField label="Name" placeholder="Ada Lovelace" />
+                  )}
                 </form.AppField>
                 <form.AppField name="email">
                   {(field) => (
@@ -132,13 +149,20 @@ export function FormPreview() {
                   )}
                 </form.AppField>
                 <form.AppField name="attachment">
-                  {(field) => <field.FileField accept=".pdf,.txt" label="Attachment" />}
+                  {(field) => (
+                    <field.FileField accept=".pdf,.txt" label="Attachment" />
+                  )}
                 </form.AppField>
                 <form.AppField name="heroImage">
                   {(field) => (
                     <field.ImageField
                       label="Preview image"
-                      size={{ width: 192, height: 108, suggestedWidth: 1280, suggestedHeight: 720 }}
+                      size={{
+                        width: 192,
+                        height: 108,
+                        suggestedWidth: 1280,
+                        suggestedHeight: 720,
+                      }}
                     />
                   )}
                 </form.AppField>
@@ -154,7 +178,11 @@ export function FormPreview() {
 
               <div className="flex flex-wrap items-center gap-3">
                 <form.SubmitButton />
-                <Button type="reset" variant="outline" onClick={() => form.reset()}>
+                <Button
+                  type="reset"
+                  variant="outline"
+                  onClick={() => form.reset()}
+                >
                   Reset demo
                 </Button>
               </div>
@@ -173,7 +201,13 @@ export function FormPreview() {
         </CardHeader>
         <CardContent>
           <pre className="overflow-auto rounded-lg border border-[var(--line)] bg-[#1d2e45] p-4 text-xs text-[#e8efff]">
-            <code>{JSON.stringify(submitted ?? "Submit the form to see its value.", null, 2)}</code>
+            <code>
+              {JSON.stringify(
+                submitted ?? "Submit the form to see its value.",
+                null,
+                2,
+              )}
+            </code>
           </pre>
         </CardContent>
       </Card>

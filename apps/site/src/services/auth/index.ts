@@ -11,7 +11,8 @@ export class Auth extends Context.Service<Auth>()("Auth", {
     const getSession = Effect.fn("Auth.getSession")(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest;
       const session = yield* Effect.tryPromise({
-        try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
+        try: () =>
+          auth.api.getSession({ headers: new Headers(request.headers) }),
         catch: internalServerError,
       });
       return session;

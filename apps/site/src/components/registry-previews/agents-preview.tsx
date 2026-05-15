@@ -1,5 +1,11 @@
 import { Markdown } from "@/components/markdown";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import agentsMd from "../../../AGENTS.md?raw";
 
 export function AgentsPreview() {
@@ -8,7 +14,8 @@ export function AgentsPreview() {
       <CardHeader>
         <CardTitle>AGENTS.md</CardTitle>
         <CardDescription>
-          The full contents of the agents configuration file, rendered as markdown.
+          The full contents of the agents configuration file, rendered as
+          markdown.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -27,6 +27,9 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
+  advanced: {
+    cookiePrefix: "krakstack-auth",
+  },
   trustedOrigins,
   emailAndPassword: {
     enabled: true,

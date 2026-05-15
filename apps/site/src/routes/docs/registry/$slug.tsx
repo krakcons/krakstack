@@ -11,7 +11,12 @@ import { LintFormatPreview } from "@/components/registry-previews/lint-format-pr
 import { SignInPreview } from "@/components/registry-previews/sign-in-preview";
 import { SignUpPreview } from "@/components/registry-previews/sign-up-preview";
 import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { RegistryItem } from "@/lib/registry";
 import { getRegistryGroup, getRegistryItem } from "@/lib/registry";
 import { createFileRoute, notFound } from "@tanstack/react-router";
@@ -31,7 +36,7 @@ function RegistryDocs() {
   const group = getRegistryGroup(item);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full min-w-0 max-w-7xl flex-col gap-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl min-w-0 flex-col gap-8">
       <SidebarPageHeader
         title={item.title ?? item.name}
         description={item.description}
@@ -50,8 +55,16 @@ function RegistryDocs() {
 function Dependencies({ item }: { item: RegistryItem }) {
   const sections = [
     { title: "Dependencies", items: item.dependencies, getHref: getNpmHref },
-    { title: "Dev Dependencies", items: item.devDependencies, getHref: getNpmHref },
-    { title: "Registry Dependencies", items: item.registryDependencies, getHref: getShadcnHref },
+    {
+      title: "Dev Dependencies",
+      items: item.devDependencies,
+      getHref: getNpmHref,
+    },
+    {
+      title: "Registry Dependencies",
+      items: item.registryDependencies,
+      getHref: getShadcnHref,
+    },
   ].filter((section) => section.items?.length);
 
   if (sections.length === 0) return null;
@@ -80,7 +93,7 @@ function Dependencies({ item }: { item: RegistryItem }) {
               {section.items?.map((dependency) => (
                 <li key={dependency}>
                   <a
-                    className="inline-flex rounded-md border border-[var(--line)] bg-background px-2 py-1 font-mono text-xs text-[var(--sea-ink)] transition-colors hover:border-[var(--kicker)] hover:text-[var(--kicker)]"
+                    className="bg-background inline-flex rounded-md border border-[var(--line)] px-2 py-1 font-mono text-xs text-[var(--sea-ink)] transition-colors hover:border-[var(--kicker)] hover:text-[var(--kicker)]"
                     href={section.getHref(dependency)}
                     rel="noreferrer"
                     target="_blank"
@@ -102,7 +115,8 @@ function getNpmHref(dependency: string) {
 }
 
 function getPackageName(dependency: string) {
-  if (dependency.startsWith("@")) return dependency.split("@").slice(0, 3).join("@");
+  if (dependency.startsWith("@"))
+    return dependency.split("@").slice(0, 3).join("@");
   return dependency.split("@")[0] ?? dependency;
 }
 
@@ -132,7 +146,9 @@ function RegistryPreview({ slug }: { slug: string }) {
 
   return (
     <section className="grid gap-3">
-      <h2 className="text-3xl font-semibold tracking-tight text-[var(--sea-ink)]">Preview</h2>
+      <h2 className="text-3xl font-semibold tracking-tight text-[var(--sea-ink)]">
+        Preview
+      </h2>
       {preview}
     </section>
   );

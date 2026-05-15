@@ -509,6 +509,28 @@ const SubmitButton = () => {
   );
 };
 
+const getFormErrorText = (error: unknown) => {
+  if (!error) return undefined;
+
+  if (typeof error === "object" && "form" in error) {
+    const formError = error.form;
+    return formError ? String(formError) : undefined;
+  }
+
+  return String(error);
+};
+
+const FormError = () => {
+  const form = useFormContext();
+  return (
+    <form.Subscribe
+      selector={(formState) => getFormErrorText(formState.errorMap.onSubmit)}
+    >
+      {(error) => (error ? <ErrorMessage text={error} /> : null)}
+    </form.Subscribe>
+  );
+};
+
 export const FieldWrapper = ({
   children,
   legend,
@@ -579,6 +601,7 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
   },
   formComponents: {
     SubmitButton,
+    FormError,
     FieldWrapper,
     BlockNavigation,
   },

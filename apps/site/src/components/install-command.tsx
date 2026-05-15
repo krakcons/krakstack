@@ -2,18 +2,26 @@ import { Check, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-const siteUrl = (
-  import.meta.env.VITE_SITE_URL ??
-  window.location.origin ??
-  "http://localhost:3000"
-).replace(/\/$/, "");
+const getSiteUrl = () =>
+  (
+    import.meta.env.VITE_SITE_URL ??
+    (typeof window !== "undefined"
+      ? window.location.origin
+      : "http://localhost:3003")
+  ).replace(/\/$/, "");
 
 export function InstallCommand({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const installCommand = `bunx --bun shadcn@latest add ${siteUrl}/r/${slug}.json`;
+  const installCommand = `bunx --bun shadcn@latest add ${getSiteUrl()}/r/${slug}.json`;
 
   useEffect(() => {
     return () => {
@@ -41,10 +49,12 @@ export function InstallCommand({ slug }: { slug: string }) {
     <Card className="min-w-0 bg-[var(--surface-strong)]">
       <CardHeader>
         <CardTitle>Install</CardTitle>
-        <CardDescription>Add this registry item to your app with shadcn.</CardDescription>
+        <CardDescription>
+          Add this registry item to your app with shadcn.
+        </CardDescription>
       </CardHeader>
       <CardContent className="min-w-0">
-        <div className="flex max-w-full items-center gap-3 rounded-lg border bg-muted p-4 text-sm text-muted-foreground">
+        <div className="bg-muted text-muted-foreground flex max-w-full items-center gap-3 rounded-lg border p-4 text-sm">
           <pre className="min-w-0 flex-1 overflow-x-auto">
             <code>{installCommand}</code>
           </pre>

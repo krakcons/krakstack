@@ -28,15 +28,17 @@ const hasTwoFactorRedirect = (data: unknown) => {
 
 function SignIn() {
   const navigate = useNavigate();
+  const redirectTarget = getRedirectTarget();
   const finishSignIn = (url: string | null | undefined) => {
+    const target = url ?? redirectTarget;
     if (
-      url &&
-      URL.canParse(url) &&
-      new URL(url, window.location.origin).origin !== window.location.origin
+      target &&
+      URL.canParse(target, window.location.origin) &&
+      new URL(target, window.location.origin).origin !== window.location.origin
     ) {
-      window.location.assign(url);
+      window.location.assign(target);
     } else {
-      navigate({ to: url ?? "/admin" });
+      navigate({ to: target });
     }
   };
   const setFormError = (message: string) => {
@@ -60,6 +62,7 @@ function SignIn() {
         const result = await authClient.signIn.email({
           email: value.email.trim(),
           password: value.password,
+          callbackURL: redirectTarget,
         });
 
         if (result.error) {
@@ -73,7 +76,9 @@ function SignIn() {
         }
 
         if (hasTwoFactorRedirect(result.data)) {
-          navigate({ to: "/2fa" });
+          const twoFactorUrl = new URL("/2fa", window.location.origin);
+          twoFactorUrl.searchParams.set("callbackURL", redirectTarget);
+          window.location.assign(twoFactorUrl.href);
           return;
         }
 
@@ -94,7 +99,7 @@ function SignIn() {
     try {
       const result = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/admin",
+        callbackURL: redirectTarget,
         errorCallbackURL: "/sign-in",
       });
 
@@ -177,3 +182,13 @@ function SignIn() {
     </Card>
   );
 }
+
+const getRedirectTarget = () => {
+  const search = new URLSearchParams(window.location.search);
+  return (
+    search.get("callbackURL") ??
+    search.get("redirectTo") ??
+    search.get("returnTo") ??
+    "/admin"
+  );
+};

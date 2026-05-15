@@ -20,7 +20,7 @@ export const Route = createFileRoute("/admin")({
     if (!session) {
       const result = await authClient.signIn.oauth2({
         providerId: "krakstack-auth",
-        callbackURL: "/admin",
+        callbackURL: `${window.location.origin}/admin`,
       });
       if (result.error) {
         throw result.error;

@@ -19,6 +19,6 @@
   },
   "iconLibrary": "lucide",
   "registries": {
-    "@krak": "http://localhost:3000/r/{name}.json"
+    "@krak": "http://localhost:3003/r/{name}.json"
   }
 }

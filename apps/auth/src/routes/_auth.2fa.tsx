@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_auth/2fa")({
 function TwoFactorVerify() {
   const navigate = useNavigate();
   const [useBackupCode, setUseBackupCode] = useState(false);
+  const redirectTarget = getRedirectTarget();
   const form = useAppForm({
     defaultValues: {
       code: "",
@@ -48,7 +49,15 @@ function TwoFactorVerify() {
         return;
       }
 
-      navigate({ to: "/admin" });
+      if (
+        URL.canParse(redirectTarget, window.location.origin) &&
+        new URL(redirectTarget, window.location.origin).origin !==
+          window.location.origin
+      ) {
+        window.location.assign(redirectTarget);
+      } else {
+        navigate({ to: redirectTarget });
+      }
     },
   });
 
@@ -112,3 +121,13 @@ function TwoFactorVerify() {
     </Card>
   );
 }
+
+const getRedirectTarget = () => {
+  const search = new URLSearchParams(window.location.search);
+  return (
+    search.get("callbackURL") ??
+    search.get("redirectTo") ??
+    search.get("returnTo") ??
+    "/admin"
+  );
+};

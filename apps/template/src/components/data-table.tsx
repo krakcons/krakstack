@@ -58,6 +58,7 @@ import {
   getSortedRowModel,
   type Header,
   type Row,
+  type SortingState,
   type Table as TanstackTable,
   useReactTable,
   type VisibilityState,
@@ -90,7 +91,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { z } from "zod";
+import { Schema } from "effect";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -103,19 +104,26 @@ import {
 
 const DataTableViewContext = createContext<DataTableView>("table");
 
-export const TableSearchSchema = z.object({
-  globalFilter: z.string().optional(),
-  pagination: z
-    .object({
-      pageIndex: z.number().default(0),
-      pageSize: z.number().default(10),
-    })
-    .optional(),
-  sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).optional(),
-  grouping: z.array(z.string()).optional(),
-  view: z.enum(["table", "gallery"]).optional(),
+export const TableSearchSchema = Schema.Struct({
+  globalFilter: Schema.optional(Schema.String),
+  pagination: Schema.optional(
+    Schema.Struct({
+      pageIndex: Schema.Number,
+      pageSize: Schema.Number,
+    }),
+  ),
+  sorting: Schema.optional(
+    Schema.Array(Schema.Struct({ id: Schema.String, desc: Schema.Boolean })),
+  ),
+  grouping: Schema.optional(Schema.Array(Schema.String)),
+  view: Schema.optional(
+    Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")]),
+  ),
 });
-export type TableParams = z.infer<typeof TableSearchSchema>;
+
+export const TableSearchSchemaStandard =
+  Schema.toStandardSchemaV1(TableSearchSchema);
+export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
 type DataTableView = "table" | "gallery";
 
@@ -664,9 +672,8 @@ export function DataTable<TData, TValue>({
   features = DEFAULT_TABLE_FEATURES,
 }: DataTableProps<TData, TValue>) {
   const search = useSearch({
-    // @ts-ignore
     from,
-  }) as TableParams;
+  }) as TableParams | undefined;
   const navigate = useNavigate({
     from,
   });
@@ -720,8 +727,7 @@ export function DataTable<TData, TValue>({
   ) => {
     navigate({
       to: ".",
-      // @ts-ignore
-      search: (current) =>
+      search: (current: Record<string, unknown>) =>
         updater((current ?? {}) as TableParams & Record<string, unknown>),
     });
   };
@@ -745,7 +751,9 @@ export function DataTable<TData, TValue>({
     },
     onSortingChange: (updater) => {
       const newSorting =
-        typeof updater === "function" ? updater(sorting) : updater;
+        typeof updater === "function"
+          ? updater([...sorting] as SortingState)
+          : updater;
       if (
         sorting.length === newSorting.length &&
         sorting.every(
@@ -788,7 +796,7 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
-      sorting,
+      sorting: sorting as SortingState,
       pagination,
       globalFilter,
       columnVisibility,
@@ -1470,6 +1478,7 @@ export function DataTableRelationshipCell({
         {value.length > 0 ? (
           value.map((option) => (
             <Badge
+              key={option.value}
               variant="outline"
               onClick={() => option.href && navigate({ to: option.href })}
               className="max-w-48"

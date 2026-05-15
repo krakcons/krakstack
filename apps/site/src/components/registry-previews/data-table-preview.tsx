@@ -5,7 +5,13 @@ import {
   createDataTableActionsColumn,
 } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
 
@@ -26,7 +32,8 @@ const projects: Project[] = [
   {
     id: "ks-101",
     name: "Signup funnel",
-    summary: "Capture qualified leads with plan preference and attribution metadata.",
+    summary:
+      "Capture qualified leads with plan preference and attribution metadata.",
     status: "In Progress",
     owner: "Ada",
     category: "Growth",
@@ -46,7 +53,8 @@ const projects: Project[] = [
   {
     id: "ks-103",
     name: "Billing dashboard",
-    summary: "Expose invoice state, payment health, and renewal risk to operators.",
+    summary:
+      "Expose invoice state, payment health, and renewal risk to operators.",
     status: "Backlog",
     owner: "Linus",
     category: "Product",
@@ -76,7 +84,8 @@ const projects: Project[] = [
   {
     id: "ks-106",
     name: "Documentation IA",
-    summary: "Organize component pages around examples, API notes, and registry usage.",
+    summary:
+      "Organize component pages around examples, API notes, and registry usage.",
     status: "Review",
     owner: "Ada",
     category: "Product",
@@ -86,7 +95,8 @@ const projects: Project[] = [
   {
     id: "ks-107",
     name: "Lifecycle emails",
-    summary: "Send high-signal lifecycle emails based on onboarding milestones.",
+    summary:
+      "Send high-signal lifecycle emails based on onboarding milestones.",
     status: "Backlog",
     owner: "Hedy",
     category: "Growth",
@@ -108,7 +118,9 @@ const projects: Project[] = [
 const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "name",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Project" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Project" />
+    ),
     cell: ({ row }) => (
       <div className="grid gap-1">
         <span className="font-medium">{row.original.name}</span>
@@ -118,14 +130,20 @@ const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "summary",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Summary" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Summary" />
+    ),
     cell: ({ row }) => (
-      <span className="max-w-[24rem] text-muted-foreground">{row.original.summary}</span>
+      <span className="text-muted-foreground max-w-[24rem]">
+        {row.original.summary}
+      </span>
     ),
   },
   {
     accessorKey: "status",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
     cell: ({ row }) => (
       <Badge
         className="gap-1"
@@ -138,20 +156,30 @@ const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "owner",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Owner" />
+    ),
   },
   {
     accessorKey: "category",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Category" />
+    ),
   },
   {
     accessorKey: "score",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
-    cell: ({ row }) => <span className="tabular-nums">{row.original.score}</span>,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Score" />
+    ),
+    cell: ({ row }) => (
+      <span className="tabular-nums">{row.original.score}</span>
+    ),
   },
   {
     accessorKey: "updated",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Updated" />
+    ),
   },
   createDataTableActionsColumn<Project>([
     {
@@ -159,7 +187,11 @@ const columns: ColumnDef<Project>[] = [
       icon: <ExternalLink />,
       onClick: (project) => window.alert(`Open ${project.name}`),
     },
-    { name: "Edit", icon: <Pencil />, onClick: (project) => window.alert(`Edit ${project.name}`) },
+    {
+      name: "Edit",
+      icon: <Pencil />,
+      onClick: (project) => window.alert(`Edit ${project.name}`),
+    },
     {
       name: "Archive",
       icon: <Archive />,
@@ -176,8 +208,8 @@ export function DataTablePreview() {
       <CardHeader>
         <CardTitle>Project Queue</CardTitle>
         <CardDescription>
-          This demo uses the exported `DataTable`, `DataTableColumnHeader`, and actions-column
-          helper.
+          This demo uses the exported `DataTable`, `DataTableColumnHeader`, and
+          actions-column helper.
         </CardDescription>
       </CardHeader>
       <CardContent className="min-w-0">
@@ -195,9 +227,15 @@ export function DataTablePreview() {
                 id: "status",
                 label: "Status",
                 getGroupId: (project) => project.status,
-                getGroupIds: () => ["Backlog", "In Progress", "Review", "Shipped"],
+                getGroupIds: () => [
+                  "Backlog",
+                  "In Progress",
+                  "Review",
+                  "Shipped",
+                ],
                 getGroupLabel: (status, rows) => `${status} (${rows.length})`,
-                renderEmptyGroup: (status) => `No projects are currently ${status.toLowerCase()}.`,
+                renderEmptyGroup: (status) =>
+                  `No projects are currently ${status.toLowerCase()}.`,
                 onMoveToGroup: (project, status) =>
                   window.alert(`Move ${project.name} to ${status}`),
               },
