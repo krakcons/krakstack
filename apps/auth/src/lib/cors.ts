@@ -18,66 +18,74 @@ export const publicCorsOptions = {
   credentials: false,
 } satisfies Required<CorsOptions>;
 
-const corsHeaders = (request: Request, options: CorsOptions = {}) => {
-  const allowedOrigins =
-    options.allowedOrigins ?? defaultCorsOptions.allowedOrigins;
-  const credentials = options.credentials ?? defaultCorsOptions.credentials;
-  const allowOrigin =
-    allowedOrigins === "*" ? "*" : (request.headers.get("origin") ?? undefined);
-  const headers: Record<string, string> = {
-    "Access-Control-Allow-Methods": (
-      options.allowedMethods ?? defaultCorsOptions.allowedMethods
-    ).join(", "),
+const requestHeadersFallback = "Content-Type, Authorization";
+const maxAge = "86400";
+const varyRequestHeaders = "Access-Control-Request-Headers";
+
+const resolveOptions = (options?: CorsOptions): Required<CorsOptions> => ({
+  ...defaultCorsOptions,
+  ...options,
+});
+
+const allowedOrigin = (
+  request: Request,
+  allowedOrigins: Required<CorsOptions>["allowedOrigins"],
+) => {
+  if (allowedOrigins === "*") return "*";
+
+  const origin = request.headers.get("origin");
+  return origin && allowedOrigins.includes(origin) ? origin : undefined;
+};
+
+const corsHeaders = (request: Request, options?: CorsOptions) => {
+  const { allowedOrigins, allowedMethods, credentials } =
+    resolveOptions(options);
+  const origin = allowedOrigin(request, allowedOrigins);
+  const headers = new Headers({
+    "Access-Control-Allow-Methods": allowedMethods.join(", "),
     "Access-Control-Allow-Headers":
       request.headers.get("access-control-request-headers") ??
-      "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-    Vary: "Access-Control-Request-Headers",
-  };
+      requestHeadersFallback,
+    "Access-Control-Max-Age": maxAge,
+    Vary: origin === "*" ? varyRequestHeaders : `Origin, ${varyRequestHeaders}`,
+  });
 
-  const isOriginAllowed =
-    allowOrigin === "*" ||
-    (allowOrigin !== undefined &&
-      allowedOrigins !== "*" &&
-      allowedOrigins.includes(allowOrigin));
-
-  if (isOriginAllowed) {
-    headers["Access-Control-Allow-Origin"] = allowOrigin;
+  if (origin) {
+    headers.set("Access-Control-Allow-Origin", origin);
   }
 
-  if (headers["Access-Control-Allow-Origin"] !== "*") {
-    headers.Vary = `Origin, ${headers.Vary}`;
-  }
-
-  const allowedOrigin = headers["Access-Control-Allow-Origin"];
-  if (credentials && allowedOrigin !== undefined && allowedOrigin !== "*") {
-    headers["Access-Control-Allow-Credentials"] = "true";
+  if (credentials && origin && origin !== "*") {
+    headers.set("Access-Control-Allow-Credentials", "true");
   }
 
   return headers;
 };
 
-const setHeader = (headers: Headers, key: string, value: string) => {
-  if (key.toLowerCase() !== "vary") {
-    headers.set(key, value);
-    return;
-  }
-
-  const existingValues =
+const mergeVary = (headers: Headers, value: string) => {
+  const current =
     headers
-      .get("vary")
+      .get("Vary")
       ?.split(",")
       .map((item) => item.trim())
       .filter(Boolean) ?? [];
-  const existingKeys = new Set(
-    existingValues.map((item) => item.toLowerCase()),
-  );
-  const nextValues = value
+  const seen = new Set(current.map((item) => item.toLowerCase()));
+  const next = value
     .split(",")
     .map((item) => item.trim())
-    .filter((item) => item && !existingKeys.has(item.toLowerCase()));
+    .filter((item) => item && !seen.has(item.toLowerCase()));
 
-  headers.set("Vary", [...existingValues, ...nextValues].join(", "));
+  headers.set("Vary", [...current, ...next].join(", "));
+};
+
+const copyCorsHeaders = (target: Headers, source: Headers) => {
+  source.forEach((value, key) => {
+    if (key.toLowerCase() === "vary") {
+      mergeVary(target, value);
+      return;
+    }
+
+    target.set(key, value);
+  });
 };
 
 export const applyCorsHeaders = (
@@ -85,27 +93,14 @@ export const applyCorsHeaders = (
   response: Response,
   options?: CorsOptions,
 ) => {
-  const headers = corsHeaders(request, options);
+  const headers = new Headers(response.headers);
+  copyCorsHeaders(headers, corsHeaders(request, options));
 
-  try {
-    for (const [key, value] of Object.entries(headers)) {
-      setHeader(response.headers, key, value);
-    }
-
-    return response;
-  } catch {
-    const nextHeaders = new Headers(response.headers);
-
-    for (const [key, value] of Object.entries(headers)) {
-      setHeader(nextHeaders, key, value);
-    }
-
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: nextHeaders,
-    });
-  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 };
 
 export const corsMiddleware =
