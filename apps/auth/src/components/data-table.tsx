@@ -153,7 +153,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   exportFileName?: string;
   onRowClick?: (row: TData) => void;
-  from: ValidateFromPath;
+  from?: ValidateFromPath;
   grouping?: DataTableGrouping<TData>;
   gallery?: DataTableGalleryConfig;
   features?: {
@@ -666,10 +666,9 @@ export function DataTable<TData, TValue>({
   const search = useSearch({
     // @ts-ignore
     from,
+    strict: from !== undefined,
   }) as TableParams;
-  const navigate = useNavigate({
-    from,
-  });
+  const navigate = useNavigate(from ? { from } : {});
 
   const {
     pagination = { pageIndex: 0, pageSize: 10 },

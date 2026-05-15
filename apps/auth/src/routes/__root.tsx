@@ -1,11 +1,13 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
+import { TableSearchSchema } from "@/components/data-table";
+import { Toaster } from "@/components/ui/sonner";
 import { m } from "../paraglide/messages.js";
 import { getLocale } from "../paraglide/runtime.js";
 import appCss from "../styles.css?url";
-import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRoute({
+  validateSearch: TableSearchSchema,
   head: () => ({
     meta: [
       {
