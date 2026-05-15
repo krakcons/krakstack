@@ -9,7 +9,7 @@ import {
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 
 import { Api } from "@/api";
-import { effectCorsMiddleware } from "@/lib/http";
+import { corsMiddleware } from "@/lib/cors";
 import { adminApiHandler } from "@/services/admin/api.builder";
 import { authApiHandler } from "@/services/auth/api.builder";
 import { auth } from "@/services/auth/config";
@@ -92,8 +92,7 @@ const apiLayer = Layer.mergeAll(
 
 const apiWebHandler = HttpEffect.toWebHandlerLayerWith(Layer.empty, {
   toHandler: () => HttpRouter.toHttpEffect(apiLayer).pipe(Effect.scoped),
-  middleware: effectCorsMiddleware,
 });
 
-export const apiHandler = apiWebHandler.handler;
+export const apiHandler = corsMiddleware(apiWebHandler.handler);
 export const disposeApiHandler = apiWebHandler.dispose;

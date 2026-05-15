@@ -1,11 +1,7 @@
 import { Effect } from "effect";
-import {
-  HttpEffect,
-  HttpMiddleware,
-  HttpServerResponse,
-} from "effect/unstable/http";
+import { HttpEffect, HttpServerResponse } from "effect/unstable/http";
 
-import { trustedOrigins } from "@/lib/trusted-origins";
+import { corsMiddleware, type CorsOptions } from "@/lib/cors";
 
 export const httpJson = (body: unknown, status = 200) =>
   HttpServerResponse.jsonUnsafe(body, { status });
@@ -20,13 +16,6 @@ const readStringField = async (request: Request, field: string) => {
   const value = Reflect.get(body, field);
   return typeof value === "string" ? value : null;
 };
-
-export const effectCorsMiddleware = HttpMiddleware.cors({
-  allowedOrigins: (origin) => trustedOrigins.includes(origin),
-  allowedMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  credentials: true,
-  maxAge: 86_400,
-});
 
 export const readStringFieldEffect = (request: Request, field: string) =>
   Effect.tryPromise({
@@ -55,8 +44,9 @@ const catchHttpFailure = <E>(
 export const runHttpResponse = <E>(
   request: Request,
   effect: Effect.Effect<HttpServerResponse.HttpServerResponse, E>,
+  corsOptions?: CorsOptions,
 ) =>
-  HttpEffect.toWebHandler(
-    catchHttpFailure(effect),
-    effectCorsMiddleware,
+  corsMiddleware(
+    HttpEffect.toWebHandler(catchHttpFailure(effect)),
+    corsOptions,
   )(request);

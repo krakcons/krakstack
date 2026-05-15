@@ -1,6 +1,7 @@
 import { oauthProviderOpenIdConfigMetadata } from "@better-auth/oauth-provider";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { publicCorsOptions } from "@/lib/cors";
 import { effectifyWebHandler, runHttpResponse } from "@/lib/http";
 import { auth } from "@/services/auth/config";
 
@@ -15,9 +16,10 @@ const handlerEffect = effectifyWebHandler((request) => handler(request));
 export const Route = createFileRoute("/.well-known/openid-configuration")({
   server: {
     handlers: {
-      GET: ({ request }) => runHttpResponse(request, handlerEffect(request)),
+      GET: ({ request }) =>
+        runHttpResponse(request, handlerEffect(request), publicCorsOptions),
       OPTIONS: ({ request }) =>
-        runHttpResponse(request, handlerEffect(request)),
+        runHttpResponse(request, handlerEffect(request), publicCorsOptions),
     },
   },
 });
