@@ -131,7 +131,7 @@ export function SidebarLayout({
           <div className="ml-auto flex items-center gap-2">
             <OrganizationSwitcher />
             <LocaleToggle />
-            <UserButton />
+            <UserButton apiKeyPermissions={{ projects: ["read"] }} />
           </div>
         </header>
         <div className="flex flex-col gap-6 px-5 py-6 md:px-8">

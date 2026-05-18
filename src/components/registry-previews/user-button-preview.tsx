@@ -24,6 +24,7 @@ export function UserButtonPreview() {
       </CardHeader>
       <CardContent className="flex items-center justify-center py-12">
         <UserButton
+          apiKeyPermissions={{ projects: ["read"] }}
           signOutRedirect="/docs/registry/user-button"
           renderUnauthenticated={() => (
             <Button
