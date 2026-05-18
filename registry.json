@@ -300,6 +300,11 @@
           "target": "services/auth/index.ts"
         },
         {
+          "path": "src/services/auth/schema.ts",
+          "type": "registry:file",
+          "target": "services/auth/schema.ts"
+        },
+        {
           "path": "src/services/auth/middleware.ts",
           "type": "registry:file",
           "target": "services/auth/middleware.ts"
