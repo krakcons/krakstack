@@ -147,5 +147,11 @@
   "organization_switcher_no_other_organizations": "Aucune autre organisation.",
   "organization_switcher_label": "Organisation",
   "organization_switcher_manage": "Gérer l'organisation",
-  "organization_loading": "Chargement..."
+  "organization_loading": "Chargement...",
+  "user_api_key_permissions": "Autorisations",
+  "user_api_key_permissions_description": "Choisissez les autorisations que cette clé API doit recevoir.",
+  "user_api_key_no_permissions": "Aucune autorisation",
+  "user_api_key_copy": "Copier",
+  "user_api_key_copied": "Copié",
+  "user_api_keys_export_file_name": "cles-api.csv"
 }

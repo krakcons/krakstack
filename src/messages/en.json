@@ -147,5 +147,11 @@
   "organization_switcher_no_other_organizations": "No other organizations.",
   "organization_switcher_label": "Organization",
   "organization_switcher_manage": "Manage organization",
-  "organization_loading": "Loading..."
+  "organization_loading": "Loading...",
+  "user_api_key_permissions": "Permissions",
+  "user_api_key_permissions_description": "Choose the permissions this API key should receive.",
+  "user_api_key_no_permissions": "No permissions",
+  "user_api_key_copy": "Copy",
+  "user_api_key_copied": "Copied",
+  "user_api_keys_export_file_name": "api-keys.csv"
 }

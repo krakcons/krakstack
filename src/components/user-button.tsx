@@ -1288,9 +1288,9 @@ function ApiKeyManager({
           </createForm.AppField>
           {permissionOptions.length > 0 ? (
             <FieldSet>
-              <FieldLegend>Permissions</FieldLegend>
+              <FieldLegend>{m.user_api_key_permissions()}</FieldLegend>
               <FieldDescription>
-                Choose the permissions this API key should receive.
+                {m.user_api_key_permissions_description()}
               </FieldDescription>
               <FieldGroup data-slot="checkbox-group" className="gap-3">
                 {permissionOptions.map((permission) => (
@@ -1336,7 +1336,7 @@ function ApiKeyManager({
               className="self-start sm:self-auto"
             >
               {copiedKey ? <Check /> : <Copy />}
-              {copiedKey ? "Copied" : "Copy"}
+              {copiedKey ? m.user_api_key_copied() : m.user_api_key_copy()}
             </Button>
           </div>
         </div>
@@ -1349,7 +1349,7 @@ function ApiKeyManager({
       <DataTable
         columns={apiKeyColumns({ onDelete: deleteKey })}
         data={keys}
-        exportFileName="api-keys.csv"
+        exportFileName={m.user_api_keys_export_file_name()}
         features={{ gallery: false }}
       />
     </div>
@@ -1385,13 +1385,15 @@ const apiKeyColumns = ({
   },
   {
     accessorKey: "permissions",
-    header: "Permissions",
+    header: m.user_api_key_permissions(),
     cell: ({ row }) => {
       const permissions = formatPermissions(row.original.permissions);
 
       if (permissions.length === 0) {
         return (
-          <span className="text-muted-foreground text-sm">No permissions</span>
+          <span className="text-muted-foreground text-sm">
+            {m.user_api_key_no_permissions()}
+          </span>
         );
       }
 
