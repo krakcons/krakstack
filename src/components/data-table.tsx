@@ -159,6 +159,7 @@ export interface DataTableGalleryConfig {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  emptyLabel?: string;
   exportFileName?: string;
   onRowClick?: (row: TData) => void;
   from?: ValidateFromPath;
@@ -664,6 +665,7 @@ const exportToCsv = <TData,>(
 export function DataTable<TData, TValue>({
   columns,
   data,
+  emptyLabel = m.table_empty(),
   exportFileName = "table.csv",
   onRowClick,
   from,
@@ -881,12 +883,12 @@ export function DataTable<TData, TValue>({
   const renderTableEmptyState = () => (
     <TableRow>
       <TableCell className="h-24 text-center" colSpan={colSpan}>
-        {m.table_empty()}
+        {emptyLabel}
       </TableCell>
     </TableRow>
   );
 
-  const renderGalleryEmptyState = (message: ReactNode = m.table_empty()) => (
+  const renderGalleryEmptyState = (message: ReactNode = emptyLabel) => (
     <div className="text-muted-foreground rounded-xl border border-dashed px-4 py-10 text-center text-sm">
       {message}
     </div>

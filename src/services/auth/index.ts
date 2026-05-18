@@ -27,6 +27,8 @@ const authBaseUrl = () => {
 
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
+    const http = yield* HttpClient.HttpClient;
+
     const getSession = Effect.fn("Auth.getSession")(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest;
       const session = yield* Effect.tryPromise({
@@ -56,7 +58,7 @@ export class Auth extends Context.Service<Auth>()("Auth", {
         `${authBaseUrl()}/api/auth/verify-api-key`,
       ).pipe(
         HttpClientRequest.bodyJson(payload),
-        Effect.flatMap(HttpClient.execute),
+        Effect.flatMap((request) => http.execute(request)),
         Effect.flatMap(HttpClientResponse.filterStatusOk),
         Effect.flatMap(HttpClientResponse.schemaBodyJson(VerifyApiKeyResponse)),
         Effect.mapError(internalServerError),
