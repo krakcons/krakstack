@@ -13,12 +13,7 @@
     "tailwindcss",
     "react"
   ],
-  "devDependencies": [
-    "@types/bun",
-    "drizzle-kit@beta",
-    "typescript",
-    "vite"
-  ],
+  "devDependencies": ["@types/bun", "drizzle-kit@beta", "typescript", "vite"],
   "files": [
     {
       "path": "templates/krakstack-template/README.md",

@@ -249,9 +249,7 @@ export function DataTablePreview() {
               },
             ],
           }}
-          onRowClick={(project) =>
-            window.alert(`Selected ${project.name}`)
-          }
+          onRowClick={(project) => window.alert(`Selected ${project.name}`)}
         />
       </CardContent>
     </Card>

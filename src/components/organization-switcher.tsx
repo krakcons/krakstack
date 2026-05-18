@@ -217,7 +217,9 @@ export function OrganizationSwitcher({
             <DialogTitle className="text-2xl">
               {m.organization_switcher_manage()}
             </DialogTitle>
-            <DialogDescription>{m.organization_edit_description()}</DialogDescription>
+            <DialogDescription>
+              {m.organization_edit_description()}
+            </DialogDescription>
           </DialogHeader>
           <Separator />
           {activeOrganization.data ? (
@@ -241,7 +243,9 @@ export function OrganizationSwitcher({
             <DialogTitle className="text-2xl">
               {m.user_api_keys_title()}
             </DialogTitle>
-            <DialogDescription>{activeOrganization.data?.name}</DialogDescription>
+            <DialogDescription>
+              {activeOrganization.data?.name}
+            </DialogDescription>
           </DialogHeader>
           <Separator />
           {activeOrganization.data ? (
