@@ -498,7 +498,6 @@ function OrganizationApiKeyManager({
       ) : null}
       <Separator />
       <DataTable
-        from="/"
         columns={apiKeyColumns({ onDelete: deleteKey })}
         data={keys}
         exportFileName={`${organization.slug}-api-keys.csv`}

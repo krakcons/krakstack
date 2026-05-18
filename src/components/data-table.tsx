@@ -45,7 +45,7 @@ import {
 } from "@dnd-kit/core";
 import {
   useNavigate,
-  useSearch,
+  useRouterState,
   type ValidateFromPath,
 } from "@tanstack/react-router";
 import {
@@ -161,7 +161,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   exportFileName?: string;
   onRowClick?: (row: TData) => void;
-  from: ValidateFromPath;
+  from?: ValidateFromPath;
   grouping?: DataTableGrouping<TData>;
   gallery?: DataTableGalleryConfig;
   features?: {
@@ -671,12 +671,10 @@ export function DataTable<TData, TValue>({
   gallery,
   features = DEFAULT_TABLE_FEATURES,
 }: DataTableProps<TData, TValue>) {
-  const search = useSearch({
-    from,
+  const search = useRouterState({
+    select: (state) => state.location.search,
   }) as TableParams | undefined;
-  const navigate = useNavigate({
-    from,
-  });
+  const navigate = useNavigate(from ? { from } : undefined);
 
   const {
     pagination = { pageIndex: 0, pageSize: 10 },

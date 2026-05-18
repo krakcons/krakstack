@@ -1263,7 +1263,6 @@ function ApiKeyManager() {
       ) : null}
       <Separator />
       <DataTable
-        from="/"
         columns={apiKeyColumns({ onDelete: deleteKey })}
         data={keys}
         exportFileName="api-keys.csv"
