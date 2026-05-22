@@ -31,7 +31,9 @@ export function AppBrand({
       to={to}
       className={[
         "flex min-w-0 items-center gap-2 text-foreground hover:text-foreground",
-        variant === "sidebar" ? "p-2" : "",
+        variant === "sidebar"
+          ? "p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+          : "",
         className,
       ]
         .filter(Boolean)

@@ -3,13 +3,8 @@
   "name": "locale-toggle",
   "title": "Locale Toggle",
   "description": "A Paraglide-powered dropdown for switching between configured locales with localized language labels.",
-  "dependencies": [
-    "lucide-react"
-  ],
-  "registryDependencies": [
-    "button",
-    "dropdown-menu"
-  ],
+  "dependencies": ["lucide-react"],
+  "registryDependencies": ["button", "dropdown-menu"],
   "files": [
     {
       "path": "src/components/locale-toggle.tsx",
