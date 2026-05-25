@@ -8,6 +8,7 @@
         "@base-ui/react": "^1.4.1",
         "@better-auth/api-key": "^1.6.11",
         "@dnd-kit/core": "^6.3.1",
+        "@effect/ai-openai-compat": "4.0.0-beta.60",
         "@effect/opentelemetry": "^0.63.0",
         "@effect/sql-pg": "^4.0.0-beta.60",
         "@tailwindcss/vite": "^4.2.4",
@@ -172,6 +173,8 @@
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.11.0", "", {}, "sha512-hD3pekGiPg0WPCCGAZmusBBJsDqGUR66Y452YgQsZOnkdQ7ViEPKuyP4huUGEZQefp8g34RRodXYmJ2TbCH+tg=="],
 
     "@ecies/ciphers": ["@ecies/ciphers@0.2.6", "", { "peerDependencies": { "@noble/ciphers": "^1.0.0" } }, "sha512-patgsRPKGkhhoBjETV4XxD0En4ui5fbX0hzayqI3M8tvNMGUoUvmyYAIWwlxBc1KX5cturfqByYdj5bYGRpN9g=="],
+
+    "@effect/ai-openai-compat": ["@effect/ai-openai-compat@4.0.0-beta.60", "", { "peerDependencies": { "effect": "^4.0.0-beta.60" } }, "sha512-B/62t4Ucyh7veYyz7Xq3xsjKKdq7xZ84uh5XGG3cgvjk9rpJf/hwZenInPcwBstD0m7lQKTnlofZwWVgIs6DjQ=="],
 
     "@effect/language-service": ["@effect/language-service@0.85.1", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-EXnJjIy6zQ3nUO/MZ+ynWUb8B895KZPotd1++oTs9JjDkplwM7cb6zo8Zq2zU6piwq+KflO7amXbEfj1UMpHkw=="],
 

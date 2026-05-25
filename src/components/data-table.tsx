@@ -726,7 +726,7 @@ export function DataTable<TData, TValue>({
   ) => {
     navigate({
       to: ".",
-      replace: options?.replace,
+      replace: options?.replace ?? false,
       search: (current: Record<string, unknown>) =>
         updater((current ?? {}) as TableParams & Record<string, unknown>),
     });

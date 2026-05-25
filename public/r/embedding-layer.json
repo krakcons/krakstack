@@ -1,0 +1,17 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "embedding-layer",
+  "title": "Embedding Layer",
+  "description": "An Effect layer that configures an OpenAI-compatible embeddings model from EMBEDDINGS_URL, EMBEDDINGS_MODEL, and EMBEDDINGS_DIMENSIONS.",
+  "dependencies": ["@effect/ai-openai-compat@beta", "effect@beta"],
+  "files": [
+    {
+      "path": "src/services/embedding.ts",
+      "content": "import { OpenAiClient, OpenAiEmbeddingModel } from \"@effect/ai-openai-compat\";\nimport { Config, Effect, Layer, Redacted } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nexport const EmbeddingLayer = Layer.unwrap(\n  Effect.gen(function* () {\n    const apiUrl = yield* Config.string(\"EMBEDDINGS_URL\");\n    const embeddingModel = yield* Config.string(\"EMBEDDINGS_MODEL\");\n    const embeddingDimensions = yield* Config.number(\"EMBEDDINGS_DIMENSIONS\");\n\n    const embeddingClientLayer = OpenAiClient.layer({\n      apiKey: Redacted.make(\"embedding\"),\n      apiUrl,\n    });\n\n    return OpenAiEmbeddingModel.layer({\n      model: embeddingModel,\n      config: {\n        dimensions: embeddingDimensions,\n        encoding_format: \"float\",\n      },\n    }).pipe(\n      Layer.provide(embeddingClientLayer),\n      Layer.provide(FetchHttpClient.layer),\n    );\n  }),\n);\n",
+      "type": "registry:file",
+      "target": "services/embedding.ts"
+    }
+  ],
+  "docs": "## Overview\n\n`embedding-layer` provides an OpenAI-compatible embedding model layer configured through Effect `Config`. It reads the embeddings endpoint, model name, and output dimensions from the environment, then wires the OpenAI-compatible client through `FetchHttpClient`.\n\n## Layers\n\n```ts\nimport { OpenAiClient, OpenAiEmbeddingModel } from \"@effect/ai-openai-compat\";\nimport { Config, Effect, Layer, Redacted } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nexport const EmbeddingLayer = Layer.unwrap(\n  Effect.gen(function* () {\n    const apiUrl = yield* Config.string(\"EMBEDDINGS_URL\");\n    const embeddingModel = yield* Config.string(\"EMBEDDINGS_MODEL\");\n    const embeddingDimensions = yield* Config.number(\"EMBEDDINGS_DIMENSIONS\");\n\n    const embeddingClientLayer = OpenAiClient.layer({\n      apiKey: Redacted.make(\"embedding\"),\n      apiUrl,\n    });\n\n    return OpenAiEmbeddingModel.layer({\n      model: embeddingModel,\n      config: {\n        dimensions: embeddingDimensions,\n        encoding_format: \"float\",\n      },\n    }).pipe(\n      Layer.provide(embeddingClientLayer),\n      Layer.provide(FetchHttpClient.layer),\n    );\n  }),\n);\n```\n\n## Environment Variables\n\n- `EMBEDDINGS_URL` - OpenAI-compatible embeddings API URL\n- `EMBEDDINGS_MODEL` - Embeddings model name\n- `EMBEDDINGS_DIMENSIONS` - Embedding vector dimensions",
+  "type": "registry:lib"
+}
