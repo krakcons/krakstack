@@ -83,7 +83,6 @@ import {
 } from "lucide-react";
 import {
   Fragment,
-  useDeferredValue,
   useEffect,
   useMemo,
   useState,
@@ -705,7 +704,6 @@ export function DataTable<TData, TValue>({
   >({});
   const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(globalFilter);
-  const deferredSearchInput = useDeferredValue(searchInput);
   const availableGroupFieldIds =
     grouping?.fields.map((field) => field.id) ?? [];
   const activeGrouping =
@@ -724,9 +722,11 @@ export function DataTable<TData, TValue>({
     updater: (
       current: TableParams & Record<string, unknown>,
     ) => Record<string, unknown>,
+    options?: { replace?: boolean },
   ) => {
     navigate({
       to: ".",
+      replace: options?.replace,
       search: (current: Record<string, unknown>) =>
         updater((current ?? {}) as TableParams & Record<string, unknown>),
     });
@@ -782,14 +782,17 @@ export function DataTable<TData, TValue>({
       if (globalFilter === newGlobalFilter) {
         return;
       }
-      updateTableSearch((current) => ({
-        ...current,
-        pagination: {
-          ...pagination,
-          pageIndex: 0,
-        },
-        globalFilter: newGlobalFilter,
-      }));
+      updateTableSearch(
+        (current) => ({
+          ...current,
+          pagination: {
+            ...pagination,
+            pageIndex: 0,
+          },
+          globalFilter: newGlobalFilter,
+        }),
+        { replace: true },
+      );
     },
     getFilteredRowModel: getFilteredRowModel(),
     autoResetPageIndex: false,
@@ -807,14 +810,6 @@ export function DataTable<TData, TValue>({
   useEffect(() => {
     setSearchInput(globalFilter);
   }, [globalFilter]);
-
-  useEffect(() => {
-    if (deferredSearchInput === globalFilter) {
-      return;
-    }
-
-    table.setGlobalFilter(deferredSearchInput);
-  }, [deferredSearchInput, globalFilter, table]);
 
   const activeGroupingFields = useMemo(
     () =>
@@ -992,7 +987,10 @@ export function DataTable<TData, TValue>({
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 className="pl-9"
-                onChange={(event) => setSearchInput(event.target.value)}
+                onChange={(event) => {
+                  setSearchInput(event.target.value);
+                  table.setGlobalFilter(event.target.value);
+                }}
                 placeholder={m.table_filter()}
                 value={searchInput}
               />
