@@ -47,7 +47,7 @@ export class NotificationService extends Context.Service<
   ) =>
     this.layer.pipe(Layer.provide(NotificationChannelRegistry.layer(channels)));
 
-  static readonly noopLayer = this.layer.pipe(
-    Layer.provide(NotificationChannelRegistry.emptyLayer),
-  );
+  static readonly noopLayer = Layer.succeed(this, {
+    send: () => Effect.void,
+  });
 }
