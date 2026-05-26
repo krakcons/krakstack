@@ -12,6 +12,7 @@ import { m } from "@/paraglide/messages";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Activity,
+  BellRing,
   Blocks,
   Bot,
   Building2,
@@ -21,6 +22,7 @@ import {
   KeyRound,
   Layers,
   ListChecks,
+  Mail,
   Shield,
   Table2,
   UserRound,
@@ -41,6 +43,8 @@ const iconByName = {
   auth: Shield,
   "service-database": Database,
   "service-opentelemetry": Activity,
+  "service-notification": BellRing,
+  "notification-channel-email-ses": Mail,
   "embedding-layer": Layers,
   agents: Bot,
   "lint-format": Wrench,

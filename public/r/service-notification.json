@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "service-notification",
+  "title": "Notification Service",
+  "description": "An Effect notification dispatcher that sends dynamic channel payloads through the installed notification channels matching each top-level message key.",
+  "dependencies": ["effect@beta"],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/services/notification/index.ts",
+      "content": "import { Context, Effect, Layer } from \"effect\";\n\nimport {\n  NotificationChannelRegistry,\n  type NotificationChannelShape,\n} from \"./channel\";\nimport { NotificationMessage, NotificationSendError } from \"./schema\";\n\nexport interface NotificationServiceShape {\n  readonly send: (\n    message: NotificationMessage,\n  ) => Effect.Effect<void, NotificationSendError>;\n}\n\nexport class NotificationService extends Context.Service<\n  NotificationService,\n  NotificationServiceShape\n>()(\"NotificationService\", {\n  make: Effect.gen(function* () {\n    const registry = yield* NotificationChannelRegistry;\n\n    const send = Effect.fn(\"NotificationService.send\")(\n      (message: NotificationMessage) =>\n        Effect.gen(function* () {\n          for (const [key, payload] of Object.entries(message)) {\n            const channel = registry.channels.find((item) => item.key === key);\n\n            if (!channel) {\n              return yield* new NotificationSendError({\n                channel: key,\n                message: `No notification channel installed for ${key}`,\n              });\n            }\n\n            yield* channel.send(payload, message);\n          }\n        }),\n    );\n\n    return { send };\n  }),\n}) {\n  static readonly layer = Layer.effect(this, this.make);\n\n  static readonly makeLayer = (\n    channels: ReadonlyArray<NotificationChannelShape>,\n  ) =>\n    this.layer.pipe(Layer.provide(NotificationChannelRegistry.layer(channels)));\n\n  static readonly noopLayer = this.layer.pipe(\n    Layer.provide(NotificationChannelRegistry.emptyLayer),\n  );\n}\n",
+      "type": "registry:file",
+      "target": "services/notification/index.ts"
+    },
+    {
+      "path": "src/services/notification/channel.ts",
+      "content": "import { Context, Effect, Layer } from \"effect\";\n\nimport { NotificationMessage, NotificationSendError } from \"./schema\";\n\nexport interface NotificationChannelShape {\n  readonly key: string;\n  readonly send: (\n    payload: unknown,\n    message: NotificationMessage,\n  ) => Effect.Effect<void, NotificationSendError>;\n}\n\nexport interface NotificationChannelRegistryShape {\n  readonly channels: ReadonlyArray<NotificationChannelShape>;\n}\n\nexport class NotificationChannelRegistry extends Context.Service<\n  NotificationChannelRegistry,\n  NotificationChannelRegistryShape\n>()(\"NotificationChannelRegistry\") {\n  static readonly layer = (channels: ReadonlyArray<NotificationChannelShape>) =>\n    Layer.succeed(this, { channels });\n\n  static readonly emptyLayer = Layer.succeed(this, {\n    channels: [],\n  });\n}\n",
+      "type": "registry:file",
+      "target": "services/notification/channel.ts"
+    },
+    {
+      "path": "src/services/notification/schema.ts",
+      "content": "import { Schema } from \"effect\";\n\nexport const NotificationMessage = Schema.Record(\n  Schema.String,\n  Schema.Unknown,\n).annotate({\n  identifier: \"NotificationMessage\",\n  title: \"Notification message\",\n  description:\n    \"A dynamic notification envelope keyed by channel capability. Installed channels send the payload matching their key.\",\n  examples: [\n    {\n      email: {\n        to: \"user@example.com\",\n        subject: \"Welcome\",\n        text: \"Thanks for signing up.\",\n      },\n      discord: {\n        content: \"A user signed up.\",\n      },\n    },\n  ],\n});\n\nexport class NotificationSendError extends Schema.TaggedErrorClass<NotificationSendError>()(\n  \"NotificationSendError\",\n  {\n    message: Schema.String,\n    channel: Schema.optional(Schema.String),\n    error: Schema.optional(Schema.Defect),\n  },\n) {}\n\nexport type NotificationMessage = typeof NotificationMessage.Type;\n",
+      "type": "registry:file",
+      "target": "services/notification/schema.ts"
+    }
+  ],
+  "docs": "## Overview\n\n`service-notification` provides the core Effect notification dispatcher. Messages are dynamic objects where each top-level key is a channel capability, such as `email`, `discord`, `sns`, or `push`. Installed channels declare the key they handle and validate their own payloads.\n\nThe core package intentionally does not include provider-specific dependencies. Install separate channel registry entries, such as `notification-channel-email-ses`, to add transports.\n\n## Included Files\n\n- `services/notification/index.ts` - Main `NotificationService` interface and layer helpers\n- `services/notification/channel.ts` - Channel contract and channel registry layer\n- `services/notification/schema.ts` - Dynamic message envelope and shared send error\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { NotificationService } from \"@/services/notification\";\nimport { sesNotificationServiceLayer } from \"@/services/notification/channels/ses\";\n\nconst program = Effect.gen(function* () {\n  const notifications = yield* NotificationService;\n\n  yield* notifications.send({\n    email: {\n      to: \"user@example.com\",\n      subject: \"Deploy succeeded\",\n      html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n    },\n  });\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(sesNotificationServiceLayer)),\n);\n```\n\n## Channel Behavior\n\nFor each key in the message, the dispatcher finds an installed channel with the same key and sends that payload. If a message includes a key with no installed channel, the send fails with `NotificationSendError` so notification wiring problems are not silently ignored.\n\nInstall additional channel entries to enable more keys without changing the core service.",
+  "type": "registry:lib"
+}
