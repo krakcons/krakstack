@@ -13,6 +13,13 @@ export function getRegistryItem(slug: string) {
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "krakstack-template") return "Templates";
   if (item.name === "embedding-layer") return "Layers";
+  if (
+    ["service-notification", "notification-channel-email-ses"].includes(
+      item.name,
+    )
+  ) {
+    return "Notifications";
+  }
   if (["agents", "lint-format"].includes(item.name)) return "Configuration";
   if (item.type === "registry:block") return "Components";
   if (item.type === "registry:lib") return "Services";
