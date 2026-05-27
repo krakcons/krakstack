@@ -477,7 +477,7 @@
         {
           "path": "AGENTS.md",
           "type": "registry:file",
-          "target": "AGENTS.md"
+          "target": "../AGENTS.md"
         }
       ],
       "dependencies": []
