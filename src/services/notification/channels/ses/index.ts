@@ -7,14 +7,16 @@ import {
 } from "@aws-sdk/client-sesv2";
 import { Config, Context, Effect, Layer, Redacted, Schema } from "effect";
 
-import {
-  NotificationChannelRegistry,
-  type NotificationChannelShape,
-} from "../../channel";
-import { NotificationService } from "../../index";
-import { NotificationMessage, NotificationSendError } from "../../schema";
+import { type NotificationChannelShape, type NotificationMessage } from "..";
+import { NotificationSendError } from "../../schema";
 
 import { SesEmailNotification } from "./schema";
+
+declare module ".." {
+  interface NotificationChannels {
+    readonly email: SesEmailNotification;
+  }
+}
 
 interface SesAccessKey {
   readonly id: Redacted.Redacted<string>;
@@ -54,56 +56,9 @@ export class SesNotificationConfig extends Context.Service<
 
 export class SesNotificationChannel extends Context.Service<
   SesNotificationChannel,
-  NotificationChannelShape
->()("SesNotificationChannel") {}
-
-const notificationSendError = (
-  message: string,
-  error?: unknown,
-): NotificationSendError =>
-  new NotificationSendError({
-    channel: "email",
-    message,
-    ...(error === undefined ? {} : { error }),
-  });
-
-const decodeEmail = (payload: unknown) =>
-  Schema.decodeUnknownEffect(SesEmailNotification)(payload).pipe(
-    Effect.mapError((error) =>
-      notificationSendError("Invalid SES email notification payload", error),
-    ),
-  );
-
-const requireBody = (email: SesEmailNotification) => {
-  const { html, text } = email;
-
-  if (!html && !text) {
-    return Effect.fail(
-      notificationSendError("SES email notification requires text or html"),
-    );
-  }
-
-  const body = {
-    ...(text ? { Text: { Data: text, Charset: "UTF-8" } } : {}),
-    ...(html ? { Html: { Data: html, Charset: "UTF-8" } } : {}),
-  } satisfies Body;
-
-  return Effect.succeed(body);
-};
-
-const recipients = (to: SesEmailNotification["to"]) =>
-  Array.isArray(to) ? Array.from(to) : [to];
-
-const buildDestination = (email: SesEmailNotification) =>
-  ({
-    ToAddresses: recipients(email.to),
-    ...(email.cc?.length ? { CcAddresses: Array.from(email.cc) } : {}),
-    ...(email.bcc?.length ? { BccAddresses: Array.from(email.bcc) } : {}),
-  }) satisfies Destination;
-
-export const sesNotificationChannelLayer = Layer.effect(
-  SesNotificationChannel,
-  Effect.gen(function* () {
+  NotificationChannelShape<"email", SesEmailNotification>
+>()("SesNotificationChannel", {
+  make: Effect.gen(function* () {
     const { accessKey, identity } = yield* SesNotificationConfig;
     const client = new SESv2Client({
       region: identity.region,
@@ -149,18 +104,57 @@ export const sesNotificationChannelLayer = Layer.effect(
       });
     });
 
-    return { key: "email", send } satisfies NotificationChannelShape;
+    return { key: "email", send } satisfies NotificationChannelShape<
+      "email",
+      SesEmailNotification
+    >;
   }),
-).pipe(Layer.provide(SesNotificationConfig.layer));
+}) {
+  static readonly layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(SesNotificationConfig.layer),
+  );
+}
 
-export const sesNotificationChannelRegistryLayer = Layer.effect(
-  NotificationChannelRegistry,
-  Effect.gen(function* () {
-    const channel = yield* SesNotificationChannel;
-    return { channels: [channel] };
-  }),
-).pipe(Layer.provide(sesNotificationChannelLayer));
+const notificationSendError = (
+  message: string,
+  error?: unknown,
+): NotificationSendError =>
+  new NotificationSendError({
+    channel: "email",
+    message,
+    ...(error === undefined ? {} : { error }),
+  });
 
-export const sesNotificationServiceLayer = NotificationService.layer.pipe(
-  Layer.provide(sesNotificationChannelRegistryLayer),
-);
+const decodeEmail = (payload: unknown) =>
+  Schema.decodeUnknownEffect(SesEmailNotification)(payload).pipe(
+    Effect.mapError((error) =>
+      notificationSendError("Invalid SES email notification payload", error),
+    ),
+  );
+
+const requireBody = (email: SesEmailNotification) => {
+  const { html, text } = email;
+
+  if (!html && !text) {
+    return Effect.fail(
+      notificationSendError("SES email notification requires text or html"),
+    );
+  }
+
+  const body = {
+    ...(text ? { Text: { Data: text, Charset: "UTF-8" } } : {}),
+    ...(html ? { Html: { Data: html, Charset: "UTF-8" } } : {}),
+  } satisfies Body;
+
+  return Effect.succeed(body);
+};
+
+const recipients = (to: SesEmailNotification["to"]) =>
+  Array.isArray(to) ? Array.from(to) : [to];
+
+const buildDestination = (email: SesEmailNotification) =>
+  ({
+    ToAddresses: recipients(email.to),
+    ...(email.cc?.length ? { CcAddresses: Array.from(email.cc) } : {}),
+    ...(email.bcc?.length ? { BccAddresses: Array.from(email.bcc) } : {}),
+  }) satisfies Destination;

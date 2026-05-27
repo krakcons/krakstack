@@ -2,9 +2,10 @@ import { Context, Effect, Layer } from "effect";
 
 import {
   NotificationChannelRegistry,
+  type NotificationMessage,
   type NotificationChannelShape,
-} from "./channel";
-import { NotificationMessage, NotificationSendError } from "./schema";
+} from "./channels";
+import { NotificationSendError } from "./schema";
 
 export interface NotificationServiceShape {
   readonly send: (
@@ -23,16 +24,20 @@ export class NotificationService extends Context.Service<
       (message: NotificationMessage) =>
         Effect.gen(function* () {
           for (const [key, payload] of Object.entries(message)) {
-            const channel = registry.channels.find((item) => item.key === key);
+            const channels = registry.channels.filter(
+              (item) => item.key === key,
+            );
 
-            if (!channel) {
+            if (channels.length === 0) {
               return yield* new NotificationSendError({
                 channel: key,
                 message: `No notification channel installed for ${key}`,
               });
             }
 
-            yield* channel.send(payload, message);
+            yield* Effect.forEach(channels, (channel) =>
+              channel.send(payload, message),
+            );
           }
         }),
     );

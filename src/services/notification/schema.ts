@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-export const NotificationMessage = Schema.Record(
+export const NotificationMessageSchema = Schema.Record(
   Schema.String,
   Schema.Unknown,
 ).annotate({
@@ -31,4 +31,4 @@ export class NotificationSendError extends Schema.TaggedErrorClass<NotificationS
   },
 ) {}
 
-export type NotificationMessage = typeof NotificationMessage.Type;
+export type { NotificationMessage } from "./channels";
