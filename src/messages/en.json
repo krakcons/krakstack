@@ -153,5 +153,15 @@
   "user_api_key_no_permissions": "No permissions",
   "user_api_key_copy": "Copy",
   "user_api_key_copied": "Copied",
-  "user_api_keys_export_file_name": "api-keys.csv"
+  "user_api_keys_export_file_name": "api-keys.csv",
+  "registry_search_placeholder": "Search registry...",
+  "registry_search_title": "Registry search",
+  "registry_search_description": "Search registry items and open their documentation.",
+  "registry_search_input_placeholder": "Search registry items...",
+  "registry_search_empty": "No registry items found.",
+  "search_menu_title": "Search",
+  "search_menu_description": "Search for an item to open.",
+  "search_menu_placeholder": "Search...",
+  "search_menu_input_placeholder": "Search...",
+  "search_menu_empty": "No results found."
 }

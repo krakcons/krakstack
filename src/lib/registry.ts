@@ -1,4 +1,20 @@
 import registry from "../../registry.json";
+import {
+  Activity,
+  Blocks,
+  Bot,
+  Database,
+  Globe,
+  KeyRound,
+  Layers,
+  ListChecks,
+  PanelLeft,
+  Search,
+  Shield,
+  Table2,
+  UserRound,
+  Wrench,
+} from "lucide-react";
 
 export type RegistryItem = (typeof registry.items)[number] & {
   docs?: string;
@@ -17,4 +33,27 @@ export function getRegistryGroup(item: RegistryItem) {
   if (item.type === "registry:block") return "Components";
   if (item.type === "registry:lib") return "Services";
   return "Registry";
+}
+
+const iconByName = {
+  "data-table": Table2,
+  form: ListChecks,
+  "locale-toggle": Globe,
+  "user-button": UserRound,
+  "sign-in": KeyRound,
+  "sign-up": KeyRound,
+  auth: Shield,
+  "service-database": Database,
+  "service-opentelemetry": Activity,
+  "embedding-layer": Layers,
+  "sidebar-layout": PanelLeft,
+  "search-menu": Search,
+  agents: Bot,
+  "lint-format": Wrench,
+  "app-brand": Blocks,
+  "krakstack-template": Blocks,
+} as const;
+
+export function getRegistryIcon(item: RegistryItem) {
+  return iconByName[item.name as keyof typeof iconByName] ?? Shield;
 }

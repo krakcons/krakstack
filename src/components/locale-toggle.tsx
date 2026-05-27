@@ -28,11 +28,7 @@ export const LocaleToggle = () => {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant="outline"
-            size="icon"
-            className="focus-visible:ring-0"
-          >
+          <Button variant="outline" size="icon">
             <Languages className="size-4" />
             <span className="sr-only">{m.locale_toggle_label()}</span>
           </Button>

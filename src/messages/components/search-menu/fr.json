@@ -1,0 +1,8 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "search_menu_title": "Recherche",
+  "search_menu_description": "Recherchez un élément à ouvrir.",
+  "search_menu_placeholder": "Rechercher...",
+  "search_menu_input_placeholder": "Rechercher...",
+  "search_menu_empty": "Aucun résultat trouvé."
+}

@@ -5,5 +5,10 @@
   "example_message": "Welcome to your i18n app.",
   "language_label": "Language",
   "current_locale": "Current locale: {locale}",
-  "learn_router": "Learn Paraglide JS"
+  "learn_router": "Learn Paraglide JS",
+  "registry_search_placeholder": "Search registry...",
+  "registry_search_title": "Registry search",
+  "registry_search_description": "Search registry items and open their documentation.",
+  "registry_search_input_placeholder": "Search registry items...",
+  "registry_search_empty": "No registry items found."
 }

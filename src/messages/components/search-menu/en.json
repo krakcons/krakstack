@@ -1,0 +1,8 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "search_menu_title": "Search",
+  "search_menu_description": "Search for an item to open.",
+  "search_menu_placeholder": "Search...",
+  "search_menu_input_placeholder": "Search...",
+  "search_menu_empty": "No results found."
+}

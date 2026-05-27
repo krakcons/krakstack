@@ -153,5 +153,15 @@
   "user_api_key_no_permissions": "Aucune autorisation",
   "user_api_key_copy": "Copier",
   "user_api_key_copied": "Copié",
-  "user_api_keys_export_file_name": "cles-api.csv"
+  "user_api_keys_export_file_name": "cles-api.csv",
+  "registry_search_placeholder": "Rechercher dans le registre...",
+  "registry_search_title": "Recherche du registre",
+  "registry_search_description": "Recherchez des éléments du registre et ouvrez leur documentation.",
+  "registry_search_input_placeholder": "Rechercher des éléments du registre...",
+  "registry_search_empty": "Aucun élément du registre trouvé.",
+  "search_menu_title": "Recherche",
+  "search_menu_description": "Recherchez un élément à ouvrir.",
+  "search_menu_placeholder": "Rechercher...",
+  "search_menu_input_placeholder": "Rechercher...",
+  "search_menu_empty": "Aucun résultat trouvé."
 }

@@ -4,6 +4,32 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "search-menu",
+      "type": "registry:block",
+      "title": "Search Menu",
+      "description": "A reusable command-palette search menu with grouped items, icons, descriptions, keyboard shortcut support, and a responsive search trigger.",
+      "docs": "## Overview\n\n`SearchMenu` is a reusable command-palette component built on shadcn's `Command` primitive. Pass it grouped items and it renders a responsive search trigger, `⌘K`/`Ctrl+K` shortcut handling, searchable groups, optional item icons, descriptions, and shortcuts.\n\n## Features\n\n- Generic grouped item input\n- Optional item icons, descriptions, keywords, disabled state, and shortcuts\n- Per-item `onSelect` handlers plus a top-level `onSelect` callback\n- Controlled or uncontrolled open state\n- Mobile icon-only trigger and desktop search-bar trigger\n\n## Usage\n\n```tsx\nimport { SearchMenu, type SearchMenuGroup } from \"@/components/search-menu\";\nimport { FileText, Settings } from \"lucide-react\";\n\nconst groups: SearchMenuGroup[] = [\n  {\n    heading: \"Pages\",\n    items: [\n      {\n        id: \"docs\",\n        label: \"Docs\",\n        description: \"Open documentation\",\n        icon: <FileText className=\"size-4\" />,\n        onSelect: () => navigate({ to: \"/docs\" }),\n      },\n    ],\n  },\n  {\n    heading: \"Settings\",\n    items: [\n      {\n        id: \"profile\",\n        label: \"Profile\",\n        icon: <Settings className=\"size-4\" />,\n      },\n    ],\n  },\n];\n\n<SearchMenu\n  groups={groups}\n  title=\"Search\"\n  description=\"Search pages and actions.\"\n  placeholder=\"Search...\"\n/>\n```",
+      "files": [
+        {
+          "path": "src/components/search-menu.tsx",
+          "type": "registry:component",
+          "target": "components/search-menu.tsx"
+        },
+        {
+          "path": "src/messages/components/search-menu/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/search-menu/en.json"
+        },
+        {
+          "path": "src/messages/components/search-menu/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/search-menu/fr.json"
+        }
+      ],
+      "registryDependencies": ["button", "command"],
+      "dependencies": ["lucide-react", "react"]
+    },
+    {
       "name": "app-brand",
       "type": "registry:block",
       "title": "App Brand",
@@ -434,8 +460,8 @@
       "name": "sidebar-layout",
       "type": "registry:block",
       "title": "Sidebar Layout",
-      "description": "A sidebar-based layout with configurable navigation groups, a brand header, page header component, organization switcher, locale toggle, and user button.",
-      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with an optional header slot and navigation groups, a page header component with optional badge, description, and actions, plus organization, locale, and user controls in the top bar.\n\n## Features\n\n- Configurable sidebar with `sidebarHeader` slot and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Header controls for `OrganizationSwitcher`, `LocaleToggle`, and `UserButton`\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/sidebar-layout\";\nimport { AppBrand } from \"@/components/app-brand\";\nimport { LayoutDashboard, Users, Blocks } from \"lucide-react\";\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout\n  sidebarHeader={\n    <AppBrand\n      label=\"My App\"\n      subtitle=\"Admin Panel\"\n      icon={Blocks}\n      variant=\"sidebar\"\n      href=\"/admin\"\n    />\n  }\n  groups={groups}\n/>\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout\n  sidebarHeader={<AppBrand label=\"My App\" subtitle=\"Admin Panel\" icon={Blocks} variant=\"sidebar\" href=\"/admin\" />}\n  groups={groups}\n>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
+      "description": "A sidebar-based layout with configurable navigation groups, a brand header, header action slot, page header component, organization switcher, locale toggle, and user button.",
+      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with an optional header slot and navigation groups, a page header component with optional badge, description, and actions, an optional top-bar action slot, plus organization, locale, and user controls.\n\n## Features\n\n- Configurable sidebar with `sidebarHeader` slot and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Optional `headerActions` slot before the account controls\n- Header controls for `OrganizationSwitcher`, `LocaleToggle`, and `UserButton`\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/sidebar-layout\";\nimport { AppBrand } from \"@/components/app-brand\";\nimport { LayoutDashboard, Users, Blocks } from \"lucide-react\";\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout\n  sidebarHeader={\n    <AppBrand\n      label=\"My App\"\n      subtitle=\"Admin Panel\"\n      icon={Blocks}\n      variant=\"sidebar\"\n      href=\"/admin\"\n    />\n  }\n  headerActions={<YourSearch />}\n  groups={groups}\n/>\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout\n  sidebarHeader={<AppBrand label=\"My App\" subtitle=\"Admin Panel\" icon={Blocks} variant=\"sidebar\" href=\"/admin\" />}\n  groups={groups}\n>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
       "files": [
         {
           "path": "src/components/sidebar-layout.tsx",

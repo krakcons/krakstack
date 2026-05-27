@@ -5,5 +5,10 @@
   "example_message": "Willkommen in deiner i18n-App.",
   "language_label": "Sprache",
   "current_locale": "Aktuelle Sprache: {locale}",
-  "learn_router": "Paraglide JS lernen"
+  "learn_router": "Paraglide JS lernen",
+  "registry_search_placeholder": "Rechercher dans le registre...",
+  "registry_search_title": "Recherche du registre",
+  "registry_search_description": "Recherchez des éléments du registre et ouvrez leur documentation.",
+  "registry_search_input_placeholder": "Rechercher des éléments du registre...",
+  "registry_search_empty": "Aucun élément du registre trouvé."
 }

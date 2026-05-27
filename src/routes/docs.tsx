@@ -1,49 +1,22 @@
+import { Blocks } from "lucide-react";
 import {
-  Blocks,
-  Activity,
-  Bot,
-  Database,
-  Globe,
-  KeyRound,
-  Layers,
-  ListChecks,
-  PanelLeft,
-  Shield,
-  Table2,
-  UserRound,
-  Wrench,
-} from "lucide-react";
-import { getRegistryGroup, registryItems } from "@/lib/registry";
+  getRegistryGroup,
+  getRegistryIcon,
+  registryItems,
+} from "@/lib/registry";
 import { createFileRoute } from "@tanstack/react-router";
 import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout";
 import { AppBrand } from "@/components/app-brand";
+import { RegistryCommandMenu } from "@/components/registry-command-menu";
 
 export const Route = createFileRoute("/docs")({ component: DocsLayout });
-
-const iconByName = {
-  "data-table": Table2,
-  form: ListChecks,
-  "locale-toggle": Globe,
-  "user-button": UserRound,
-  "sign-in": KeyRound,
-  "sign-up": KeyRound,
-  auth: Shield,
-  "service-database": Database,
-  "service-opentelemetry": Activity,
-  "embedding-layer": Layers,
-  "sidebar-layout": PanelLeft,
-  agents: Bot,
-  "lint-format": Wrench,
-  "app-brand": Blocks,
-  "krakstack-template": Blocks,
-} as const;
 
 const docsNavGroups: NavGroup[] = registryItems.reduce((sections, item) => {
   const title = getRegistryGroup(item);
   const navItem = {
     label: () => item.title ?? item.name,
     href: `/docs/registry/${item.name}`,
-    icon: iconByName[item.name as keyof typeof iconByName] ?? Shield,
+    icon: getRegistryIcon(item),
   };
 
   const section = sections.find((entry) => entry.label() === title);
@@ -66,6 +39,7 @@ function DocsLayout() {
         />
       }
       groups={docsNavGroups}
+      headerActions={<RegistryCommandMenu />}
     />
   );
 }
