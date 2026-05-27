@@ -20,6 +20,7 @@
     "shadcn:update": "for file in src/components/ui/*.tsx; do bunx shadcn@latest add -y -o $(basename \"$file\" .tsx); done"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.1054.0",
     "@base-ui/react": "^1.4.1",
     "@better-auth/api-key": "^1.6.11",
     "@dnd-kit/core": "^6.3.1",

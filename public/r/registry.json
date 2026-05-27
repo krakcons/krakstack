@@ -340,6 +340,53 @@
       "dependencies": ["@tanstack/react-router", "better-auth", "effect@beta"]
     },
     {
+      "name": "service-notification",
+      "title": "Notification Service",
+      "description": "An Effect notification dispatcher that sends dynamic channel payloads through the installed notification channels matching each top-level message key.",
+      "type": "registry:lib",
+      "docs": "## Overview\n\n`service-notification` provides the core Effect notification dispatcher. Messages are dynamic objects where each top-level key is a channel capability, such as `email`, `discord`, `sns`, or `push`. Installed channels declare the key they handle and validate their own payloads.\n\nThe core package intentionally does not include provider-specific dependencies. Install separate channel registry entries, such as `notification-channel-email-ses`, to add transports.\n\n## Included Files\n\n- `services/notification/index.ts` - Main `NotificationService` interface and layer helpers\n- `services/notification/channel.ts` - Channel contract and channel registry layer\n- `services/notification/schema.ts` - Dynamic message envelope and shared send error\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { NotificationService } from \"@/services/notification\";\nimport { sesNotificationServiceLayer } from \"@/services/notification/channels/ses\";\n\nconst program = Effect.gen(function* () {\n  const notifications = yield* NotificationService;\n\n  yield* notifications.send({\n    email: {\n      to: \"user@example.com\",\n      subject: \"Deploy succeeded\",\n      html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n    },\n  });\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(sesNotificationServiceLayer)),\n);\n```\n\n## Channel Behavior\n\nFor each key in the message, the dispatcher finds an installed channel with the same key and sends that payload. If a message includes a key with no installed channel, the send fails with `NotificationSendError` so notification wiring problems are not silently ignored.\n\nInstall additional channel entries to enable more keys without changing the core service.",
+      "dependencies": ["effect@beta"],
+      "files": [
+        {
+          "path": "src/services/notification/index.ts",
+          "type": "registry:file",
+          "target": "services/notification/index.ts"
+        },
+        {
+          "path": "src/services/notification/channel.ts",
+          "type": "registry:file",
+          "target": "services/notification/channel.ts"
+        },
+        {
+          "path": "src/services/notification/schema.ts",
+          "type": "registry:file",
+          "target": "services/notification/schema.ts"
+        }
+      ],
+      "registryDependencies": []
+    },
+    {
+      "name": "notification-channel-email-ses",
+      "title": "SES Channel",
+      "description": "An AWS SES email channel for the notification service. It handles the `email` message key and validates its own email payload schema.",
+      "type": "registry:lib",
+      "docs": "## Overview\n\n`notification-channel-email-ses` adds AWS SES email delivery to `service-notification`. It handles the `email` top-level key in notification messages and keeps the SES-specific payload schema beside the channel implementation.\n\n## Included Files\n\n- `services/notification/channels/ses/index.ts` - SES channel, config service, and ready-to-use service layer\n- `services/notification/channels/ses/schema.ts` - SES email payload schema\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { NotificationService } from \"@/services/notification\";\nimport { sesNotificationServiceLayer } from \"@/services/notification/channels/ses\";\n\nconst program = Effect.gen(function* () {\n  const notifications = yield* NotificationService;\n\n  yield* notifications.send({\n    email: {\n      to: \"alice@example.com\",\n      subject: \"Deploy succeeded\",\n      html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n    },\n  });\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(sesNotificationServiceLayer)),\n);\n```\n\nThe payload can include `from`, or the channel can read `NOTIFICATION_EMAIL_FROM` from the environment.\n\n## Environment Variables\n\n- `SES_REGION` - AWS SES region\n- `SES_ACCESS_KEY_ID` - AWS access key ID\n- `SES_SECRET_ACCESS_KEY` - AWS secret access key\n- `NOTIFICATION_EMAIL_FROM` - Optional default sender address when the payload omits `from`",
+      "dependencies": ["@aws-sdk/client-sesv2", "effect@beta"],
+      "registryDependencies": ["@krak/service-notification"],
+      "files": [
+        {
+          "path": "src/services/notification/channels/ses/index.ts",
+          "type": "registry:file",
+          "target": "services/notification/channels/ses/index.ts"
+        },
+        {
+          "path": "src/services/notification/channels/ses/schema.ts",
+          "type": "registry:file",
+          "target": "services/notification/channels/ses/schema.ts"
+        }
+      ]
+    },
+    {
       "name": "service-database",
       "title": "Database",
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",

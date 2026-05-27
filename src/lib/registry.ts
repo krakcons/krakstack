@@ -1,6 +1,7 @@
 import registry from "../../registry.json";
 import {
   Activity,
+  BellRing,
   Blocks,
   Bot,
   Database,
@@ -8,6 +9,7 @@ import {
   KeyRound,
   Layers,
   ListChecks,
+  Mail,
   PanelLeft,
   Search,
   Shield,
@@ -29,6 +31,13 @@ export function getRegistryItem(slug: string) {
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "krakstack-template") return "Templates";
   if (item.name === "embedding-layer") return "Layers";
+  if (
+    ["service-notification", "notification-channel-email-ses"].includes(
+      item.name,
+    )
+  ) {
+    return "Notifications";
+  }
   if (["agents", "lint-format"].includes(item.name)) return "Configuration";
   if (item.type === "registry:block") return "Components";
   if (item.type === "registry:lib") return "Services";
@@ -45,6 +54,8 @@ const iconByName = {
   auth: Shield,
   "service-database": Database,
   "service-opentelemetry": Activity,
+  "service-notification": BellRing,
+  "notification-channel-email-ses": Mail,
   "embedding-layer": Layers,
   "sidebar-layout": PanelLeft,
   "search-menu": Search,
