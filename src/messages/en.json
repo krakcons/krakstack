@@ -163,5 +163,6 @@
   "search_menu_description": "Search for an item to open.",
   "search_menu_placeholder": "Search...",
   "search_menu_input_placeholder": "Search...",
-  "search_menu_empty": "No results found."
+  "search_menu_empty": "No results found.",
+  "api_key_rate_limit_notice": "API keys are limited to 1,000 requests per day by default. Contact an admin to request changes."
 }

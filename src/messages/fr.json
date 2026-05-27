@@ -163,5 +163,6 @@
   "search_menu_description": "Recherchez un élément à ouvrir.",
   "search_menu_placeholder": "Rechercher...",
   "search_menu_input_placeholder": "Rechercher...",
-  "search_menu_empty": "Aucun résultat trouvé."
+  "search_menu_empty": "Aucun résultat trouvé.",
+  "api_key_rate_limit_notice": "Les clés API sont limitées à 1 000 requêtes par jour par défaut. Contactez un administrateur pour demander des changements."
 }

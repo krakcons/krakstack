@@ -469,6 +469,9 @@ function OrganizationApiKeyManager({
             createForm.handleSubmit();
           }}
         >
+          <p className="text-muted-foreground text-sm">
+            {m.api_key_rate_limit_notice()}
+          </p>
           <createForm.AppField name="name">
             {(field) => (
               <field.TextField label={m.user_api_key_name()} required />
@@ -493,13 +496,11 @@ function OrganizationApiKeyManager({
         </div>
       ) : null}
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
-      {loading ? (
-        <p className="text-muted-foreground text-sm">{m.user_loading()}</p>
-      ) : null}
       <Separator />
       <DataTable
         columns={apiKeyColumns({ onDelete: deleteKey })}
         data={keys}
+        emptyLabel={loading ? m.user_loading() : m.table_empty()}
         exportFileName={`${organization.slug}-api-keys.csv`}
         features={{ gallery: false }}
       />
