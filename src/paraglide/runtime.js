@@ -1,6 +1,7 @@
 /* eslint-disable */
 
-import "@inlang/paraglide-js/urlpattern-polyfill";
+/** @type {any} */
+const URLPattern = {}
 
 /**
  * The project's base locale.
@@ -21,7 +22,7 @@ export const baseLocale = "en";
  */
 export const locales = /** @type {const} */ (["en","fr"]);
 /** @type {string} */
-export const cookieName = "locale";
+export const cookieName = "PARAGLIDE_LOCALE";
 /** @type {number} */
 export const cookieMaxAge = 34560000;
 /** @type {string} */
@@ -48,12 +49,7 @@ export const strategy = [
  *   exclude?: boolean;
  * }>}
  */
-export const routeStrategies = [
-  {
-    "match": "/api/:path(.*)?",
-    "exclude": true
-  }
-];
+export const routeStrategies = [];
 /**
  * The used URL patterns.
  *
@@ -61,15 +57,15 @@ export const routeStrategies = [
  */
 export const urlPatterns = [
   {
-    "pattern": "/:path(.*)?",
+    "pattern": ":protocol://:domain(.*)::port?/:path(.*)?",
     "localized": [
       [
-        "en",
-        "/en/:path(.*)?"
+        "fr",
+        ":protocol://:domain(.*)::port?/fr/:path(.*)?"
       ],
       [
-        "fr",
-        "/fr/:path(.*)?"
+        "en",
+        ":protocol://:domain(.*)::port?/:path(.*)?"
       ]
     ]
   }
@@ -152,7 +148,7 @@ export function isExcludedByRouteStrategy(url) {
 export let serverAsyncLocalStorage = undefined;
 export const disableAsyncLocalStorage = false;
 export const experimentalMiddlewareLocaleSplitting = false;
-export const isServer = import.meta.env?.SSR ?? typeof window === 'undefined';
+export const isServer = import.meta.env.SSR;
 /** @type {Locale | undefined} */
 export const experimentalStaticLocale = undefined;
 /**
@@ -172,7 +168,7 @@ const TREE_SHAKE_COOKIE_STRATEGY_USED = true;
 const TREE_SHAKE_URL_STRATEGY_USED = true;
 const TREE_SHAKE_GLOBAL_VARIABLE_STRATEGY_USED = false;
 const TREE_SHAKE_PREFERRED_LANGUAGE_STRATEGY_USED = true;
-const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = false;
+const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = true;
 const TREE_SHAKE_LOCAL_STORAGE_STRATEGY_USED = false;
 
 /** @type {any} */ (globalThis).__paraglide =

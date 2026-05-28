@@ -14,6 +14,8 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as DocsSitesTemplateRouteImport } from './routes/docs/sites/template'
+import { Route as DocsSitesAuthRouteImport } from './routes/docs/sites/auth'
 import { Route as DocsRegistrySlugRouteImport } from './routes/docs/registry/$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -42,6 +44,16 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsSitesTemplateRoute = DocsSitesTemplateRouteImport.update({
+  id: '/sites/template',
+  path: '/sites/template',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsSitesAuthRoute = DocsSitesAuthRouteImport.update({
+  id: '/sites/auth',
+  path: '/sites/auth',
+  getParentRoute: () => DocsRoute,
+} as any)
 const DocsRegistrySlugRoute = DocsRegistrySlugRouteImport.update({
   id: '/registry/$slug',
   path: '/registry/$slug',
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/docs/registry/$slug': typeof DocsRegistrySlugRoute
+  '/docs/sites/auth': typeof DocsSitesAuthRoute
+  '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/docs/registry/$slug': typeof DocsRegistrySlugRoute
+  '/docs/sites/auth': typeof DocsSitesAuthRoute
+  '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/api/$': typeof ApiSplatRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/docs/registry/$slug': typeof DocsRegistrySlugRoute
+  '/docs/sites/auth': typeof DocsSitesAuthRoute
+  '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/auth/$'
     | '/docs/registry/$slug'
+    | '/docs/sites/auth'
+    | '/docs/sites/template'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/auth/$'
     | '/docs/registry/$slug'
+    | '/docs/sites/auth'
+    | '/docs/sites/template'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/auth/$'
     | '/docs/registry/$slug'
+    | '/docs/sites/auth'
+    | '/docs/sites/template'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,6 +181,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/sites/template': {
+      id: '/docs/sites/template'
+      path: '/sites/template'
+      fullPath: '/docs/sites/template'
+      preLoaderRoute: typeof DocsSitesTemplateRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/sites/auth': {
+      id: '/docs/sites/auth'
+      path: '/sites/auth'
+      fullPath: '/docs/sites/auth'
+      preLoaderRoute: typeof DocsSitesAuthRouteImport
+      parentRoute: typeof DocsRoute
+    }
     '/docs/registry/$slug': {
       id: '/docs/registry/$slug'
       path: '/registry/$slug'
@@ -176,10 +214,14 @@ declare module '@tanstack/react-router' {
 
 interface DocsRouteChildren {
   DocsRegistrySlugRoute: typeof DocsRegistrySlugRoute
+  DocsSitesAuthRoute: typeof DocsSitesAuthRoute
+  DocsSitesTemplateRoute: typeof DocsSitesTemplateRoute
 }
 
 const DocsRouteChildren: DocsRouteChildren = {
   DocsRegistrySlugRoute: DocsRegistrySlugRoute,
+  DocsSitesAuthRoute: DocsSitesAuthRoute,
+  DocsSitesTemplateRoute: DocsSitesTemplateRoute,
 }
 
 const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { AppBrand } from "@/components/app-brand";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { krakstackSites } from "@/lib/krakstack-sites";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { m } from "@/paraglide/messages";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -17,7 +18,6 @@ import {
   Bot,
   Building2,
   Database,
-  FileCode2,
   Globe,
   KeyRound,
   Layers,
@@ -48,7 +48,6 @@ const iconByName = {
   "embedding-layer": Layers,
   agents: Bot,
   "lint-format": Wrench,
-  "krakstack-template": FileCode2,
 } as const;
 
 const groupedItems = registryItems.reduce(
@@ -108,15 +107,43 @@ function Home() {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-16">
         <section className="mb-16 text-center">
           <p className="text-primary mb-4 text-xs font-bold tracking-[0.16em] uppercase">
-            Open Source
+            {m.home_eyebrow()}
           </p>
           <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-            Components &amp; services for your stack
+            {m.home_title()}
           </h1>
           <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-            Production-ready blocks and libraries you can add to your app with
-            shadcn. Built with TanStack, Effect, and Drizzle.
+            {m.home_description()}
           </p>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-primary mb-6 text-xs font-bold tracking-[0.16em] uppercase">
+            {m.krakstack_sites_heading()}
+          </h2>
+          <div className="grid gap-5 md:grid-cols-2">
+            {krakstackSites.map((site) => (
+              <Link key={site.id} to={site.docsHref} className="group">
+                <Card className="h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md">
+                  <CardHeader>
+                    <div className="bg-primary/10 text-primary mb-2 flex size-9 items-center justify-center rounded-md">
+                      <site.icon className="size-4" />
+                    </div>
+                    <CardTitle>{site.title()}</CardTitle>
+                    <p className="text-primary text-sm font-medium">
+                      {site.url}
+                    </p>
+                    <CardDescription>{site.description()}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+                      {m.view_docs()}
+                    </span>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
         </section>
 
         {groupedItems.map((section) => (
@@ -144,7 +171,7 @@ function Home() {
                     </CardHeader>
                     <CardContent>
                       <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
-                        View docs →
+                        {m.view_docs()}
                       </span>
                     </CardContent>
                   </Card>

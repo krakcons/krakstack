@@ -29,7 +29,6 @@ export function getRegistryItem(slug: string) {
 }
 
 export function getRegistryGroup(item: RegistryItem) {
-  if (item.name === "krakstack-template") return "Templates";
   if (item.name === "embedding-layer") return "Layers";
   if (
     ["service-notification", "notification-channel-email-ses"].includes(
@@ -62,7 +61,6 @@ const iconByName = {
   agents: Bot,
   "lint-format": Wrench,
   "app-brand": Blocks,
-  "krakstack-template": Blocks,
 } as const;
 
 export function getRegistryIcon(item: RegistryItem) {
