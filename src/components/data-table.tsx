@@ -1368,16 +1368,20 @@ export function DataTablePagination<TData>({
   table,
 }: DataTablePaginationProps<TData>) {
   const selectedRows = table.getFilteredSelectedRowModel().rows.length;
+  const filteredRows = table.getFilteredRowModel().rows.length;
 
   return (
     <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
-      <div className="text-muted-foreground text-sm">
-        {selectedRows > 0
-          ? m.table_selected_of({
+      <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <span>{m.table_results({ count: filteredRows })}</span>
+        {selectedRows > 0 ? (
+          <span>
+            {m.table_selected_of({
               selected: selectedRows,
-              total: table.getFilteredRowModel().rows.length,
-            })
-          : ""}
+              total: filteredRows,
+            })}
+          </span>
+        ) : null}
       </div>
       <div className="flex items-center gap-4 sm:justify-end">
         <div className="flex items-center gap-2">
