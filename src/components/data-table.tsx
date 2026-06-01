@@ -608,7 +608,9 @@ const getColumnDisplayName = <TData,>(
   return header ? getHeaderName(header) : columnId;
 };
 
-const escapeCsvValue = (value: string) => {
+export type CsvValue = string | number | boolean | null | undefined;
+
+const escapeCsvValue = (value: CsvValue) => {
   if (value === null || value === undefined) return "";
   const stringValue = String(value);
   if (
@@ -621,10 +623,34 @@ const escapeCsvValue = (value: string) => {
   return stringValue;
 };
 
-const getCsvBlob = <TData,>(
+export const downloadCsv = (
+  headers: CsvValue[],
+  data: CsvValue[][],
+  fileName = "data.csv",
+) => {
+  const csvContent = [headers, ...data]
+    .map((row) => row.map(escapeCsvValue).join(","))
+    .join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = window.URL.createObjectURL(blob);
+
+  link.href = url;
+  link.setAttribute(
+    "download",
+    fileName.endsWith(".csv") ? fileName : `${fileName}.csv`,
+  );
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  requestAnimationFrame(() => window.URL.revokeObjectURL(url));
+};
+
+const exportTableToCsv = <TData,>(
   table: TanstackTable<TData>,
   rows: Row<TData>[],
-): Blob => {
+  fileName = "data.csv",
+): void => {
   const exportableColumns = table
     .getVisibleLeafColumns()
     .filter((column) => column.id !== "actions");
@@ -638,27 +664,7 @@ const getCsvBlob = <TData,>(
     }),
   );
 
-  const csvContent = [headerNames, ...data]
-    .map((row) => row.map(escapeCsvValue).join(","))
-    .join("\n");
-
-  return new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-};
-
-const exportToCsv = <TData,>(
-  table: TanstackTable<TData>,
-  rows: Row<TData>[],
-  fileName = "data.csv",
-): void => {
-  const blob = getCsvBlob(table, rows);
-  const link = document.createElement("a");
-  const url = window.URL.createObjectURL(blob);
-  link.href = url;
-  link.setAttribute("download", fileName);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  requestAnimationFrame(() => window.URL.revokeObjectURL(url));
+  downloadCsv(headerNames, data, fileName);
 };
 
 export function DataTable<TData, TValue>({
@@ -1043,7 +1049,9 @@ export function DataTable<TData, TValue>({
             {showExport ? (
               <Button
                 disabled={!hasExportableRows}
-                onClick={() => exportToCsv(table, exportRows, exportFileName)}
+                onClick={() =>
+                  exportTableToCsv(table, exportRows, exportFileName)
+                }
                 size="sm"
                 variant="outline"
               >
