@@ -197,5 +197,6 @@
   "krakstack_site_auth_feature_orgs_title": "Organisations",
   "krakstack_site_auth_feature_keys_title": "Clés API",
   "krakstack_site_auth_feature_registry_title": "Intégration registre",
-  "table_results": "{count} résultats"
+  "table_results": "{count} résultats",
+  "table_loading": "Chargement..."
 }

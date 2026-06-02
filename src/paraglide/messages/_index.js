@@ -200,6 +200,7 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Krakstack_Site_Auth_Feature_Keys_TitleInputs */
 /** @typedef {{}} Krakstack_Site_Auth_Feature_Registry_TitleInputs */
 /** @typedef {{ count: NonNullable<unknown> }} Table_ResultsInputs */
+/** @typedef {{}} Table_LoadingInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -2973,4 +2974,18 @@ export const table_results = /** @type {((inputs: Table_ResultsInputs, options?:
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.table_results(inputs)
 	return __fr.table_results(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Loading..." |
+*
+* @param {Table_LoadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const table_loading = /** @type {((inputs?: Table_LoadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Table_LoadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.table_loading(inputs)
+	return __fr.table_loading(inputs)
 });

@@ -1,6 +1,7 @@
 {
   "table_page_size": "Page size",
   "table_empty": "No results.",
+  "table_loading": "Loading...",
   "table_filter": "Filter results...",
   "table_results": "{count} results",
   "table_export": "Export",

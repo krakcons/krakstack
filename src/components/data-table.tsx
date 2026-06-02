@@ -160,6 +160,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   emptyLabel?: string;
   exportFileName?: string;
+  isLoading?: boolean;
   onRowClick?: (row: TData) => void;
   from?: ValidateFromPath;
   grouping?: DataTableGrouping<TData>;
@@ -672,6 +673,7 @@ export function DataTable<TData, TValue>({
   data,
   emptyLabel = m.table_empty(),
   exportFileName = "table.csv",
+  isLoading = false,
   onRowClick,
   from,
   grouping,
@@ -702,6 +704,7 @@ export function DataTable<TData, TValue>({
   };
   const currentView: DataTableView = showGallery ? view : "table";
   const isGalleryView = currentView === "gallery";
+  const emptyStateLabel = isLoading ? m.table_loading() : emptyLabel;
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
@@ -884,12 +887,12 @@ export function DataTable<TData, TValue>({
   const renderTableEmptyState = () => (
     <TableRow>
       <TableCell className="h-24 text-center" colSpan={colSpan}>
-        {emptyLabel}
+        {emptyStateLabel}
       </TableCell>
     </TableRow>
   );
 
-  const renderGalleryEmptyState = (message: ReactNode = emptyLabel) => (
+  const renderGalleryEmptyState = (message: ReactNode = emptyStateLabel) => (
     <div className="text-muted-foreground rounded-xl border border-dashed px-4 py-10 text-center text-sm">
       {message}
     </div>

@@ -3,6 +3,7 @@
   "table_name": "Nom",
   "table_status": "Statut",
   "table_empty": "Aucun résultat.",
+  "table_loading": "Chargement...",
   "table_filter": "Filtrer les résultats...",
   "table_results": "{count} résultats",
   "table_export": "Exporter",
