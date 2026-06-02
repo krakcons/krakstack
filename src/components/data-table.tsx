@@ -992,7 +992,7 @@ export function DataTable<TData, TValue>({
       <div className="flex flex-col gap-3 pb-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           {showSearch ? (
-            <div className="relative min-w-sm flex-1">
+            <div className="relative w-full min-w-0 flex-1 sm:min-w-sm">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 className="pl-9"
@@ -1012,7 +1012,12 @@ export function DataTable<TData, TValue>({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
-                    <Button className="h-8" size="sm" variant="outline">
+                    <Button
+                      aria-label={m.table_group_by()}
+                      className="h-8"
+                      size="sm"
+                      variant="outline"
+                    >
                       <Rows3 />
                       <span className="hidden sm:inline">
                         {m.table_group_by()}
@@ -1051,6 +1056,7 @@ export function DataTable<TData, TValue>({
             ) : null}
             {showExport ? (
               <Button
+                aria-label={m.table_export()}
                 disabled={!hasExportableRows}
                 onClick={() =>
                   exportTableToCsv(table, exportRows, exportFileName)
@@ -1058,7 +1064,7 @@ export function DataTable<TData, TValue>({
                 size="sm"
                 variant="outline"
               >
-                <Download size={18} />
+                <Download />
                 <span className="hidden sm:inline">{m.table_export()}</span>
               </Button>
             ) : null}
@@ -1190,7 +1196,14 @@ function DataTableDisplayModeSwitch({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button className="h-8" size="sm" variant="outline" />}
+        render={
+          <Button
+            aria-label={m.table_view()}
+            className="h-8"
+            size="sm"
+            variant="outline"
+          />
+        }
       >
         <Rows3 />
         {m.table_view()}
@@ -1243,15 +1256,20 @@ function DataTableSortDropdown<TData>({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button className="h-8" size="sm" variant="outline">
+          <Button
+            aria-label={m.table_sort_by()}
+            className="h-8"
+            size="sm"
+            variant="outline"
+          >
             {activeSortColumn ? (
               activeSortColumn.desc ? (
-                <ArrowDown className="size-4" />
+                <ArrowDown />
               ) : (
-                <ArrowUp className="size-4" />
+                <ArrowUp />
               )
             ) : (
-              <ChevronsUpDown className="size-4" />
+              <ChevronsUpDown />
             )}
             <span className="hidden sm:inline">{m.table_sort_by()}</span>
           </Button>
@@ -1270,22 +1288,18 @@ function DataTableSortDropdown<TData>({
                 <DropdownMenuSubTrigger inset={!!sortState}>
                   {sortState ? (
                     <span className="pointer-events-none absolute left-3 flex size-4 items-center justify-center">
-                      {sortState.desc ? (
-                        <ArrowDown className="size-4" />
-                      ) : (
-                        <ArrowUp className="size-4" />
-                      )}
+                      {sortState.desc ? <ArrowDown /> : <ArrowUp />}
                     </span>
                   ) : null}
                   {label}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-                    <ArrowUp className="size-4" />
+                    <ArrowUp />
                     {m.table_sort_asc()}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-                    <ArrowDown className="size-4" />
+                    <ArrowDown />
                     {m.table_sort_desc()}
                   </DropdownMenuItem>
                   {sortState && (
@@ -1335,7 +1349,12 @@ function DataTableViewOptions<TData>({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button className="h-8" size="sm" variant="outline">
+          <Button
+            aria-label={m.table_columns()}
+            className="h-8"
+            size="sm"
+            variant="outline"
+          >
             <Settings2 />
             <span className="hidden sm:inline">{m.table_columns()}</span>
           </Button>
