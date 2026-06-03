@@ -120,14 +120,8 @@ export function SearchMenu({
                   <CommandItem
                     key={item.id}
                     className="data-[selected=false]:!text-foreground data-[selected=true]:bg-muted data-[selected=true]:text-foreground gap-3 py-2 data-[selected=false]:!bg-transparent"
-                    value={[
-                      item.label,
-                      item.description,
-                      group.heading,
-                      ...(item.keywords ?? []),
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
+                    value={item.label}
+                    {...(item.keywords ? { keywords: item.keywords } : {})}
                     onSelect={() => {
                       setOpen(false);
                       item.onSelect?.();
