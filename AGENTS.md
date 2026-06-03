@@ -35,7 +35,7 @@ The backend is an effect application that uses:
 - `scripts/` — Build and utility scripts (e.g. merge-messages for i18n)
 - `src/` — Application source
   - `components/` — React components
-    - `ui/` — Shadcn UI primitives (managed by shadcn CLI) — do not edit
+    - `ui/` — Shadcn UI primitives and installed registry components (managed by shadcn CLI) — do not edit
   - `db/` — Drizzle schema definitions (app schema + auth schema)
   - `hooks/` — Shared React hooks
   - `lib/` — Shared utilities, auth config
@@ -77,6 +77,8 @@ Use effect based httpapi, httpserver, openapi, opentelemetry, and database servi
 #### Frontend
 
 Use HttpClient instead of raw fetch, Reactivity for syncing state between components, IndexedDb for local persistence, and Atom for state management
+
+Do not manually edit files under `src/components/ui/` unless explicitly instructed.
 
 - `src/services/example/client/`:
   - Defines the components for the service.

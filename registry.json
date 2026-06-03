@@ -13,7 +13,7 @@
         {
           "path": "src/components/search-menu.tsx",
           "type": "registry:component",
-          "target": "components/search-menu.tsx"
+          "target": "components/ui/search-menu.tsx"
         },
         {
           "path": "src/messages/components/search-menu/en.json",
@@ -39,7 +39,7 @@
         {
           "path": "src/components/app-brand.tsx",
           "type": "registry:component",
-          "target": "components/app-brand.tsx"
+          "target": "components/ui/app-brand.tsx"
         }
       ],
       "dependencies": ["@tanstack/react-router", "lucide-react"]
@@ -54,7 +54,7 @@
         {
           "path": "src/components/data-table.tsx",
           "type": "registry:component",
-          "target": "components/data-table.tsx"
+          "target": "components/ui/data-table.tsx"
         },
         {
           "path": "src/messages/components/data-table/en.json",
@@ -94,7 +94,7 @@
         {
           "path": "src/components/form.tsx",
           "type": "registry:component",
-          "target": "components/form.tsx"
+          "target": "components/ui/form.tsx"
         },
         {
           "path": "src/messages/components/form/en.json",
@@ -134,7 +134,7 @@
         {
           "path": "src/components/locale-toggle.tsx",
           "type": "registry:component",
-          "target": "components/locale-toggle.tsx"
+          "target": "components/ui/locale-toggle.tsx"
         },
         {
           "path": "src/messages/components/locale-toggle/en.json",
@@ -160,7 +160,7 @@
         {
           "path": "src/components/user-button.tsx",
           "type": "registry:component",
-          "target": "components/user-button.tsx"
+          "target": "components/ui/user-button.tsx"
         },
         {
           "path": "src/services/auth/client/central.ts",
@@ -206,7 +206,7 @@
         {
           "path": "src/components/organization-switcher.tsx",
           "type": "registry:component",
-          "target": "components/organization-switcher.tsx"
+          "target": "components/ui/organization-switcher.tsx"
         },
         {
           "path": "src/services/auth/client/central.ts",
@@ -251,7 +251,7 @@
         {
           "path": "src/components/sign-in.tsx",
           "type": "registry:component",
-          "target": "components/sign-in.tsx"
+          "target": "components/ui/sign-in.tsx"
         },
         {
           "path": "src/messages/components/sign-in/en.json",
@@ -277,7 +277,7 @@
         {
           "path": "src/components/sign-up.tsx",
           "type": "registry:component",
-          "target": "components/sign-up.tsx"
+          "target": "components/ui/sign-up.tsx"
         },
         {
           "path": "src/messages/components/sign-up/en.json",
@@ -483,7 +483,7 @@
         {
           "path": "src/components/sidebar-layout.tsx",
           "type": "registry:component",
-          "target": "components/sidebar-layout.tsx"
+          "target": "components/ui/sidebar-layout.tsx"
         }
       ],
       "registryDependencies": [
