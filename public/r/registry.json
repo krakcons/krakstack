@@ -486,14 +486,7 @@
           "target": "components/ui/sidebar-layout.tsx"
         }
       ],
-      "registryDependencies": [
-        "badge",
-        "sidebar",
-        "@krak/app-brand",
-        "@krak/locale-toggle",
-        "@krak/organization-switcher",
-        "@krak/user-button"
-      ],
+      "registryDependencies": ["badge", "sidebar", "@krak/locale-toggle"],
       "dependencies": ["@tanstack/react-router", "lucide-react", "react"]
     }
   ]
