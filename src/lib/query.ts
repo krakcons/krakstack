@@ -1,18 +1,18 @@
 import { Schema } from "effect";
 
-export const PaginationQuery = Schema.Struct({
+export const Query = Schema.Struct({
   page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   pageSize: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
 }).pipe(
   Schema.annotate({
-    identifier: "PaginationQuery",
-    title: "Pagination Query",
+    identifier: "Query",
+    title: "Query",
     description: "Zero-based page request parameters for list endpoints.",
     examples: [{ page: 0, pageSize: 10 }],
   }),
 );
 
-export type PaginationQueryType = typeof PaginationQuery.Type;
+export type QueryType = typeof Query.Type;
 
 export const PaginationMeta = Schema.Struct({
   page: Schema.Int,
