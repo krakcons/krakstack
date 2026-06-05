@@ -12,6 +12,6 @@
       "target": "components/ui/app-brand.tsx"
     }
   ],
-  "docs": "## Overview\n\n`app-brand` provides a small reusable brand link for app shells, home page headers, and navigation chrome. It keeps the icon container, label, and subtitle visually consistent across pages.\n\n## Usage\n\n```tsx\nimport { AppBrand } from \"@/components/app-brand\";\nimport { Blocks } from \"lucide-react\";\n\n<AppBrand label=\"Krakstack\" subtitle=\"Documentation\" icon={Blocks} />\n```",
+  "docs": "## Overview\n\n`app-brand` provides a small reusable brand link for app shells, home page headers, and navigation chrome. It keeps the icon container, label, and subtitle visually consistent across pages.\n\n## Usage\n\n```tsx\nimport { AppBrand } from \"@/components/ui/app-brand\";\nimport { Blocks } from \"lucide-react\";\n\n<AppBrand label=\"Krakstack\" subtitle=\"Documentation\" icon={Blocks} />\n```",
   "type": "registry:block"
 }

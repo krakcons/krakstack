@@ -25,6 +25,6 @@
       "target": "./messages/components/sign-in/fr.json"
     }
   ],
-  "docs": "## Overview\n\n`sign-in` provides a self-contained email/password sign-in card for Better Auth projects. It submits credentials through `authClient.signIn.email()`, displays form-level errors, and links to the sign-up route.\n\n## Features\n\n- Better Auth email/password sign-in\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n- Card-based layout ready to drop into a route\n\n## Usage\n\n```tsx\nimport { SignIn } from \"@/components/sign-in\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignIn />\n</main>\n```",
+  "docs": "## Overview\n\n`sign-in` provides a self-contained email/password sign-in card for Better Auth projects. It submits credentials through `authClient.signIn.email()`, displays form-level errors, and links to the sign-up route.\n\n## Features\n\n- Better Auth email/password sign-in\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n- Card-based layout ready to drop into a route\n\n## Usage\n\n```tsx\nimport { SignIn } from \"@/components/ui/sign-in\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignIn />\n</main>\n```",
   "type": "registry:block"
 }

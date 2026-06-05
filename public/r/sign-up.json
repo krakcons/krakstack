@@ -25,6 +25,6 @@
       "target": "./messages/components/sign-up/fr.json"
     }
   ],
-  "docs": "## Overview\n\n`sign-up` provides a self-contained account creation card for Better Auth projects. It creates users through `authClient.signUp.email()`, displays form-level errors, and links back to the sign-in route.\n\n## Features\n\n- Better Auth email/password registration\n- Name, email, and password fields\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n\n## Usage\n\n```tsx\nimport { SignUp } from \"@/components/sign-up\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignUp />\n</main>\n```",
+  "docs": "## Overview\n\n`sign-up` provides a self-contained account creation card for Better Auth projects. It creates users through `authClient.signUp.email()`, displays form-level errors, and links back to the sign-in route.\n\n## Features\n\n- Better Auth email/password registration\n- Name, email, and password fields\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n\n## Usage\n\n```tsx\nimport { SignUp } from \"@/components/ui/sign-up\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignUp />\n</main>\n```",
   "type": "registry:block"
 }

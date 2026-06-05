@@ -25,6 +25,6 @@
       "target": "./messages/components/locale-toggle/fr.json"
     }
   ],
-  "docs": "## Overview\n\n`locale-toggle` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- Localized menu label and locale names\n- Icon-only trigger with accessible screen-reader text\n- Includes component-scoped message files\n\n## Usage\n\n```tsx\nimport { LocaleToggle } from \"@/components/locale-toggle\";\n\n<LocaleToggle />\n```",
+  "docs": "## Overview\n\n`locale-toggle` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- Localized menu label and locale names\n- Icon-only trigger with accessible screen-reader text\n- Includes component-scoped message files\n\n## Usage\n\n```tsx\nimport { LocaleToggle } from \"@/components/ui/locale-toggle\";\n\n<LocaleToggle />\n```",
   "type": "registry:block"
 }
