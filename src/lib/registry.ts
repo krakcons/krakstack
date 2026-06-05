@@ -8,6 +8,7 @@ import {
   Globe,
   KeyRound,
   Layers,
+  ListFilter,
   ListChecks,
   Mail,
   PanelLeft,
@@ -30,6 +31,7 @@ export function getRegistryItem(slug: string) {
 
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "embedding-layer") return "Layers";
+  if (item.name === "query-helpers") return "Libraries";
   if (
     ["service-notification", "notification-channel-email-ses"].includes(
       item.name,
@@ -56,6 +58,7 @@ const iconByName = {
   "service-notification": BellRing,
   "notification-channel-email-ses": Mail,
   "embedding-layer": Layers,
+  "query-helpers": ListFilter,
   "sidebar-layout": PanelLeft,
   "search-menu": Search,
   agents: Bot,

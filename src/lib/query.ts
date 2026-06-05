@@ -1,14 +1,51 @@
 import { Schema } from "effect";
 
+export type SortDirection = "asc" | "desc";
+
+export interface SortState {
+  id: string;
+  desc: boolean;
+}
+
+export interface SortParam {
+  id: string;
+  direction: SortDirection;
+}
+
+export const encodeSortParam = (sorting: ReadonlyArray<SortState> = []) => {
+  const sort = sorting[0];
+  return sort ? `${sort.id}:${sort.desc ? "desc" : "asc"}` : undefined;
+};
+
+export const decodeSortParam = (sort: string | undefined): SortParam | null => {
+  const [id, direction] = sort?.split(":") ?? [];
+
+  if (!id || (direction !== "asc" && direction !== "desc")) {
+    return null;
+  }
+
+  return { id, direction };
+};
+
 export const Query = Schema.Struct({
   page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   pageSize: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+  globalFilter: Schema.optional(Schema.String),
+  sort: Schema.optional(Schema.String),
 }).pipe(
   Schema.annotate({
     identifier: "Query",
     title: "Query",
-    description: "Zero-based page request parameters for list endpoints.",
-    examples: [{ page: 0, pageSize: 10 }],
+    description:
+      "Zero-based page request parameters with optional filtering and sorting for list endpoints.",
+    examples: [
+      {
+        page: 0,
+        pageSize: 10,
+        globalFilter: "housing",
+        sort: "publicName:asc",
+      },
+    ],
   }),
 );
 

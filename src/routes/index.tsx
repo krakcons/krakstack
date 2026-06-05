@@ -22,6 +22,7 @@ import {
   Globe,
   KeyRound,
   Layers,
+  ListFilter,
   ListChecks,
   Mail,
   Shield,
@@ -47,6 +48,7 @@ const iconByName = {
   "service-notification": BellRing,
   "notification-channel-email-ses": Mail,
   "embedding-layer": Layers,
+  "query-helpers": ListFilter,
   agents: Bot,
   "lint-format": Wrench,
 } as const;
