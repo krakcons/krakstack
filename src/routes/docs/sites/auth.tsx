@@ -1,7 +1,7 @@
 import { Code2, ExternalLink } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { SidebarPageHeader } from "@/components/sidebar-layout";
+import { SidebarPageHeader } from "@/components/ui/sidebar-layout";
 import {
   Card,
   CardDescription,

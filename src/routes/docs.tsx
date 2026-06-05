@@ -5,8 +5,8 @@ import {
   registryItems,
 } from "@/lib/registry";
 import { createFileRoute } from "@tanstack/react-router";
-import { SidebarLayout, type NavGroup } from "@/components/sidebar-layout";
-import { AppBrand } from "@/components/app-brand";
+import { SidebarLayout, type NavGroup } from "@/components/ui/sidebar-layout";
+import { AppBrand } from "@/components/ui/app-brand";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { m } from "@/paraglide/messages";

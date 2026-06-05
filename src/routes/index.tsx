@@ -5,8 +5,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AppBrand } from "@/components/app-brand";
-import { LocaleToggle } from "@/components/locale-toggle";
+import { AppBrand } from "@/components/ui/app-brand";
+import { LocaleToggle } from "@/components/ui/locale-toggle";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { getRegistryGroup, registryItems } from "@/lib/registry";

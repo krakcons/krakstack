@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { UserButton } from "@/components/user-button";
+import { UserButton } from "@/components/ui/user-button";
 import {
   Card,
   CardContent,

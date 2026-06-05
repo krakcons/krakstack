@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { OrganizationSwitcher } from "@/components/organization-switcher";
+import { OrganizationSwitcher } from "@/components/ui/organization-switcher";
 import { Button } from "@/components/ui/button";
 import {
   Card,

@@ -1,4 +1,4 @@
-import { useAppForm } from "@/components/form";
+import { useAppForm } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import {
   Card,

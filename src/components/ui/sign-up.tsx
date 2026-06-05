@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 
-import { ErrorMessage, useAppForm } from "@/components/form";
+import { ErrorMessage, useAppForm } from "@/components/ui/form";
 import {
   Card,
   CardContent,

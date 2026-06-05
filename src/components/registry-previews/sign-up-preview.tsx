@@ -1,4 +1,4 @@
-import { SignUp } from "@/components/sign-up";
+import { SignUp } from "@/components/ui/sign-up";
 import {
   Card,
   CardContent,

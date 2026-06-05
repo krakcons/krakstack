@@ -26,8 +26,8 @@ import {
 import {
   createDataTableActionsColumn,
   DataTable,
-} from "@/components/data-table";
-import { useAppForm } from "@/components/form";
+} from "@/components/ui/data-table";
+import { useAppForm } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

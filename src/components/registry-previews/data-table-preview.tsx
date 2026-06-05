@@ -4,7 +4,7 @@ import {
   TableSearchSchema,
   TableSearchSchemaStandard,
   createDataTableActionsColumn,
-} from "@/components/data-table";
+} from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

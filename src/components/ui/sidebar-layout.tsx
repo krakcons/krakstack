@@ -2,7 +2,7 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { LocaleToggle } from "@/components/locale-toggle";
+import { LocaleToggle } from "@/components/ui/locale-toggle";
 import {
   Sidebar,
   SidebarContent,
