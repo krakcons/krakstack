@@ -165,6 +165,9 @@ interface DataTableProps<TData, TValue> {
   from?: ValidateFromPath;
   grouping?: DataTableGrouping<TData>;
   gallery?: DataTableGalleryConfig;
+  serverPagination?: {
+    rowCount: number;
+  };
   features?: {
     pagination?: boolean;
     search?: boolean;
@@ -678,6 +681,7 @@ export function DataTable<TData, TValue>({
   from,
   grouping,
   gallery,
+  serverPagination,
   features = DEFAULT_TABLE_FEATURES,
 }: DataTableProps<TData, TValue>) {
   const search = useRouterState({
@@ -783,7 +787,6 @@ export function DataTable<TData, TValue>({
       }));
     },
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onGlobalFilterChange: (updater) => {
       const newGlobalFilter =
@@ -804,6 +807,9 @@ export function DataTable<TData, TValue>({
       );
     },
     getFilteredRowModel: getFilteredRowModel(),
+    ...(serverPagination
+      ? { manualPagination: true, rowCount: serverPagination.rowCount }
+      : { getPaginationRowModel: getPaginationRowModel() }),
     autoResetPageIndex: false,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
