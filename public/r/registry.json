@@ -408,6 +408,21 @@
       ]
     },
     {
+      "name": "pagination",
+      "title": "Pagination",
+      "description": "Reusable Effect schemas and types for paginated API request and response envelopes.",
+      "type": "registry:lib",
+      "docs": "## Overview\n\n`pagination` provides reusable Effect schemas for API endpoints that accept paginated requests and return paginated lists. The request uses zero-based `page` and bounded `pageSize` fields. The response helper wraps item arrays in `{ data, meta }`, where `meta` includes `page`, `pageSize`, `total`, and `pageCount`.\n\n## Included Files\n\n- `lib/pagination.ts` - `PaginationQuery`, `PaginationMeta`, `PaginatedResponse`, and exported schema types\n\n## Usage\n\n```ts\nimport { PaginationQuery, PaginatedResponse } from \"@/lib/pagination\";\nimport { Record } from \"@/services/record/schema\";\n\nexport const PaginatedRecords = PaginatedResponse(Record);\n\nHttpApiEndpoint.get(\"listRecords\", \"/records\", {\n  query: PaginationQuery,\n  success: PaginatedRecords,\n});\n```\n\nReturn data with the matching envelope:\n\n```ts\nreturn {\n  data: rows,\n  meta: {\n    page,\n    pageSize,\n    total,\n    pageCount: Math.ceil(total / pageSize),\n  },\n};\n```",
+      "dependencies": ["effect@beta"],
+      "files": [
+        {
+          "path": "src/lib/pagination.ts",
+          "type": "registry:file",
+          "target": "lib/pagination.ts"
+        }
+      ]
+    },
+    {
       "name": "service-opentelemetry",
       "title": "OpenTelemetry",
       "description": "An Effect service that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's unstable observability and HTTP modules, with Effect Logger bridging so all application logs are sent to the collector.",

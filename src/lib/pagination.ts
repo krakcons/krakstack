@@ -1,0 +1,37 @@
+import { Schema } from "effect";
+
+export const PaginationQuery = Schema.Struct({
+  page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  pageSize: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+}).pipe(
+  Schema.annotate({
+    identifier: "PaginationQuery",
+    title: "Pagination Query",
+    description: "Zero-based page request parameters for list endpoints.",
+    examples: [{ page: 0, pageSize: 10 }],
+  }),
+);
+
+export type PaginationQueryType = typeof PaginationQuery.Type;
+
+export const PaginationMeta = Schema.Struct({
+  page: Schema.Int,
+  pageSize: Schema.Int,
+  total: Schema.Int,
+  pageCount: Schema.Int,
+}).pipe(
+  Schema.annotate({
+    identifier: "PaginationMeta",
+    title: "Pagination Metadata",
+    description: "Pagination metadata returned with a paginated list response.",
+    examples: [{ page: 0, pageSize: 10, total: 125, pageCount: 13 }],
+  }),
+);
+
+export type PaginationMetaType = typeof PaginationMeta.Type;
+
+export const PaginatedResponse = <A>(items: Schema.Schema<A>) =>
+  Schema.Struct({
+    data: Schema.Array(items),
+    meta: PaginationMeta,
+  });
