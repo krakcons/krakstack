@@ -648,6 +648,10 @@ Run these on changes to ensure the code is in good shape.
 - `bun lint`: Check the code for linting errors.
 - `bun fmt`: Format the code.
 
+## References
+
+Check the .references folder for reference repositories when doing any non-trivial code changes.
+
 <!-- intent-skills:start -->
 
 ## Skill Loading
@@ -658,20 +662,5 @@ Before substantial work:
 - Skill guidance: if one local skill clearly matches the task, run `npx @tanstack/intent@latest load <package>#<skill>` and follow the returned `SKILL.md`.
 - Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
 - Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+
 <!-- intent-skills:end -->
-
-<!-- effect-solutions:start -->
-
-## Effect Best Practices
-
-**IMPORTANT:** Always consult effect-solutions before writing Effect code.
-
-1. Run `effect-solutions list` to see available guides
-2. Run `effect-solutions show <topic>...` for relevant patterns (supports multiple topics)
-3. Search `~/.local/share/effect-solutions/effect` for real implementations
-
-Topics: quick-start, project-setup, tsconfig, basics, services-and-layers, data-modeling, error-handling, config, testing, cli.
-
-Never guess at Effect patterns - check the guide first.
-
-<!-- effect-solutions:end -->
