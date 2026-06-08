@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ""
+      vite_analytics_website_id:
+        description: "Public analytics website ID injected into the Vite build"
+        required: false
+        type: string
+        default: ""
       image_sha:
         description: "Existing image SHA to deploy"
         required: false
@@ -103,6 +108,7 @@ jobs:
           build-args: |
             VITE_SITE_URL=${{ inputs.vite_site_url }}
             VITE_KRAKSTACK_AUTH_URL=${{ inputs.vite_krakstack_auth_url }}
+            VITE_ANALYTICS_WEBSITE_ID=${{ inputs.vite_analytics_website_id }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
