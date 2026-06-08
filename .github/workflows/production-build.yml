@@ -20,6 +20,7 @@ jobs:
       krak_task: site
       vite_site_url: https://krakstack.net
       vite_krakstack_auth_url: https://auth.krakstack.net
+      vite_analytics_website_id: 43310932-a80f-4f4c-b1af-2ff937706574
     secrets:
       KRAK_ADMIN_URL: ${{ secrets.KRAK_ADMIN_URL }}
       KRAK_RELEASE_TOKEN: ${{ secrets.KRAK_RELEASE_TOKEN }}
