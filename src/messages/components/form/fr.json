@@ -3,7 +3,7 @@
   "key_value_field_value": "Valeur",
   "key_value_field_delete": "Supprimer",
   "key_value_field_add": "Ajouter",
-  "form_accepts": "Accepte :",
+  "form_accepts": "Accepte : {accepts}",
   "form_suggested_image_size": "Taille de l'image suggérée :",
   "actions_delete": "Supprimer",
   "form_block_navigation_title": "Quitter sans sauvegarder?",
