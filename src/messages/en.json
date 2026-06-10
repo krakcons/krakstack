@@ -198,5 +198,6 @@
   "krakstack_site_auth_feature_keys_title": "API keys",
   "krakstack_site_auth_feature_registry_title": "Registry integration",
   "table_results": "{count} results",
-  "table_loading": "Loading..."
+  "table_loading": "Loading...",
+  "table_clear_search": "Clear search"
 }

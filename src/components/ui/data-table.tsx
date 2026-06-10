@@ -80,6 +80,7 @@ import {
   Rows3,
   Search,
   Settings2,
+  X,
 } from "lucide-react";
 import {
   Fragment,
@@ -740,6 +741,7 @@ export function DataTable<TData, TValue>({
     navigate({
       to: ".",
       replace: options?.replace ?? false,
+      resetScroll: false,
       search: (current: Record<string, unknown>) =>
         updater((current ?? {}) as TableParams & Record<string, unknown>),
     });
@@ -1001,7 +1003,7 @@ export function DataTable<TData, TValue>({
             <div className="relative w-full min-w-0 flex-1 sm:min-w-sm">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
-                className="pl-9"
+                className="px-9"
                 onChange={(event) => {
                   setSearchInput(event.target.value);
                   table.setGlobalFilter(event.target.value);
@@ -1009,6 +1011,21 @@ export function DataTable<TData, TValue>({
                 placeholder={m.table_filter()}
                 value={searchInput}
               />
+              {searchInput ? (
+                <Button
+                  aria-label={m.table_clear_search()}
+                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2 active:!-translate-y-1/2"
+                  onClick={() => {
+                    setSearchInput("");
+                    table.setGlobalFilter("");
+                  }}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <X className="size-4" />
+                </Button>
+              ) : null}
             </div>
           ) : (
             <div />

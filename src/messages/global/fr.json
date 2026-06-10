@@ -12,6 +12,7 @@
   "registry_search_input_placeholder": "Rechercher des éléments du registre...",
   "registry_search_empty": "Aucun élément du registre trouvé.",
   "api_key_rate_limit_notice": "Les clés API sont limitées à 1 000 requêtes par jour par défaut. Contactez un administrateur pour demander des changements.",
+  "table_clear_search": "Effacer la recherche",
   "home_eyebrow": "Open source",
   "home_title": "Composants et services pour votre stack",
   "home_description": "Des blocs et bibliothèques prêts pour la production à ajouter à votre application avec shadcn. Conçu avec TanStack, Effect et Drizzle.",

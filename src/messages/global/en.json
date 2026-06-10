@@ -12,6 +12,7 @@
   "registry_search_input_placeholder": "Search registry items...",
   "registry_search_empty": "No registry items found.",
   "api_key_rate_limit_notice": "API keys are limited to 1,000 requests per day by default. Contact an admin to request changes.",
+  "table_clear_search": "Clear search",
   "home_eyebrow": "Open Source",
   "home_title": "Components & services for your stack",
   "home_description": "Production-ready blocks and libraries you can add to your app with shadcn. Built with TanStack, Effect, and Drizzle.",
