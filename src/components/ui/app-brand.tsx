@@ -2,12 +2,15 @@ import { Link } from "@tanstack/react-router";
 import type { ComponentProps } from "react";
 import type { LucideIcon } from "lucide-react";
 
-type AppBrandBaseProps = Omit<ComponentProps<typeof Link>, "to"> & {
+type AppBrandBaseProps = {
   label: string;
   subtitle: string;
-  to?: string;
+  className?: string;
   variant?: "default" | "sidebar";
-};
+} & (
+  | (Omit<ComponentProps<typeof Link>, "to"> & { to?: string })
+  | (ComponentProps<"div"> & { to: null })
+);
 
 type AppBrandProps = AppBrandBaseProps &
   (
@@ -21,7 +24,7 @@ export function AppBrand({
   subtitle,
   icon: Icon,
   imageSrc,
-  to = "/",
+  to,
   variant = "default",
   ...props
 }: AppBrandProps) {
@@ -32,20 +35,8 @@ export function AppBrand({
   const contentClassName =
     variant === "sidebar" ? "group-data-[collapsible=icon]:hidden" : undefined;
 
-  return (
-    <Link
-      to={to}
-      className={[
-        "flex min-w-0 items-center gap-2 text-foreground hover:text-foreground",
-        variant === "sidebar"
-          ? "p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
-          : "",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    >
+  const content = (
+    <>
       <div
         className={[
           "flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md",
@@ -68,6 +59,33 @@ export function AppBrand({
           {subtitle}
         </span>
       </div>
+    </>
+  );
+  const brandClassName = [
+    "flex min-w-0 items-center gap-2 text-foreground hover:text-foreground",
+    variant === "sidebar"
+      ? "p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+      : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (to === null) {
+    return (
+      <div className={brandClassName} {...(props as ComponentProps<"div">)}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      to={to ?? "/"}
+      className={brandClassName}
+      {...(props as Omit<ComponentProps<typeof Link>, "to">)}
+    >
+      {content}
     </Link>
   );
 }

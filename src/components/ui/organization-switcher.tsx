@@ -1,6 +1,12 @@
 import type { ApiKey } from "@better-auth/api-key/client";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Building2, KeyRound, PencilIcon, Trash2 } from "lucide-react";
+import {
+  Building2,
+  ChevronsUpDown,
+  KeyRound,
+  PencilIcon,
+  Trash2,
+} from "lucide-react";
 import {
   type ComponentProps,
   type ReactNode,
@@ -13,6 +19,7 @@ import {
   createDataTableActionsColumn,
   DataTable,
 } from "@/components/ui/data-table";
+import { AppBrand } from "@/components/ui/app-brand";
 import { useAppForm } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,11 +94,19 @@ export function OrganizationSwitcher({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" className="max-w-48 justify-start">
-              <Building2 data-icon="inline-start" />
-              <span className="truncate">
-                {activeName ?? m.organization_switcher_label()}
-              </span>
+            <Button
+              variant="outline"
+              className="h-11 max-w-64 justify-between gap-3 px-2"
+            >
+              <AppBrand
+                to={null}
+                label={activeName ?? m.organization_switcher_label()}
+                subtitle={active?.slug ?? m.organization_switcher_label()}
+                imageSrc="/logo192.png"
+                icon={Building2}
+                className="min-w-0 flex-1 text-left [&_span:first-child]:text-sm [&>div:first-child]:size-7"
+              />
+              <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
             </Button>
           }
         />
@@ -103,25 +118,14 @@ export function OrganizationSwitcher({
         >
           <DropdownMenuGroup>
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Building2 className="size-4.5" />
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  {active ? (
-                    <>
-                      <span className="text-foreground truncate font-medium">
-                        {active.name}
-                      </span>
-                      <span className="text-muted-foreground truncate text-xs">
-                        {active.slug}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-foreground truncate font-medium">
-                      {m.organization_switcher_label()}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <AppBrand
+                to={null}
+                label={active?.name ?? m.organization_switcher_label()}
+                subtitle={active?.slug ?? m.organization_switcher_label()}
+                imageSrc="/logo192.png"
+                icon={Building2}
+                className="px-1 py-1.5 text-left"
+              />
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {organizations.isPending ? (
@@ -146,8 +150,14 @@ export function OrganizationSwitcher({
                     if (!result.error) await refresh();
                   }}
                 >
-                  <Building2 />
-                  <span className="truncate">{organization.name}</span>
+                  <AppBrand
+                    to={null}
+                    label={organization.name}
+                    subtitle={organization.slug}
+                    imageSrc="/logo192.png"
+                    icon={Building2}
+                    className="w-full text-left [&>div:first-child]:size-7"
+                  />
                 </DropdownMenuItem>
               ))
             ) : !organizations.isPending ? (
