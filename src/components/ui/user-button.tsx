@@ -157,7 +157,9 @@ export const UserButton = ({
 
   const displayName = session.user.name.trim();
   const displayEmail = session.user.email.trim();
-  const displayImage = session.user.image?.trim() ?? "";
+  const displayImage = session.user.image?.trim()
+    ? authUrl(session.user.image.trim())
+    : "";
 
   const signOut = async () => {
     const redirectUrl = signOutRedirect.startsWith("http")

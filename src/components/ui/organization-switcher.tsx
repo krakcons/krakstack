@@ -225,7 +225,7 @@ const organizationDisplay = (organization: OrganizationSummary | null) => {
       organization?.name ||
       m.organization_switcher_label(),
     subtitle: organization?.slug ?? m.organization_switcher_label(),
-    logo: translation?.logo || undefined,
+    logo: translation?.logo ? centralAuthUrl(translation.logo) : undefined,
   };
 };
 
