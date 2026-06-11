@@ -27,6 +27,7 @@ import {
   createDataTableActionsColumn,
   DataTable,
 } from "@/components/ui/data-table";
+import { AppBrand } from "@/components/ui/app-brand";
 import { useAppForm } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
 import { centralAuthClient } from "@/services/auth/client/central";
@@ -243,26 +243,14 @@ export const UserButton = ({
         >
           <DropdownMenuGroup>
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <UserIcon className="size-4.5" />
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  {displayName && (
-                    <span className="text-foreground truncate font-medium">
-                      {displayName}
-                    </span>
-                  )}
-                  {displayEmail && (
-                    <span
-                      className={cn(
-                        "truncate text-xs",
-                        displayName && "text-muted-foreground",
-                      )}
-                    >
-                      {displayEmail}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <AppBrand
+                to={null}
+                label={displayName || displayEmail}
+                subtitle={displayName ? displayEmail : m.user_button_account()}
+                icon={UserIcon}
+                className="px-1 py-1.5 text-left text-sm"
+                {...(displayImage ? { imageSrc: displayImage } : {})}
+              />
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
