@@ -40,7 +40,7 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Key_Value_Field_DeleteInputs */
 /** @typedef {{}} Key_Value_Field_AddInputs */
 /** @typedef {{ accepts: NonNullable<unknown> }} Form_AcceptsInputs */
-/** @typedef {{}} Form_Suggested_Image_SizeInputs */
+/** @typedef {{ width: NonNullable<unknown>, height: NonNullable<unknown> }} Form_Suggested_Image_SizeInputs */
 /** @typedef {{}} Actions_DeleteInputs */
 /** @typedef {{}} Form_Block_Navigation_TitleInputs */
 /** @typedef {{}} Form_Block_Navigation_DescriptionInputs */
@@ -753,13 +753,13 @@ export const form_accepts = /** @type {((inputs: Form_AcceptsInputs, options?: {
 /**
 * | output |
 * | --- |
-* | "Suggested image size:" |
+* | "Suggested image size: {width} x {height}" |
 *
 * @param {Form_Suggested_Image_SizeInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const form_suggested_image_size = /** @type {((inputs?: Form_Suggested_Image_SizeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Form_Suggested_Image_SizeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+export const form_suggested_image_size = /** @type {((inputs: Form_Suggested_Image_SizeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Form_Suggested_Image_SizeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.form_suggested_image_size(inputs)
 	return __fr.form_suggested_image_size(inputs)
