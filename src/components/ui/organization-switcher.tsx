@@ -558,6 +558,7 @@ function EditOrganizationSection({
               <field.TextField label={m.organization_slug()} required />
             )}
           </form.AppField>
+          <Separator className="my-2" />
           {editingLocale === "en" ? (
             <>
               <OrganizationTranslationHeader
@@ -718,6 +719,7 @@ function CreateOrganizationSection({
               />
             )}
           </form.AppField>
+          <Separator className="my-2" />
           {editingLocale === "en" ? (
             <>
               <OrganizationTranslationHeader
