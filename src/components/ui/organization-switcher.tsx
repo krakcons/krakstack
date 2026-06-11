@@ -46,6 +46,7 @@ import { centralAuthClient } from "@/services/auth/client/central";
 type OrganizationSwitcherProps = {
   side?: ComponentProps<typeof DropdownMenuContent>["side"];
   renderUnauthenticated?: () => ReactNode;
+  locked?: boolean;
 };
 
 type OrganizationSummary = {
@@ -67,6 +68,7 @@ const slugify = (value: string) =>
 export function OrganizationSwitcher({
   side = "bottom",
   renderUnauthenticated,
+  locked = false,
 }: OrganizationSwitcherProps) {
   const session = centralAuthClient.useSession();
   const organizations = centralAuthClient.useListOrganizations();
@@ -79,10 +81,13 @@ export function OrganizationSwitcher({
 
   const active = activeOrganization.data;
   const activeName = active?.name;
-  const selectableOrganizations =
-    organizations.data?.filter(
-      (organization) => organization.id !== active?.id,
-    ) ?? [];
+  const selectableOrganizations = !locked
+    ? (organizations.data?.filter(
+        (organization) => organization.id !== active?.id,
+      ) ?? [])
+    : [];
+  const hasOrganizationListItems =
+    organizations.isPending || Boolean(organizations.error) || !locked;
 
   const refresh = async () => {
     await organizations.refetch();
@@ -95,7 +100,7 @@ export function OrganizationSwitcher({
         <DropdownMenuTrigger
           render={
             <Button
-              variant="outline"
+              variant="ghost"
               className="h-11 max-w-64 justify-between gap-3 px-2"
             >
               <AppBrand
@@ -104,7 +109,7 @@ export function OrganizationSwitcher({
                 subtitle={active?.slug ?? m.organization_switcher_label()}
                 imageSrc="/logo192.png"
                 icon={Building2}
-                className="min-w-0 flex-1 text-left [&_span:first-child]:text-sm [&>div:first-child]:size-7"
+                className="min-w-0 flex-1 text-left"
               />
               <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
             </Button>
@@ -124,10 +129,10 @@ export function OrganizationSwitcher({
                 subtitle={active?.slug ?? m.organization_switcher_label()}
                 imageSrc="/logo192.png"
                 icon={Building2}
-                className="px-1 py-1.5 text-left"
+                className="px-1 py-1.5 text-left text-sm"
               />
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            {hasOrganizationListItems ? <DropdownMenuSeparator /> : null}
             {organizations.isPending ? (
               <DropdownMenuItem disabled>
                 {m.organization_loading()}
@@ -138,7 +143,7 @@ export function OrganizationSwitcher({
                 {organizations.error.message}
               </DropdownMenuItem>
             ) : null}
-            {selectableOrganizations.length ? (
+            {!locked && selectableOrganizations.length ? (
               selectableOrganizations.map((organization) => (
                 <DropdownMenuItem
                   key={organization.id}
@@ -160,18 +165,22 @@ export function OrganizationSwitcher({
                   />
                 </DropdownMenuItem>
               ))
-            ) : !organizations.isPending ? (
+            ) : !locked && !organizations.isPending ? (
               <DropdownMenuItem disabled>
                 {active
                   ? m.organization_switcher_no_other_organizations()
                   : m.organization_switcher_empty()}
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setDialog("create")}>
-              <Building2 />
-              {m.organization_create_title()}
-            </DropdownMenuItem>
+            {!locked ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setDialog("create")}>
+                  <Building2 />
+                  {m.organization_create_title()}
+                </DropdownMenuItem>
+              </>
+            ) : null}
             {activeOrganization.data ? (
               <>
                 <DropdownMenuSeparator />
