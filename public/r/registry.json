@@ -200,13 +200,18 @@
       "name": "organization-switcher",
       "type": "registry:block",
       "title": "Organization Switcher",
-      "description": "A Better Auth organization switcher backed by the central Krakstack Auth client, with organization creation, editing, active organization switching, and organization API keys.",
-      "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `centralAuthClient` so the active organization, memberships, and organization API keys stay scoped to the central auth service rather than the app-local session.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- Edit the active organization's name and slug\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@/components/ui/organization-switcher\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
+      "description": "A Better Auth organization switcher backed by the central Krakstack Auth client, with localized organization profile metadata and organization API keys.",
+      "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `centralAuthClient` so the active organization, memberships, organization metadata, and organization API keys stay scoped to the central auth service rather than the app-local session.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- Edit the active organization's canonical name and slug\n- Store localized public profile data in `metadata.translations`\n- Locale editing selector registered as `editing-locale-switcher`\n- Localized organization name, logo, contact email, and location fields\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@/components/ui/organization-switcher\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
       "files": [
         {
           "path": "src/components/ui/organization-switcher.tsx",
           "type": "registry:component",
           "target": "components/ui/organization-switcher.tsx"
+        },
+        {
+          "path": "src/components/ui/editing-locale-switcher.tsx",
+          "type": "registry:component",
+          "target": "components/ui/editing-locale-switcher.tsx"
         },
         {
           "path": "src/services/auth/client/central.ts",
@@ -231,6 +236,8 @@
         "dialog",
         "dropdown-menu",
         "form",
+        "label",
+        "select",
         "separator"
       ],
       "dependencies": [

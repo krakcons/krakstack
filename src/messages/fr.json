@@ -137,7 +137,7 @@
   "organization_create_title": "Créer une organisation",
   "organization_create_description": "Créez un espace de travail pour l'accès en équipe.",
   "organization_edit_title": "Modifier l'organisation",
-  "organization_edit_description": "Mettez à jour le nom et le slug de l'organisation active.",
+  "organization_edit_description": "Mettez à jour les détails canoniques et le profil localisé de l'organisation active.",
   "organization_name": "Nom de l'organisation",
   "organization_slug": "Slug de l'organisation",
   "organization_slug_description": "Laissez vide pour en générer un à partir du nom.",
@@ -199,5 +199,16 @@
   "krakstack_site_auth_feature_registry_title": "Intégration registre",
   "table_results": "{count} résultats",
   "table_loading": "Chargement...",
-  "table_clear_search": "Effacer la recherche"
+  "table_clear_search": "Effacer la recherche",
+  "organization_translation_english": "Profil anglais",
+  "organization_translation_french": "Profil français",
+  "organization_translation_description": "Détails localisés de l'organisation stockés dans les métadonnées.",
+  "organization_translation_name": "Nom localisé",
+  "organization_logo": "Logo",
+  "organization_contact_email": "E-mail de contact",
+  "organization_location": "Emplacement",
+  "organization_editing_locale": "Modification",
+  "organization_locale_english": "Anglais",
+  "organization_locale_french": "Français",
+  "organization_logo_upload_error": "Impossible de téléverser le logo de l'organisation."
 }

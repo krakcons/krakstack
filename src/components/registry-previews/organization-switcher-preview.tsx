@@ -25,6 +25,7 @@ export function OrganizationSwitcherPreview() {
       </CardHeader>
       <CardContent className="flex items-center justify-center py-12">
         <OrganizationSwitcher
+          className="max-w-xs"
           renderUnauthenticated={() => (
             <Button
               onClick={async () => {

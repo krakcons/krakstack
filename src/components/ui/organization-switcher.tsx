@@ -19,6 +19,10 @@ import {
   createDataTableActionsColumn,
   DataTable,
 } from "@/components/ui/data-table";
+import {
+  EditingLocaleSwitcher,
+  type EditingLocale,
+} from "@/components/ui/editing-locale-switcher";
 import { AppBrand } from "@/components/ui/app-brand";
 import { useAppForm } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +46,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
+import { getLocale } from "@/paraglide/runtime";
 import { centralAuthClient } from "@/services/auth/client/central";
 
 type OrganizationSwitcherProps = {
@@ -55,10 +60,39 @@ type OrganizationSummary = {
   id: string;
   name: string;
   slug: string;
+  metadata?: unknown;
 };
 
 type OrganizationDialog = "create" | "manage" | "apiKeys";
 type ApiKeySummary = Omit<ApiKey, "key">;
+type OrganizationLocale = EditingLocale;
+
+type OrganizationTranslation = {
+  locale: OrganizationLocale;
+  name: string;
+  logo: string | null;
+  contactEmail: string | null;
+  location: string | null;
+};
+
+type OrganizationMetadata = {
+  translations: OrganizationTranslation[];
+};
+
+type OrganizationFormValues = {
+  name: string;
+  slug: string;
+  enName: string;
+  enLogo: File | null;
+  enLogoUrl: string;
+  enContactEmail: string;
+  enLocation: string;
+  frName: string;
+  frLogo: File | null;
+  frLogoUrl: string;
+  frContactEmail: string;
+  frLocation: string;
+};
 
 const slugify = (value: string) =>
   value
@@ -66,6 +100,179 @@ const slugify = (value: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isOrganizationLocale = (value: unknown): value is OrganizationLocale =>
+  value === "en" || value === "fr";
+
+const nullableString = (value: unknown) =>
+  typeof value === "string" && value.trim() ? value.trim() : null;
+
+const optionalString = (value: unknown) => nullableString(value) ?? "";
+
+const centralAuthUrl = (path: string) =>
+  new URL(path, import.meta.env.VITE_KRAKSTACK_AUTH_URL).toString();
+
+const parsePresignedUpload = (value: unknown) => {
+  if (
+    !isRecord(value) ||
+    typeof value.uploadUrl !== "string" ||
+    typeof value.url !== "string"
+  ) {
+    throw new Error(m.organization_logo_upload_error());
+  }
+
+  return { uploadUrl: value.uploadUrl, url: value.url };
+};
+
+const uploadOrganizationLogo = async (file: File) => {
+  const contentType = file.type || "image/png";
+  const presignResponse = await fetch(
+    centralAuthUrl("/api/organizations/logo/presign"),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileName: file.name, contentType }),
+    },
+  );
+
+  if (!presignResponse.ok) {
+    throw new Error(m.organization_logo_upload_error());
+  }
+
+  const presigned = parsePresignedUpload(await presignResponse.json());
+  const uploadResponse = await fetch(presigned.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: file,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(m.organization_logo_upload_error());
+  }
+
+  return centralAuthUrl(presigned.url);
+};
+
+const currentOrganizationLocale = (): OrganizationLocale =>
+  getLocale() === "fr" ? "fr" : "en";
+
+const parseOrganizationMetadata = (metadata: unknown): OrganizationMetadata => {
+  if (!isRecord(metadata) || !Array.isArray(metadata.translations)) {
+    return { translations: [] };
+  }
+
+  return {
+    translations: metadata.translations.flatMap((translation) => {
+      if (!isRecord(translation) || !isOrganizationLocale(translation.locale)) {
+        return [];
+      }
+
+      return [
+        {
+          locale: translation.locale,
+          name: optionalString(translation.name),
+          logo: nullableString(translation.logo),
+          contactEmail: nullableString(translation.contactEmail),
+          location: nullableString(translation.location),
+        },
+      ];
+    }),
+  };
+};
+
+const findOrganizationTranslation = (
+  organization: OrganizationSummary,
+  locale = currentOrganizationLocale(),
+) => {
+  const translations = parseOrganizationMetadata(
+    organization.metadata,
+  ).translations;
+
+  return (
+    translations.find((translation) => translation.locale === locale) ??
+    translations.find((translation) => translation.locale === "en") ??
+    translations[0]
+  );
+};
+
+const organizationDisplay = (organization: OrganizationSummary | null) => {
+  const translation = organization
+    ? findOrganizationTranslation(organization)
+    : undefined;
+
+  return {
+    name:
+      translation?.name ||
+      organization?.name ||
+      m.organization_switcher_label(),
+    subtitle: organization?.slug ?? m.organization_switcher_label(),
+    logo: translation?.logo || "/logo192.png",
+  };
+};
+
+const organizationFormDefaults = (
+  organization?: OrganizationSummary,
+): OrganizationFormValues => {
+  const translations = parseOrganizationMetadata(
+    organization?.metadata,
+  ).translations;
+  const en = translations.find((translation) => translation.locale === "en");
+  const fr = translations.find((translation) => translation.locale === "fr");
+
+  return {
+    name: organization?.name ?? "",
+    slug: organization?.slug ?? "",
+    enName: en?.name || organization?.name || "",
+    enLogo: null,
+    enLogoUrl: en?.logo ?? "",
+    enContactEmail: en?.contactEmail ?? "",
+    enLocation: en?.location ?? "",
+    frName: fr?.name ?? "",
+    frLogo: null,
+    frLogoUrl: fr?.logo ?? "",
+    frContactEmail: fr?.contactEmail ?? "",
+    frLocation: fr?.location ?? "",
+  };
+};
+
+const organizationLogoFromForm = async (file: File | null, fallback: string) =>
+  file ? await uploadOrganizationLogo(file) : nullableString(fallback);
+
+const organizationMetadataFromForm = async (
+  value: OrganizationFormValues,
+): Promise<OrganizationMetadata> => {
+  const translations: OrganizationTranslation[] = [];
+  const enName = value.enName.trim() || value.name.trim();
+  const frName = value.frName.trim();
+  const enLogo = await organizationLogoFromForm(value.enLogo, value.enLogoUrl);
+  const frLogo = await organizationLogoFromForm(value.frLogo, value.frLogoUrl);
+
+  if (enName) {
+    translations.push({
+      locale: "en",
+      name: enName,
+      logo: enLogo,
+      contactEmail: nullableString(value.enContactEmail),
+      location: nullableString(value.enLocation),
+    });
+  }
+
+  if (frName) {
+    translations.push({
+      locale: "fr",
+      name: frName,
+      logo: frLogo,
+      contactEmail: nullableString(value.frContactEmail),
+      location: nullableString(value.frLocation),
+    });
+  }
+
+  return { translations };
+};
 
 export function OrganizationSwitcher({
   side = "bottom",
@@ -97,6 +304,8 @@ export function OrganizationSwitcher({
     await activeOrganization.refetch();
   };
 
+  const activeDisplay = organizationDisplay(active ?? null);
+
   return (
     <>
       <DropdownMenu>
@@ -111,9 +320,13 @@ export function OrganizationSwitcher({
             >
               <AppBrand
                 to={null}
-                label={activeName ?? m.organization_switcher_label()}
-                subtitle={active?.slug ?? m.organization_switcher_label()}
-                imageSrc="/logo192.png"
+                label={
+                  activeName
+                    ? activeDisplay.name
+                    : m.organization_switcher_label()
+                }
+                subtitle={activeDisplay.subtitle}
+                imageSrc={activeDisplay.logo}
                 icon={Building2}
                 className="min-w-0 flex-1 text-left"
               />
@@ -131,9 +344,9 @@ export function OrganizationSwitcher({
             <DropdownMenuLabel className="p-0 font-normal">
               <AppBrand
                 to={null}
-                label={active?.name ?? m.organization_switcher_label()}
-                subtitle={active?.slug ?? m.organization_switcher_label()}
-                imageSrc="/logo192.png"
+                label={activeDisplay.name}
+                subtitle={activeDisplay.subtitle}
+                imageSrc={activeDisplay.logo}
                 icon={Building2}
                 className="px-1 py-1.5 text-left text-sm"
               />
@@ -150,27 +363,31 @@ export function OrganizationSwitcher({
               </DropdownMenuItem>
             ) : null}
             {!locked && selectableOrganizations.length ? (
-              selectableOrganizations.map((organization) => (
-                <DropdownMenuItem
-                  key={organization.id}
-                  onClick={async () => {
-                    const result =
-                      await centralAuthClient.organization.setActive({
-                        organizationId: organization.id,
-                      });
-                    if (!result.error) await refresh();
-                  }}
-                >
-                  <AppBrand
-                    to={null}
-                    label={organization.name}
-                    subtitle={organization.slug}
-                    imageSrc="/logo192.png"
-                    icon={Building2}
-                    className="w-full text-left [&>div:first-child]:size-7"
-                  />
-                </DropdownMenuItem>
-              ))
+              selectableOrganizations.map((organization) => {
+                const display = organizationDisplay(organization);
+
+                return (
+                  <DropdownMenuItem
+                    key={organization.id}
+                    onClick={async () => {
+                      const result =
+                        await centralAuthClient.organization.setActive({
+                          organizationId: organization.id,
+                        });
+                      if (!result.error) await refresh();
+                    }}
+                  >
+                    <AppBrand
+                      to={null}
+                      label={display.name}
+                      subtitle={display.subtitle}
+                      imageSrc={display.logo}
+                      icon={Building2}
+                      className="w-full text-left [&>div:first-child]:size-7"
+                    />
+                  </DropdownMenuItem>
+                );
+              })
             ) : !locked && !organizations.isPending ? (
               <DropdownMenuItem disabled>
                 {active
@@ -211,7 +428,7 @@ export function OrganizationSwitcher({
           );
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-2xl">
               {m.organization_create_title()}
@@ -237,7 +454,7 @@ export function OrganizationSwitcher({
           );
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-2xl">
               {m.organization_switcher_manage()}
@@ -289,19 +506,21 @@ function EditOrganizationSection({
   organization: OrganizationSummary;
   onUpdated: () => Promise<void>;
 }) {
+  const [editingLocale, setEditingLocale] = useState<OrganizationLocale>(
+    currentOrganizationLocale(),
+  );
+  const defaultValues = organizationFormDefaults(organization);
   const form = useAppForm({
-    defaultValues: {
-      name: organization.name,
-      slug: organization.slug,
-    },
+    defaultValues,
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
       const name = value.name.trim();
       const slug = value.slug.trim().toLowerCase();
+      const metadata = await organizationMetadataFromForm(value);
 
       const result = await centralAuthClient.organization.update({
         organizationId: organization.id,
-        data: { name, slug },
+        data: { name, slug, metadata },
       });
 
       if (result.error) {
@@ -339,6 +558,92 @@ function EditOrganizationSection({
               <field.TextField label={m.organization_slug()} required />
             )}
           </form.AppField>
+          {editingLocale === "en" ? (
+            <>
+              <OrganizationTranslationHeader
+                locale="en"
+                editingLocale={editingLocale}
+                onEditingLocaleChange={setEditingLocale}
+              />
+              <form.AppField name="enName">
+                {(field) => (
+                  <field.TextField
+                    label={m.organization_translation_name()}
+                    required
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="enLogo">
+                {(field) => (
+                  <field.ImageField
+                    label={m.organization_logo()}
+                    defaultImageUrl={defaultValues.enLogoUrl}
+                    size={{
+                      width: 96,
+                      height: 96,
+                      suggestedWidth: 512,
+                      suggestedHeight: 512,
+                    }}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="enContactEmail">
+                {(field) => (
+                  <field.TextField
+                    label={m.organization_contact_email()}
+                    placeholder="team@example.com"
+                    type="email"
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="enLocation">
+                {(field) => (
+                  <field.TextField label={m.organization_location()} />
+                )}
+              </form.AppField>
+            </>
+          ) : (
+            <>
+              <OrganizationTranslationHeader
+                locale="fr"
+                editingLocale={editingLocale}
+                onEditingLocaleChange={setEditingLocale}
+              />
+              <form.AppField name="frName">
+                {(field) => (
+                  <field.TextField label={m.organization_translation_name()} />
+                )}
+              </form.AppField>
+              <form.AppField name="frLogo">
+                {(field) => (
+                  <field.ImageField
+                    label={m.organization_logo()}
+                    defaultImageUrl={defaultValues.frLogoUrl}
+                    size={{
+                      width: 96,
+                      height: 96,
+                      suggestedWidth: 512,
+                      suggestedHeight: 512,
+                    }}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="frContactEmail">
+                {(field) => (
+                  <field.TextField
+                    label={m.organization_contact_email()}
+                    placeholder="team@example.com"
+                    type="email"
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="frLocation">
+                {(field) => (
+                  <field.TextField label={m.organization_location()} />
+                )}
+              </form.AppField>
+            </>
+          )}
           <form.FormError />
           <form.SubmitButton />
         </form>
@@ -352,16 +657,26 @@ function CreateOrganizationSection({
 }: {
   onCreated: () => Promise<void>;
 }) {
+  const [editingLocale, setEditingLocale] = useState<OrganizationLocale>(
+    currentOrganizationLocale(),
+  );
+  const defaultValues = organizationFormDefaults();
   const form = useAppForm({
-    defaultValues: { name: "", slug: "" },
+    defaultValues,
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({ onSubmit: undefined });
       const name = value.name.trim();
       const slug = (value.slug.trim() || slugify(name)).toLowerCase();
+      const metadata = await organizationMetadataFromForm({
+        ...value,
+        name,
+        slug,
+      });
 
       const result = await centralAuthClient.organization.create({
         name,
         slug,
+        metadata,
       });
 
       if (result.error) {
@@ -403,11 +718,127 @@ function CreateOrganizationSection({
               />
             )}
           </form.AppField>
+          {editingLocale === "en" ? (
+            <>
+              <OrganizationTranslationHeader
+                locale="en"
+                editingLocale={editingLocale}
+                onEditingLocaleChange={setEditingLocale}
+              />
+              <form.AppField name="enName">
+                {(field) => (
+                  <field.TextField
+                    label={m.organization_translation_name()}
+                    required
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="enLogo">
+                {(field) => (
+                  <field.ImageField
+                    label={m.organization_logo()}
+                    defaultImageUrl={defaultValues.enLogoUrl}
+                    size={{
+                      width: 96,
+                      height: 96,
+                      suggestedWidth: 512,
+                      suggestedHeight: 512,
+                    }}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="enContactEmail">
+                {(field) => (
+                  <field.TextField
+                    label={m.organization_contact_email()}
+                    placeholder="team@example.com"
+                    type="email"
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="enLocation">
+                {(field) => (
+                  <field.TextField label={m.organization_location()} />
+                )}
+              </form.AppField>
+            </>
+          ) : (
+            <>
+              <OrganizationTranslationHeader
+                locale="fr"
+                editingLocale={editingLocale}
+                onEditingLocaleChange={setEditingLocale}
+              />
+              <form.AppField name="frName">
+                {(field) => (
+                  <field.TextField label={m.organization_translation_name()} />
+                )}
+              </form.AppField>
+              <form.AppField name="frLogo">
+                {(field) => (
+                  <field.ImageField
+                    label={m.organization_logo()}
+                    defaultImageUrl={defaultValues.frLogoUrl}
+                    size={{
+                      width: 96,
+                      height: 96,
+                      suggestedWidth: 512,
+                      suggestedHeight: 512,
+                    }}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="frContactEmail">
+                {(field) => (
+                  <field.TextField
+                    label={m.organization_contact_email()}
+                    placeholder="team@example.com"
+                    type="email"
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="frLocation">
+                {(field) => (
+                  <field.TextField label={m.organization_location()} />
+                )}
+              </form.AppField>
+            </>
+          )}
           <form.FormError />
           <form.SubmitButton />
         </form>
       </form.AppForm>
     </section>
+  );
+}
+
+function OrganizationTranslationHeader({
+  locale,
+  editingLocale,
+  onEditingLocaleChange,
+}: {
+  locale: OrganizationLocale;
+  editingLocale: OrganizationLocale;
+  onEditingLocaleChange: (locale: OrganizationLocale) => void;
+}) {
+  const title =
+    locale === "en"
+      ? m.organization_translation_english()
+      : m.organization_translation_french();
+
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h3 className="font-medium">{title}</h3>
+        <p className="text-muted-foreground text-sm">
+          {m.organization_translation_description()}
+        </p>
+      </div>
+      <EditingLocaleSwitcher
+        value={editingLocale}
+        onValueChange={onEditingLocaleChange}
+      />
+    </div>
   );
 }
 
