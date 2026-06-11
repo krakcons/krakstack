@@ -6,6 +6,8 @@ import {
   KeyRound,
   PencilIcon,
   Trash2,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import {
   type ComponentProps,
@@ -43,6 +45,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
@@ -63,9 +72,15 @@ type OrganizationSummary = {
   metadata?: unknown;
 };
 
-type OrganizationDialog = "create" | "manage" | "apiKeys";
+type OrganizationDialog = "create" | "manage" | "members" | "apiKeys";
 type ApiKeySummary = Omit<ApiKey, "key">;
 type OrganizationLocale = EditingLocale;
+type ActiveOrganization = NonNullable<
+  ReturnType<typeof centralAuthClient.useActiveOrganization>["data"]
+>;
+type OrganizationMemberSummary = ActiveOrganization["members"][number];
+type OrganizationInvitationSummary = ActiveOrganization["invitations"][number];
+type OrganizationRole = "owner" | "admin" | "member";
 
 type OrganizationTranslation = {
   locale: OrganizationLocale;
@@ -242,6 +257,36 @@ const organizationFormDefaults = (
 const organizationLogoFromForm = async (file: File | null, fallback: string) =>
   file ? await uploadOrganizationLogo(file) : nullableString(fallback);
 
+const organizationRoles: OrganizationRole[] = ["owner", "admin", "member"];
+
+const normalizeOrganizationRole = (role: string): OrganizationRole =>
+  role === "owner" || role === "admin" || role === "member" ? role : "member";
+
+const organizationRoleLabel = (role: string) => {
+  switch (normalizeOrganizationRole(role)) {
+    case "owner":
+      return m.organization_role_owner();
+    case "admin":
+      return m.organization_role_admin();
+    case "member":
+      return m.organization_role_member();
+  }
+};
+
+const formatOrganizationDate = (date: Date | string) =>
+  new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(
+    new Date(date),
+  );
+
+const initialsFromName = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "?";
+
 const organizationMetadataFromForm = async (
   value: OrganizationFormValues,
 ): Promise<OrganizationMetadata> => {
@@ -411,6 +456,10 @@ export function OrganizationSwitcher({
                   <PencilIcon />
                   {m.organization_switcher_manage()}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDialog("members")}>
+                  <Users />
+                  {m.organization_members_title()}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setDialog("apiKeys")}>
                   <KeyRound />
                   {m.user_button_api_keys()}
@@ -468,6 +517,32 @@ export function OrganizationSwitcher({
             <EditOrganizationSection
               organization={activeOrganization.data}
               onUpdated={refresh}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={dialog === "members"}
+        onOpenChange={(open) => {
+          setDialog((current) =>
+            open ? "members" : current === "members" ? null : current,
+          );
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {m.organization_members_title()}
+            </DialogTitle>
+            <DialogDescription>
+              {activeOrganization.data?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <Separator />
+          {activeOrganization.data ? (
+            <OrganizationMembersManager
+              organization={activeOrganization.data}
+              currentUserId={session.data.user.id}
             />
           ) : null}
         </DialogContent>
@@ -843,6 +918,393 @@ function OrganizationTranslationHeader({
     </div>
   );
 }
+
+function OrganizationMembersManager({
+  organization,
+  currentUserId,
+}: {
+  organization: OrganizationSummary;
+  currentUserId: string;
+}) {
+  const [members, setMembers] = useState<OrganizationMemberSummary[]>([]);
+  const [invitations, setInvitations] = useState<
+    OrganizationInvitationSummary[]
+  >([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
+  const [cancellingInvitationId, setCancellingInvitationId] = useState<
+    string | null
+  >(null);
+
+  const loadMembers = useEffectEvent(async () => {
+    setLoading(true);
+    setError(null);
+
+    const [membersResult, invitationsResult] = await Promise.all([
+      centralAuthClient.organization.listMembers({
+        query: { organizationId: organization.id },
+      }),
+      centralAuthClient.organization.listInvitations({
+        query: { organizationId: organization.id },
+      }),
+    ]);
+
+    if (membersResult.error) {
+      setError(
+        membersResult.error.message ?? m.organization_members_load_error(),
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (invitationsResult.error) {
+      setError(
+        invitationsResult.error.message ??
+          m.organization_invitations_load_error(),
+      );
+      setLoading(false);
+      return;
+    }
+
+    setMembers(membersResult.data?.members ?? []);
+    setInvitations(invitationsResult.data ?? []);
+    setLoading(false);
+  });
+
+  useEffect(() => {
+    void loadMembers();
+  }, [organization.id]);
+
+  const inviteForm = useAppForm({
+    defaultValues: { email: "", role: "member" },
+    onSubmit: async ({ value, formApi }) => {
+      formApi.setErrorMap({ onSubmit: undefined });
+      const result = await centralAuthClient.organization.inviteMember({
+        email: value.email.trim(),
+        role: normalizeOrganizationRole(value.role),
+        organizationId: organization.id,
+      });
+
+      if (result.error) {
+        formApi.setErrorMap({
+          onSubmit: {
+            form: result.error.message ?? m.organization_invite_error(),
+            fields: {},
+          },
+        });
+        return;
+      }
+
+      inviteForm.reset();
+      await loadMembers();
+    },
+  });
+
+  const updateRole = async (
+    member: OrganizationMemberSummary,
+    role: OrganizationRole,
+  ) => {
+    setUpdatingMemberId(member.id);
+    setError(null);
+
+    const result = await centralAuthClient.organization.updateMemberRole({
+      memberId: member.id,
+      role,
+      organizationId: organization.id,
+    });
+
+    setUpdatingMemberId(null);
+
+    if (result.error) {
+      setError(result.error.message ?? m.organization_member_role_error());
+      return;
+    }
+
+    await loadMembers();
+  };
+
+  const removeMember = async (member: OrganizationMemberSummary) => {
+    setUpdatingMemberId(member.id);
+    setError(null);
+
+    const result = await centralAuthClient.organization.removeMember({
+      memberIdOrEmail: member.id,
+      organizationId: organization.id,
+    });
+
+    setUpdatingMemberId(null);
+
+    if (result.error) {
+      setError(result.error.message ?? m.organization_member_remove_error());
+      return;
+    }
+
+    await loadMembers();
+  };
+
+  const cancelInvitation = async (
+    invitation: OrganizationInvitationSummary,
+  ) => {
+    setCancellingInvitationId(invitation.id);
+    setError(null);
+
+    const result = await centralAuthClient.organization.cancelInvitation({
+      invitationId: invitation.id,
+    });
+
+    setCancellingInvitationId(null);
+
+    if (result.error) {
+      setError(
+        result.error.message ?? m.organization_invitation_cancel_error(),
+      );
+      return;
+    }
+
+    await loadMembers();
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <inviteForm.AppForm>
+        <form
+          className="grid gap-4 rounded-lg border p-4 sm:grid-cols-[minmax(0,1fr)_12rem_auto] sm:items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            inviteForm.handleSubmit();
+          }}
+        >
+          <div className="sm:col-span-3">
+            <div className="flex items-center gap-2 font-medium">
+              <UserPlus className="size-4" />
+              {m.organization_invite_member_title()}
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {m.organization_invite_member_description()}
+            </p>
+          </div>
+          <inviteForm.AppField name="email">
+            {(field) => (
+              <field.TextField
+                label={m.organization_member_email()}
+                placeholder="teammate@example.com"
+                type="email"
+                required
+              />
+            )}
+          </inviteForm.AppField>
+          <inviteForm.AppField name="role">
+            {(field) => (
+              <field.SelectField
+                label={m.organization_member_role()}
+                options={organizationRoles.map((role) => ({
+                  label: organizationRoleLabel(role),
+                  value: role,
+                }))}
+              />
+            )}
+          </inviteForm.AppField>
+          <div className="self-end">
+            <inviteForm.SubmitButton />
+          </div>
+          <inviteForm.FormError />
+        </form>
+      </inviteForm.AppForm>
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      <section className="flex flex-col gap-3">
+        <div>
+          <h3 className="font-medium">{m.organization_members_heading()}</h3>
+          <p className="text-muted-foreground text-sm">
+            {m.organization_members_description()}
+          </p>
+        </div>
+        <DataTable
+          columns={memberColumns({
+            currentUserId,
+            updatingMemberId,
+            onRemove: removeMember,
+            onRoleChange: updateRole,
+          })}
+          data={members}
+          emptyLabel={
+            loading ? m.user_loading() : m.organization_members_empty()
+          }
+          exportFileName={`${organization.slug}-members.csv`}
+          features={{ gallery: false }}
+        />
+      </section>
+      <section className="flex flex-col gap-3">
+        <div>
+          <h3 className="font-medium">
+            {m.organization_invitations_heading()}
+          </h3>
+          <p className="text-muted-foreground text-sm">
+            {m.organization_invitations_description()}
+          </p>
+        </div>
+        <DataTable
+          columns={invitationColumns({
+            cancellingInvitationId,
+            onCancel: cancelInvitation,
+          })}
+          data={invitations}
+          emptyLabel={
+            loading ? m.user_loading() : m.organization_invitations_empty()
+          }
+          exportFileName={`${organization.slug}-invitations.csv`}
+          features={{ gallery: false }}
+        />
+      </section>
+    </div>
+  );
+}
+
+const memberColumns = ({
+  currentUserId,
+  updatingMemberId,
+  onRemove,
+  onRoleChange,
+}: {
+  currentUserId: string;
+  updatingMemberId: string | null;
+  onRemove: (member: OrganizationMemberSummary) => void;
+  onRoleChange: (
+    member: OrganizationMemberSummary,
+    role: OrganizationRole,
+  ) => void;
+}): ColumnDef<OrganizationMemberSummary>[] => [
+  {
+    id: "user",
+    header: m.organization_member_user(),
+    cell: ({ row }) => (
+      <div className="flex min-w-0 items-center gap-3">
+        {row.original.user.image ? (
+          <img
+            src={row.original.user.image}
+            alt={row.original.user.name}
+            className="size-9 shrink-0 rounded-full border object-cover"
+          />
+        ) : (
+          <span className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold">
+            {initialsFromName(row.original.user.name)}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="truncate font-medium">{row.original.user.name}</p>
+          <p className="text-muted-foreground truncate text-sm">
+            {row.original.user.email}
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "role",
+    header: m.organization_member_role(),
+    cell: ({ row }) => {
+      const member = row.original;
+      const disabled = updatingMemberId === member.id;
+
+      return (
+        <Select
+          items={organizationRoles.map((role) => ({
+            label: organizationRoleLabel(role),
+            value: role,
+          }))}
+          value={normalizeOrganizationRole(member.role)}
+          onValueChange={(value) => {
+            if (value === "owner" || value === "admin" || value === "member") {
+              onRoleChange(member, value);
+            }
+          }}
+          disabled={disabled}
+        >
+          <SelectTrigger
+            className="w-36"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {organizationRoles.map((role) => (
+              <SelectItem key={role} value={role}>
+                {organizationRoleLabel(role)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: m.organization_member_joined(),
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-sm">
+        {formatOrganizationDate(row.original.createdAt)}
+      </span>
+    ),
+  },
+  createDataTableActionsColumn<OrganizationMemberSummary>([
+    {
+      name: m.organization_member_remove(),
+      icon: <Trash2 />,
+      variant: "destructive",
+      visible: (member) => member.userId !== currentUserId,
+      onClick: onRemove,
+    },
+  ]),
+];
+
+const invitationColumns = ({
+  cancellingInvitationId,
+  onCancel,
+}: {
+  cancellingInvitationId: string | null;
+  onCancel: (invitation: OrganizationInvitationSummary) => void;
+}): ColumnDef<OrganizationInvitationSummary>[] => [
+  {
+    accessorKey: "email",
+    header: m.organization_member_email(),
+    cell: ({ row }) => (
+      <p className="truncate font-medium">{row.original.email}</p>
+    ),
+  },
+  {
+    accessorKey: "role",
+    header: m.organization_member_role(),
+    cell: ({ row }) => (
+      <Badge variant="secondary">
+        {organizationRoleLabel(row.original.role)}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: m.organization_invitation_status(),
+    cell: ({ row }) => <Badge>{row.original.status}</Badge>,
+  },
+  {
+    accessorKey: "expiresAt",
+    header: m.organization_invitation_expires(),
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-sm">
+        {formatOrganizationDate(row.original.expiresAt)}
+      </span>
+    ),
+  },
+  createDataTableActionsColumn<OrganizationInvitationSummary>([
+    {
+      name: m.organization_invitation_cancel(),
+      icon: <Trash2 />,
+      variant: "destructive",
+      visible: (invitation) => cancellingInvitationId !== invitation.id,
+      onClick: onCancel,
+    },
+  ]),
+];
 
 function OrganizationApiKeyManager({
   organization,

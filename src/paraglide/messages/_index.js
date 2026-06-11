@@ -216,6 +216,32 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Editing_Locale_Switcher_LabelInputs */
 /** @typedef {{}} Editing_Locale_Switcher_EnglishInputs */
 /** @typedef {{}} Editing_Locale_Switcher_FrenchInputs */
+/** @typedef {{}} Organization_Members_TitleInputs */
+/** @typedef {{}} Organization_Members_HeadingInputs */
+/** @typedef {{}} Organization_Members_DescriptionInputs */
+/** @typedef {{}} Organization_Members_EmptyInputs */
+/** @typedef {{}} Organization_Members_Load_ErrorInputs */
+/** @typedef {{}} Organization_Member_UserInputs */
+/** @typedef {{}} Organization_Member_EmailInputs */
+/** @typedef {{}} Organization_Member_RoleInputs */
+/** @typedef {{}} Organization_Member_JoinedInputs */
+/** @typedef {{}} Organization_Member_RemoveInputs */
+/** @typedef {{}} Organization_Member_Remove_ErrorInputs */
+/** @typedef {{}} Organization_Member_Role_ErrorInputs */
+/** @typedef {{}} Organization_Role_OwnerInputs */
+/** @typedef {{}} Organization_Role_AdminInputs */
+/** @typedef {{}} Organization_Role_MemberInputs */
+/** @typedef {{}} Organization_Invite_Member_TitleInputs */
+/** @typedef {{}} Organization_Invite_Member_DescriptionInputs */
+/** @typedef {{}} Organization_Invite_ErrorInputs */
+/** @typedef {{}} Organization_Invitations_HeadingInputs */
+/** @typedef {{}} Organization_Invitations_DescriptionInputs */
+/** @typedef {{}} Organization_Invitations_EmptyInputs */
+/** @typedef {{}} Organization_Invitations_Load_ErrorInputs */
+/** @typedef {{}} Organization_Invitation_StatusInputs */
+/** @typedef {{}} Organization_Invitation_ExpiresInputs */
+/** @typedef {{}} Organization_Invitation_CancelInputs */
+/** @typedef {{}} Organization_Invitation_Cancel_ErrorInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -3213,4 +3239,368 @@ export const editing_locale_switcher_french = /** @type {((inputs?: Editing_Loca
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.editing_locale_switcher_french(inputs)
 	return __fr.editing_locale_switcher_french(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Members" |
+*
+* @param {Organization_Members_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_members_title = /** @type {((inputs?: Organization_Members_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Members_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_members_title(inputs)
+	return __fr.organization_members_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Organization members" |
+*
+* @param {Organization_Members_HeadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_members_heading = /** @type {((inputs?: Organization_Members_HeadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Members_HeadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_members_heading(inputs)
+	return __fr.organization_members_heading(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Review active members, update roles, and remove access when needed." |
+*
+* @param {Organization_Members_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_members_description = /** @type {((inputs?: Organization_Members_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Members_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_members_description(inputs)
+	return __fr.organization_members_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No members found." |
+*
+* @param {Organization_Members_EmptyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_members_empty = /** @type {((inputs?: Organization_Members_EmptyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Members_EmptyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_members_empty(inputs)
+	return __fr.organization_members_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not load organization members." |
+*
+* @param {Organization_Members_Load_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_members_load_error = /** @type {((inputs?: Organization_Members_Load_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Members_Load_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_members_load_error(inputs)
+	return __fr.organization_members_load_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "User" |
+*
+* @param {Organization_Member_UserInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_member_user = /** @type {((inputs?: Organization_Member_UserInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Member_UserInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_member_user(inputs)
+	return __fr.organization_member_user(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Email" |
+*
+* @param {Organization_Member_EmailInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_member_email = /** @type {((inputs?: Organization_Member_EmailInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Member_EmailInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_member_email(inputs)
+	return __fr.organization_member_email(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Role" |
+*
+* @param {Organization_Member_RoleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_member_role = /** @type {((inputs?: Organization_Member_RoleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Member_RoleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_member_role(inputs)
+	return __fr.organization_member_role(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Joined" |
+*
+* @param {Organization_Member_JoinedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_member_joined = /** @type {((inputs?: Organization_Member_JoinedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Member_JoinedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_member_joined(inputs)
+	return __fr.organization_member_joined(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Remove member" |
+*
+* @param {Organization_Member_RemoveInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_member_remove = /** @type {((inputs?: Organization_Member_RemoveInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Member_RemoveInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_member_remove(inputs)
+	return __fr.organization_member_remove(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not remove the member." |
+*
+* @param {Organization_Member_Remove_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_member_remove_error = /** @type {((inputs?: Organization_Member_Remove_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Member_Remove_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_member_remove_error(inputs)
+	return __fr.organization_member_remove_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not update the member role." |
+*
+* @param {Organization_Member_Role_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_member_role_error = /** @type {((inputs?: Organization_Member_Role_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Member_Role_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_member_role_error(inputs)
+	return __fr.organization_member_role_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Owner" |
+*
+* @param {Organization_Role_OwnerInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_role_owner = /** @type {((inputs?: Organization_Role_OwnerInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Role_OwnerInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_role_owner(inputs)
+	return __fr.organization_role_owner(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Admin" |
+*
+* @param {Organization_Role_AdminInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_role_admin = /** @type {((inputs?: Organization_Role_AdminInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Role_AdminInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_role_admin(inputs)
+	return __fr.organization_role_admin(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Member" |
+*
+* @param {Organization_Role_MemberInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_role_member = /** @type {((inputs?: Organization_Role_MemberInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Role_MemberInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_role_member(inputs)
+	return __fr.organization_role_member(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Invite a member" |
+*
+* @param {Organization_Invite_Member_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invite_member_title = /** @type {((inputs?: Organization_Invite_Member_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invite_Member_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invite_member_title(inputs)
+	return __fr.organization_invite_member_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Send an invitation to join this organization with the selected role." |
+*
+* @param {Organization_Invite_Member_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invite_member_description = /** @type {((inputs?: Organization_Invite_Member_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invite_Member_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invite_member_description(inputs)
+	return __fr.organization_invite_member_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not send the invitation." |
+*
+* @param {Organization_Invite_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invite_error = /** @type {((inputs?: Organization_Invite_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invite_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invite_error(inputs)
+	return __fr.organization_invite_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Pending invitations" |
+*
+* @param {Organization_Invitations_HeadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitations_heading = /** @type {((inputs?: Organization_Invitations_HeadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitations_HeadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitations_heading(inputs)
+	return __fr.organization_invitations_heading(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Track invitations that have not been accepted yet." |
+*
+* @param {Organization_Invitations_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitations_description = /** @type {((inputs?: Organization_Invitations_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitations_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitations_description(inputs)
+	return __fr.organization_invitations_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No pending invitations." |
+*
+* @param {Organization_Invitations_EmptyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitations_empty = /** @type {((inputs?: Organization_Invitations_EmptyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitations_EmptyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitations_empty(inputs)
+	return __fr.organization_invitations_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not load organization invitations." |
+*
+* @param {Organization_Invitations_Load_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitations_load_error = /** @type {((inputs?: Organization_Invitations_Load_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitations_Load_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitations_load_error(inputs)
+	return __fr.organization_invitations_load_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Status" |
+*
+* @param {Organization_Invitation_StatusInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitation_status = /** @type {((inputs?: Organization_Invitation_StatusInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitation_StatusInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitation_status(inputs)
+	return __fr.organization_invitation_status(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Expires" |
+*
+* @param {Organization_Invitation_ExpiresInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitation_expires = /** @type {((inputs?: Organization_Invitation_ExpiresInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitation_ExpiresInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitation_expires(inputs)
+	return __fr.organization_invitation_expires(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Cancel invitation" |
+*
+* @param {Organization_Invitation_CancelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitation_cancel = /** @type {((inputs?: Organization_Invitation_CancelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitation_CancelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitation_cancel(inputs)
+	return __fr.organization_invitation_cancel(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not cancel the invitation." |
+*
+* @param {Organization_Invitation_Cancel_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_invitation_cancel_error = /** @type {((inputs?: Organization_Invitation_Cancel_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Invitation_Cancel_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_invitation_cancel_error(inputs)
+	return __fr.organization_invitation_cancel_error(inputs)
 });
