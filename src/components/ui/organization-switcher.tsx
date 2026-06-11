@@ -359,7 +359,7 @@ export function OrganizationSwitcher({
             <Button
               variant="ghost"
               className={cn(
-                "h-11 w-full justify-between gap-2 !px-1 !py-0 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!p-0",
+                "h-11 w-full justify-between gap-2 !px-1 !py-0 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:!p-0",
                 className,
               )}
             >
@@ -373,7 +373,7 @@ export function OrganizationSwitcher({
                 subtitle={activeDisplay.subtitle}
                 icon={Building2}
                 variant="sidebar"
-                className="min-w-0 flex-1 !p-0 text-left group-data-[collapsible=icon]:flex-none"
+                className="min-w-0 flex-1 !p-0 text-left group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:justify-start"
                 {...(activeDisplay.logo
                   ? { imageSrc: activeDisplay.logo }
                   : {})}
