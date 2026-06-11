@@ -50,6 +50,7 @@ const iconByName = {
   "data-table": Table2,
   form: ListChecks,
   "locale-toggle": Globe,
+  "editing-locale-switcher": Globe,
   "user-button": UserRound,
   "sign-in": KeyRound,
   "sign-up": KeyRound,

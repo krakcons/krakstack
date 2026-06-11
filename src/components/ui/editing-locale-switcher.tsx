@@ -20,8 +20,8 @@ export function EditingLocaleSwitcher({
   onValueChange: (value: EditingLocale) => void;
 }) {
   const localeOptions: { value: EditingLocale; label: string }[] = [
-    { value: "en", label: m.organization_locale_english() },
-    { value: "fr", label: m.organization_locale_french() },
+    { value: "en", label: m.editing_locale_switcher_english() },
+    { value: "fr", label: m.editing_locale_switcher_french() },
   ];
 
   return (
@@ -41,7 +41,7 @@ export function EditingLocaleSwitcher({
         >
           <SquarePen className="size-4 sm:hidden" />
           <div className="sr-only sm:not-sr-only">
-            {m.organization_editing_locale()}
+            {m.editing_locale_switcher_label()}
           </div>
         </Label>
         <SelectValue />

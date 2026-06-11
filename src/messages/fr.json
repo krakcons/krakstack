@@ -210,5 +210,8 @@
   "organization_editing_locale": "Modification",
   "organization_locale_english": "Anglais",
   "organization_locale_french": "Français",
-  "organization_logo_upload_error": "Impossible de téléverser le logo de l'organisation."
+  "organization_logo_upload_error": "Impossible de téléverser le logo de l'organisation.",
+  "editing_locale_switcher_label": "Modification",
+  "editing_locale_switcher_english": "Anglais",
+  "editing_locale_switcher_french": "Français"
 }

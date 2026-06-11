@@ -151,6 +151,32 @@
       "dependencies": ["lucide-react"]
     },
     {
+      "name": "editing-locale-switcher",
+      "type": "registry:block",
+      "title": "Editing Locale Switcher",
+      "description": "A compact localized select for choosing which locale is being edited in multilingual forms.",
+      "docs": "## Overview\n\n`editing-locale-switcher` provides a small form control for switching the active editing locale in multilingual forms. It is useful for forms that store localized fields in metadata or translation maps.\n\n## Features\n\n- Typed `EditingLocale` union for English and French\n- Controlled `value` and `onValueChange` props\n- Mobile-friendly icon label with desktop text\n- Includes component-scoped English and French messages\n\n## Usage\n\n```tsx\nimport { EditingLocaleSwitcher, type EditingLocale } from \"@/components/ui/editing-locale-switcher\";\nimport { useState } from \"react\";\n\nconst [locale, setLocale] = useState<EditingLocale>(\"en\");\n\n<EditingLocaleSwitcher value={locale} onValueChange={setLocale} />\n```",
+      "files": [
+        {
+          "path": "src/components/ui/editing-locale-switcher.tsx",
+          "type": "registry:component",
+          "target": "components/ui/editing-locale-switcher.tsx"
+        },
+        {
+          "path": "src/messages/components/editing-locale-switcher/en.json",
+          "type": "registry:file",
+          "target": "./messages/components/editing-locale-switcher/en.json"
+        },
+        {
+          "path": "src/messages/components/editing-locale-switcher/fr.json",
+          "type": "registry:file",
+          "target": "./messages/components/editing-locale-switcher/fr.json"
+        }
+      ],
+      "registryDependencies": ["label", "select"],
+      "dependencies": ["lucide-react", "react"]
+    },
+    {
       "name": "user-button",
       "type": "registry:block",
       "title": "User Button",
@@ -209,11 +235,6 @@
           "target": "components/ui/organization-switcher.tsx"
         },
         {
-          "path": "src/components/ui/editing-locale-switcher.tsx",
-          "type": "registry:component",
-          "target": "components/ui/editing-locale-switcher.tsx"
-        },
-        {
           "path": "src/services/auth/client/central.ts",
           "type": "registry:file",
           "target": "services/auth/client/central.ts"
@@ -235,6 +256,7 @@
         "@krak/data-table",
         "dialog",
         "dropdown-menu",
+        "@krak/editing-locale-switcher",
         "form",
         "label",
         "select",

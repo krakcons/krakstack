@@ -210,5 +210,8 @@
   "organization_editing_locale": "Editing",
   "organization_locale_english": "English",
   "organization_locale_french": "French",
-  "organization_logo_upload_error": "Could not upload the organization logo."
+  "organization_logo_upload_error": "Could not upload the organization logo.",
+  "editing_locale_switcher_label": "Editing",
+  "editing_locale_switcher_english": "English",
+  "editing_locale_switcher_french": "French"
 }

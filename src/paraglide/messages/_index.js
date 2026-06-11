@@ -213,6 +213,9 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Organization_Locale_EnglishInputs */
 /** @typedef {{}} Organization_Locale_FrenchInputs */
 /** @typedef {{}} Organization_Logo_Upload_ErrorInputs */
+/** @typedef {{}} Editing_Locale_Switcher_LabelInputs */
+/** @typedef {{}} Editing_Locale_Switcher_EnglishInputs */
+/** @typedef {{}} Editing_Locale_Switcher_FrenchInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -3168,4 +3171,46 @@ export const organization_logo_upload_error = /** @type {((inputs?: Organization
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.organization_logo_upload_error(inputs)
 	return __fr.organization_logo_upload_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Editing" |
+*
+* @param {Editing_Locale_Switcher_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const editing_locale_switcher_label = /** @type {((inputs?: Editing_Locale_Switcher_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Editing_Locale_Switcher_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.editing_locale_switcher_label(inputs)
+	return __fr.editing_locale_switcher_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "English" |
+*
+* @param {Editing_Locale_Switcher_EnglishInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const editing_locale_switcher_english = /** @type {((inputs?: Editing_Locale_Switcher_EnglishInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Editing_Locale_Switcher_EnglishInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.editing_locale_switcher_english(inputs)
+	return __fr.editing_locale_switcher_english(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "French" |
+*
+* @param {Editing_Locale_Switcher_FrenchInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const editing_locale_switcher_french = /** @type {((inputs?: Editing_Locale_Switcher_FrenchInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Editing_Locale_Switcher_FrenchInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.editing_locale_switcher_french(inputs)
+	return __fr.editing_locale_switcher_french(inputs)
 });
