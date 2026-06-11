@@ -14,7 +14,7 @@
     },
     {
       "path": "src/services/s3/schema.ts",
-      "content": "import { Schema } from \"effect\";\n\nexport class S3ServiceError extends Schema.TaggedErrorClass<S3ServiceError>()(\n  \"S3ServiceError\",\n  {\n    message: Schema.String,\n    path: Schema.optional(Schema.String),\n    error: Schema.optional(Schema.Defect),\n  },\n) {}\n",
+      "content": "import { Schema } from \"effect\";\n\nexport const PresignUploadPayload = Schema.Struct({\n  fileName: Schema.NonEmptyString,\n  contentType: Schema.NonEmptyString,\n}).annotate({\n  identifier: \"PresignUploadPayload\",\n  title: \"Presign upload payload\",\n  description: \"Payload used to request a presigned S3 upload URL.\",\n  examples: [{ fileName: \"logo.png\", contentType: \"image/png\" }],\n});\n\nexport const PresignedUpload = Schema.Struct({\n  uploadUrl: Schema.String,\n  url: Schema.String,\n}).annotate({\n  identifier: \"PresignedUpload\",\n  title: \"Presigned upload\",\n  description: \"Presigned S3 upload URL and stable public asset URL.\",\n  examples: [\n    {\n      uploadUrl:\n        \"https://s3.example.com/bucket/logos/organizations/logo.png?signature=...\",\n      url: \"/api/assets/logos/organizations/logo.png\",\n    },\n  ],\n});\n\nexport type PresignUploadPayload = typeof PresignUploadPayload.Type;\n\nexport class S3ServiceError extends Schema.TaggedErrorClass<S3ServiceError>()(\n  \"S3ServiceError\",\n  {\n    message: Schema.String,\n    path: Schema.optional(Schema.String),\n    error: Schema.optional(Schema.Defect()),\n  },\n) {}\n",
       "type": "registry:file",
       "target": "services/s3/schema.ts"
     }

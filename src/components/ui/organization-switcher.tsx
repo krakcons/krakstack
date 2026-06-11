@@ -40,11 +40,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 import { centralAuthClient } from "@/services/auth/client/central";
 
 type OrganizationSwitcherProps = {
   side?: ComponentProps<typeof DropdownMenuContent>["side"];
+  className?: string;
   renderUnauthenticated?: () => ReactNode;
   locked?: boolean;
 };
@@ -67,6 +69,7 @@ const slugify = (value: string) =>
 
 export function OrganizationSwitcher({
   side = "bottom",
+  className,
   renderUnauthenticated,
   locked = false,
 }: OrganizationSwitcherProps) {
@@ -101,7 +104,10 @@ export function OrganizationSwitcher({
           render={
             <Button
               variant="ghost"
-              className="h-11 max-w-64 justify-between gap-3 px-2"
+              className={cn(
+                "h-11 w-full justify-between gap-3 px-2",
+                className,
+              )}
             >
               <AppBrand
                 to={null}
