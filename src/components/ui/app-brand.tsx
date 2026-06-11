@@ -29,9 +29,11 @@ export function AppBrand({
   ...props
 }: AppBrandProps) {
   const iconClassName =
+    variant === "sidebar" ? "bg-sidebar-primary" : "bg-primary";
+  const iconColor =
     variant === "sidebar"
-      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-      : "bg-primary text-primary-foreground";
+      ? "var(--sidebar-primary-foreground)"
+      : "var(--primary-foreground)";
   const contentClassName =
     variant === "sidebar" ? "group-data-[collapsible=icon]:hidden" : undefined;
 
@@ -46,7 +48,7 @@ export function AppBrand({
         {imageSrc ? (
           <img src={imageSrc} alt={label} className="size-full object-cover" />
         ) : Icon ? (
-          <Icon className="size-4" />
+          <Icon className="size-4" color={iconColor} />
         ) : null}
       </div>
       <div

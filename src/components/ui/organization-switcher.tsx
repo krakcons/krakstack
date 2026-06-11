@@ -395,6 +395,7 @@ export function OrganizationSwitcher({
                 label={activeDisplay.name}
                 subtitle={activeDisplay.subtitle}
                 icon={Building2}
+                variant="sidebar"
                 className="px-1 py-1.5 text-left text-sm"
                 {...(activeDisplay.logo
                   ? { imageSrc: activeDisplay.logo }
