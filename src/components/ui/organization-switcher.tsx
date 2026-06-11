@@ -225,7 +225,7 @@ const organizationDisplay = (organization: OrganizationSummary | null) => {
       organization?.name ||
       m.organization_switcher_label(),
     subtitle: organization?.slug ?? m.organization_switcher_label(),
-    logo: translation?.logo ? centralAuthUrl(translation.logo) : undefined,
+    logo: translation?.logo || undefined,
   };
 };
 
@@ -359,7 +359,7 @@ export function OrganizationSwitcher({
             <Button
               variant="ghost"
               className={cn(
-                "h-11 w-full justify-between gap-3 px-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0",
+                "h-11 w-full justify-between gap-2 !px-1 !py-0 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!p-0",
                 className,
               )}
             >
@@ -373,7 +373,7 @@ export function OrganizationSwitcher({
                 subtitle={activeDisplay.subtitle}
                 icon={Building2}
                 variant="sidebar"
-                className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:flex-none"
+                className="min-w-0 flex-1 !p-0 text-left group-data-[collapsible=icon]:flex-none"
                 {...(activeDisplay.logo
                   ? { imageSrc: activeDisplay.logo }
                   : {})}
