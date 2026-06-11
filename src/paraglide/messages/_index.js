@@ -244,6 +244,8 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Organization_Invitation_Cancel_ErrorInputs */
 /** @typedef {{}} User_Profile_Photo_Upload_LabelInputs */
 /** @typedef {{}} User_Profile_Image_Upload_ErrorInputs */
+/** @typedef {{}} Organization_Switcher_Preview_ExpandedInputs */
+/** @typedef {{}} Organization_Switcher_Preview_CollapsedInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -3633,4 +3635,32 @@ export const user_profile_image_upload_error = /** @type {((inputs?: User_Profil
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.user_profile_image_upload_error(inputs)
 	return __fr.user_profile_image_upload_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Expanded" |
+*
+* @param {Organization_Switcher_Preview_ExpandedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_switcher_preview_expanded = /** @type {((inputs?: Organization_Switcher_Preview_ExpandedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Switcher_Preview_ExpandedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_switcher_preview_expanded(inputs)
+	return __fr.organization_switcher_preview_expanded(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Collapsed" |
+*
+* @param {Organization_Switcher_Preview_CollapsedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const organization_switcher_preview_collapsed = /** @type {((inputs?: Organization_Switcher_Preview_CollapsedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Organization_Switcher_Preview_CollapsedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.organization_switcher_preview_collapsed(inputs)
+	return __fr.organization_switcher_preview_collapsed(inputs)
 });

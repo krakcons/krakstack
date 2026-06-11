@@ -241,5 +241,7 @@
   "organization_invitation_cancel": "Annuler l'invitation",
   "organization_invitation_cancel_error": "Impossible d'annuler l'invitation.",
   "user_profile_photo_upload_label": "Photo de profil",
-  "user_profile_image_upload_error": "Impossible de téléverser votre photo de profil."
+  "user_profile_image_upload_error": "Impossible de téléverser votre photo de profil.",
+  "organization_switcher_preview_expanded": "Développé",
+  "organization_switcher_preview_collapsed": "Réduit"
 }

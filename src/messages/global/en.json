@@ -45,6 +45,8 @@
   "krakstack_site_auth_feature_keys": "API-key management and verification for service-to-service or external API access.",
   "krakstack_site_auth_feature_registry_title": "Registry integration",
   "krakstack_site_auth_feature_registry": "Better Auth integration patterns used by the KrakStack auth, sign-in, sign-up, and user-button registry items.",
+  "organization_switcher_preview_expanded": "Expanded",
+  "organization_switcher_preview_collapsed": "Collapsed",
   "user_profile_photo_upload_label": "Profile photo",
   "user_profile_image_upload_error": "Could not upload your profile photo."
 }

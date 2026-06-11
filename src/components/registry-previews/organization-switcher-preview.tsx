@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
 
 export function OrganizationSwitcherPreview() {
@@ -23,25 +24,56 @@ export function OrganizationSwitcherPreview() {
           state.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex items-center justify-center py-12">
-        <OrganizationSwitcher
-          className="max-w-xs"
-          renderUnauthenticated={() => (
-            <Button
-              onClick={async () => {
-                const result = await authClient.signIn.oauth2({
-                  providerId: "krakstack-auth",
-                  callbackURL: "/docs/registry/organization-switcher",
-                });
-                if (result.data?.url) {
-                  navigate({ href: result.data.url });
-                }
-              }}
-            >
-              Sign In
-            </Button>
-          )}
-        />
+      <CardContent className="grid gap-6 py-12 sm:grid-cols-[minmax(0,18rem)_auto] sm:items-start sm:justify-center">
+        <div className="flex flex-col gap-2">
+          <p className="text-muted-foreground text-sm font-medium">
+            {m.organization_switcher_preview_expanded()}
+          </p>
+          <OrganizationSwitcher
+            className="max-w-xs"
+            renderUnauthenticated={() => (
+              <Button
+                onClick={async () => {
+                  const result = await authClient.signIn.oauth2({
+                    providerId: "krakstack-auth",
+                    callbackURL: "/docs/registry/organization-switcher",
+                  });
+                  if (result.data?.url) {
+                    navigate({ href: result.data.url });
+                  }
+                }}
+              >
+                Sign In
+              </Button>
+            )}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <p className="text-muted-foreground text-sm font-medium">
+            {m.organization_switcher_preview_collapsed()}
+          </p>
+          <div className="group w-12" data-collapsible="icon">
+            <OrganizationSwitcher
+              className="max-w-xs"
+              renderUnauthenticated={() => (
+                <Button
+                  size="icon"
+                  onClick={async () => {
+                    const result = await authClient.signIn.oauth2({
+                      providerId: "krakstack-auth",
+                      callbackURL: "/docs/registry/organization-switcher",
+                    });
+                    if (result.data?.url) {
+                      navigate({ href: result.data.url });
+                    }
+                  }}
+                >
+                  <span className="sr-only">Sign In</span>
+                </Button>
+              )}
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

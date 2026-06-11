@@ -45,6 +45,8 @@
   "krakstack_site_auth_feature_keys": "Gestion et vérification des clés API pour les accès service-à-service ou API externes.",
   "krakstack_site_auth_feature_registry_title": "Intégration registre",
   "krakstack_site_auth_feature_registry": "Patterns d'intégration Better Auth utilisés par les éléments de registre auth, sign-in, sign-up et user-button de KrakStack.",
+  "organization_switcher_preview_expanded": "Développé",
+  "organization_switcher_preview_collapsed": "Réduit",
   "user_profile_photo_upload_label": "Photo de profil",
   "user_profile_image_upload_error": "Impossible de téléverser votre photo de profil."
 }

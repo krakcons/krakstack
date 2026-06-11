@@ -359,7 +359,7 @@ export function OrganizationSwitcher({
             <Button
               variant="ghost"
               className={cn(
-                "h-11 w-full justify-between gap-3 px-2",
+                "h-11 w-full justify-between gap-3 px-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0",
                 className,
               )}
             >
@@ -372,12 +372,13 @@ export function OrganizationSwitcher({
                 }
                 subtitle={activeDisplay.subtitle}
                 icon={Building2}
-                className="min-w-0 flex-1 text-left"
+                variant="sidebar"
+                className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:flex-none"
                 {...(activeDisplay.logo
                   ? { imageSrc: activeDisplay.logo }
                   : {})}
               />
-              <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
+              <ChevronsUpDown className="text-muted-foreground size-4 shrink-0 group-data-[collapsible=icon]:hidden" />
             </Button>
           }
         />
