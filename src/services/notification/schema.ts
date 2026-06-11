@@ -27,7 +27,7 @@ export class NotificationSendError extends Schema.TaggedErrorClass<NotificationS
   {
     message: Schema.String,
     channel: Schema.optional(Schema.String),
-    error: Schema.optional(Schema.Defect),
+    error: Schema.optional(Schema.Defect()),
   },
 ) {}
 
