@@ -242,6 +242,8 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Organization_Invitation_ExpiresInputs */
 /** @typedef {{}} Organization_Invitation_CancelInputs */
 /** @typedef {{}} Organization_Invitation_Cancel_ErrorInputs */
+/** @typedef {{}} User_Profile_Photo_Upload_LabelInputs */
+/** @typedef {{}} User_Profile_Image_Upload_ErrorInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -3603,4 +3605,32 @@ export const organization_invitation_cancel_error = /** @type {((inputs?: Organi
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.organization_invitation_cancel_error(inputs)
 	return __fr.organization_invitation_cancel_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Profile photo" |
+*
+* @param {User_Profile_Photo_Upload_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_profile_photo_upload_label = /** @type {((inputs?: User_Profile_Photo_Upload_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Profile_Photo_Upload_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_profile_photo_upload_label(inputs)
+	return __fr.user_profile_photo_upload_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Could not upload your profile photo." |
+*
+* @param {User_Profile_Image_Upload_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const user_profile_image_upload_error = /** @type {((inputs?: User_Profile_Image_Upload_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<User_Profile_Image_Upload_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.user_profile_image_upload_error(inputs)
+	return __fr.user_profile_image_upload_error(inputs)
 });

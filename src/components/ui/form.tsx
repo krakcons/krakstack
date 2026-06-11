@@ -385,12 +385,13 @@ const ImageField = ({
   };
 }) => {
   const { width, height } = size;
-  const field = useFieldContext<File | null>();
+  const field = useFieldContext<File | string | null>();
   const invalid = !field.state.meta.isValid;
 
-  const imageUrl = field.state.value
-    ? URL.createObjectURL(field.state.value).toString()
-    : defaultImageUrl;
+  const imageUrl =
+    field.state.value instanceof File
+      ? URL.createObjectURL(field.state.value).toString()
+      : (field.state.value ?? defaultImageUrl);
 
   return (
     <Field data-invalid={invalid}>

@@ -64,7 +64,51 @@ import { centralAuthClient } from "@/services/auth/client/central";
 
 type UserFormType = {
   name: string;
-  image: string;
+  image: File | string | null;
+};
+
+const isFile = (value: unknown): value is File => value instanceof File;
+
+type PresignedImageUpload = {
+  uploadUrl: string;
+  url: string;
+};
+
+const authUrl = (path: string) =>
+  new URL(
+    path,
+    import.meta.env.VITE_KRAKSTACK_AUTH_URL ??
+      globalThis.location?.origin ??
+      "http://localhost:3000",
+  ).toString();
+
+const presignUserImageUpload = async (
+  file: File,
+): Promise<PresignedImageUpload> => {
+  const response = await fetch(authUrl("/api/auth/image/presign"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileName: file.name, contentType: file.type }),
+  });
+
+  if (!response.ok) {
+    throw new Error(m.user_profile_image_upload_error());
+  }
+
+  const body = await response.json();
+  if (typeof body !== "object" || body === null) {
+    throw new Error(m.user_profile_image_upload_error());
+  }
+
+  const uploadUrl = Reflect.get(body, "uploadUrl");
+  const url = Reflect.get(body, "url");
+
+  if (typeof uploadUrl !== "string" || typeof url !== "string") {
+    throw new Error(m.user_profile_image_upload_error());
+  }
+
+  return { uploadUrl, url };
 };
 
 type TotpSetup = {
@@ -129,9 +173,28 @@ export const UserButton = ({
 
   const updateUser = async (values: UserFormType) => {
     setFormError(null);
+    const imageFile = isFile(values.image) ? values.image : null;
+    const image = imageFile
+      ? await (async () => {
+          const presigned = await presignUserImageUpload(imageFile);
+          const uploadResponse = await fetch(presigned.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": imageFile.type },
+            body: imageFile,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(m.user_profile_image_upload_error());
+          }
+
+          return presigned.url;
+        })()
+      : typeof values.image === "string"
+        ? values.image
+        : null;
     const result = await centralAuthClient.updateUser({
       name: values.name.trim(),
-      image: values.image.trim(),
+      image: image?.trim() ?? "",
     });
 
     if (isAuthErrorResult(result)) {
@@ -264,7 +327,7 @@ export const UserButton = ({
               <UserForm
                 defaultValues={{
                   name: displayName ?? "",
-                  image: displayImage,
+                  image: displayImage || null,
                 }}
                 error={formError}
                 onSubmit={async (data) => {
@@ -888,31 +951,19 @@ const UserForm = ({
         }}
       >
         <form.AppForm>
-          <div className="flex flex-wrap items-center gap-4">
-            {defaultValues.image ? (
-              <img
-                src={defaultValues.image}
-                alt=""
-                className="size-16 rounded-full border object-cover"
+          <form.AppField name="image">
+            {(field) => (
+              <field.ImageField
+                label={m.user_profile_photo_upload_label()}
+                size={{
+                  width: 96,
+                  height: 96,
+                  suggestedWidth: 512,
+                  suggestedHeight: 512,
+                }}
               />
-            ) : (
-              <span className="bg-muted flex size-16 items-center justify-center rounded-full border">
-                <UserIcon className="size-7" />
-              </span>
             )}
-            <div className="min-w-0 flex-1">
-              <form.AppField name="image">
-                {(field) => (
-                  <field.TextField
-                    label={m.user_profile_photo_label()}
-                    type="url"
-                    autoComplete="photo"
-                    placeholder="https://example.com/avatar.png"
-                  />
-                )}
-              </form.AppField>
-            </div>
-          </div>
+          </form.AppField>
           <form.AppField name="name">
             {(field) => (
               <field.TextField

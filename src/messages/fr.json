@@ -239,5 +239,7 @@
   "organization_invitation_status": "Statut",
   "organization_invitation_expires": "Expire le",
   "organization_invitation_cancel": "Annuler l'invitation",
-  "organization_invitation_cancel_error": "Impossible d'annuler l'invitation."
+  "organization_invitation_cancel_error": "Impossible d'annuler l'invitation.",
+  "user_profile_photo_upload_label": "Photo de profil",
+  "user_profile_image_upload_error": "Impossible de téléverser votre photo de profil."
 }

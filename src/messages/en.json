@@ -239,5 +239,7 @@
   "organization_invitation_status": "Status",
   "organization_invitation_expires": "Expires",
   "organization_invitation_cancel": "Cancel invitation",
-  "organization_invitation_cancel_error": "Could not cancel the invitation."
+  "organization_invitation_cancel_error": "Could not cancel the invitation.",
+  "user_profile_photo_upload_label": "Profile photo",
+  "user_profile_image_upload_error": "Could not upload your profile photo."
 }
