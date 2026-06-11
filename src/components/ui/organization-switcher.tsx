@@ -371,9 +371,11 @@ export function OrganizationSwitcher({
                     : m.organization_switcher_label()
                 }
                 subtitle={activeDisplay.subtitle}
-                imageSrc={activeDisplay.logo}
                 icon={Building2}
                 className="min-w-0 flex-1 text-left"
+                {...(activeDisplay.logo
+                  ? { imageSrc: activeDisplay.logo }
+                  : {})}
               />
               <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
             </Button>
@@ -391,9 +393,11 @@ export function OrganizationSwitcher({
                 to={null}
                 label={activeDisplay.name}
                 subtitle={activeDisplay.subtitle}
-                imageSrc={activeDisplay.logo}
                 icon={Building2}
                 className="px-1 py-1.5 text-left text-sm"
+                {...(activeDisplay.logo
+                  ? { imageSrc: activeDisplay.logo }
+                  : {})}
               />
             </DropdownMenuLabel>
             {hasOrganizationListItems ? <DropdownMenuSeparator /> : null}
@@ -426,9 +430,9 @@ export function OrganizationSwitcher({
                       to={null}
                       label={display.name}
                       subtitle={display.subtitle}
-                      imageSrc={display.logo}
                       icon={Building2}
                       className="w-full text-left [&>div:first-child]:size-7"
+                      {...(display.logo ? { imageSrc: display.logo } : {})}
                     />
                   </DropdownMenuItem>
                 );
