@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { authClient } from "@/services/auth/client";
+import { centralAuthClient } from "@/services/auth/client/central";
 import { m } from "@/paraglide/messages";
 
 export function SignUp() {
@@ -22,7 +22,7 @@ export function SignUp() {
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({});
 
-      const result = await authClient.signUp.email({
+      const result = await centralAuthClient.signUp.email({
         name: value.name,
         email: value.email,
         password: value.password,

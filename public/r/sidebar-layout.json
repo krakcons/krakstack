@@ -3,8 +3,16 @@
   "name": "sidebar-layout",
   "title": "Sidebar Layout",
   "description": "A sidebar-based layout with configurable navigation groups, a brand header, header action slot, page header component, organization switcher, locale toggle, and user button.",
-  "dependencies": ["@tanstack/react-router", "lucide-react", "react"],
-  "registryDependencies": ["badge", "sidebar", "@krak/locale-toggle"],
+  "dependencies": [
+    "@tanstack/react-router",
+    "lucide-react",
+    "react"
+  ],
+  "registryDependencies": [
+    "badge",
+    "sidebar",
+    "@krak/locale-toggle"
+  ],
   "files": [
     {
       "path": "src/components/ui/sidebar-layout.tsx",

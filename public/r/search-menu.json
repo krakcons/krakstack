@@ -3,8 +3,14 @@
   "name": "search-menu",
   "title": "Search Menu",
   "description": "A reusable command-palette search menu with grouped items, icons, descriptions, keyboard shortcut support, and a responsive search trigger.",
-  "dependencies": ["lucide-react", "react"],
-  "registryDependencies": ["button", "command"],
+  "dependencies": [
+    "lucide-react",
+    "react"
+  ],
+  "registryDependencies": [
+    "button",
+    "command"
+  ],
   "files": [
     {
       "path": "src/components/ui/search-menu.tsx",
