@@ -1,18 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const handler = () => {
+import { auth } from "@/services/auth/config";
+
+const handler = (request: Request) => {
+  const { pathname } = new URL(request.url);
+
+  if (pathname.startsWith("/api/auth")) {
+    return auth.handler(request);
+  }
+
   return Response.json({ error: "Not found" }, { status: 404 });
 };
 
 export const Route = createFileRoute("/api/$")({
   server: {
     handlers: {
-      GET: handler,
-      POST: handler,
-      PUT: handler,
-      PATCH: handler,
-      DELETE: handler,
-      OPTIONS: handler,
+      GET: async ({ request }) => handler(request),
+      POST: async ({ request }) => handler(request),
+      PUT: async ({ request }) => handler(request),
+      PATCH: async ({ request }) => handler(request),
+      DELETE: async ({ request }) => handler(request),
+      OPTIONS: async ({ request }) => handler(request),
     },
   },
 });

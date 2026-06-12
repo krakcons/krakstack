@@ -10,11 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { m } from "@/paraglide/messages";
-import { getLocale } from "@/paraglide/runtime";
-import { centralLoginUrl } from "@/services/auth/client/central";
-
-const callbackUrl = (path: string) =>
-  new URL(path, import.meta.env.VITE_SITE_URL).toString();
+import { authClient } from "@/services/auth/client";
 
 export function OrganizationSwitcherPreview() {
   const navigate = useNavigate();
@@ -37,14 +33,15 @@ export function OrganizationSwitcherPreview() {
             className="max-w-xs"
             renderUnauthenticated={() => (
               <Button
-                onClick={() =>
-                  navigate({
-                    href: centralLoginUrl(
-                      callbackUrl("/docs/registry/organization-switcher"),
-                      getLocale(),
-                    ),
-                  })
-                }
+                onClick={async () => {
+                  const result = await authClient.signIn.oauth2({
+                    providerId: "krakstack-auth",
+                    callbackURL: "/docs/registry/organization-switcher",
+                  });
+                  if (result.data?.url) {
+                    navigate({ href: result.data.url });
+                  }
+                }}
               >
                 Sign In
               </Button>
@@ -61,14 +58,15 @@ export function OrganizationSwitcherPreview() {
               renderUnauthenticated={() => (
                 <Button
                   size="icon"
-                  onClick={() =>
-                    navigate({
-                      href: centralLoginUrl(
-                        callbackUrl("/docs/registry/organization-switcher"),
-                        getLocale(),
-                      ),
-                    })
-                  }
+                  onClick={async () => {
+                    const result = await authClient.signIn.oauth2({
+                      providerId: "krakstack-auth",
+                      callbackURL: "/docs/registry/organization-switcher",
+                    });
+                    if (result.data?.url) {
+                      navigate({ href: result.data.url });
+                    }
+                  }}
                 >
                   <span className="sr-only">Sign In</span>
                 </Button>

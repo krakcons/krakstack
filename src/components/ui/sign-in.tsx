@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { centralAuthClient } from "@/services/auth/client/central";
+import { authClient } from "@/services/auth/client";
 import { m } from "@/paraglide/messages";
 
 export function SignIn() {
@@ -21,7 +21,7 @@ export function SignIn() {
     onSubmit: async ({ value, formApi }) => {
       formApi.setErrorMap({});
 
-      const result = await centralAuthClient.signIn.email({
+      const result = await authClient.signIn.email({
         email: value.email,
         password: value.password,
       });

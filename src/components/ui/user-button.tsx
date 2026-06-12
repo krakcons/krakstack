@@ -59,12 +59,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { m } from "@/paraglide/messages";
-import { getLocale } from "@/paraglide/runtime";
-import {
-  centralAuthClient,
-  centralAuthUrl,
-  centralLoginUrl,
-} from "@/services/auth/client/central";
+import { authClient } from "@/services/auth/client";
+import { centralAuthClient } from "@/services/auth/client/central";
 
 type UserFormType = {
   name: string;
@@ -78,10 +74,18 @@ type PresignedImageUpload = {
   url: string;
 };
 
+const authUrl = (path: string) =>
+  new URL(
+    path,
+    import.meta.env.VITE_KRAKSTACK_AUTH_URL ??
+      globalThis.location?.origin ??
+      "http://localhost:3000",
+  ).toString();
+
 const presignUserImageUpload = async (
   file: File,
 ): Promise<PresignedImageUpload> => {
-  const response = await fetch(centralAuthUrl("/api/auth/image/presign"), {
+  const response = await fetch(authUrl("/api/auth/image/presign"), {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -139,7 +143,8 @@ export const UserButton = ({
   const currentSiteHref = useRouterState({
     select: (state) => `${import.meta.env.VITE_SITE_URL}${state.location.href}`,
   });
-  const { data: session, isPending, refetch } = centralAuthClient.useSession();
+  const { data: session, isPending, refetch } = authClient.useSession();
+  const centralSession = centralAuthClient.useSession();
   const [settingsDialog, setSettingsDialog] = useState<SettingsDialog | null>(
     null,
   );
@@ -152,14 +157,19 @@ export const UserButton = ({
 
   const displayName = session.user.name.trim();
   const displayEmail = session.user.email.trim();
-  const displayImage = session.user.image?.trim() ?? "";
+  const displayImage = session.user.image?.trim()
+    ? authUrl(session.user.image.trim())
+    : "";
 
   const signOut = async () => {
     const redirectUrl = signOutRedirect.startsWith("http")
       ? signOutRedirect
       : `${import.meta.env.VITE_SITE_URL}${signOutRedirect.startsWith("/") ? signOutRedirect : `/${signOutRedirect}`}`;
 
-    await centralAuthClient.signOut();
+    await Promise.allSettled([
+      authClient.signOut(),
+      centralAuthClient.signOut(),
+    ]);
     await navigate({ href: redirectUrl });
   };
 
@@ -193,6 +203,7 @@ export const UserButton = ({
       throw new Error(result.error.message || m.user_form_update_error());
     }
 
+    await centralSession.refetch();
     await refetch();
 
     setSettingsDialog(null);
@@ -200,7 +211,19 @@ export const UserButton = ({
 
   const reconnectCentralAuth = async () => {
     setCentralAuthError(null);
-    await navigate({ href: centralLoginUrl(currentSiteHref, getLocale()) });
+    const result = await authClient.signIn.oauth2({
+      providerId: "krakstack-auth",
+      callbackURL: currentSiteHref,
+    });
+
+    if (result.error) {
+      setCentralAuthError(
+        result.error.message ?? m.user_central_auth_reconnect_error(),
+      );
+      return;
+    }
+
+    if (result.data?.url) await navigate({ href: result.data.url });
   };
 
   return (
@@ -271,9 +294,9 @@ export const UserButton = ({
             <DialogDescription>{m.user_form_description()}</DialogDescription>
           </DialogHeader>
           <Separator />
-          {isPending ? (
+          {centralSession.isPending ? (
             <p className="text-muted-foreground text-sm">{m.user_loading()}</p>
-          ) : !session ? (
+          ) : !centralSession.data ? (
             <div className="flex flex-col gap-3">
               <p className="text-muted-foreground text-sm">
                 {m.user_central_auth_required()}
@@ -294,9 +317,8 @@ export const UserButton = ({
               <UserForm
                 defaultValues={{
                   name: displayName ?? "",
-                  image: null,
+                  image: displayImage || null,
                 }}
-                {...(displayImage ? { defaultImageUrl: displayImage } : {})}
                 error={formError}
                 onSubmit={async (data) => {
                   try {
@@ -888,19 +910,16 @@ const providerName = (providerId: string) => {
 
 const UserForm = ({
   defaultValues,
-  defaultImageUrl,
   error,
   onSubmit,
 }: {
   defaultValues: UserFormType;
-  defaultImageUrl?: string;
   error?: string | null;
   onSubmit: (values: UserFormType) => Promise<void>;
 }) => {
   const form = useAppForm({
     defaultValues,
-    onSubmit: ({ value }) =>
-      onSubmit({ ...value, image: value.image ?? defaultImageUrl ?? null }),
+    onSubmit: ({ value }) => onSubmit(value),
   });
 
   return (
@@ -926,7 +945,6 @@ const UserForm = ({
             {(field) => (
               <field.ImageField
                 label={m.user_profile_photo_upload_label()}
-                {...(defaultImageUrl ? { defaultImageUrl } : {})}
                 size={{
                   width: 96,
                   height: 96,
