@@ -181,13 +181,8 @@
       "type": "registry:block",
       "title": "User Button",
       "description": "A Better Auth user menu with a central-auth-backed account dialog, localized labels, and sign-out handling.",
-      "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for apps that use Krakstack Auth as a central identity provider. It reads the visible app session from the app-local `authClient.useSession()`, then uses `centralAuthClient` for central account mutations like profile updates, linked accounts, password settings, two-factor authentication, and user API keys.\n\n## Features\n\n- App-local Better Auth session display\n- Central Krakstack Auth account mutations through `centralAuthClient`\n- Profile, linked accounts, password, 2FA, and API-key dialogs\n- Reconnect state when the app session exists but the central auth session is missing\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@/components/ui/user-button\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`.",
+      "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for apps that use Krakstack Auth as a central identity provider. It reads the visible app session from the app-local `authClient.useSession()`, then uses `centralAuthClient` for central account mutations like profile updates, linked accounts, password settings, two-factor authentication, and user API keys.\n\n## Features\n\n- App-local Better Auth session display\n- Central Krakstack Auth account mutations through `centralAuthClient`\n- Profile, linked accounts, password, 2FA, and API-key dialogs\n- Reconnect state when the app session exists but the central auth session is missing\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@krak-stack/auth/components\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`.",
       "files": [
-        {
-          "path": "src/components/ui/user-button.tsx",
-          "type": "registry:component",
-          "target": "components/ui/user-button.tsx"
-        },
         {
           "path": "src/services/auth/client/central.ts",
           "type": "registry:file",
@@ -215,8 +210,10 @@
       ],
       "dependencies": [
         "@better-auth/api-key",
+        "@krak-stack/auth",
         "@tanstack/react-table",
         "better-auth",
+        "effect",
         "lucide-react",
         "react",
         "react-qr-code"
@@ -227,13 +224,8 @@
       "type": "registry:block",
       "title": "Organization Switcher",
       "description": "A Better Auth organization switcher backed by the central Krakstack Auth client, with localized organization profile metadata and organization API keys.",
-      "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `centralAuthClient` so the active organization, memberships, organization metadata, and organization API keys stay scoped to the central auth service rather than the app-local session.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- Edit the active organization's canonical name and slug\n- Store localized public profile data in `metadata.translations`\n- Locale editing selector registered as `editing-locale-switcher`\n- Localized organization name, logo, contact email, and location fields\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@/components/ui/organization-switcher\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
+      "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `centralAuthClient` so the active organization, memberships, organization metadata, and organization API keys stay scoped to the central auth service rather than the app-local session.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- Edit the active organization's canonical name and slug\n- Store localized public profile data in `metadata.translations`\n- Locale editing selector registered as `editing-locale-switcher`\n- Localized organization name, logo, contact email, and location fields\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@krak-stack/auth/components\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
       "files": [
-        {
-          "path": "src/components/ui/organization-switcher.tsx",
-          "type": "registry:component",
-          "target": "components/ui/organization-switcher.tsx"
-        },
         {
           "path": "src/services/auth/client/central.ts",
           "type": "registry:file",
@@ -264,8 +256,10 @@
       ],
       "dependencies": [
         "@better-auth/api-key",
+        "@krak-stack/auth",
         "@tanstack/react-table",
         "better-auth",
+        "effect",
         "lucide-react",
         "react"
       ]

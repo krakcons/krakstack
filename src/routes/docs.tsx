@@ -8,6 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SidebarLayout, type NavGroup } from "@/components/ui/sidebar-layout";
 import { AppBrand } from "@/components/ui/app-brand";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
+import { krakstackPackages } from "@/lib/krakstack-packages";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { m } from "@/paraglide/messages";
 
@@ -37,6 +38,15 @@ const siteNavGroup: NavGroup = {
   })),
 };
 
+const packageNavGroup: NavGroup = {
+  label: () => m.krakstack_packages_heading(),
+  items: krakstackPackages.map((pkg) => ({
+    label: () => pkg.name,
+    href: pkg.docsHref,
+    icon: pkg.icon,
+  })),
+};
+
 function DocsLayout() {
   return (
     <SidebarLayout
@@ -49,7 +59,7 @@ function DocsLayout() {
           href="/"
         />
       }
-      groups={[siteNavGroup, ...docsNavGroups]}
+      groups={[siteNavGroup, packageNavGroup, ...docsNavGroups]}
       headerActions={<RegistryCommandMenu />}
     />
   );

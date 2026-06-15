@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { UserButton } from "@/components/ui/user-button";
+import { UserButton } from "@krak-stack/auth/components";
 import {
   Card,
   CardContent,

@@ -8,6 +8,7 @@ import {
 import { AppBrand } from "@/components/ui/app-brand";
 import { LocaleToggle } from "@/components/ui/locale-toggle";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
+import { krakstackPackages } from "@/lib/krakstack-packages";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { m } from "@/paraglide/messages";
@@ -140,6 +141,35 @@ function Home() {
                       {site.url}
                     </p>
                     <CardDescription>{site.description()}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+                      {m.view_docs()}
+                    </span>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-primary mb-6 text-xs font-bold tracking-[0.16em] uppercase">
+            {m.krakstack_packages_heading()}
+          </h2>
+          <div className="grid gap-5 md:grid-cols-2">
+            {krakstackPackages.map((pkg) => (
+              <Link key={pkg.id} to={pkg.docsHref} className="group">
+                <Card className="h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md">
+                  <CardHeader>
+                    <div className="bg-primary/10 text-primary mb-2 flex size-9 items-center justify-center rounded-md">
+                      <pkg.icon className="size-4" />
+                    </div>
+                    <CardTitle>{pkg.name}</CardTitle>
+                    <p className="text-primary font-mono text-sm font-medium">
+                      {pkg.installCommand}
+                    </p>
+                    <CardDescription>{pkg.description()}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
