@@ -52,14 +52,16 @@ export function AppBrand({
         ) : null}
       </div>
       <div
-        className={["flex min-w-0 flex-col leading-none", contentClassName]
+        className={["flex min-w-0 flex-col leading-tight", contentClassName]
           .filter(Boolean)
           .join(" ")}
       >
         <span className="truncate font-semibold tracking-tight">{label}</span>
-        <span className="text-muted-foreground truncate text-xs">
-          {subtitle}
-        </span>
+        {subtitle ? (
+          <span className="text-muted-foreground truncate text-xs">
+            {subtitle}
+          </span>
+        ) : null}
       </div>
     </>
   );
