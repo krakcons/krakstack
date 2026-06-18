@@ -36,11 +36,7 @@ bun lint
 bun fmt
 ```
 
-When changing custom i18n messages in `src/messages/global`, merge them into the generated root message files:
-
-```bash
-bun scripts/merge-messages
-```
+Translations are stored in `src/messages/en.json` and `src/messages/fr.json`.
 
 ## Registry
 

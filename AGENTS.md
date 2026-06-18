@@ -6,9 +6,7 @@ English and French are required for all public facing strings.
 
 All public facing strings should be translated using paraglide.js and the vite plugin.
 
-Custom translations are stored in `src/messages/global/en.json` and `src/messages/global/fr.json`. Do not edit the messages at `src/messages/en.json` and `src/messages/fr.json` directly as they are generated.
-
-On changes to global messages or an addition of component messages, run `bun scripts/merge-messages` to merge them back into the root.
+Translations are stored in `src/messages/en.json` and `src/messages/fr.json`.
 
 ## Code Architecture
 
@@ -32,7 +30,7 @@ The backend is an effect application that uses:
 ### Folder Structure
 
 - `public/` — Static assets (favicon, logos, manifest, robots.txt)
-- `scripts/` — Build and utility scripts (e.g. merge-messages for i18n)
+- `scripts/` — Build and utility scripts
 - `src/` — Application source
   - `components/` — React components
     - `ui/` — Shadcn UI primitives and installed registry components (managed by shadcn CLI) — do not edit

@@ -153,16 +153,6 @@
           "path": "src/services/auth/client/index.ts",
           "type": "registry:file",
           "target": "services/auth/client/index.ts"
-        },
-        {
-          "path": "src/messages/components/user-button/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/user-button/en.json"
-        },
-        {
-          "path": "src/messages/components/user-button/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/user-button/fr.json"
         }
       ],
       "registryDependencies": [
@@ -196,16 +186,6 @@
           "path": "src/services/auth/client/index.ts",
           "type": "registry:file",
           "target": "services/auth/client/index.ts"
-        },
-        {
-          "path": "src/messages/components/organization-switcher/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/organization-switcher/en.json"
-        },
-        {
-          "path": "src/messages/components/organization-switcher/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/organization-switcher/fr.json"
         }
       ],
       "registryDependencies": [
