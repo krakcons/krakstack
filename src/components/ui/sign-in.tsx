@@ -9,9 +9,49 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { authClient } from "@/services/auth/client";
-import { m } from "@/paraglide/messages";
+import { getLocale } from "@/paraglide/runtime";
 
-export function SignIn() {
+const messages = {
+  en: {
+    title: "Sign in",
+    signUp: "Sign up",
+    description: "Use your Krakstack Site account.",
+    error: "Unable to sign in.",
+    needAccount: "Need an account?",
+    email: "Email",
+    password: "Password",
+  },
+  fr: {
+    title: "Se connecter",
+    signUp: "S'inscrire",
+    description: "Utilisez votre compte Krakstack Site.",
+    error: "Impossible de se connecter.",
+    needAccount: "Besoin d'un compte ?",
+    email: "E-mail",
+    password: "Mot de passe",
+  },
+} as const;
+
+export type SignInMessages = Partial<
+  Record<
+    | "title"
+    | "signUp"
+    | "description"
+    | "error"
+    | "needAccount"
+    | "email"
+    | "password",
+    string
+  >
+>;
+
+const signInMessages = (overrides?: SignInMessages) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
+
+export function SignIn({ messages }: { messages?: SignInMessages }) {
+  const labels = signInMessages(messages);
   const navigate = useNavigate();
   const form = useAppForm({
     defaultValues: {
@@ -29,7 +69,7 @@ export function SignIn() {
       if (result.error) {
         formApi.setErrorMap({
           onSubmit: {
-            form: result.error.message ?? m.sign_in_error(),
+            form: result.error.message ?? labels.error,
             fields: {},
           },
         });
@@ -43,8 +83,8 @@ export function SignIn() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-3xl">{m.auth_sign_in()}</CardTitle>
-        <CardDescription>{m.sign_in_description()}</CardDescription>
+        <CardTitle className="text-3xl">{labels.title}</CardTitle>
+        <CardDescription>{labels.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <form.AppForm>
@@ -59,7 +99,7 @@ export function SignIn() {
             <form.AppField name="email">
               {(field) => (
                 <field.TextField
-                  label={m.field_email()}
+                  label={labels.email}
                   type="email"
                   autoComplete="email"
                   required
@@ -69,7 +109,7 @@ export function SignIn() {
             <form.AppField name="password">
               {(field) => (
                 <field.TextField
-                  label={m.field_password()}
+                  label={labels.password}
                   type="password"
                   autoComplete="current-password"
                   required
@@ -90,12 +130,12 @@ export function SignIn() {
           </form>
         </form.AppForm>
         <p className="text-muted-foreground mt-6 text-center text-sm">
-          {m.sign_in_need_account()}{" "}
+          {labels.needAccount}{" "}
           <Link
             className="text-foreground font-medium underline-offset-4 hover:underline"
             to="/sign-up"
           >
-            {m.auth_sign_up()}
+            {labels.signUp}
           </Link>
         </p>
       </CardContent>

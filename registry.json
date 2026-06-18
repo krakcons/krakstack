@@ -8,22 +8,12 @@
       "type": "registry:block",
       "title": "Search Menu",
       "description": "A reusable command-palette search menu with grouped items, icons, descriptions, keyboard shortcut support, and a responsive search trigger.",
-      "docs": "## Overview\n\n`SearchMenu` is a reusable command-palette component built on shadcn's `Command` primitive. Pass it grouped items and it renders a responsive search trigger, `⌘K`/`Ctrl+K` shortcut handling, searchable groups, optional item icons, descriptions, and shortcuts.\n\n## Features\n\n- Generic grouped item input\n- Optional item icons, descriptions, keywords, disabled state, and shortcuts\n- Per-item `onSelect` handlers plus a top-level `onSelect` callback\n- Controlled or uncontrolled open state\n- Mobile icon-only trigger and desktop search-bar trigger\n\n## Usage\n\n```tsx\nimport { SearchMenu, type SearchMenuGroup } from \"@/components/ui/search-menu\";\nimport { FileText, Settings } from \"lucide-react\";\n\nconst groups: SearchMenuGroup[] = [\n  {\n    heading: \"Pages\",\n    items: [\n      {\n        id: \"docs\",\n        label: \"Docs\",\n        description: \"Open documentation\",\n        icon: <FileText className=\"size-4\" />,\n        onSelect: () => navigate({ to: \"/docs\" }),\n      },\n    ],\n  },\n  {\n    heading: \"Settings\",\n    items: [\n      {\n        id: \"profile\",\n        label: \"Profile\",\n        icon: <Settings className=\"size-4\" />,\n      },\n    ],\n  },\n];\n\n<SearchMenu\n  groups={groups}\n  title=\"Search\"\n  description=\"Search pages and actions.\"\n  placeholder=\"Search...\"\n/>\n```",
+      "docs": "## Overview\n\n`SearchMenu` is a reusable command-palette component built on shadcn's `Command` primitive. Pass it grouped items and it renders a responsive search trigger, `⌘K`/`Ctrl+K` shortcut handling, searchable groups, optional item icons, descriptions, and shortcuts. Labels are stored in the component file and can be overridden with props or the `messages` prop.\n\n## Features\n\n- Generic grouped item input\n- Optional item icons, descriptions, keywords, disabled state, and shortcuts\n- Per-item `onSelect` handlers plus a top-level `onSelect` callback\n- Controlled or uncontrolled open state\n- Mobile icon-only trigger and desktop search-bar trigger\n\n## Usage\n\n```tsx\nimport { SearchMenu, type SearchMenuGroup } from \"@/components/ui/search-menu\";\nimport { FileText, Settings } from \"lucide-react\";\n\nconst groups: SearchMenuGroup[] = [\n  {\n    heading: \"Pages\",\n    items: [\n      {\n        id: \"docs\",\n        label: \"Docs\",\n        description: \"Open documentation\",\n        icon: <FileText className=\"size-4\" />,\n        onSelect: () => navigate({ to: \"/docs\" }),\n      },\n    ],\n  },\n  {\n    heading: \"Settings\",\n    items: [\n      {\n        id: \"profile\",\n        label: \"Profile\",\n        icon: <Settings className=\"size-4\" />,\n      },\n    ],\n  },\n];\n\n<SearchMenu\n  groups={groups}\n  messages={{ title: \"Search\", description: \"Search pages and actions.\" }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/search-menu.tsx",
           "type": "registry:component",
           "target": "components/ui/search-menu.tsx"
-        },
-        {
-          "path": "src/messages/components/search-menu/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/search-menu/en.json"
-        },
-        {
-          "path": "src/messages/components/search-menu/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/search-menu/fr.json"
         }
       ],
       "registryDependencies": ["button", "command"],
@@ -55,16 +45,6 @@
           "path": "src/components/ui/data-table.tsx",
           "type": "registry:component",
           "target": "components/ui/data-table.tsx"
-        },
-        {
-          "path": "src/messages/components/data-table/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/data-table/en.json"
-        },
-        {
-          "path": "src/messages/components/data-table/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/data-table/fr.json"
         }
       ],
       "registryDependencies": [
@@ -89,22 +69,12 @@
       "type": "registry:block",
       "title": "Form",
       "description": "A TanStack Form setup with reusable field wrappers, text inputs, text areas, selects, multi-selects, key/value editing, file uploads, submit state, and dirty-navigation blocking.",
-      "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- Localized component messages\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n</form.AppForm>\n```",
+      "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection. Built-in labels are stored in the component file and can be overridden with message props on the relevant field or form component.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- In-file English and French defaults with override props\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n  <form.SubmitButton messages={{ submit: \"Save\" }} />\n</form.AppForm>\n```",
       "files": [
         {
           "path": "src/components/ui/form.tsx",
           "type": "registry:component",
           "target": "components/ui/form.tsx"
-        },
-        {
-          "path": "src/messages/components/form/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/form/en.json"
-        },
-        {
-          "path": "src/messages/components/form/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/form/fr.json"
         }
       ],
       "registryDependencies": [
@@ -161,22 +131,12 @@
       "type": "registry:block",
       "title": "Editing Locale Switcher",
       "description": "A compact localized select for choosing which locale is being edited in multilingual forms.",
-      "docs": "## Overview\n\n`editing-locale-switcher` provides a small form control for switching the active editing locale in multilingual forms. It is useful for forms that store localized fields in metadata or translation maps.\n\n## Features\n\n- Typed `EditingLocale` union for English and French\n- Controlled `value` and `onValueChange` props\n- Mobile-friendly icon label with desktop text\n- Includes component-scoped English and French messages\n\n## Usage\n\n```tsx\nimport { EditingLocaleSwitcher, type EditingLocale } from \"@/components/ui/editing-locale-switcher\";\nimport { useState } from \"react\";\n\nconst [locale, setLocale] = useState<EditingLocale>(\"en\");\n\n<EditingLocaleSwitcher value={locale} onValueChange={setLocale} />\n```",
+      "docs": "## Overview\n\n`editing-locale-switcher` provides a small form control for switching the active editing locale in multilingual forms. It is useful for forms that store localized fields in metadata or translation maps.\n\n## Features\n\n- Typed `EditingLocale` union for English and French\n- Controlled `value` and `onValueChange` props\n- Mobile-friendly icon label with desktop text\n- In-file English and French labels with optional message overrides\n\n## Usage\n\n```tsx\nimport { EditingLocaleSwitcher, type EditingLocale } from \"@/components/ui/editing-locale-switcher\";\nimport { useState } from \"react\";\n\nconst [locale, setLocale] = useState<EditingLocale>(\"en\");\n\n<EditingLocaleSwitcher value={locale} onValueChange={setLocale} />\n<EditingLocaleSwitcher value={locale} onValueChange={setLocale} messages={{ label: \"Language\" }} />\n```",
       "files": [
         {
           "path": "src/components/ui/editing-locale-switcher.tsx",
           "type": "registry:component",
           "target": "components/ui/editing-locale-switcher.tsx"
-        },
-        {
-          "path": "src/messages/components/editing-locale-switcher/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/editing-locale-switcher/en.json"
-        },
-        {
-          "path": "src/messages/components/editing-locale-switcher/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/editing-locale-switcher/fr.json"
         }
       ],
       "registryDependencies": ["label", "select"],
@@ -281,16 +241,6 @@
           "path": "src/components/ui/sign-in.tsx",
           "type": "registry:component",
           "target": "components/ui/sign-in.tsx"
-        },
-        {
-          "path": "src/messages/components/sign-in/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/sign-in/en.json"
-        },
-        {
-          "path": "src/messages/components/sign-in/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/sign-in/fr.json"
         }
       ],
       "registryDependencies": ["card", "form"],
@@ -307,16 +257,6 @@
           "path": "src/components/ui/sign-up.tsx",
           "type": "registry:component",
           "target": "components/ui/sign-up.tsx"
-        },
-        {
-          "path": "src/messages/components/sign-up/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/sign-up/en.json"
-        },
-        {
-          "path": "src/messages/components/sign-up/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/sign-up/fr.json"
         }
       ],
       "registryDependencies": ["card", "form"],

@@ -1,4 +1,3 @@
-import { m } from "@/paraglide/messages";
 import {
   Select,
   SelectContent,
@@ -39,6 +38,67 @@ import {
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { getLocale } from "@/paraglide/runtime";
+
+export type FormMessages = {
+  keyValueKey: string;
+  keyValueValue: string;
+  keyValueDelete: string;
+  keyValueAdd: string;
+  accepts: (accepts: string) => string;
+  delete: string;
+  suggestedImageSize: (width: string, height: string) => string;
+  blockNavigationTitle: string;
+  blockNavigationDescription: string;
+  blockNavigationCancel: string;
+  blockNavigationConfirm: string;
+  submit: string;
+  revert: string;
+};
+
+const messages = {
+  en: {
+    keyValueKey: "Key",
+    keyValueValue: "Value",
+    keyValueDelete: "Delete",
+    keyValueAdd: "Add",
+    accepts: (accepts: string) => `Accepts: ${accepts}`,
+    delete: "Delete",
+    suggestedImageSize: (width: string, height: string) =>
+      `Suggested image size: ${width} x ${height}`,
+    blockNavigationTitle: "Leave without saving?",
+    blockNavigationDescription:
+      "Your changes have not been saved. If you leave, you will lose your changes.",
+    blockNavigationCancel: "Cancel",
+    blockNavigationConfirm: "Confirm",
+    submit: "Submit",
+    revert: "Revert to default",
+  },
+  fr: {
+    keyValueKey: "Clé",
+    keyValueValue: "Valeur",
+    keyValueDelete: "Supprimer",
+    keyValueAdd: "Ajouter",
+    accepts: (accepts: string) => `Accepte : ${accepts}`,
+    delete: "Supprimer",
+    suggestedImageSize: (width: string, height: string) =>
+      `Taille de l'image suggérée : ${width} x ${height}`,
+    blockNavigationTitle: "Quitter sans sauvegarder?",
+    blockNavigationDescription:
+      "Vos modifications n'ont pas été sauvegardés. Si vous quittez, vous perdrez vos modifications.",
+    blockNavigationCancel: "Annuler",
+    blockNavigationConfirm: "Confirmer",
+    submit: "Soumettre",
+    revert: "Revenir aux paramètres par défaut",
+  },
+} as const satisfies Record<"en" | "fr", FormMessages>;
+
+export type FormMessageOverrides = Partial<FormMessages>;
+
+export const formMessages = (overrides?: FormMessageOverrides) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
 
 export const ErrorMessage = ({ text }: { text: string }) => {
   return (
@@ -202,7 +262,10 @@ const SelectField = ({
   );
 };
 
-const KeyValueField = (props: DefaultOptions) => {
+const KeyValueField = (
+  props: DefaultOptions & { messages?: FormMessageOverrides },
+) => {
+  const labels = formMessages(props.messages);
   const field = useFieldContext<Record<string, string>>();
   const invalid = !field.state.meta.isValid;
 
@@ -237,7 +300,7 @@ const KeyValueField = (props: DefaultOptions) => {
         <div key={index} className="flex w-full flex-row items-center gap-2">
           <Input
             id={field.name}
-            placeholder={m.key_value_field_key()}
+            placeholder={labels.keyValueKey}
             name={field.name}
             type="text"
             className="w-auto"
@@ -251,7 +314,7 @@ const KeyValueField = (props: DefaultOptions) => {
             name={field.name}
             type="text"
             className="w-auto flex-1"
-            placeholder={m.key_value_field_value()}
+            placeholder={labels.keyValueValue}
             value={value}
             onChange={(e) => {
               field.handleChange(updateKeyValue(key, e.target.value, index));
@@ -266,7 +329,7 @@ const KeyValueField = (props: DefaultOptions) => {
             }}
           >
             <Trash />
-            {m.key_value_field_delete()}
+            {labels.keyValueDelete}
           </Button>
         </div>
       ))}
@@ -283,7 +346,7 @@ const KeyValueField = (props: DefaultOptions) => {
           }}
         >
           <Plus />
-          {m.key_value_field_add()}
+          {labels.keyValueAdd}
         </Button>
       </div>
       {props.description && (
@@ -340,11 +403,14 @@ const MultiSelectField = ({
 const FileField = ({
   label,
   accept,
+  messages,
   required = false,
 }: Omit<DefaultOptions, "description"> & {
   accept: InputHTMLAttributes<HTMLInputElement>["accept"];
+  messages?: FormMessageOverrides;
   required?: boolean;
 }) => {
+  const labels = formMessages(messages);
   const field = useFieldContext<File | "">();
   const invalid = !field.state.meta.isValid;
 
@@ -362,9 +428,7 @@ const FileField = ({
         required={required}
         aria-invalid={invalid}
       />
-      <FieldDescription>
-        {m.form_accepts({ accepts: accept as string })}
-      </FieldDescription>
+      <FieldDescription>{labels.accepts(accept as string)}</FieldDescription>
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -373,10 +437,12 @@ const FileField = ({
 const ImageField = ({
   label,
   defaultImageUrl,
+  messages,
   size,
 }: {
   label: string;
   defaultImageUrl?: string;
+  messages?: FormMessageOverrides;
   size: {
     width: number;
     height: number;
@@ -384,6 +450,7 @@ const ImageField = ({
     suggestedHeight?: number;
   };
 }) => {
+  const labels = formMessages(messages);
   const { width, height } = size;
   const field = useFieldContext<File | string | null>();
   const invalid = !field.state.meta.isValid;
@@ -439,16 +506,16 @@ const ImageField = ({
               field.handleChange(null);
             }}
           >
-            {m.actions_delete()}
+            {labels.delete}
           </Button>
         )}
       </div>
       {size.suggestedWidth && size.suggestedHeight && (
         <FieldDescription>
-          {m.form_suggested_image_size({
-            width: String(size.suggestedWidth),
-            height: String(size.suggestedHeight),
-          })}
+          {labels.suggestedImageSize(
+            String(size.suggestedWidth),
+            String(size.suggestedHeight),
+          )}
         </FieldDescription>
       )}
       <FieldError errors={field.getMeta().errors} />
@@ -456,7 +523,12 @@ const ImageField = ({
   );
 };
 
-export const BlockNavigation = () => {
+export const BlockNavigation = ({
+  messages,
+}: {
+  messages?: FormMessageOverrides;
+}) => {
+  const labels = formMessages(messages);
   const form = useFormContext();
   const shouldBlock = useStore(
     form.store,
@@ -474,19 +546,17 @@ export const BlockNavigation = () => {
         <AlertDialog open={status === "blocked"}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                {m.form_block_navigation_title()}
-              </AlertDialogTitle>
+              <AlertDialogTitle>{labels.blockNavigationTitle}</AlertDialogTitle>
               <AlertDialogDescription>
-                {m.form_block_navigation_description()}
+                {labels.blockNavigationDescription}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={reset}>
-                {m.form_block_navigation_cancel()}
+                {labels.blockNavigationCancel}
               </AlertDialogCancel>
               <AlertDialogAction onClick={proceed}>
-                {m.form_block_navigation_confirm()}
+                {labels.blockNavigationConfirm}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -496,14 +566,21 @@ export const BlockNavigation = () => {
   );
 };
 
-const SubmitButton = () => {
+const SubmitButton = ({
+  children,
+  messages,
+}: {
+  children?: React.ReactNode;
+  messages?: FormMessageOverrides;
+}) => {
+  const labels = formMessages(messages);
   const form = useFormContext();
   return (
     <form.Subscribe selector={(formState) => [formState.isSubmitting]}>
       {([isSubmitting]) => (
         <Button type="submit" disabled={isSubmitting} className="self-start">
           {isSubmitting && <Loader2 className="animate-spin" />}
-          {m.form_submit()}
+          {children ?? labels.submit}
         </Button>
       )}
     </form.Subscribe>
@@ -568,7 +645,14 @@ export const FieldWrapper = ({
   );
 };
 
-const RevertButton = ({ original }: { original: string }) => {
+const RevertButton = ({
+  messages,
+  original,
+}: {
+  messages?: FormMessageOverrides;
+  original: string;
+}) => {
+  const labels = formMessages(messages);
   const field = useFieldContext<string>();
 
   if (field.state.value !== original) {
@@ -579,7 +663,7 @@ const RevertButton = ({ original }: { original: string }) => {
           className="-mr-4 h-auto py-0"
           onClick={() => field.handleChange(original)}
         >
-          {m.form_revert()}
+          {labels.revert}
         </Button>
       </div>
     );

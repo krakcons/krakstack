@@ -1,4 +1,3 @@
-import { m } from "@/paraglide/messages";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -101,6 +100,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getLocale } from "@/paraglide/runtime";
 
 const DataTableViewContext = createContext<DataTableView>("table");
 
@@ -126,6 +126,89 @@ export const TableSearchSchemaStandard =
 export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
 type DataTableView = "table" | "gallery";
+
+export type DataTableMessages = {
+  pageSize: string;
+  empty: string;
+  loading: string;
+  filter: string;
+  results: (count: number) => string;
+  export: string;
+  selectedOf: (selected: number, total: number) => string;
+  view: string;
+  tableView: string;
+  galleryView: string;
+  columns: string;
+  groupBy: string;
+  sortAsc: string;
+  sortDesc: string;
+  sortHide: string;
+  sortClear: string;
+  sortBy: string;
+  pageOf: (page: number, total: number) => string;
+  goToFirstPage: string;
+  goToPreviousPage: string;
+  goToNextPage: string;
+  goToLastPage: string;
+};
+
+const messages = {
+  en: {
+    pageSize: "Page size",
+    empty: "No results.",
+    loading: "Loading...",
+    filter: "Filter results...",
+    results: (count: number) => `${count} results`,
+    export: "Export",
+    selectedOf: (selected: number, total: number) => `${selected} of ${total}`,
+    view: "View",
+    tableView: "Table",
+    galleryView: "Gallery",
+    columns: "Columns",
+    groupBy: "Group by",
+    sortAsc: "Asc",
+    sortDesc: "Desc",
+    sortHide: "Hide",
+    sortClear: "Clear",
+    sortBy: "Sort by",
+    pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
+    goToFirstPage: "Go to first page",
+    goToPreviousPage: "Go to previous page",
+    goToNextPage: "Go to next page",
+    goToLastPage: "Go to last page",
+  },
+  fr: {
+    pageSize: "Taille de la page",
+    empty: "Aucun résultat.",
+    loading: "Chargement...",
+    filter: "Filtrer les résultats...",
+    results: (count: number) => `${count} résultats`,
+    export: "Exporter",
+    selectedOf: (selected: number, total: number) => `${selected} sur ${total}`,
+    view: "Affichage",
+    tableView: "Tableau",
+    galleryView: "Galerie",
+    columns: "Colonnes",
+    groupBy: "Grouper par",
+    sortAsc: "Croissant",
+    sortDesc: "Décroissant",
+    sortHide: "Cacher",
+    sortClear: "Effacer",
+    sortBy: "Trier par",
+    pageOf: (page: number, total: number) => `Page ${page} sur ${total}`,
+    goToFirstPage: "Aller à la première page",
+    goToPreviousPage: "Aller à la page précédente",
+    goToNextPage: "Aller à la page suivante",
+    goToLastPage: "Aller à la dernière page",
+  },
+} as const satisfies Record<"en" | "fr", DataTableMessages>;
+
+export type DataTableMessageOverrides = Partial<DataTableMessages>;
+
+export const dataTableMessages = (overrides?: DataTableMessageOverrides) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
 
 export interface DataTableGroupingField<TData> {
   id: string;
@@ -160,6 +243,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   emptyLabel?: string;
+  messages?: DataTableMessageOverrides;
   exportFileName?: string;
   isLoading?: boolean;
   onRowClick?: (row: TData) => void;
@@ -675,7 +759,8 @@ const exportTableToCsv = <TData,>(
 export function DataTable<TData, TValue>({
   columns,
   data,
-  emptyLabel = m.table_empty(),
+  emptyLabel,
+  messages,
   exportFileName = "table.csv",
   isLoading = false,
   onRowClick,
@@ -685,6 +770,8 @@ export function DataTable<TData, TValue>({
   serverPagination,
   features = DEFAULT_TABLE_FEATURES,
 }: DataTableProps<TData, TValue>) {
+  const labels = dataTableMessages(messages);
+  const resolvedEmptyLabel = emptyLabel ?? labels.empty;
   const search = useRouterState({
     select: (state) => state.location.search,
   }) as TableParams | undefined;
@@ -709,7 +796,7 @@ export function DataTable<TData, TValue>({
   };
   const currentView: DataTableView = showGallery ? view : "table";
   const isGalleryView = currentView === "gallery";
-  const emptyStateLabel = isLoading ? m.table_loading() : emptyLabel;
+  const emptyStateLabel = isLoading ? labels.loading : resolvedEmptyLabel;
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
@@ -960,7 +1047,7 @@ export function DataTable<TData, TValue>({
                   }}
                 >
                   {section.field.renderEmptyGroup?.(section.groupId) ??
-                    m.table_empty()}
+                    labels.empty}
                 </TableCell>
               </TableRow>
             ))}
@@ -989,7 +1076,7 @@ export function DataTable<TData, TValue>({
                 ? renderGalleryRows(section.rows, canDragRows)
                 : renderGalleryEmptyState(
                     section.field.renderEmptyGroup?.(section.groupId) ??
-                      m.table_empty(),
+                      labels.empty,
                   ))}
         </div>
       );
@@ -1008,12 +1095,12 @@ export function DataTable<TData, TValue>({
                   setSearchInput(event.target.value);
                   table.setGlobalFilter(event.target.value);
                 }}
-                placeholder={m.table_filter()}
+                placeholder={labels.filter}
                 value={searchInput}
               />
               {searchInput ? (
                 <Button
-                  aria-label={m.table_clear_search()}
+                  aria-label={labels.filter}
                   className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2 active:!-translate-y-1/2"
                   onClick={() => {
                     setSearchInput("");
@@ -1036,21 +1123,19 @@ export function DataTable<TData, TValue>({
                 <DropdownMenuTrigger
                   render={
                     <Button
-                      aria-label={m.table_group_by()}
+                      aria-label={labels.groupBy}
                       className="h-8"
                       size="sm"
                       variant="outline"
                     >
                       <Rows3 />
-                      <span className="hidden sm:inline">
-                        {m.table_group_by()}
-                      </span>
+                      <span className="hidden sm:inline">{labels.groupBy}</span>
                     </Button>
                   }
                 />
                 <DropdownMenuContent align="end" className="w-[200px]">
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>{m.table_group_by()}</DropdownMenuLabel>
+                    <DropdownMenuLabel>{labels.groupBy}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {grouping.fields.map((field) => (
                       <DropdownMenuCheckboxItem
@@ -1067,19 +1152,20 @@ export function DataTable<TData, TValue>({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : null}
-            <DataTableSortDropdown table={table} />
+            <DataTableSortDropdown messages={labels} table={table} />
             {showGallery ? (
               <DataTableDisplayModeSwitch
+                messages={labels}
                 onChange={setView}
                 value={currentView}
               />
             ) : null}
             {showColumnVisibility ? (
-              <DataTableViewOptions table={table} />
+              <DataTableViewOptions messages={labels} table={table} />
             ) : null}
             {showExport ? (
               <Button
-                aria-label={m.table_export()}
+                aria-label={labels.export}
                 disabled={!hasExportableRows}
                 onClick={() =>
                   exportTableToCsv(table, exportRows, exportFileName)
@@ -1088,7 +1174,7 @@ export function DataTable<TData, TValue>({
                 variant="outline"
               >
                 <Download />
-                <span className="hidden sm:inline">{m.table_export()}</span>
+                <span className="hidden sm:inline">{labels.export}</span>
               </Button>
             ) : null}
           </div>
@@ -1202,7 +1288,7 @@ export function DataTable<TData, TValue>({
       </DndContext>
       {showPagination && !hasActiveGrouping && (
         <div className="p-2">
-          <DataTablePagination table={table} />
+          <DataTablePagination messages={labels} table={table} />
         </div>
       )}
     </div>
@@ -1210,9 +1296,11 @@ export function DataTable<TData, TValue>({
 }
 
 function DataTableDisplayModeSwitch({
+  messages,
   value,
   onChange,
 }: {
+  messages: DataTableMessages;
   value: DataTableView;
   onChange: (value: DataTableView) => void;
 }) {
@@ -1221,7 +1309,7 @@ function DataTableDisplayModeSwitch({
       <DropdownMenuTrigger
         render={
           <Button
-            aria-label={m.table_view()}
+            aria-label={messages.view}
             className="h-8"
             size="sm"
             variant="outline"
@@ -1229,7 +1317,7 @@ function DataTableDisplayModeSwitch({
         }
       >
         <Rows3 />
-        {m.table_view()}
+        {messages.view}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
         <DropdownMenuRadioGroup
@@ -1238,11 +1326,11 @@ function DataTableDisplayModeSwitch({
         >
           <DropdownMenuRadioItem value="table">
             <Rows3 />
-            {m.table_table_view()}
+            {messages.tableView}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="gallery">
             <LayoutGrid />
-            {m.table_gallery_view()}
+            {messages.galleryView}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
@@ -1251,8 +1339,10 @@ function DataTableDisplayModeSwitch({
 }
 
 function DataTableSortDropdown<TData>({
+  messages,
   table,
 }: {
+  messages: DataTableMessages;
   table: TanstackTable<TData>;
 }) {
   const sorting = table.getState().sorting;
@@ -1280,7 +1370,7 @@ function DataTableSortDropdown<TData>({
       <DropdownMenuTrigger
         render={
           <Button
-            aria-label={m.table_sort_by()}
+            aria-label={messages.sortBy}
             className="h-8"
             size="sm"
             variant="outline"
@@ -1294,13 +1384,13 @@ function DataTableSortDropdown<TData>({
             ) : (
               <ChevronsUpDown />
             )}
-            <span className="hidden sm:inline">{m.table_sort_by()}</span>
+            <span className="hidden sm:inline">{messages.sortBy}</span>
           </Button>
         }
       />
       <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{m.table_sort_by()}</DropdownMenuLabel>
+          <DropdownMenuLabel>{messages.sortBy}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {sortableColumns.map((column) => {
             const sortState = sorting.find((s) => s.id === column.id);
@@ -1319,17 +1409,17 @@ function DataTableSortDropdown<TData>({
                 <DropdownMenuSubContent>
                   <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
                     <ArrowUp />
-                    {m.table_sort_asc()}
+                    {messages.sortAsc}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
                     <ArrowDown />
-                    {m.table_sort_desc()}
+                    {messages.sortDesc}
                   </DropdownMenuItem>
                   {sortState && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => column.clearSorting()}>
-                        {m.table_sort_clear()}
+                        {messages.sortClear}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -1344,8 +1434,10 @@ function DataTableSortDropdown<TData>({
 }
 
 function DataTableViewOptions<TData>({
+  messages,
   table,
 }: {
+  messages: DataTableMessages;
   table: TanstackTable<TData>;
 }) {
   const columnLabels = useMemo(
@@ -1373,19 +1465,19 @@ function DataTableViewOptions<TData>({
       <DropdownMenuTrigger
         render={
           <Button
-            aria-label={m.table_columns()}
+            aria-label={messages.columns}
             className="h-8"
             size="sm"
             variant="outline"
           >
             <Settings2 />
-            <span className="hidden sm:inline">{m.table_columns()}</span>
+            <span className="hidden sm:inline">{messages.columns}</span>
           </Button>
         }
       />
       <DropdownMenuContent align="end" className="w-[180px]">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{m.table_columns()}</DropdownMenuLabel>
+          <DropdownMenuLabel>{messages.columns}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {columns.map((column) => (
             <DropdownMenuCheckboxItem
@@ -1404,6 +1496,7 @@ function DataTableViewOptions<TData>({
 }
 
 interface DataTablePaginationProps<TData> {
+  messages?: DataTableMessageOverrides;
   table: TanstackTable<TData>;
 }
 
@@ -1418,28 +1511,25 @@ interface DataTableRelationshipCellProps {
 }
 
 export function DataTablePagination<TData>({
+  messages,
   table,
 }: DataTablePaginationProps<TData>) {
+  const labels = dataTableMessages(messages);
   const selectedRows = table.getFilteredSelectedRowModel().rows.length;
   const filteredRows = table.getFilteredRowModel().rows.length;
 
   return (
     <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <span>{m.table_results({ count: filteredRows })}</span>
+        <span>{labels.results(filteredRows)}</span>
         {selectedRows > 0 ? (
-          <span>
-            {m.table_selected_of({
-              selected: selectedRows,
-              total: filteredRows,
-            })}
-          </span>
+          <span>{labels.selectedOf(selectedRows, filteredRows)}</span>
         ) : null}
       </div>
       <div className="flex items-center gap-4 sm:justify-end">
         <div className="flex items-center gap-2">
           <Label htmlFor="page-size" className="hidden text-sm sm:block">
-            {m.table_page_size()}
+            {labels.pageSize}
           </Label>
           <Select
             items={[10, 20, 30, 40, 50].map((pageSize) => ({
@@ -1465,10 +1555,10 @@ export function DataTablePagination<TData>({
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center text-sm font-medium sm:block">
-            {m.table_page_of({
-              page: table.getState().pagination.pageIndex + 1,
-              total: table.getPageCount(),
-            })}
+            {labels.pageOf(
+              table.getState().pagination.pageIndex + 1,
+              table.getPageCount(),
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -1476,7 +1566,7 @@ export function DataTablePagination<TData>({
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className="sr-only">{m.table_go_to_first_page()}</span>
+              <span className="sr-only">{labels.goToFirstPage}</span>
               <ChevronsLeft />
             </Button>
             <Button
@@ -1484,7 +1574,7 @@ export function DataTablePagination<TData>({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className="sr-only">{m.table_go_to_previous_page()}</span>
+              <span className="sr-only">{labels.goToPreviousPage}</span>
               <ChevronLeft />
             </Button>
             <Button
@@ -1492,7 +1582,7 @@ export function DataTablePagination<TData>({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <span className="sr-only">{m.table_go_to_next_page()}</span>
+              <span className="sr-only">{labels.goToNextPage}</span>
               <ChevronRight />
             </Button>
             <Button
@@ -1500,7 +1590,7 @@ export function DataTablePagination<TData>({
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
-              <span className="sr-only">{m.table_go_to_last_page()}</span>
+              <span className="sr-only">{labels.goToLastPage}</span>
               <ChevronsRight />
             </Button>
           </div>
@@ -1594,14 +1684,17 @@ interface DataTableColumnHeaderProps<
   TValue,
 > extends HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>;
+  messages?: DataTableMessageOverrides;
   title: string;
 }
 
 export function DataTableColumnHeader<TData, TValue>({
   column,
+  messages,
   title,
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
+  const labels = dataTableMessages(messages);
   if (!column.getCanSort()) {
     return <div className={cn(className)}>{title}</div>;
   }
@@ -1631,16 +1724,16 @@ export function DataTableColumnHeader<TData, TValue>({
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
               <ArrowUp className="text-muted-foreground/70 h-3.5 w-3.5" />
-              {m.table_sort_asc()}
+              {labels.sortAsc}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
               <ArrowDown className="text-muted-foreground/70 h-3.5 w-3.5" />
-              {m.table_sort_desc()}
+              {labels.sortDesc}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
               <EyeOff className="text-muted-foreground/70 h-3.5 w-3.5" />
-              {m.table_sort_hide()}
+              {labels.sortHide}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
@@ -1658,6 +1751,7 @@ export const createDataTableActionsColumn = <TData extends object>(
     visible?: (data: TData) => boolean;
   }[],
   options?: {
+    messages?: DataTableMessageOverrides;
     title?: string;
   },
 ) => {
@@ -1667,7 +1761,11 @@ export const createDataTableActionsColumn = <TData extends object>(
     id: "actions",
     enableHiding: false,
     header: ({ column }: any) => (
-      <DataTableColumnHeader title={title} column={column} />
+      <DataTableColumnHeader
+        column={column}
+        title={title}
+        {...(options?.messages ? { messages: options.messages } : {})}
+      />
     ),
     cell: ({ cell }: any) => (
       <DropdownMenu>

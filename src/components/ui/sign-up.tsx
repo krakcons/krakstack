@@ -9,9 +9,52 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { authClient } from "@/services/auth/client";
-import { m } from "@/paraglide/messages";
+import { getLocale } from "@/paraglide/runtime";
 
-export function SignUp() {
+const messages = {
+  en: {
+    signIn: "Sign in",
+    title: "Create account",
+    description: "Create an account for this site.",
+    error: "Unable to create account.",
+    haveAccount: "Already have an account?",
+    name: "Name",
+    email: "Email",
+    password: "Password",
+  },
+  fr: {
+    signIn: "Se connecter",
+    title: "Créer un compte",
+    description: "Créez un compte pour ce site.",
+    error: "Impossible de créer le compte.",
+    haveAccount: "Vous avez déjà un compte ?",
+    name: "Nom",
+    email: "E-mail",
+    password: "Mot de passe",
+  },
+} as const;
+
+export type SignUpMessages = Partial<
+  Record<
+    | "signIn"
+    | "title"
+    | "description"
+    | "error"
+    | "haveAccount"
+    | "name"
+    | "email"
+    | "password",
+    string
+  >
+>;
+
+const signUpMessages = (overrides?: SignUpMessages) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
+
+export function SignUp({ messages }: { messages?: SignUpMessages }) {
+  const labels = signUpMessages(messages);
   const navigate = useNavigate();
   const form = useAppForm({
     defaultValues: {
@@ -31,7 +74,7 @@ export function SignUp() {
       if (result.error) {
         formApi.setErrorMap({
           onSubmit: {
-            form: result.error.message ?? m.sign_up_error(),
+            form: result.error.message ?? labels.error,
             fields: {},
           },
         });
@@ -45,8 +88,8 @@ export function SignUp() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-3xl">{m.sign_up_title()}</CardTitle>
-        <CardDescription>{m.sign_up_description()}</CardDescription>
+        <CardTitle className="text-3xl">{labels.title}</CardTitle>
+        <CardDescription>{labels.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <form.AppForm>
@@ -61,7 +104,7 @@ export function SignUp() {
             <form.AppField name="name">
               {(field) => (
                 <field.TextField
-                  label={m.field_name()}
+                  label={labels.name}
                   autoComplete="name"
                   required
                 />
@@ -70,7 +113,7 @@ export function SignUp() {
             <form.AppField name="email">
               {(field) => (
                 <field.TextField
-                  label={m.field_email()}
+                  label={labels.email}
                   type="email"
                   autoComplete="email"
                   required
@@ -80,7 +123,7 @@ export function SignUp() {
             <form.AppField name="password">
               {(field) => (
                 <field.TextField
-                  label={m.field_password()}
+                  label={labels.password}
                   type="password"
                   autoComplete="new-password"
                   minLength={8}
@@ -102,12 +145,12 @@ export function SignUp() {
           </form>
         </form.AppForm>
         <p className="text-muted-foreground mt-6 text-center text-sm">
-          {m.sign_up_have_account()}{" "}
+          {labels.haveAccount}{" "}
           <Link
             className="text-foreground font-medium underline-offset-4 hover:underline"
             to="/sign-in"
           >
-            {m.auth_sign_in()}
+            {labels.signIn}
           </Link>
         </p>
       </CardContent>

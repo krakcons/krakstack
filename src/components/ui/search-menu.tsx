@@ -14,7 +14,40 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { m } from "@/paraglide/messages";
+import { getLocale } from "@/paraglide/runtime";
+
+const messages = {
+  en: {
+    title: "Search",
+    description: "Search for an item to open.",
+    placeholder: "Search...",
+    inputPlaceholder: "Search...",
+    emptyMessage: "No results found.",
+  },
+  fr: {
+    title: "Recherche",
+    description: "Recherchez un élément à ouvrir.",
+    placeholder: "Rechercher...",
+    inputPlaceholder: "Rechercher...",
+    emptyMessage: "Aucun résultat trouvé.",
+  },
+} as const;
+
+export type SearchMenuMessages = Partial<
+  Record<
+    | "title"
+    | "description"
+    | "placeholder"
+    | "inputPlaceholder"
+    | "emptyMessage",
+    string
+  >
+>;
+
+const searchMenuMessages = (overrides?: SearchMenuMessages) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
 
 export type SearchMenuItem = {
   id: string;
@@ -39,6 +72,7 @@ export type SearchMenuProps = {
   placeholder?: string;
   inputPlaceholder?: string;
   emptyMessage?: string;
+  messages?: SearchMenuMessages;
   shortcutLabel?: string;
   className?: string;
   open?: boolean;
@@ -48,17 +82,24 @@ export type SearchMenuProps = {
 
 export function SearchMenu({
   groups,
-  title = m.search_menu_title(),
-  description = m.search_menu_description(),
-  placeholder = m.search_menu_placeholder(),
-  inputPlaceholder = m.search_menu_input_placeholder(),
-  emptyMessage = m.search_menu_empty(),
+  title,
+  description,
+  placeholder,
+  inputPlaceholder,
+  emptyMessage,
+  messages,
   shortcutLabel = "⌘K",
   className,
   open,
   onOpenChange,
   onSelect,
 }: SearchMenuProps) {
+  const labels = searchMenuMessages(messages);
+  const resolvedTitle = title ?? labels.title;
+  const resolvedDescription = description ?? labels.description;
+  const resolvedPlaceholder = placeholder ?? labels.placeholder;
+  const resolvedInputPlaceholder = inputPlaceholder ?? labels.inputPlaceholder;
+  const resolvedEmptyMessage = emptyMessage ?? labels.emptyMessage;
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = open !== undefined;
   const isOpen = open ?? uncontrolledOpen;
@@ -86,7 +127,7 @@ export function SearchMenu({
   return (
     <>
       <Button
-        aria-label={placeholder}
+        aria-label={resolvedPlaceholder}
         type="button"
         variant="outline"
         size="icon"
@@ -98,7 +139,7 @@ export function SearchMenu({
       >
         <SearchIcon className="size-4 shrink-0" />
         <span className="text-muted-foreground hidden min-w-0 flex-1 truncate text-left font-normal sm:block">
-          {placeholder}
+          {resolvedPlaceholder}
         </span>
         <kbd className="bg-muted text-muted-foreground pointer-events-none hidden h-5 items-center rounded border px-1.5 font-mono text-[10px] font-medium sm:inline-flex">
           {shortcutLabel}
@@ -107,13 +148,13 @@ export function SearchMenu({
       <CommandDialog
         open={isOpen}
         onOpenChange={setOpen}
-        title={title}
-        description={description}
+        title={resolvedTitle}
+        description={resolvedDescription}
       >
         <Command>
-          <CommandInput placeholder={inputPlaceholder} />
+          <CommandInput placeholder={resolvedInputPlaceholder} />
           <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandEmpty>{resolvedEmptyMessage}</CommandEmpty>
             {groups.map((group) => (
               <CommandGroup heading={group.heading} key={group.heading}>
                 {group.items.map((item) => (

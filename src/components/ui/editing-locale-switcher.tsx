@@ -8,20 +8,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { m } from "@/paraglide/messages";
+import { getLocale } from "@/paraglide/runtime";
 
 export type EditingLocale = "en" | "fr";
 
+const messages = {
+  en: { label: "Editing", en: "English", fr: "French" },
+  fr: { label: "Modification", en: "Anglais", fr: "Français" },
+} as const satisfies Record<
+  EditingLocale,
+  Record<EditingLocale | "label", string>
+>;
+
+export type EditingLocaleSwitcherMessages = Partial<
+  Record<EditingLocale | "label", string>
+>;
+
+const editingLocaleMessages = (overrides?: EditingLocaleSwitcherMessages) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
+
 export function EditingLocaleSwitcher({
+  messages,
   value,
   onValueChange,
 }: {
+  messages?: EditingLocaleSwitcherMessages;
   value: EditingLocale;
   onValueChange: (value: EditingLocale) => void;
 }) {
+  const labels = editingLocaleMessages(messages);
   const localeOptions: { value: EditingLocale; label: string }[] = [
-    { value: "en", label: m.editing_locale_switcher_english() },
-    { value: "fr", label: m.editing_locale_switcher_french() },
+    { value: "en", label: labels.en },
+    { value: "fr", label: labels.fr },
   ];
 
   return (
@@ -40,9 +60,7 @@ export function EditingLocaleSwitcher({
           className="text-muted-foreground text-sm"
         >
           <SquarePen className="size-4 sm:hidden" />
-          <div className="sr-only sm:not-sr-only">
-            {m.editing_locale_switcher_label()}
-          </div>
+          <div className="sr-only sm:not-sr-only">{labels.label}</div>
         </Label>
         <SelectValue />
       </SelectTrigger>
