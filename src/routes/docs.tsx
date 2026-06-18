@@ -7,6 +7,8 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { SidebarLayout, type NavGroup } from "@/components/ui/sidebar-layout";
 import { AppBrand } from "@/components/ui/app-brand";
+import { LocaleToggle } from "@/components/ui/locale-toggle";
+import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackPackages } from "@/lib/krakstack-packages";
 import { krakstackSites } from "@/lib/krakstack-sites";
@@ -48,6 +50,8 @@ const packageNavGroup: NavGroup = {
 };
 
 function DocsLayout() {
+  const { theme, setTheme } = useTheme();
+
   return (
     <SidebarLayout
       sidebarHeader={
@@ -60,7 +64,13 @@ function DocsLayout() {
         />
       }
       groups={[siteNavGroup, packageNavGroup, ...docsNavGroups]}
-      headerActions={<RegistryCommandMenu />}
+      headerActions={
+        <>
+          <RegistryCommandMenu />
+          <ThemeSwitcher value={theme} onChange={setTheme} />
+          <LocaleToggle />
+        </>
+      }
     />
   );
 }

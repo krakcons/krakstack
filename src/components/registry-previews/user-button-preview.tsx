@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { UserButton } from "@krak-stack/auth/components";
+import { UserButton, type AuthUiClient } from "@krak-stack/auth";
 import {
   Card,
   CardContent,
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/services/auth/client";
+
+const authUiClient = authClient as unknown as AuthUiClient;
 
 export function UserButtonPreview() {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export function UserButtonPreview() {
       </CardHeader>
       <CardContent className="flex items-center justify-center py-12">
         <UserButton
+          authClient={authUiClient}
           apiKeyPermissions={{ projects: ["read"] }}
           signOutRedirect="/docs/registry/user-button"
           renderUnauthenticated={() => (

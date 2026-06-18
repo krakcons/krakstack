@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { AppBrand } from "@/components/ui/app-brand";
 import { LocaleToggle } from "@/components/ui/locale-toggle";
+import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackPackages } from "@/lib/krakstack-packages";
 import { krakstackSites } from "@/lib/krakstack-sites";
@@ -26,6 +27,7 @@ import {
   ListFilter,
   ListChecks,
   Mail,
+  MonitorCog,
   Shield,
   Table2,
   UserRound,
@@ -39,6 +41,7 @@ const iconByName = {
   "data-table": Table2,
   form: ListChecks,
   "locale-toggle": Globe,
+  "theme-switcher": MonitorCog,
   "user-button": UserRound,
   "organization-switcher": Building2,
   "sign-in": KeyRound,
@@ -75,6 +78,8 @@ const groupedItems = registryItems.reduce(
 );
 
 function Home() {
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-20 border-b backdrop-blur">
@@ -105,6 +110,7 @@ function Home() {
             </a>
             <div className="flex items-center gap-2 text-sm">
               <RegistryCommandMenu />
+              <ThemeSwitcher value={theme} onChange={setTheme} />
               <LocaleToggle />
             </div>
           </div>

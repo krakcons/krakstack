@@ -24,10 +24,10 @@
   ],
   "files": [
     {
-      "path": "src/services/auth/client/central.ts",
-      "content": "import { apiKeyClient } from \"@better-auth/api-key/client\";\nimport { createAuthClient } from \"better-auth/react\";\nimport {\n  organizationClient,\n  twoFactorClient,\n} from \"better-auth/client/plugins\";\n\nexport const centralAuthClient = createAuthClient({\n  baseURL: import.meta.env.VITE_KRAKSTACK_AUTH_URL,\n  fetchOptions: {\n    credentials: \"include\",\n  },\n  plugins: [\n    twoFactorClient({\n      twoFactorPage: `${import.meta.env.VITE_KRAKSTACK_AUTH_URL}/2fa`,\n    }),\n    organizationClient(),\n    apiKeyClient(),\n  ],\n});\n",
+      "path": "src/services/auth/client/index.ts",
+      "content": "import { apiKeyClient } from \"@better-auth/api-key/client\";\nimport { createAuthClient } from \"better-auth/react\";\nimport {\n  genericOAuthClient,\n  organizationClient,\n  twoFactorClient,\n} from \"better-auth/client/plugins\";\n\nexport const centralAuthUrl = (path: string) =>\n  new URL(path, import.meta.env.VITE_KRAKSTACK_AUTH_URL).toString();\n\nexport const centralLoginUrl = (\n  callbackURL: string,\n  locale: \"en\" | \"fr\" = \"en\",\n) => {\n  const url = new URL(\n    `/${locale}/sign-in`,\n    import.meta.env.VITE_KRAKSTACK_AUTH_URL,\n  );\n  url.searchParams.set(\"redirect\", callbackURL);\n  return url.toString();\n};\n\nexport const authClient = createAuthClient({\n  baseURL: import.meta.env.VITE_KRAKSTACK_AUTH_URL,\n  fetchOptions: {\n    credentials: \"include\",\n  },\n  plugins: [\n    genericOAuthClient(),\n    twoFactorClient({\n      twoFactorPage: `${import.meta.env.VITE_KRAKSTACK_AUTH_URL}/2fa`,\n    }),\n    organizationClient(),\n    apiKeyClient(),\n  ],\n});\n",
       "type": "registry:file",
-      "target": "services/auth/client/central.ts"
+      "target": "services/auth/client/index.ts"
     },
     {
       "path": "src/messages/components/user-button/en.json",
@@ -42,6 +42,6 @@
       "target": "./messages/components/user-button/fr.json"
     }
   ],
-  "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for apps that use Krakstack Auth as a central identity provider. It reads the visible app session from the app-local `authClient.useSession()`, then uses `centralAuthClient` for central account mutations like profile updates, linked accounts, password settings, two-factor authentication, and user API keys.\n\n## Features\n\n- App-local Better Auth session display\n- Central Krakstack Auth account mutations through `centralAuthClient`\n- Profile, linked accounts, password, 2FA, and API-key dialogs\n- Reconnect state when the app session exists but the central auth session is missing\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@krak-stack/auth/components\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`.",
+  "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for apps that use Krakstack Auth as a central identity provider. It reads the visible app session and central account state from `authClient`, including profile updates, linked accounts, password settings, two-factor authentication, and user API keys.\n\n## Features\n\n- Central Krakstack Auth session display\n- Central Krakstack Auth account mutations through `authClient`\n- Profile, linked accounts, password, 2FA, and API-key dialogs\n- Reconnect state when the central auth session is missing\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@krak-stack/auth\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`.",
   "type": "registry:block"
 }

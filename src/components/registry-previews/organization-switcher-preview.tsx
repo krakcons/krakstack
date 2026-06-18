@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { OrganizationSwitcher } from "@krak-stack/auth/components";
+import { OrganizationSwitcher, type AuthUiClient } from "@krak-stack/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/card";
 import { m } from "@/paraglide/messages";
 import { authClient } from "@/services/auth/client";
+
+const authUiClient = authClient as unknown as AuthUiClient;
 
 export function OrganizationSwitcherPreview() {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ export function OrganizationSwitcherPreview() {
             {m.organization_switcher_preview_expanded()}
           </p>
           <OrganizationSwitcher
+            authClient={authUiClient}
             className="max-w-xs"
             renderUnauthenticated={() => (
               <Button
@@ -54,6 +57,7 @@ export function OrganizationSwitcherPreview() {
           </p>
           <div className="group w-12" data-collapsible="icon">
             <OrganizationSwitcher
+              authClient={authUiClient}
               className="max-w-xs"
               renderUnauthenticated={() => (
                 <Button

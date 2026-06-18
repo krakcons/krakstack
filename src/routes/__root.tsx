@@ -1,5 +1,6 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
+import { ThemeProvider } from "@/components/ui/theme-switcher";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
@@ -55,12 +56,14 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={getLocale()}>
+    <html lang={getLocale()} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </ThemeProvider>
 
         <Scripts />
       </body>

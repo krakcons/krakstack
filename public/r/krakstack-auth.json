@@ -14,15 +14,9 @@
     },
     {
       "path": "src/services/auth/client/index.ts",
-      "content": "import { createAuthClient } from \"better-auth/react\";\nimport { genericOAuthClient } from \"better-auth/client/plugins\";\n\nexport const authClient = createAuthClient({\n  plugins: [genericOAuthClient()],\n});\n",
+      "content": "import { apiKeyClient } from \"@better-auth/api-key/client\";\nimport { createAuthClient } from \"better-auth/react\";\nimport {\n  genericOAuthClient,\n  organizationClient,\n  twoFactorClient,\n} from \"better-auth/client/plugins\";\n\nexport const centralAuthUrl = (path: string) =>\n  new URL(path, import.meta.env.VITE_KRAKSTACK_AUTH_URL).toString();\n\nexport const centralLoginUrl = (\n  callbackURL: string,\n  locale: \"en\" | \"fr\" = \"en\",\n) => {\n  const url = new URL(\n    `/${locale}/sign-in`,\n    import.meta.env.VITE_KRAKSTACK_AUTH_URL,\n  );\n  url.searchParams.set(\"redirect\", callbackURL);\n  return url.toString();\n};\n\nexport const authClient = createAuthClient({\n  baseURL: import.meta.env.VITE_KRAKSTACK_AUTH_URL,\n  fetchOptions: {\n    credentials: \"include\",\n  },\n  plugins: [\n    genericOAuthClient(),\n    twoFactorClient({\n      twoFactorPage: `${import.meta.env.VITE_KRAKSTACK_AUTH_URL}/2fa`,\n    }),\n    organizationClient(),\n    apiKeyClient(),\n  ],\n});\n",
       "type": "registry:file",
       "target": "services/auth/client/index.ts"
-    },
-    {
-      "path": "src/services/auth/client/central.ts",
-      "content": "import { apiKeyClient } from \"@better-auth/api-key/client\";\nimport { createAuthClient } from \"better-auth/react\";\nimport {\n  organizationClient,\n  twoFactorClient,\n} from \"better-auth/client/plugins\";\n\nexport const centralAuthClient = createAuthClient({\n  baseURL: import.meta.env.VITE_KRAKSTACK_AUTH_URL,\n  fetchOptions: {\n    credentials: \"include\",\n  },\n  plugins: [\n    twoFactorClient({\n      twoFactorPage: `${import.meta.env.VITE_KRAKSTACK_AUTH_URL}/2fa`,\n    }),\n    organizationClient(),\n    apiKeyClient(),\n  ],\n});\n",
-      "type": "registry:file",
-      "target": "services/auth/client/central.ts"
     },
     {
       "path": "src/routes/api/auth/$.tsx",
