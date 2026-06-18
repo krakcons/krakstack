@@ -1767,40 +1767,47 @@ export const createDataTableActionsColumn = <TData extends object>(
         {...(options?.messages ? { messages: options.messages } : {})}
       />
     ),
-    cell: ({ cell }: any) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          onClick={(event) => event.stopPropagation()}
-          render={
-            <Button variant="ghost" size="icon">
-              <span className="sr-only">{title}</span>
-              <MoreHorizontal />
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="end">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>{title}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {actions.map(
-              (action) =>
-                (!action.visible || action.visible(cell.row.original)) && (
-                  <DropdownMenuItem
-                    key={action.name}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      action.onClick(cell.row.original);
-                    }}
-                    {...(action.variant ? { variant: action.variant } : {})}
-                  >
-                    {action.icon}
-                    {action.name}
-                  </DropdownMenuItem>
-                ),
-            )}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ cell }: any) => {
+      const visibleActions = actions.filter(
+        (action) => !action.visible || action.visible(cell.row.original),
+      );
+
+      if (visibleActions.length === 0) {
+        return null;
+      }
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            onClick={(event) => event.stopPropagation()}
+            render={
+              <Button variant="ghost" size="icon">
+                <span className="sr-only">{title}</span>
+                <MoreHorizontal />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{title}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {visibleActions.map((action) => (
+                <DropdownMenuItem
+                  key={action.name}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    action.onClick(cell.row.original);
+                  }}
+                  {...(action.variant ? { variant: action.variant } : {})}
+                >
+                  {action.icon}
+                  {action.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
   };
 };
