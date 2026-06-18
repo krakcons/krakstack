@@ -125,26 +125,16 @@
       ]
     },
     {
-      "name": "locale-toggle",
+      "name": "locale-switcher",
       "type": "registry:block",
-      "title": "Locale Toggle",
+      "title": "Locale Switcher",
       "description": "A Paraglide-powered dropdown for switching between configured locales with localized language labels.",
-      "docs": "## Overview\n\n`locale-toggle` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- Localized menu label and locale names\n- Icon-only trigger with accessible screen-reader text\n- Includes component-scoped message files\n\n## Usage\n\n```tsx\nimport { LocaleToggle } from \"@/components/ui/locale-toggle\";\n\n<LocaleToggle />\n```",
+      "docs": "## Overview\n\n`locale-switcher` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- In-file English and French labels\n- Optional message overrides\n- Icon-only trigger with accessible screen-reader text\n\n## Usage\n\n```tsx\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\n\n<LocaleSwitcher />\n\n<LocaleSwitcher messages={{ title: \"Language\", en: \"EN\", fr: \"FR\" }} />\n```",
       "files": [
         {
-          "path": "src/components/ui/locale-toggle.tsx",
+          "path": "src/components/ui/locale-switcher.tsx",
           "type": "registry:component",
-          "target": "components/ui/locale-toggle.tsx"
-        },
-        {
-          "path": "src/messages/components/locale-toggle/en.json",
-          "type": "registry:file",
-          "target": "./messages/components/locale-toggle/en.json"
-        },
-        {
-          "path": "src/messages/components/locale-toggle/fr.json",
-          "type": "registry:file",
-          "target": "./messages/components/locale-toggle/fr.json"
+          "target": "components/ui/locale-switcher.tsx"
         }
       ],
       "registryDependencies": ["button", "dropdown-menu"],
@@ -155,7 +145,7 @@
       "type": "registry:block",
       "title": "Theme Switcher",
       "description": "A localStorage-persisted light, dark, and system theme switcher with a ScriptOnce startup script to avoid theme flash.",
-      "docs": "## Overview\n\n`theme-switcher` provides a compact dropdown for switching between light, dark, and system themes. It persists the selected theme in `localStorage`, applies the resolved theme class to the document element, and renders a `ScriptOnce` startup script from `ThemeProvider` to avoid theme flash.\n\n## Usage\n\nWrap your app in `ThemeProvider`.\n\n```tsx\nimport { ThemeProvider } from \"@/components/ui/theme-switcher\";\n\n<ThemeProvider>{children}</ThemeProvider>\n```\n\nRender the switcher from a component inside the provider.\n\n```tsx\nimport { ThemeSwitcher, useTheme } from \"@/components/ui/theme-switcher\";\n\nconst { theme, setTheme } = useTheme();\n\n<ThemeSwitcher value={theme} onChange={setTheme} />\n```",
+      "docs": "## Overview\n\n`theme-switcher` provides a compact dropdown for switching between light, dark, and system themes. It persists the selected theme in `localStorage`, applies the resolved theme class to the document element, and renders a `ScriptOnce` startup script from `ThemeProvider` to avoid theme flash. Labels are stored in the component file and can be overridden with the `messages` prop.\n\n## Usage\n\nWrap your app in `ThemeProvider`.\n\n```tsx\nimport { ThemeProvider } from \"@/components/ui/theme-switcher\";\n\n<ThemeProvider>{children}</ThemeProvider>\n```\n\nRender the switcher from a component inside the provider.\n\n```tsx\nimport { ThemeSwitcher, useTheme } from \"@/components/ui/theme-switcher\";\n\nconst { theme, setTheme } = useTheme();\n\n<ThemeSwitcher value={theme} onChange={setTheme} />\n\n<ThemeSwitcher\n  value={theme}\n  onChange={setTheme}\n  messages={{ title: \"Theme\", light: \"Day\", dark: \"Night\" }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/theme-switcher.tsx",
@@ -548,7 +538,7 @@
       "type": "registry:block",
       "title": "Sidebar Layout",
       "description": "A sidebar-based layout with configurable navigation groups, a brand header, header action slot, and page header component.",
-      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with an optional header slot and navigation groups, a page header component with optional badge, description, and actions, and an optional top-bar action slot. Apps own product-specific controls such as organization switchers, locale toggles, and user buttons by passing them to `headerActions`.\n\n## Features\n\n- Configurable sidebar with `sidebarHeader` slot and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Optional `headerActions` slot for app-owned top-bar controls\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/ui/sidebar-layout\";\nimport { AppBrand } from \"@/components/ui/app-brand\";\nimport { LocaleToggle } from \"@/components/ui/locale-toggle\";\nimport { LayoutDashboard, Users, Blocks } from \"lucide-react\";\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout\n  sidebarHeader={\n    <AppBrand\n      label=\"My App\"\n      subtitle=\"Admin Panel\"\n      icon={Blocks}\n      variant=\"sidebar\"\n      href=\"/admin\"\n    />\n  }\n  headerActions={\n    <>\n      <YourSearch />\n      <LocaleToggle />\n    </>\n  }\n  groups={groups}\n/>\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout\n  sidebarHeader={<AppBrand label=\"My App\" subtitle=\"Admin Panel\" icon={Blocks} variant=\"sidebar\" href=\"/admin\" />}\n  groups={groups}\n>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
+      "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with an optional header slot and navigation groups, a page header component with optional badge, description, and actions, and an optional top-bar action slot. Apps own product-specific controls such as organization switchers, locale switchers, and user buttons by passing them to `headerActions`.\n\n## Features\n\n- Configurable sidebar with `sidebarHeader` slot and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Optional `headerActions` slot for app-owned top-bar controls\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/ui/sidebar-layout\";\nimport { AppBrand } from \"@/components/ui/app-brand\";\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\nimport { LayoutDashboard, Users, Blocks } from \"lucide-react\";\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout\n  sidebarHeader={\n    <AppBrand\n      label=\"My App\"\n      subtitle=\"Admin Panel\"\n      icon={Blocks}\n      variant=\"sidebar\"\n      href=\"/admin\"\n    />\n  }\n  headerActions={\n    <>\n      <YourSearch />\n      <LocaleSwitcher />\n    </>\n  }\n  groups={groups}\n/>\n```\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout\n  sidebarHeader={<AppBrand label=\"My App\" subtitle=\"Admin Panel\" icon={Blocks} variant=\"sidebar\" href=\"/admin\" />}\n  groups={groups}\n>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
       "files": [
         {
           "path": "src/components/ui/sidebar-layout.tsx",

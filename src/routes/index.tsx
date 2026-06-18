@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AppBrand } from "@/components/ui/app-brand";
-import { LocaleToggle } from "@/components/ui/locale-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackPackages } from "@/lib/krakstack-packages";
@@ -40,7 +40,7 @@ const iconByName = {
   "app-brand": Blocks,
   "data-table": Table2,
   form: ListChecks,
-  "locale-toggle": Globe,
+  "locale-switcher": Globe,
   "theme-switcher": MonitorCog,
   "user-button": UserRound,
   "organization-switcher": Building2,
@@ -111,7 +111,7 @@ function Home() {
             <div className="flex items-center gap-2 text-sm">
               <RegistryCommandMenu />
               <ThemeSwitcher value={theme} onChange={setTheme} />
-              <LocaleToggle />
+              <LocaleSwitcher />
             </div>
           </div>
         </nav>

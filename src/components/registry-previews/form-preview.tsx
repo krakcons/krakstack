@@ -200,7 +200,7 @@ export function FormPreview() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <pre className="overflow-auto rounded-lg border border-[var(--line)] bg-[#1d2e45] p-4 text-xs text-[#e8efff]">
+          <pre className="overflow-auto rounded-lg border bg-[#1d2e45] p-4 text-xs text-[#e8efff]">
             <code>
               {JSON.stringify(
                 submitted ?? "Submit the form to see its value.",

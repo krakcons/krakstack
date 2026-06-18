@@ -55,10 +55,10 @@ export function OrganizationSwitcherPreview() {
           <p className="text-muted-foreground text-sm font-medium">
             {m.organization_switcher_preview_collapsed()}
           </p>
-          <div className="group w-12" data-collapsible="icon">
+          <div className="group w-8" data-collapsible="icon">
             <OrganizationSwitcher
               authClient={authUiClient}
-              className="max-w-xs"
+              className="w-8"
               renderUnauthenticated={() => (
                 <Button
                   size="icon"

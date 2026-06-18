@@ -86,9 +86,6 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Table_Go_To_Next_PageInputs */
 /** @typedef {{}} Table_Go_To_Last_PageInputs */
 /** @typedef {{ count: NonNullable<unknown> }} Table_And_MoreInputs */
-/** @typedef {{}} Locale_Toggle_LabelInputs */
-/** @typedef {{}} Locale_EnInputs */
-/** @typedef {{}} Locale_FrInputs */
 /** @typedef {{}} Auth_Sign_InInputs */
 /** @typedef {{}} Auth_Sign_UpInputs */
 /** @typedef {{}} Sign_In_DescriptionInputs */
@@ -1432,48 +1429,6 @@ export const table_and_more = /** @type {((inputs: Table_And_MoreInputs, options
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.table_and_more(inputs)
 	return __fr.table_and_more(inputs)
-});
-/**
-* | output |
-* | --- |
-* | "Switch language" |
-*
-* @param {Locale_Toggle_LabelInputs} inputs
-* @param {{ locale?: "en" | "fr" }} options
-* @returns {LocalizedString}
-*/
-export const locale_toggle_label = /** @type {((inputs?: Locale_Toggle_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Locale_Toggle_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
-	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
-	if (locale === "en") return __en.locale_toggle_label(inputs)
-	return __fr.locale_toggle_label(inputs)
-});
-/**
-* | output |
-* | --- |
-* | "English" |
-*
-* @param {Locale_EnInputs} inputs
-* @param {{ locale?: "en" | "fr" }} options
-* @returns {LocalizedString}
-*/
-export const locale_en = /** @type {((inputs?: Locale_EnInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Locale_EnInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
-	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
-	if (locale === "en") return __en.locale_en(inputs)
-	return __fr.locale_en(inputs)
-});
-/**
-* | output |
-* | --- |
-* | "French" |
-*
-* @param {Locale_FrInputs} inputs
-* @param {{ locale?: "en" | "fr" }} options
-* @returns {LocalizedString}
-*/
-export const locale_fr = /** @type {((inputs?: Locale_FrInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Locale_FrInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
-	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
-	if (locale === "en") return __en.locale_fr(inputs)
-	return __fr.locale_fr(inputs)
 });
 /**
 * | output |

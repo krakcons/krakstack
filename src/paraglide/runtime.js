@@ -198,7 +198,7 @@ let localeInitiallySet = false;
  * in the order they are defined. In SSR contexts, the locale is retrieved from AsyncLocalStorage
  * which is set by the `paraglideMiddleware()`.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/strategy - Configure locale detection strategies
+ * @see https://paraglidejs.com/strategy - Configure locale detection strategies
  *
  * @example
  *   if (getLocale() === 'de') {
@@ -235,7 +235,7 @@ export let getLocale = () => {
         }
         return resolved;
     }
-    throw new Error("No locale found. Read the docs https://inlang.com/m/gerre34r/library-inlang-paraglideJs/errors#no-locale-found");
+    throw new Error("No locale found. Read the docs https://paraglidejs.com/errors#no-locale-found");
 };
 /**
  * Resolve locale for a given URL using route-aware strategies.
@@ -252,7 +252,7 @@ export function getLocaleForUrl(url) {
     if (resolved) {
         return resolved;
     }
-    throw new Error("No locale found. Read the docs https://inlang.com/m/gerre34r/library-inlang-paraglideJs/errors#no-locale-found");
+    throw new Error("No locale found. Read the docs https://paraglidejs.com/errors#no-locale-found");
 }
 /**
  * @param {typeof strategy} strategyToUse
@@ -317,7 +317,7 @@ function resolveLocaleWithStrategies(strategyToUse, urlForUrlStrategy) {
  * Use this function to overwrite how the locale is resolved. This is useful
  * for custom locale resolution or advanced use cases like SSG with concurrent rendering.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/strategy
+ * @see https://paraglidejs.com/strategy
  *
  * @example
  *   overwriteGetLocale(() => {
@@ -404,7 +404,7 @@ const navigateOrReload = (newLocation) => {
  * If any custom strategy's `setLocale` function is async, then this function
  * will become async as well.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/strategy
+ * @see https://paraglidejs.com/strategy
  *
  * @example
  *   setLocale('en');
@@ -685,7 +685,7 @@ export const extractLocaleFromRequestWithStrategies = (request, strategies, url 
             return matchedLocale;
         }
     }
-    throw new Error("No locale found. There is an error in your strategy. Try adding 'baseLocale' as the very last strategy. Read more here https://inlang.com/m/gerre34r/library-inlang-paraglideJs/errors#no-locale-found");
+    throw new Error("No locale found. There is an error in your strategy. Try adding 'baseLocale' as the very last strategy. Read more here https://paraglidejs.com/errors#no-locale-found");
 };
 /**
  * @param {Request} request
@@ -929,7 +929,7 @@ function defaultUrlPatternExtractLocale(url) {
  * For client-side UI components, use `localizeHref()` instead, which provides
  * a more convenient API with relative paths and automatic locale detection.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/i18n-routing
+ * @see https://paraglidejs.com/i18n-routing
  *
  * @example
  * ```typescript
@@ -1037,7 +1037,7 @@ function localizeUrlDefaultPattern(url, locale) {
  * For client-side UI components, use `deLocalizeHref()` instead, which provides
  * a more convenient API with relative paths.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/i18n-routing
+ * @see https://paraglidejs.com/i18n-routing
  *
  * @example
  * ```typescript
@@ -1258,7 +1258,7 @@ export function aggregateGroups(match) {
  *
  * When called in the browser without arguments, the current `window.location.href` is used.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/i18n-routing#client-side-redirects
+ * @see https://paraglidejs.com/i18n-routing#redirects
  *
  * @example
  * // Client side usage (e.g. TanStack Router beforeLoad hook)
@@ -1389,7 +1389,7 @@ function normalizeUrl(url) {
  * - Automatically detects current locale if not specified
  * - Handles string input/output instead of URL objects
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/i18n-routing
+ * @see https://paraglidejs.com/i18n-routing
  *
  * @example
  * ```typescript
@@ -1449,7 +1449,7 @@ export function localizeHref(href, options) {
  * - Returns relative paths when possible
  * - Handles string input/output instead of URL objects
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/i18n-routing
+ * @see https://paraglidejs.com/i18n-routing
  *
  * @example
  * ```typescript
@@ -1513,7 +1513,7 @@ export function trackMessageCall(safeModuleId, locale) {
  * The function respects your `urlPatterns` configuration - if you have translated pathnames
  * (e.g., `/about` → `/ueber-uns` for German), it will generate the correct localized paths.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/static-site-generation
+ * @see https://paraglidejs.com/static-site-generation
  *
  * @example
  * // Basic usage - generate all locale variants for a list of paths
@@ -1650,7 +1650,7 @@ export function isCustomStrategy(strategy) {
 /**
  * Defines a custom strategy that is executed on the server.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/strategy#write-your-own-strategy
+ * @see https://paraglidejs.com/strategy#write-your-own-strategy
  *
  * @param {string} strategy The name of the custom strategy to define. Must follow the pattern custom-name with alphanumeric characters, hyphens, or underscores.
  * @param {CustomServerStrategyHandler} handler The handler for the custom strategy, which should implement
@@ -1666,7 +1666,7 @@ export function defineCustomServerStrategy(strategy, handler) {
 /**
  * Defines a custom strategy that is executed on the client.
  *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/strategy#write-your-own-strategy
+ * @see https://paraglidejs.com/strategy#write-your-own-strategy
  *
  * @param {string} strategy The name of the custom strategy to define. Must follow the pattern custom-name with alphanumeric characters, hyphens, or underscores.
  * @param {CustomClientStrategyHandler} handler The handler for the custom strategy, which should implement the

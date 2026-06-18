@@ -50,7 +50,7 @@ export function getRegistryGroup(item: RegistryItem) {
 const iconByName = {
   "data-table": Table2,
   form: ListChecks,
-  "locale-toggle": Globe,
+  "locale-switcher": Globe,
   "theme-switcher": MonitorCog,
   "editing-locale-switcher": Globe,
   "user-button": UserRound,

@@ -35,10 +35,14 @@ const messages = {
     dark: "Sombre",
     system: "Système",
   },
-} as const;
+} as const satisfies Record<"en" | "fr", Record<Theme | "title", string>>;
 
-const themeMessages = () =>
-  getLocale().startsWith("fr") ? messages.fr : messages.en;
+type ThemeSwitcherMessages = Partial<Record<Theme | "title", string>>;
+
+const themeMessages = (overrides?: ThemeSwitcherMessages) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
 
 const DEFAULT_THEME: Theme = "system";
 const DEFAULT_SYSTEM_THEME: SystemTheme = "light";
@@ -64,6 +68,7 @@ type ThemeProviderProps = {
 };
 
 type ThemeSwitcherProps = {
+  messages?: ThemeSwitcherMessages;
   options?: ReadonlyArray<Theme>;
   value: Theme;
   onChange: (value: Theme) => void;
@@ -177,11 +182,12 @@ export const useTheme = () => {
 };
 
 export const ThemeSwitcher = ({
+  messages,
   options = themes,
   value,
   onChange,
 }: ThemeSwitcherProps) => {
-  const labels = themeMessages();
+  const labels = themeMessages(messages);
   const Icon = iconForTheme[value];
 
   return (

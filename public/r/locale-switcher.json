@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "locale-switcher",
+  "title": "Locale Switcher",
+  "description": "A Paraglide-powered dropdown for switching between configured locales with localized language labels.",
+  "dependencies": ["lucide-react"],
+  "registryDependencies": ["button", "dropdown-menu"],
+  "files": [
+    {
+      "path": "src/components/ui/locale-switcher.tsx",
+      "content": "import {\n  setLocale,\n  getLocale,\n  locales,\n  type Locale,\n} from \"@/paraglide/runtime\";\nimport { Button } from \"@/components/ui/button\";\nimport {\n  DropdownMenu,\n  DropdownMenuContent,\n  DropdownMenuGroup,\n  DropdownMenuLabel,\n  DropdownMenuRadioGroup,\n  DropdownMenuRadioItem,\n  DropdownMenuTrigger,\n} from \"@/components/ui/dropdown-menu\";\nimport { Languages } from \"lucide-react\";\n\nconst messages = {\n  en: {\n    title: \"Switch language\",\n    en: \"English\",\n    fr: \"French\",\n  },\n  fr: {\n    title: \"Changer de langue\",\n    en: \"Anglais\",\n    fr: \"Français\",\n  },\n} as const satisfies Record<Locale, Record<Locale | \"title\", string>>;\n\ntype LocaleSwitcherMessages = Partial<Record<Locale | \"title\", string>>;\n\ntype LocaleSwitcherProps = {\n  messages?: LocaleSwitcherMessages;\n};\n\nconst localeMessages = (overrides?: LocaleSwitcherMessages) => ({\n  ...(getLocale().startsWith(\"fr\") ? messages.fr : messages.en),\n  ...overrides,\n});\n\nexport const LocaleSwitcher = ({ messages }: LocaleSwitcherProps) => {\n  const locale = getLocale();\n  const labels = localeMessages(messages);\n\n  return (\n    <DropdownMenu>\n      <DropdownMenuTrigger\n        render={\n          <Button variant=\"outline\" size=\"icon\" aria-label={labels.title}>\n            <Languages className=\"size-4\" />\n            <span className=\"sr-only\">{labels.title}</span>\n          </Button>\n        }\n      />\n      <DropdownMenuContent className=\"w-32\">\n        <DropdownMenuGroup>\n          <DropdownMenuLabel>{labels.title}</DropdownMenuLabel>\n          <DropdownMenuRadioGroup\n            aria-label={labels.title}\n            value={locale}\n            onValueChange={(v) => setLocale(v as Locale)}\n          >\n            {locales.map((l) => (\n              <DropdownMenuRadioItem key={l} value={l}>\n                {labels[l]}\n              </DropdownMenuRadioItem>\n            ))}\n          </DropdownMenuRadioGroup>\n        </DropdownMenuGroup>\n      </DropdownMenuContent>\n    </DropdownMenu>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/locale-switcher.tsx"
+    }
+  ],
+  "docs": "## Overview\n\n`locale-switcher` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- In-file English and French labels\n- Optional message overrides\n- Icon-only trigger with accessible screen-reader text\n\n## Usage\n\n```tsx\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\n\n<LocaleSwitcher />\n\n<LocaleSwitcher messages={{ title: \"Language\", en: \"EN\", fr: \"FR\" }} />\n```",
+  "type": "registry:block"
+}

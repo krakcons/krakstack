@@ -5,7 +5,6 @@ import {
   type Locale,
 } from "@/paraglide/runtime";
 import { Button } from "@/components/ui/button";
-import { m } from "@/paraglide/messages";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,34 +15,56 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Languages } from "lucide-react";
-const localeLabels: Record<Locale, string> = {
-  en: "English",
-  fr: "Français",
+
+const messages = {
+  en: {
+    title: "Switch language",
+    en: "English",
+    fr: "French",
+  },
+  fr: {
+    title: "Changer de langue",
+    en: "Anglais",
+    fr: "Français",
+  },
+} as const satisfies Record<Locale, Record<Locale | "title", string>>;
+
+type LocaleSwitcherMessages = Partial<Record<Locale | "title", string>>;
+
+type LocaleSwitcherProps = {
+  messages?: LocaleSwitcherMessages;
 };
 
-export const LocaleToggle = () => {
+const localeMessages = (overrides?: LocaleSwitcherMessages) => ({
+  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
+  ...overrides,
+});
+
+export const LocaleSwitcher = ({ messages }: LocaleSwitcherProps) => {
   const locale = getLocale();
+  const labels = localeMessages(messages);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" aria-label={labels.title}>
             <Languages className="size-4" />
-            <span className="sr-only">{m.locale_toggle_label()}</span>
+            <span className="sr-only">{labels.title}</span>
           </Button>
         }
       />
       <DropdownMenuContent className="w-32">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{m.locale_toggle_label()}</DropdownMenuLabel>
+          <DropdownMenuLabel>{labels.title}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
+            aria-label={labels.title}
             value={locale}
             onValueChange={(v) => setLocale(v as Locale)}
           >
             {locales.map((l) => (
               <DropdownMenuRadioItem key={l} value={l}>
-                {localeLabels[l]}
+                {labels[l]}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>

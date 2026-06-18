@@ -7,7 +7,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { SidebarLayout, type NavGroup } from "@/components/ui/sidebar-layout";
 import { AppBrand } from "@/components/ui/app-brand";
-import { LocaleToggle } from "@/components/ui/locale-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackPackages } from "@/lib/krakstack-packages";
@@ -68,7 +68,7 @@ function DocsLayout() {
         <>
           <RegistryCommandMenu />
           <ThemeSwitcher value={theme} onChange={setTheme} />
-          <LocaleToggle />
+          <LocaleSwitcher />
         </>
       }
     />

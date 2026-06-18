@@ -11,7 +11,7 @@ export function Markdown({ content }: MarkdownProps) {
   const blocks = parseBlocks(content);
 
   return (
-    <div className="prose prose-slate prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-[#1d2e45] prose-pre:text-[#e8efff] max-w-none">
+    <div className="prose prose-slate dark:prose-invert prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-[#1d2e45] prose-pre:text-[#e8efff] max-w-none">
       {blocks.map((block, index) => renderBlock(block, index))}
     </div>
   );
@@ -119,7 +119,7 @@ function HighlightedCode({
 
   return (
     <div
-      className="overflow-hidden rounded-lg [&_pre]:my-0 [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:border-[var(--line)] [&_pre]:p-4 [&_pre_code]:bg-transparent"
+      className="overflow-hidden rounded-lg [&_pre]:my-0 [&_pre]:overflow-x-auto [&_pre]:border [&_pre]:p-4 [&_pre_code]:bg-transparent"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

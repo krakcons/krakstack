@@ -87,14 +87,14 @@ function Dependencies({ item }: { item: RegistryItem }) {
       <div className={`grid gap-4 px-6 pb-5 ${columnsClass}`}>
         {sections.map((section) => (
           <section className="grid content-start gap-2" key={section.title}>
-            <h2 className="text-xs font-semibold tracking-[0.16em] text-[var(--kicker)] uppercase">
+            <h2 className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
               {section.title}
             </h2>
             <ul className="flex flex-wrap gap-1.5">
               {section.items?.map((dependency) => (
                 <li key={dependency}>
                   <a
-                    className="bg-background inline-flex rounded-md border border-[var(--line)] px-2 py-1 font-mono text-xs text-[var(--sea-ink)] transition-colors hover:border-[var(--kicker)] hover:text-[var(--kicker)]"
+                    className="bg-background text-foreground hover:border-primary hover:text-primary inline-flex rounded-md border px-2 py-1 font-mono text-xs transition-colors"
                     href={section.getHref(dependency)}
                     rel="noreferrer"
                     target="_blank"
@@ -149,7 +149,7 @@ function RegistryPreview({ slug }: { slug: string }) {
 
   return (
     <section className="grid gap-3">
-      <h2 className="text-3xl font-semibold tracking-tight text-[var(--sea-ink)]">
+      <h2 className="text-foreground text-3xl font-semibold tracking-tight">
         Preview
       </h2>
       {preview}
