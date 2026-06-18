@@ -2,7 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "organization-switcher",
   "title": "Organization Switcher",
-  "description": "A Better Auth organization switcher backed by the central Krakstack Auth client, with localized organization profile metadata and organization API keys.",
+  "description": "A Better Auth organization switcher backed by the central Krakstack Auth client, with localized organization profile metadata, organization invitations, and organization API keys.",
   "dependencies": [
     "@better-auth/api-key",
     "@krak-stack/auth",
@@ -32,6 +32,6 @@
       "target": "services/auth/client/index.ts"
     }
   ],
-  "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `authClient` so the active organization, memberships, organization metadata, and organization API keys stay scoped to the central auth service.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- Edit the active organization's canonical name and slug\n- Store localized public profile data in `metadata.translations`\n- Locale editing selector registered as `editing-locale-switcher`\n- Localized organization name, logo, contact email, and location fields\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@krak-stack/auth\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
+  "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `authClient` so the active organization, memberships, invitations, organization metadata, and organization API keys stay scoped to the central auth service.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- View, accept, and decline pending organization invitations\n- Edit the active organization's canonical name and slug\n- Store localized public profile data in `metadata.translations`\n- Locale editing selector registered as `editing-locale-switcher`\n- Localized organization name, logo, contact email, and location fields\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Configurable locked mode for fixed-organization contexts\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@krak-stack/auth\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
   "type": "registry:block"
 }
