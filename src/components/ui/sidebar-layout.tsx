@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -33,11 +34,12 @@ type NavGroup = {
 export type { NavItem, NavGroup };
 
 type AppSidebarProps = {
+  footer?: React.ReactNode;
   groups: NavGroup[];
   header?: React.ReactNode;
 };
 
-function AppSidebar({ groups, header }: AppSidebarProps) {
+function AppSidebar({ footer, groups, header }: AppSidebarProps) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -76,6 +78,7 @@ function AppSidebar({ groups, header }: AppSidebarProps) {
           </SidebarGroup>
         ))}
       </SidebarContent>
+      {footer ? <SidebarFooter>{footer}</SidebarFooter> : null}
       <SidebarRail />
     </Sidebar>
   );
@@ -122,17 +125,19 @@ export function SidebarPageHeader({
 export function SidebarLayout({
   groups,
   children,
+  sidebarFooter,
   sidebarHeader,
   headerActions,
 }: {
   groups: NavGroup[];
   children?: React.ReactNode;
+  sidebarFooter?: React.ReactNode;
   sidebarHeader?: React.ReactNode;
   headerActions?: React.ReactNode;
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar groups={groups} header={sidebarHeader} />
+      <AppSidebar footer={sidebarFooter} groups={groups} header={sidebarHeader} />
       <SidebarInset className="min-w-0 overflow-x-hidden">
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur">
           <SidebarTrigger />

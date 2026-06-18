@@ -65,6 +65,8 @@ type ThemePayload = {
 
 type ThemeProviderProps = {
   children: ReactNode;
+  initialTheme?: ThemePayload;
+  scriptDisabled?: boolean;
 };
 
 type ThemeSwitcherProps = {
@@ -105,18 +107,20 @@ const applyDocumentTheme = ({ theme, systemTheme }: ThemePayload) => {
   document.documentElement.classList.add(resolvedTheme);
 };
 
-const getInitialTheme = (): ThemePayload => {
+const getInitialTheme = (initialTheme?: ThemePayload): ThemePayload => {
   if (typeof window === "undefined") {
-    return {
-      theme: DEFAULT_THEME,
-      systemTheme: DEFAULT_SYSTEM_THEME,
-    };
+    return (
+      initialTheme ?? {
+        theme: DEFAULT_THEME,
+        systemTheme: DEFAULT_SYSTEM_THEME,
+      }
+    );
   }
 
   const theme = window.localStorage.getItem("theme") ?? undefined;
 
   return {
-    theme: isTheme(theme) ? theme : DEFAULT_THEME,
+    theme: isTheme(theme) ? theme : (initialTheme?.theme ?? DEFAULT_THEME),
     systemTheme: currentSystemTheme(),
   };
 };
@@ -125,8 +129,14 @@ const persistTheme = (payload: ThemePayload) => {
   window.localStorage.setItem("theme", payload.theme);
 };
 
-export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [{ theme, systemTheme }, setThemeState] = useState(getInitialTheme);
+export const ThemeProvider = ({
+  children,
+  initialTheme,
+  scriptDisabled,
+}: ThemeProviderProps) => {
+  const [{ theme, systemTheme }, setThemeState] = useState(() =>
+    getInitialTheme(initialTheme),
+  );
 
   const updateTheme = useCallback((payload: ThemePayload) => {
     setThemeState(payload);
@@ -165,7 +175,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
 
   return (
     <>
-      <ScriptOnce>{themeScript}</ScriptOnce>
+      {scriptDisabled ? null : <ScriptOnce>{themeScript}</ScriptOnce>}
       <ThemeProviderContext.Provider value={value}>
         {children}
       </ThemeProviderContext.Provider>
