@@ -7,9 +7,12 @@ type AppBrandBaseProps = {
   subtitle: string;
   className?: string;
   variant?: "default" | "sidebar";
+  to?: string | null;
+  href?: string;
 } & (
-  | (Omit<ComponentProps<typeof Link>, "to"> & { to?: string })
-  | (ComponentProps<"div"> & { to: null })
+  | Omit<ComponentProps<typeof Link>, "to">
+  | ComponentProps<"a">
+  | ComponentProps<"div">
 );
 
 type AppBrandProps = AppBrandBaseProps &
@@ -24,6 +27,7 @@ export function AppBrand({
   subtitle,
   icon: Icon,
   imageSrc,
+  href,
   to,
   variant = "default",
   ...props
@@ -80,6 +84,18 @@ export function AppBrand({
       <div className={brandClassName} {...(props as ComponentProps<"div">)}>
         {content}
       </div>
+    );
+  }
+
+  if (href) {
+    return (
+      <a
+        className={brandClassName}
+        href={href}
+        {...(props as ComponentProps<"a">)}
+      >
+        {content}
+      </a>
     );
   }
 

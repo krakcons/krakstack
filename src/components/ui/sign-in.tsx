@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Blocks } from "lucide-react";
 
+import { AppBrand } from "@/components/ui/app-brand";
 import { ErrorMessage, useAppForm } from "@/components/ui/form";
 import {
   Card,
@@ -20,6 +22,8 @@ const messages = {
     needAccount: "Need an account?",
     email: "Email",
     password: "Password",
+    brandLabel: "Krakstack",
+    brandSubtitle: "Site",
   },
   fr: {
     title: "Se connecter",
@@ -29,6 +33,8 @@ const messages = {
     needAccount: "Besoin d'un compte ?",
     email: "E-mail",
     password: "Mot de passe",
+    brandLabel: "Krakstack",
+    brandSubtitle: "Site",
   },
 } as const;
 
@@ -40,7 +46,9 @@ export type SignInMessages = Partial<
     | "error"
     | "needAccount"
     | "email"
-    | "password",
+    | "password"
+    | "brandLabel"
+    | "brandSubtitle",
     string
   >
 >;
@@ -81,64 +89,75 @@ export function SignIn({ messages }: { messages?: SignInMessages }) {
   });
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-3xl">{labels.title}</CardTitle>
-        <CardDescription>{labels.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form.AppForm>
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              form.handleSubmit();
-            }}
-          >
-            <form.AppField name="email">
-              {(field) => (
-                <field.TextField
-                  label={labels.email}
-                  type="email"
-                  autoComplete="email"
-                  required
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="password">
-              {(field) => (
-                <field.TextField
-                  label={labels.password}
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                />
-              )}
-            </form.AppField>
-            <form.Subscribe
-              selector={(formState) =>
-                (formState.errorMap.onSubmit as { form?: unknown } | undefined)
-                  ?.form
-              }
+    <div className="flex w-full max-w-md flex-col gap-6">
+      <AppBrand
+        label={labels.brandLabel}
+        subtitle={labels.brandSubtitle}
+        icon={Blocks}
+        to="/"
+      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl">{labels.title}</CardTitle>
+          <CardDescription>{labels.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form.AppForm>
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                form.handleSubmit();
+              }}
             >
-              {(error) =>
-                error ? <ErrorMessage text={String(error)} /> : null
-              }
-            </form.Subscribe>
-            <form.SubmitButton />
-          </form>
-        </form.AppForm>
-        <p className="text-muted-foreground mt-6 text-center text-sm">
-          {labels.needAccount}{" "}
-          <Link
-            className="text-foreground font-medium underline-offset-4 hover:underline"
-            to="/sign-up"
-          >
-            {labels.signUp}
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+              <form.AppField name="email">
+                {(field) => (
+                  <field.TextField
+                    label={labels.email}
+                    type="email"
+                    autoComplete="email"
+                    required
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="password">
+                {(field) => (
+                  <field.TextField
+                    label={labels.password}
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                  />
+                )}
+              </form.AppField>
+              <form.Subscribe
+                selector={(formState) =>
+                  (
+                    formState.errorMap.onSubmit as
+                      | { form?: unknown }
+                      | undefined
+                  )?.form
+                }
+              >
+                {(error) =>
+                  error ? <ErrorMessage text={String(error)} /> : null
+                }
+              </form.Subscribe>
+              <form.SubmitButton />
+            </form>
+          </form.AppForm>
+          <p className="text-muted-foreground mt-6 text-center text-sm">
+            {labels.needAccount}{" "}
+            <Link
+              className="text-foreground font-medium underline-offset-4 hover:underline"
+              to="/sign-up"
+            >
+              {labels.signUp}
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
