@@ -13,7 +13,7 @@ import {
 } from "@tanstack/react-form";
 import { Block } from "@tanstack/react-router";
 import { Loader2, Plus, Trash, Languages } from "lucide-react";
-import type { InputHTMLAttributes, JSX } from "react";
+import { useRef, type InputHTMLAttributes, type JSX } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -453,6 +453,7 @@ const ImageField = ({
   const labels = formMessages(messages);
   const { width, height } = size;
   const field = useFieldContext<File | string | null>();
+  const inputRef = useRef<HTMLInputElement>(null);
   const invalid = !field.state.meta.isValid;
 
   const imageUrl =
@@ -486,14 +487,13 @@ const ImageField = ({
       </Label>
       <div className="flex items-center gap-2">
         <Input
+          ref={inputRef}
           id={field.name}
           name={field.name}
           type="file"
           accept="image/*"
           onChange={(event) => {
-            field.handleChange(
-              event.target.files ? event.target.files[0] : null,
-            );
+            field.handleChange(event.target.files?.[0] ?? null);
           }}
           aria-invalid={invalid}
         />
@@ -504,6 +504,7 @@ const ImageField = ({
             onClick={(e) => {
               e.preventDefault();
               field.handleChange(null);
+              if (inputRef.current) inputRef.current.value = "";
             }}
           >
             {labels.delete}
