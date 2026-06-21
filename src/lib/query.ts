@@ -77,11 +77,28 @@ export const SortParamFromString = Schema.String.pipe(
   }),
 );
 
+const SortParamSearch = Schema.Union([SortParamFromString, SortParam]).pipe(
+  Schema.decodeTo(
+    Schema.String,
+    SchemaTransformation.transform({
+      decode: (sort) => Schema.encodeSync(SortParamFromString)(sort),
+      encode: (sort) => Schema.decodeUnknownSync(SortParamFromString)(sort),
+    }),
+  ),
+  Schema.annotate({
+    identifier: "SortParamSearch",
+    title: "Sort Search Parameter",
+    description:
+      'Search parameter sort value normalized to the compact "field:direction" URL format.',
+    examples: ["publicName:asc"],
+  }),
+);
+
 export const Query = Schema.Struct({
   page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   pageSize: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
   globalFilter: Schema.optional(Schema.String),
-  sort: Schema.optional(SortParamFromString),
+  sort: Schema.optional(SortParamSearch),
 }).pipe(
   Schema.annotate({
     identifier: "Query",
@@ -93,7 +110,7 @@ export const Query = Schema.Struct({
         page: 0,
         pageSize: 10,
         globalFilter: "housing",
-        sort: { id: "publicName", direction: "asc" },
+        sort: "publicName:asc",
       },
     ],
   }),
