@@ -91,7 +91,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { Schema } from "effect";
+import { Schema, SchemaTransformation } from "effect";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -105,11 +105,24 @@ import { getLocale } from "@/paraglide/runtime";
 
 const DataTableViewContext = createContext<DataTableView>("table");
 
+const TableSortSearchSchema = Schema.Union([
+  SortParamFromString,
+  SortParam,
+]).pipe(
+  Schema.decodeTo(
+    Schema.String,
+    SchemaTransformation.transform({
+      decode: (sort) => Schema.encodeSync(SortParamFromString)(sort),
+      encode: (sort) => Schema.decodeUnknownSync(SortParamFromString)(sort),
+    }),
+  ),
+);
+
 export const TableSearchSchema = Schema.Struct({
   page: Schema.optional(Query.fields.page),
   pageSize: Schema.optional(Query.fields.pageSize),
   globalFilter: Query.fields.globalFilter,
-  sort: Schema.optional(Schema.Union([SortParamFromString, SortParam])),
+  sort: Schema.optional(TableSortSearchSchema),
   grouping: Schema.optional(Schema.Array(Schema.String)),
   view: Schema.optional(
     Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")]),
@@ -781,8 +794,11 @@ export function DataTable<TData, TValue>({
     view = "table",
   } = search ?? {};
   const pagination = { pageIndex: page, pageSize };
-  const sorting: SortingState = sort
-    ? [{ id: sort.id, desc: sort.direction === "desc" }]
+  const decodedSort = sort
+    ? Schema.decodeSync(SortParamFromString)(sort)
+    : null;
+  const sorting: SortingState = decodedSort
+    ? [{ id: decodedSort.id, desc: decodedSort.direction === "desc" }]
     : [];
   const {
     pagination: showPagination,
