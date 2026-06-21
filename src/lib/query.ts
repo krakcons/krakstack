@@ -67,7 +67,6 @@ export const SortParamFromString = Schema.String.pipe(
       encode: (sort) => Effect.succeed(`${sort.id}:${sort.direction}`),
     }),
   ),
-).pipe(
   Schema.annotate({
     identifier: "SortParamFromString",
     title: "Sort Parameter From String",
