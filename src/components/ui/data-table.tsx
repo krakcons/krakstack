@@ -74,6 +74,8 @@ import {
   ChevronsUpDown,
   Download,
   EyeOff,
+  FileJson,
+  FileText,
   LayoutGrid,
   LinkIcon,
   MoreHorizontal,
@@ -129,6 +131,8 @@ export type DataTableMessages = {
   filter: string;
   results: (count: number) => string;
   export: string;
+  exportCsv: string;
+  exportJson: string;
   selectedOf: (selected: number, total: number) => string;
   view: string;
   tableView: string;
@@ -155,6 +159,8 @@ const messages = {
     filter: "Filter results...",
     results: (count: number) => `${count} results`,
     export: "Export",
+    exportCsv: "CSV",
+    exportJson: "JSON",
     selectedOf: (selected: number, total: number) => `${selected} of ${total}`,
     view: "View",
     tableView: "Table",
@@ -179,6 +185,8 @@ const messages = {
     filter: "Filtrer les résultats...",
     results: (count: number) => `${count} résultats`,
     export: "Exporter",
+    exportCsv: "CSV",
+    exportJson: "JSON",
     selectedOf: (selected: number, total: number) => `${selected} sur ${total}`,
     view: "Affichage",
     tableView: "Tableau",
@@ -275,6 +283,7 @@ const DEFAULT_TABLE_FEATURES = {
 } as const;
 
 const GROUP_INDENT_PX = 20;
+const GROUP_ROW_INDENT_OFFSET_PX = 44;
 
 const getDefaultGrouping = <TData,>(grouping?: DataTableGrouping<TData>) => {
   if (!grouping) {
@@ -369,16 +378,19 @@ const GroupHeaderRow = <TData,>({
     <TableRow>
       <TableCell
         className={cn(
-          "py-2 font-medium transition-colors cursor-pointer",
-          isOver && "outline outline-primary",
+          "relative p-0",
+          isOver &&
+            "after:border-primary after:pointer-events-none after:absolute after:inset-0 after:border",
         )}
         colSpan={colSpan}
         ref={setNodeRef}
         onClick={onToggle}
       >
         <div
-          className="flex items-center gap-3"
-          style={{ paddingLeft: `${section.depth * GROUP_INDENT_PX}px` }}
+          className="flex cursor-pointer items-center gap-3 px-2 py-2 font-medium transition-colors"
+          style={{
+            paddingLeft: `calc(0.5rem + ${section.depth * GROUP_INDENT_PX}px)`,
+          }}
         >
           {collapsed ? (
             <ChevronRight className="size-4" />
@@ -386,9 +398,9 @@ const GroupHeaderRow = <TData,>({
             <ChevronDown className="size-4" />
           )}
           <div className="min-w-0 flex-1 text-left">{label}</div>
-          <span className="text-muted-foreground ml-auto text-sm">
+          <Badge variant="secondary" className="ml-auto">
             {section.rows.length}
-          </span>
+          </Badge>
         </div>
       </TableCell>
     </TableRow>
@@ -436,9 +448,9 @@ const GroupHeaderCard = <TData,>({
         <ChevronDown className="size-4" />
       )}
       <div className="min-w-0 flex-1">{label}</div>
-      <span className="text-muted-foreground text-sm">
+      <Badge variant="secondary" className="ml-auto">
         {section.rows.length}
-      </span>
+      </Badge>
     </button>
   );
 };
@@ -446,11 +458,13 @@ const GroupHeaderCard = <TData,>({
 const DataTableRow = <TData,>({
   canDrag,
   dragLabel,
+  indentDepth = 0,
   onRowClick,
   row,
 }: {
   canDrag: boolean;
   dragLabel?: string | undefined;
+  indentDepth?: number | undefined;
   onRowClick?: ((row: TData) => void) | undefined;
   row: Row<TData>;
 }) => {
@@ -463,11 +477,18 @@ const DataTableRow = <TData,>({
       label: dragLabel,
     },
   });
+  const firstCellIndent =
+    indentDepth > 0
+      ? `calc(0.5rem + ${(indentDepth - 1) * GROUP_INDENT_PX + GROUP_ROW_INDENT_OFFSET_PX}px)`
+      : undefined;
+  const rowAttributes = onRowClick
+    ? { ...attributes, role: "button", tabIndex: 0 }
+    : attributes;
 
   return (
     <TableRow
       className={cn(
-        "h-16",
+        "h-16 focus-visible:outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid",
         onRowClick && "cursor-pointer",
         isDragging && "opacity-50",
       )}
@@ -478,14 +499,27 @@ const DataTableRow = <TData,>({
           onRowClick(row.original);
         }
       }}
+      onKeyDown={(event) => {
+        if (!onRowClick || (event.key !== "Enter" && event.key !== " ")) {
+          return;
+        }
+
+        event.preventDefault();
+        onRowClick(row.original);
+      }}
       ref={setNodeRef}
-      {...attributes}
+      {...rowAttributes}
       {...listeners}
     >
-      {row.getVisibleCells().map((cell) => (
+      {row.getVisibleCells().map((cell, index) => (
         <TableCell
           key={cell.id}
           className="align-center wrap-break-words min-w-32 whitespace-normal"
+          style={
+            index === 0 && firstCellIndent
+              ? { paddingLeft: firstCellIndent }
+              : undefined
+          }
         >
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
@@ -694,6 +728,15 @@ const getColumnDisplayName = <TData,>(
 
 export type CsvValue = string | number | boolean | null | undefined;
 
+const withFileExtension = (fileName: string, extension: string) => {
+  const normalizedExtension = extension.startsWith(".")
+    ? extension
+    : `.${extension}`;
+  return fileName.includes(".")
+    ? fileName.replace(/\.[^/.]+$/, normalizedExtension)
+    : `${fileName}${normalizedExtension}`;
+};
+
 const escapeCsvValue = (value: CsvValue) => {
   if (value === null || value === undefined) return "";
   const stringValue = String(value);
@@ -720,10 +763,23 @@ export const downloadCsv = (
   const url = window.URL.createObjectURL(blob);
 
   link.href = url;
-  link.setAttribute(
-    "download",
-    fileName.endsWith(".csv") ? fileName : `${fileName}.csv`,
-  );
+  link.setAttribute("download", withFileExtension(fileName, "csv"));
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  requestAnimationFrame(() => window.URL.revokeObjectURL(url));
+};
+
+export const downloadJson = (data: unknown, fileName = "data.json") => {
+  const jsonContent = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonContent], {
+    type: "application/json;charset=utf-8;",
+  });
+  const link = document.createElement("a");
+  const url = window.URL.createObjectURL(blob);
+
+  link.href = url;
+  link.setAttribute("download", withFileExtension(fileName, "json"));
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -749,6 +805,23 @@ const exportTableToCsv = <TData,>(
   );
 
   downloadCsv(headerNames, data, fileName);
+};
+
+const exportTableToJson = <TData,>(
+  table: TanstackTable<TData>,
+  rows: Row<TData>[],
+  fileName = "data.json",
+): void => {
+  const exportableColumns = table
+    .getVisibleLeafColumns()
+    .filter((column) => column.id !== "actions");
+  const data = rows.map((row) =>
+    Object.fromEntries(
+      exportableColumns.map((column) => [column.id, row.getValue(column.id)]),
+    ),
+  );
+
+  downloadJson(data, fileName);
 };
 
 export function DataTable<TData, TValue>({
@@ -1037,6 +1110,7 @@ export function DataTable<TData, TValue>({
                 <DataTableRow
                   canDrag={canDragRows}
                   dragLabel={grouping?.getRowLabel?.(row.original)}
+                  indentDepth={section.depth + 1}
                   key={row.id}
                   onRowClick={onRowClick}
                   row={row}
@@ -1048,7 +1122,7 @@ export function DataTable<TData, TValue>({
                   className="text-muted-foreground h-16"
                   colSpan={colSpan}
                   style={{
-                    paddingLeft: `${(section.depth + 1) * GROUP_INDENT_PX + 16}px`,
+                    paddingLeft: `calc(0.5rem + ${section.depth * GROUP_INDENT_PX + GROUP_ROW_INDENT_OFFSET_PX}px)`,
                   }}
                 >
                   {section.field.renderEmptyGroup?.(section.groupId) ??
@@ -1122,14 +1196,14 @@ export function DataTable<TData, TValue>({
           ) : (
             <div />
           )}
-          <div className="flex items-center gap-2 overflow-x-auto">
+          <div className="-m-1 flex items-center gap-2 overflow-x-auto p-1">
             {grouping?.fields.length ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
                     <Button
                       aria-label={labels.groupBy}
-                      className="h-8"
+                      className="h-9"
                       size="sm"
                       variant="outline"
                     >
@@ -1169,18 +1243,44 @@ export function DataTable<TData, TValue>({
               <DataTableViewOptions messages={labels} table={table} />
             ) : null}
             {showExport ? (
-              <Button
-                aria-label={labels.export}
-                disabled={!hasExportableRows}
-                onClick={() =>
-                  exportTableToCsv(table, exportRows, exportFileName)
-                }
-                size="sm"
-                variant="outline"
-              >
-                <Download />
-                <span className="hidden sm:inline">{labels.export}</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      aria-label={labels.export}
+                      className="h-9"
+                      disabled={!hasExportableRows}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Download />
+                      <span className="hidden sm:inline">{labels.export}</span>
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="w-[180px]">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>{labels.export}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() =>
+                        exportTableToCsv(table, exportRows, exportFileName)
+                      }
+                    >
+                      <FileText />
+                      {labels.exportCsv}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        exportTableToJson(table, exportRows, exportFileName)
+                      }
+                    >
+                      <FileJson />
+                      {labels.exportJson}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
           </div>
         </div>
@@ -1242,43 +1342,48 @@ export function DataTable<TData, TValue>({
               renderGalleryEmptyState()
             )
           ) : (
-            <ScrollArea>
-              <Table className="min-w-full">
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id} className="p-4">
-                      {headerGroup.headers.map((header) => {
-                        return (
-                          <TableHead key={header.id} className="h-12 min-w-32">
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                          </TableHead>
-                        );
-                      })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody className="px-2">
-                  {hasActiveGrouping
-                    ? groupedSections.length > 0
-                      ? renderGroupedTableSections(groupedSections)
-                      : renderTableEmptyState()
-                    : bodyRows.length > 0
-                      ? bodyRows.map((row) => (
-                          <DataTableRow
-                            canDrag={false}
-                            key={row.id}
-                            onRowClick={onRowClick}
-                            row={row}
-                          />
-                        ))
-                      : renderTableEmptyState()}
-                </TableBody>
-              </Table>
+            <ScrollArea className="-m-1">
+              <div className="p-1">
+                <Table className="min-w-full">
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id} className="p-4">
+                        {headerGroup.headers.map((header) => {
+                          return (
+                            <TableHead
+                              key={header.id}
+                              className="h-12 min-w-32"
+                            >
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                  )}
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody className="px-2">
+                    {hasActiveGrouping
+                      ? groupedSections.length > 0
+                        ? renderGroupedTableSections(groupedSections)
+                        : renderTableEmptyState()
+                      : bodyRows.length > 0
+                        ? bodyRows.map((row) => (
+                            <DataTableRow
+                              canDrag={false}
+                              key={row.id}
+                              onRowClick={onRowClick}
+                              row={row}
+                            />
+                          ))
+                        : renderTableEmptyState()}
+                  </TableBody>
+                </Table>
+              </div>
               <ScrollBar orientation="horizontal" />
             </ScrollArea>
           )}
@@ -1315,7 +1420,7 @@ function DataTableDisplayModeSwitch({
         render={
           <Button
             aria-label={messages.view}
-            className="h-8"
+            className="h-9"
             size="sm"
             variant="outline"
           />
@@ -1376,7 +1481,7 @@ function DataTableSortDropdown<TData>({
         render={
           <Button
             aria-label={messages.sortBy}
-            className="h-8"
+            className="h-9"
             size="sm"
             variant="outline"
           >
@@ -1471,7 +1576,7 @@ function DataTableViewOptions<TData>({
         render={
           <Button
             aria-label={messages.columns}
-            className="h-8"
+            className="h-9"
             size="sm"
             variant="outline"
           >
@@ -1712,7 +1817,7 @@ export function DataTableColumnHeader<TData, TValue>({
             <Button
               variant="ghost"
               size="sm"
-              className="data-[state=open]:bg-accent -ml-3 h-8"
+              className="data-[state=open]:bg-accent h-8"
             >
               <span className="text-sm">{title}</span>
               {column.getIsSorted() === "desc" ? (

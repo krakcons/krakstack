@@ -234,7 +234,7 @@ export function DataTablePreview() {
                   "Review",
                   "Shipped",
                 ],
-                getGroupLabel: (status, rows) => `${status} (${rows.length})`,
+                getGroupLabel: (status) => status,
                 renderEmptyGroup: (status) =>
                   `No projects are currently ${status.toLowerCase()}.`,
                 onMoveToGroup: (project, status) =>
@@ -245,7 +245,7 @@ export function DataTablePreview() {
                 label: "Owner",
                 getGroupId: (project) => project.owner,
                 getGroupIds: () => ["Ada", "Grace", "Hedy", "Linus"],
-                getGroupLabel: (owner, rows) => `${owner} (${rows.length})`,
+                getGroupLabel: (owner) => owner,
               },
             ],
           }}
