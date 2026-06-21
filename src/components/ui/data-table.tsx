@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Query, SortParamFromString } from "@/lib/query";
+import { Query, SortParamsFromString } from "@/lib/query";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -781,12 +781,11 @@ export function DataTable<TData, TValue>({
     view = "table",
   } = search ?? {};
   const pagination = { pageIndex: page, pageSize };
-  const decodedSort = sort
-    ? Schema.decodeSync(SortParamFromString)(sort)
-    : null;
-  const sorting: SortingState = decodedSort
-    ? [{ id: decodedSort.id, desc: decodedSort.direction === "desc" }]
-    : [];
+  const decodedSort = sort ? Schema.decodeSync(SortParamsFromString)(sort) : [];
+  const sorting: SortingState = decodedSort.map((sortParam) => ({
+    id: sortParam.id,
+    desc: sortParam.direction === "desc",
+  }));
   const {
     pagination: showPagination,
     search: showSearch,
@@ -870,11 +869,13 @@ export function DataTable<TData, TValue>({
       ) {
         return;
       }
-      const nextSort = newSorting[0]
-        ? Schema.encodeSync(SortParamFromString)({
-            id: newSorting[0].id,
-            direction: newSorting[0].desc ? "desc" : "asc",
-          })
+      const nextSort = newSorting.length
+        ? Schema.encodeSync(SortParamsFromString)(
+            newSorting.map((sortState) => ({
+              id: sortState.id,
+              direction: sortState.desc ? "desc" : "asc",
+            })),
+          )
         : undefined;
       updateTableSearch((current) => ({
         ...current,

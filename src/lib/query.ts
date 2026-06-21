@@ -18,6 +18,16 @@ export interface SortParam {
   direction: SortDirection;
 }
 
+const parseSortParam = (sort: string): SortParam | null => {
+  const id = sort.startsWith("-") ? sort.slice(1) : sort;
+
+  if (!id || id.includes(",") || id.includes(":")) {
+    return null;
+  }
+
+  return { id, direction: sort.startsWith("-") ? "desc" : "asc" };
+};
+
 export const SortDirection = Schema.Union([
   Schema.Literal("asc"),
   Schema.Literal("desc"),
@@ -47,49 +57,91 @@ export const SortParamFromString = Schema.String.pipe(
     SortParam,
     SchemaTransformation.transformOrFail({
       decode: (sort) => {
-        const [id, direction, ...rest] = sort.split(":");
+        const sortParam = parseSortParam(sort);
 
-        if (
-          !id ||
-          rest.length > 0 ||
-          (direction !== "asc" && direction !== "desc")
-        ) {
+        if (!sortParam) {
           return Effect.fail(
             new SchemaIssue.InvalidValue(Option.some(sort), {
-              message:
-                'Expected sort in the format "field:asc" or "field:desc"',
+              message: 'Expected sort in the format "field" or "-field"',
             }),
           );
         }
 
-        return Effect.succeed({ id, direction });
+        return Effect.succeed(sortParam);
       },
-      encode: (sort) => Effect.succeed(`${sort.id}:${sort.direction}`),
+      encode: (sort) =>
+        Effect.succeed(sort.direction === "desc" ? `-${sort.id}` : sort.id),
     }),
   ),
   Schema.annotate({
     identifier: "SortParamFromString",
     title: "Sort Parameter From String",
     description:
-      'URL encoded sort parameter in the compact "field:direction" format.',
+      'URL encoded single sort parameter where descending fields are prefixed with "-".',
     examples: [{ id: "publicName", direction: "asc" }],
   }),
 );
 
-const SortParamSearch = Schema.Union([SortParamFromString, SortParam]).pipe(
+export const SortParamsFromString = Schema.String.pipe(
+  Schema.decodeTo(
+    Schema.Array(SortParam),
+    SchemaTransformation.transformOrFail<ReadonlyArray<SortParam>, string>({
+      decode: (sort) => {
+        const parts = sort.split(",");
+        const sortParams: SortParam[] = [];
+
+        for (const part of parts) {
+          const sortParam = parseSortParam(part);
+
+          if (!sortParam) {
+            return Effect.fail(
+              new SchemaIssue.InvalidValue(Option.some(sort), {
+                message: 'Expected sort in the format "field,-otherField"',
+              }),
+            );
+          }
+
+          sortParams.push(sortParam);
+        }
+
+        return Effect.succeed(sortParams);
+      },
+      encode: (sort) =>
+        Effect.succeed(
+          sort
+            .map((part) => Schema.encodeSync(SortParamFromString)(part))
+            .join(","),
+        ),
+    }),
+  ),
+  Schema.annotate({
+    identifier: "SortParamsFromString",
+    title: "Sort Parameters From String",
+    description:
+      'URL encoded sort parameters where descending fields are prefixed with "-" and multiple fields are comma-separated.',
+    examples: [
+      [
+        { id: "name", direction: "desc" },
+        { id: "age", direction: "asc" },
+      ],
+    ],
+  }),
+);
+
+const SortParamSearch = SortParamsFromString.pipe(
   Schema.decodeTo(
     Schema.String,
     SchemaTransformation.transform({
-      decode: (sort) => Schema.encodeSync(SortParamFromString)(sort),
-      encode: (sort) => Schema.decodeUnknownSync(SortParamFromString)(sort),
+      decode: (sort) => Schema.encodeSync(SortParamsFromString)(sort),
+      encode: (sort) => Schema.decodeUnknownSync(SortParamsFromString)(sort),
     }),
   ),
   Schema.annotate({
     identifier: "SortParamSearch",
     title: "Sort Search Parameter",
     description:
-      'Search parameter sort value normalized to the compact "field:direction" URL format.',
-    examples: ["publicName:asc"],
+      'Search parameter sort value normalized to the compact "-field,otherField" URL format.',
+    examples: ["-name,age"],
   }),
 );
 
@@ -109,7 +161,7 @@ export const Query = Schema.Struct({
         page: 0,
         pageSize: 10,
         globalFilter: "housing",
-        sort: "publicName:asc",
+        sort: "-publicName,createdAt",
       },
     ],
   }),
