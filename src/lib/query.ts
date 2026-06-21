@@ -1,4 +1,10 @@
-import { Schema } from "effect";
+import {
+  Effect,
+  Option,
+  Schema,
+  SchemaIssue,
+  SchemaTransformation,
+} from "effect";
 
 export type SortDirection = "asc" | "desc";
 
@@ -12,26 +18,70 @@ export interface SortParam {
   direction: SortDirection;
 }
 
-export const encodeSortParam = (sorting: ReadonlyArray<SortState> = []) => {
-  const sort = sorting[0];
-  return sort ? `${sort.id}:${sort.desc ? "desc" : "asc"}` : undefined;
-};
+export const SortDirection = Schema.Union([
+  Schema.Literal("asc"),
+  Schema.Literal("desc"),
+]).pipe(
+  Schema.annotate({
+    identifier: "SortDirection",
+    title: "Sort Direction",
+    description: "Sort direction for list query results.",
+    examples: ["asc", "desc"],
+  }),
+);
 
-export const decodeSortParam = (sort: string | undefined): SortParam | null => {
-  const [id, direction] = sort?.split(":") ?? [];
+export const SortParam = Schema.Struct({
+  id: Schema.NonEmptyString,
+  direction: SortDirection,
+}).pipe(
+  Schema.annotate({
+    identifier: "SortParam",
+    title: "Sort Parameter",
+    description: "Decoded sort parameter with a field id and direction.",
+    examples: [{ id: "publicName", direction: "asc" }],
+  }),
+);
 
-  if (!id || (direction !== "asc" && direction !== "desc")) {
-    return null;
-  }
+export const SortParamFromString = Schema.String.pipe(
+  Schema.decodeTo(
+    SortParam,
+    SchemaTransformation.transformOrFail({
+      decode: (sort) => {
+        const [id, direction, ...rest] = sort.split(":");
 
-  return { id, direction };
-};
+        if (
+          !id ||
+          rest.length > 0 ||
+          (direction !== "asc" && direction !== "desc")
+        ) {
+          return Effect.fail(
+            new SchemaIssue.InvalidValue(Option.some(sort), {
+              message:
+                'Expected sort in the format "field:asc" or "field:desc"',
+            }),
+          );
+        }
+
+        return Effect.succeed({ id, direction });
+      },
+      encode: (sort) => Effect.succeed(`${sort.id}:${sort.direction}`),
+    }),
+  ),
+).pipe(
+  Schema.annotate({
+    identifier: "SortParamFromString",
+    title: "Sort Parameter From String",
+    description:
+      'URL encoded sort parameter in the compact "field:direction" format.',
+    examples: [{ id: "publicName", direction: "asc" }],
+  }),
+);
 
 export const Query = Schema.Struct({
   page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   pageSize: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
   globalFilter: Schema.optional(Schema.String),
-  sort: Schema.optional(Schema.String),
+  sort: Schema.optional(SortParamFromString),
 }).pipe(
   Schema.annotate({
     identifier: "Query",
@@ -43,7 +93,7 @@ export const Query = Schema.Struct({
         page: 0,
         pageSize: 10,
         globalFilter: "housing",
-        sort: "publicName:asc",
+        sort: { id: "publicName", direction: "asc" },
       },
     ],
   }),

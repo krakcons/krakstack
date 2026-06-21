@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Query, SortParam, SortParamFromString } from "@/lib/query";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -105,16 +106,10 @@ import { getLocale } from "@/paraglide/runtime";
 const DataTableViewContext = createContext<DataTableView>("table");
 
 export const TableSearchSchema = Schema.Struct({
-  globalFilter: Schema.optional(Schema.String),
-  pagination: Schema.optional(
-    Schema.Struct({
-      pageIndex: Schema.Number,
-      pageSize: Schema.Number,
-    }),
-  ),
-  sorting: Schema.optional(
-    Schema.Array(Schema.Struct({ id: Schema.String, desc: Schema.Boolean })),
-  ),
+  page: Schema.optional(Query.fields.page),
+  pageSize: Schema.optional(Query.fields.pageSize),
+  globalFilter: Query.fields.globalFilter,
+  sort: Schema.optional(Schema.Union([SortParamFromString, SortParam])),
   grouping: Schema.optional(Schema.Array(Schema.String)),
   view: Schema.optional(
     Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")]),
@@ -778,12 +773,17 @@ export function DataTable<TData, TValue>({
   const navigate = useNavigate(from ? { from } : undefined);
 
   const {
-    pagination = { pageIndex: 0, pageSize: 10 },
-    sorting = [],
+    page = 0,
+    pageSize = 10,
+    sort,
     globalFilter = "",
     grouping: urlGrouping,
     view = "table",
   } = search ?? {};
+  const pagination = { pageIndex: page, pageSize };
+  const sorting: SortingState = sort
+    ? [{ id: sort.id, desc: sort.direction === "desc" }]
+    : [];
   const {
     pagination: showPagination,
     search: showSearch,
@@ -848,7 +848,8 @@ export function DataTable<TData, TValue>({
       }
       updateTableSearch((current) => ({
         ...current,
-        pagination: newPagination,
+        page: newPagination.pageIndex,
+        pageSize: newPagination.pageSize,
       }));
     },
     onSortingChange: (updater) => {
@@ -866,13 +867,16 @@ export function DataTable<TData, TValue>({
       ) {
         return;
       }
+      const nextSort = newSorting[0]
+        ? Schema.encodeSync(SortParamFromString)({
+            id: newSorting[0].id,
+            direction: newSorting[0].desc ? "desc" : "asc",
+          })
+        : undefined;
       updateTableSearch((current) => ({
         ...current,
-        sorting: newSorting,
-        pagination: {
-          ...pagination,
-          pageIndex: 0,
-        },
+        sort: nextSort,
+        page: 0,
       }));
     },
     getCoreRowModel: getCoreRowModel(),
@@ -886,10 +890,7 @@ export function DataTable<TData, TValue>({
       updateTableSearch(
         (current) => ({
           ...current,
-          pagination: {
-            ...pagination,
-            pageIndex: 0,
-          },
+          page: 0,
           globalFilter: newGlobalFilter,
         }),
         { replace: true },
