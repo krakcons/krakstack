@@ -337,12 +337,14 @@ const getDefaultGrouping = <TData,>(grouping?: DataTableGrouping<TData>) => {
 const getGroupTargetDropId = (key: string) => `group-target:${key}`;
 const getRowDragId = (rowId: string) => `row:${rowId}`;
 
-const DataTableRowActions = <TData,>({
+export const DataTableRowActions = <TData,>({
   actions,
+  contentClassName,
   row,
   title = "Actions",
 }: {
   actions: DataTableRowAction<TData>[];
+  contentClassName?: string | undefined;
   row: TData;
   title?: string | undefined;
 }) => {
@@ -369,7 +371,7 @@ const DataTableRowActions = <TData,>({
           </Button>
         }
       />
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className={contentClassName}>
         <DropdownMenuGroup>
           <DropdownMenuLabel>{title}</DropdownMenuLabel>
           <DropdownMenuSeparator />
