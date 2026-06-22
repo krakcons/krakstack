@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import {
   DndContext,
   DragOverlay,
+  type Modifier,
   PointerSensor,
   useDraggable,
   useDroppable,
@@ -85,7 +86,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  Fragment,
   useEffect,
   useMemo,
   useState,
@@ -294,6 +294,30 @@ const DEFAULT_TABLE_FEATURES = {
 const GROUP_INDENT_PX = 20;
 const GROUP_ROW_INDENT_OFFSET_PX = 44;
 
+const snapDragOverlayVerticalCenterToCursor: Modifier = ({
+  activatorEvent,
+  activeNodeRect,
+  overlayNodeRect,
+  transform,
+}) => {
+  if (
+    !(activatorEvent instanceof MouseEvent) ||
+    !activeNodeRect ||
+    !overlayNodeRect
+  ) {
+    return transform;
+  }
+
+  return {
+    ...transform,
+    y:
+      transform.y +
+      activatorEvent.clientY -
+      activeNodeRect.top -
+      overlayNodeRect.height / 2,
+  };
+};
+
 const getDefaultGrouping = <TData,>(grouping?: DataTableGrouping<TData>) => {
   if (!grouping) {
     return [];
@@ -422,16 +446,6 @@ const GroupHeaderRow = <TData,>({
   onToggle: () => void;
   section: GroupSection<TData>;
 }) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id: getGroupTargetDropId(section.key),
-    disabled: !section.field.onMoveToGroup,
-    data: {
-      type: "group-target",
-      fieldId: section.field.id,
-      groupId: section.groupId,
-    },
-  });
-
   const label =
     section.field.getGroupLabel?.(
       section.groupId,
@@ -440,16 +454,7 @@ const GroupHeaderRow = <TData,>({
 
   return (
     <TableRow>
-      <TableCell
-        className={cn(
-          "relative p-0",
-          isOver &&
-            "after:border-primary after:pointer-events-none after:absolute after:inset-0 after:border",
-        )}
-        colSpan={colSpan}
-        ref={setNodeRef}
-        onClick={onToggle}
-      >
+      <TableCell className="relative p-0" colSpan={colSpan} onClick={onToggle}>
         <div
           className="flex cursor-pointer items-center gap-3 px-2 py-2 font-medium transition-colors"
           style={{
@@ -468,6 +473,36 @@ const GroupHeaderRow = <TData,>({
         </div>
       </TableCell>
     </TableRow>
+  );
+};
+
+const GroupTableSection = <TData,>({
+  children,
+  section,
+}: {
+  children: ReactNode;
+  section: GroupSection<TData>;
+}) => {
+  const { isOver, setNodeRef } = useDroppable({
+    id: getGroupTargetDropId(section.key),
+    disabled: !section.field.onMoveToGroup,
+    data: {
+      type: "group-target",
+      fieldId: section.field.id,
+      groupId: section.groupId,
+    },
+  });
+
+  return (
+    <TableBody
+      className={cn(
+        "relative px-2",
+        isOver && "ring-primary ring-1 ring-inset",
+      )}
+      ref={setNodeRef}
+    >
+      {children}
+    </TableBody>
   );
 };
 
@@ -1162,12 +1197,11 @@ export function DataTable<TData, TValue>({
   const renderGroupedTableSections = (
     sections: GroupSection<TData>[],
   ): ReactNode =>
-    sections.map((section) => {
+    sections.flatMap((section) => {
       const isCollapsed = collapsedGroups[section.key] ?? false;
       const hasChildren = section.children.length > 0;
-
-      return (
-        <Fragment key={section.key}>
+      const sectionBody = (
+        <GroupTableSection key={section.key} section={section}>
           <GroupHeaderRow
             collapsed={isCollapsed}
             colSpan={colSpan}
@@ -1175,9 +1209,8 @@ export function DataTable<TData, TValue>({
             section={section}
           />
           {!isCollapsed &&
-            (hasChildren ? (
-              renderGroupedTableSections(section.children)
-            ) : section.rows.length > 0 ? (
+            !hasChildren &&
+            (section.rows.length > 0 ? (
               section.rows.map((row) => (
                 <DataTableRow
                   canDrag={canDragRows}
@@ -1203,8 +1236,12 @@ export function DataTable<TData, TValue>({
                 </TableCell>
               </TableRow>
             ))}
-        </Fragment>
+        </GroupTableSection>
       );
+
+      return !isCollapsed && hasChildren
+        ? [sectionBody, renderGroupedTableSections(section.children)]
+        : [sectionBody];
     });
 
   const renderGroupedGallerySections = (
@@ -1442,12 +1479,17 @@ export function DataTable<TData, TValue>({
                       </TableRow>
                     ))}
                   </TableHeader>
-                  <TableBody className="px-2">
-                    {hasActiveGrouping
-                      ? groupedSections.length > 0
-                        ? renderGroupedTableSections(groupedSections)
-                        : renderTableEmptyState()
-                      : bodyRows.length > 0
+                  {hasActiveGrouping ? (
+                    groupedSections.length > 0 ? (
+                      renderGroupedTableSections(groupedSections)
+                    ) : (
+                      <TableBody className="px-2">
+                        {renderTableEmptyState()}
+                      </TableBody>
+                    )
+                  ) : (
+                    <TableBody className="px-2">
+                      {bodyRows.length > 0
                         ? bodyRows.map((row) => (
                             <DataTableRow
                               canDrag={false}
@@ -1458,13 +1500,14 @@ export function DataTable<TData, TValue>({
                             />
                           ))
                         : renderTableEmptyState()}
-                  </TableBody>
+                    </TableBody>
+                  )}
                 </Table>
               </div>
               <ScrollBar orientation="horizontal" />
             </ScrollArea>
           )}
-          <DragOverlay>
+          <DragOverlay modifiers={[snapDragOverlayVerticalCenterToCursor]}>
             {activeDragLabel ? (
               <div className="bg-background rounded-md border px-3 py-2 text-sm shadow-sm">
                 {activeDragLabel}
