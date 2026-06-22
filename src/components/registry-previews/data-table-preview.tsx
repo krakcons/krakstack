@@ -3,7 +3,7 @@ import {
   DataTableColumnHeader,
   TableSearchSchema,
   TableSearchSchemaStandard,
-  createDataTableActionsColumn,
+  type DataTableRowAction,
 } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -182,38 +182,39 @@ const columns: ColumnDef<Project>[] = [
       <DataTableColumnHeader column={column} title="Updated" />
     ),
   },
-  createDataTableActionsColumn<Project>([
-    {
-      name: "Open",
-      icon: <ExternalLink />,
-      onClick: (project) => window.alert(`Open ${project.name}`),
-    },
-    {
-      name: "Edit",
-      icon: <Pencil />,
-      onClick: (project) => window.alert(`Edit ${project.name}`),
-    },
-    {
-      name: "Archive",
-      icon: <Archive />,
-      variant: "destructive",
-      visible: (project) => project.status !== "Shipped",
-      onClick: (project) => window.alert(`Archive ${project.name}`),
-    },
-  ]),
+];
+
+const rowActions: DataTableRowAction<Project>[] = [
+  {
+    name: "Open",
+    icon: <ExternalLink />,
+    onClick: (project) => window.alert(`Open ${project.name}`),
+  },
+  {
+    name: "Edit",
+    icon: <Pencil />,
+    onClick: (project) => window.alert(`Edit ${project.name}`),
+  },
+  {
+    name: "Archive",
+    icon: <Archive />,
+    variant: "destructive",
+    visible: (project) => project.status !== "Shipped",
+    onClick: (project) => window.alert(`Archive ${project.name}`),
+  },
 ];
 
 export function DataTablePreview() {
   return (
-    <Card className="min-w-0 bg-[var(--surface-strong)]">
+    <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
       <CardHeader>
         <CardTitle>Project Queue</CardTitle>
         <CardDescription>
           This demo uses the exported `DataTable`, `DataTableColumnHeader`, and
-          actions-column helper.
+          row actions.
         </CardDescription>
       </CardHeader>
-      <CardContent className="min-w-0">
+      <CardContent className="max-w-full min-w-0 overflow-hidden">
         <DataTable
           columns={columns}
           data={projects}
@@ -250,6 +251,7 @@ export function DataTablePreview() {
             ],
           }}
           onRowClick={(project) => window.alert(`Selected ${project.name}`)}
+          rowActions={rowActions}
         />
       </CardContent>
     </Card>
