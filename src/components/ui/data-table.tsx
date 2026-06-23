@@ -628,8 +628,10 @@ const DataTableRow = <TData,>({
           <TableCell
             key={cell.id}
             className={cn(
-              "align-center min-w-32 whitespace-normal",
-              rowActions && isLastCell && "min-w-40 pr-12",
+              "align-center min-w-32 whitespace-normal [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:line-clamp-none",
+              rowActions &&
+                isLastCell &&
+                "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])_[data-slot=relationship-cell]]:pr-14",
             )}
             style={
               index === 0 && firstCellIndent
@@ -1906,67 +1908,79 @@ export function DataTableRelationshipCell({
   });
 
   return (
-    <div
-      className="flex flex-col gap-2"
-      onClick={(event) => event.stopPropagation()}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        {value.length > 0 ? (
-          value.map((option) => (
-            <Badge
-              key={option.value}
-              variant="outline"
-              onClick={() => option.href && navigate({ to: option.href })}
-              className="max-w-48"
-            >
-              {option.href && <LinkIcon className="size-3.5 min-w-3.5" />}
-              <span className="justify-start truncate">{option.label}</span>
-            </Badge>
-          ))
-        ) : (
-          <span className="text-muted-foreground text-sm">{emptyLabel}</span>
-        )}
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button className="h-8 w-min" size="sm" variant="outline">
-              {manageLabel}
-            </Button>
-          }
-        />
-        <DropdownMenuContent
-          align="end"
-          className="w-[220px]"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>{manageLabel}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {options.map((option) => {
-              const checked = selectedValues.has(option.value);
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        onClick={(event) => event.stopPropagation()}
+        render={
+          <Button
+            aria-label={manageLabel}
+            data-slot="relationship-cell"
+            className="min-h-16 w-full justify-between gap-3 rounded-none px-2 py-2 text-left font-normal"
+            type="button"
+            variant="ghost"
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {value.length > 0 ? (
+                value.map((option) => (
+                  <Badge
+                    key={option.value}
+                    variant="outline"
+                    onClick={(event) => {
+                      if (!option.href) return;
 
-              return (
-                <DropdownMenuCheckboxItem
-                  checked={checked}
-                  key={option.value}
-                  onCheckedChange={(nextChecked) => {
-                    if (nextChecked) {
-                      onAdd?.(option.value);
-                      return;
-                    }
+                      event.preventDefault();
+                      event.stopPropagation();
+                      navigate({ to: option.href });
+                    }}
+                    className="max-w-48 cursor-pointer"
+                  >
+                    {option.href && <LinkIcon className="size-3.5 min-w-3.5" />}
+                    <span className="justify-start truncate">
+                      {option.label}
+                    </span>
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  {emptyLabel}
+                </span>
+              )}
+            </div>
+            <ChevronDown className="text-muted-foreground size-4 shrink-0" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent
+        align="end"
+        className="w-[220px]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{manageLabel}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {options.map((option) => {
+            const checked = selectedValues.has(option.value);
 
-                    onRemove?.(option.value);
-                  }}
-                >
-                  {option.label}
-                </DropdownMenuCheckboxItem>
-              );
-            })}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+            return (
+              <DropdownMenuCheckboxItem
+                checked={checked}
+                key={option.value}
+                onCheckedChange={(nextChecked) => {
+                  if (nextChecked) {
+                    onAdd?.(option.value);
+                    return;
+                  }
+
+                  onRemove?.(option.value);
+                }}
+              >
+                {option.label}
+              </DropdownMenuCheckboxItem>
+            );
+          })}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
