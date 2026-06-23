@@ -276,6 +276,7 @@ interface DataTableProps<TData, TValue> {
     export?: boolean;
     columnVisibility?: boolean;
     gallery?: boolean;
+    sorting?: boolean;
   };
 }
 
@@ -294,6 +295,7 @@ const DEFAULT_TABLE_FEATURES = {
   export: true,
   columnVisibility: true,
   gallery: true,
+  sorting: true,
 } as const;
 
 const GROUP_INDENT_PX = 20;
@@ -841,6 +843,21 @@ const getColumnDisplayName = <TData,>(
   return header ? getHeaderName(header) : columnId;
 };
 
+const renderHeader = <TData, TValue>(header: Header<TData, TValue>) => {
+  if (header.isPlaceholder) return null;
+
+  const content = flexRender(
+    header.column.columnDef.header,
+    header.getContext(),
+  );
+
+  return typeof content === "string" || typeof content === "number" ? (
+    <div className="flex h-12 items-center px-2 text-sm">{content}</div>
+  ) : (
+    content
+  );
+};
+
 export type CsvValue = string | number | boolean | null | undefined;
 
 const withFileExtension = (fileName: string, extension: string) => {
@@ -978,6 +995,7 @@ export function DataTable<TData, TValue>({
     export: showExport,
     columnVisibility: showColumnVisibility,
     gallery: showGallery,
+    sorting: showSorting,
   } = {
     ...DEFAULT_TABLE_FEATURES,
     ...features,
@@ -985,6 +1003,15 @@ export function DataTable<TData, TValue>({
   const currentView: DataTableView = showGallery ? view : "table";
   const isGalleryView = currentView === "gallery";
   const emptyStateLabel = isLoading ? labels.loading : resolvedEmptyLabel;
+  const hasToolbar = Boolean(
+    showSearch ||
+    grouping?.fields.length ||
+    showSorting ||
+    showGallery ||
+    showColumnVisibility ||
+    onRefresh ||
+    showExport,
+  );
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
@@ -1282,150 +1309,158 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full max-w-full min-w-0 rounded-md">
-      <div className="flex flex-col gap-3 pb-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          {showSearch ? (
-            <div className="relative w-full min-w-0 flex-1 sm:min-w-sm">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <Input
-                className="px-9"
-                onChange={(event) => {
-                  setSearchInput(event.target.value);
-                  table.setGlobalFilter(event.target.value);
-                }}
-                placeholder={labels.filter}
-                value={searchInput}
-              />
-              {searchInput ? (
-                <Button
-                  aria-label={labels.filter}
-                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2 active:!-translate-y-1/2"
-                  onClick={() => {
-                    setSearchInput("");
-                    table.setGlobalFilter("");
+      {hasToolbar ? (
+        <div className="flex flex-col gap-3 pb-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            {showSearch ? (
+              <div className="relative w-full min-w-0 flex-1 sm:min-w-sm">
+                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                  className="px-9"
+                  onChange={(event) => {
+                    setSearchInput(event.target.value);
+                    table.setGlobalFilter(event.target.value);
                   }}
-                  size="icon"
+                  placeholder={labels.filter}
+                  value={searchInput}
+                />
+                {searchInput ? (
+                  <Button
+                    aria-label={labels.filter}
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2 active:!-translate-y-1/2"
+                    onClick={() => {
+                      setSearchInput("");
+                      table.setGlobalFilter("");
+                    }}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                ) : null}
+              </div>
+            ) : (
+              <div />
+            )}
+            <div className="-m-1 flex items-center gap-2 overflow-x-auto p-1">
+              {grouping?.fields.length ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        aria-label={labels.groupBy}
+                        className="h-9"
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Rows3 />
+                        <span className="hidden sm:inline">
+                          {labels.groupBy}
+                        </span>
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-[200px]">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>{labels.groupBy}</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {grouping.fields.map((field) => (
+                        <DropdownMenuCheckboxItem
+                          checked={activeGrouping.includes(field.id)}
+                          key={field.id}
+                          onCheckedChange={(value) =>
+                            toggleGroupingField(field.id, !!value)
+                          }
+                        >
+                          {field.label}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+              {showSorting ? (
+                <DataTableSortDropdown messages={labels} table={table} />
+              ) : null}
+              {showGallery ? (
+                <DataTableDisplayModeSwitch
+                  messages={labels}
+                  onChange={setView}
+                  value={currentView}
+                />
+              ) : null}
+              {showColumnVisibility ? (
+                <DataTableViewOptions messages={labels} table={table} />
+              ) : null}
+              {onRefresh ? (
+                <Button
+                  aria-label={labels.refresh}
+                  className="h-9"
+                  onClick={() => {
+                    setRefreshSpinCount((count) => count + 1);
+                    onRefresh();
+                  }}
+                  size="sm"
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                 >
-                  <X className="size-4" />
+                  <RefreshCw
+                    className={cn(
+                      refreshSpinCount > 0 &&
+                        "animate-[spin_500ms_ease-in-out_1]",
+                    )}
+                    key={refreshSpinCount}
+                  />
+                  <span className="hidden sm:inline">{labels.refresh}</span>
                 </Button>
               ) : null}
-            </div>
-          ) : (
-            <div />
-          )}
-          <div className="-m-1 flex items-center gap-2 overflow-x-auto p-1">
-            {grouping?.fields.length ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      aria-label={labels.groupBy}
-                      className="h-9"
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Rows3 />
-                      <span className="hidden sm:inline">{labels.groupBy}</span>
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="end" className="w-[200px]">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>{labels.groupBy}</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {grouping.fields.map((field) => (
-                      <DropdownMenuCheckboxItem
-                        checked={activeGrouping.includes(field.id)}
-                        key={field.id}
-                        onCheckedChange={(value) =>
-                          toggleGroupingField(field.id, !!value)
+              {showExport ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        aria-label={labels.export}
+                        className="h-9"
+                        disabled={!hasExportableRows}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Download />
+                        <span className="hidden sm:inline">
+                          {labels.export}
+                        </span>
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-[180px]">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>{labels.export}</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() =>
+                          exportTableToCsv(table, exportRows, exportFileName)
                         }
                       >
-                        {field.label}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-            <DataTableSortDropdown messages={labels} table={table} />
-            {showGallery ? (
-              <DataTableDisplayModeSwitch
-                messages={labels}
-                onChange={setView}
-                value={currentView}
-              />
-            ) : null}
-            {showColumnVisibility ? (
-              <DataTableViewOptions messages={labels} table={table} />
-            ) : null}
-            {onRefresh ? (
-              <Button
-                aria-label={labels.refresh}
-                className="h-9"
-                onClick={() => {
-                  setRefreshSpinCount((count) => count + 1);
-                  onRefresh();
-                }}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <RefreshCw
-                  className={cn(
-                    refreshSpinCount > 0 &&
-                      "animate-[spin_500ms_ease-in-out_1]",
-                  )}
-                  key={refreshSpinCount}
-                />
-                <span className="hidden sm:inline">{labels.refresh}</span>
-              </Button>
-            ) : null}
-            {showExport ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      aria-label={labels.export}
-                      className="h-9"
-                      disabled={!hasExportableRows}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Download />
-                      <span className="hidden sm:inline">{labels.export}</span>
-                    </Button>
-                  }
-                />
-                <DropdownMenuContent align="end" className="w-[180px]">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>{labels.export}</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() =>
-                        exportTableToCsv(table, exportRows, exportFileName)
-                      }
-                    >
-                      <FileText />
-                      {labels.exportCsv}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        exportTableToJson(table, exportRows, exportFileName)
-                      }
-                    >
-                      <FileJson />
-                      {labels.exportJson}
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
+                        <FileText />
+                        {labels.exportCsv}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          exportTableToJson(table, exportRows, exportFileName)
+                        }
+                      >
+                        <FileJson />
+                        {labels.exportJson}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
       <DndContext
         onDragCancel={() => setActiveDragLabel(null)}
         onDragEnd={({ active, over }) => {
@@ -1495,12 +1530,7 @@ export function DataTable<TData, TValue>({
                               key={header.id}
                               className="h-12 min-w-32 p-0"
                             >
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext(),
-                                  )}
+                              {renderHeader(header)}
                             </TableHead>
                           );
                         })}
@@ -1958,7 +1988,7 @@ export function DataTableColumnHeader<TData, TValue>({
   const labels = dataTableMessages(messages);
   if (!column.getCanSort()) {
     return (
-      <div className={cn("flex h-12 items-center px-2", className)}>
+      <div className={cn("flex h-12 items-center px-2 text-sm", className)}>
         {title}
       </div>
     );
