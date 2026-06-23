@@ -80,6 +80,7 @@ import {
   LayoutGrid,
   LinkIcon,
   MoreHorizontal,
+  RefreshCw,
   Rows3,
   Search,
   Settings2,
@@ -133,6 +134,7 @@ export type DataTableMessages = {
   export: string;
   exportCsv: string;
   exportJson: string;
+  refresh: string;
   selectedOf: (selected: number, total: number) => string;
   view: string;
   tableView: string;
@@ -161,6 +163,7 @@ const messages = {
     export: "Export",
     exportCsv: "CSV",
     exportJson: "JSON",
+    refresh: "Refresh",
     selectedOf: (selected: number, total: number) => `${selected} of ${total}`,
     view: "View",
     tableView: "Table",
@@ -187,6 +190,7 @@ const messages = {
     export: "Exporter",
     exportCsv: "CSV",
     exportJson: "JSON",
+    refresh: "Rafraîchir",
     selectedOf: (selected: number, total: number) => `${selected} sur ${total}`,
     view: "Affichage",
     tableView: "Tableau",
@@ -257,6 +261,7 @@ interface DataTableProps<TData, TValue> {
   messages?: DataTableMessageOverrides;
   exportFileName?: string;
   isLoading?: boolean;
+  onRefresh?: () => void;
   onRowClick?: (row: TData) => void;
   from?: ValidateFromPath;
   grouping?: DataTableGrouping<TData>;
@@ -937,6 +942,7 @@ export function DataTable<TData, TValue>({
   messages,
   exportFileName = "table.csv",
   isLoading = false,
+  onRefresh,
   onRowClick,
   from,
   grouping,
@@ -986,6 +992,7 @@ export function DataTable<TData, TValue>({
     Record<string, boolean>
   >({});
   const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
+  const [refreshSpinCount, setRefreshSpinCount] = useState(0);
   const [searchInput, setSearchInput] = useState(globalFilter);
   const availableGroupFieldIds =
     grouping?.fields.map((field) => field.id) ?? [];
@@ -1354,6 +1361,28 @@ export function DataTable<TData, TValue>({
             {showColumnVisibility ? (
               <DataTableViewOptions messages={labels} table={table} />
             ) : null}
+            {onRefresh ? (
+              <Button
+                aria-label={labels.refresh}
+                className="h-9"
+                onClick={() => {
+                  setRefreshSpinCount((count) => count + 1);
+                  onRefresh();
+                }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <RefreshCw
+                  className={cn(
+                    refreshSpinCount > 0 &&
+                      "animate-[spin_500ms_ease-in-out_1]",
+                  )}
+                  key={refreshSpinCount}
+                />
+                <span className="hidden sm:inline">{labels.refresh}</span>
+              </Button>
+            ) : null}
             {showExport ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -1545,12 +1574,12 @@ function DataTableDisplayModeSwitch({
             className="h-9"
             size="sm"
             variant="outline"
-          />
+          >
+            {value === "gallery" ? <LayoutGrid /> : <Rows3 />}
+            <span className="hidden sm:inline">{messages.view}</span>
+          </Button>
         }
-      >
-        <Rows3 />
-        {messages.view}
-      </DropdownMenuTrigger>
+      />
       <DropdownMenuContent align="end" className="w-[160px]">
         <DropdownMenuRadioGroup
           value={value}
