@@ -150,22 +150,20 @@ export const Query = Schema.Struct({
   pageSize: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
   globalFilter: Schema.optional(Schema.String),
   sort: Schema.optional(SortParamSearch),
-}).pipe(
-  Schema.annotate({
-    identifier: "Query",
-    title: "Query",
-    description:
-      "Zero-based page request parameters with optional filtering and sorting for list endpoints.",
-    examples: [
-      {
-        page: 0,
-        pageSize: 10,
-        globalFilter: "housing",
-        sort: "-publicName,createdAt",
-      },
-    ],
-  }),
-);
+}).annotate({
+  identifier: "Query",
+  title: "Query",
+  description:
+    "Zero-based page request parameters with optional filtering and sorting for list endpoints.",
+  examples: [
+    {
+      page: 0,
+      pageSize: 10,
+      globalFilter: "housing",
+      sort: "-publicName,createdAt",
+    },
+  ],
+});
 
 export type QueryType = typeof Query.Type;
 

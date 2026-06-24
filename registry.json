@@ -48,6 +48,7 @@
         }
       ],
       "registryDependencies": [
+        "@krak/query-helpers",
         "badge",
         "card",
         "dropdown-menu",
