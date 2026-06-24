@@ -5,16 +5,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-.shiki {
-  background-color: var(--shiki-dark-bg, var(--muted));
-  color: var(--shiki-dark, var(--foreground));
-}
-
-:not(.dark) .shiki {
-  background-color: var(--shiki-light-bg, var(--muted));
-  color: var(--shiki-light, var(--foreground));
-}
-
 :root {
   --background: oklch(0.9821 0 0);
   --foreground: oklch(0.2435 0 0);

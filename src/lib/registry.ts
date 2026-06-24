@@ -66,6 +66,8 @@ const iconByName = {
   "query-helpers": ListFilter,
   "sidebar-layout": PanelLeft,
   "search-menu": Search,
+  "code-block": Blocks,
+  "stats-card": Activity,
   agents: Bot,
   "lint-format": Wrench,
   "app-brand": Blocks,

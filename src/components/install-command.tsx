@@ -1,7 +1,3 @@
-import { Check, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,33 +5,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CodeBlock } from "@/components/ui/code-block";
+import { shikiHighlighter } from "@/lib/shiki";
+import { use } from "react";
 
 export function InstallCommand({ slug }: { slug: string }) {
-  const [copied, setCopied] = useState(false);
-  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const highlighter = use(shikiHighlighter);
   const installCommand = `bunx --bun shadcn@latest add ${import.meta.env.VITE_SITE_URL}/r/${slug}.json`;
-
-  useEffect(() => {
-    return () => {
-      if (copiedTimeoutRef.current) {
-        clearTimeout(copiedTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  async function copyInstallCommand() {
-    await navigator.clipboard.writeText(installCommand);
-    setCopied(true);
-
-    if (copiedTimeoutRef.current) {
-      clearTimeout(copiedTimeoutRef.current);
-    }
-
-    copiedTimeoutRef.current = setTimeout(() => {
-      setCopied(false);
-      copiedTimeoutRef.current = null;
-    }, 2000);
-  }
 
   return (
     <Card className="min-w-0 bg-[var(--surface-strong)]">
@@ -46,15 +22,11 @@ export function InstallCommand({ slug }: { slug: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="min-w-0">
-        <div className="bg-muted text-muted-foreground flex max-w-full items-center gap-3 rounded-lg border p-4 text-sm">
-          <pre className="min-w-0 flex-1 overflow-x-auto">
-            <code>{installCommand}</code>
-          </pre>
-          <Button size="sm" variant="outline" onClick={copyInstallCommand}>
-            {copied ? <Check /> : <Copy />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
-        </div>
+        <CodeBlock
+          code={installCommand}
+          highlighter={highlighter}
+          language="bash"
+        />
       </CardContent>
     </Card>
   );

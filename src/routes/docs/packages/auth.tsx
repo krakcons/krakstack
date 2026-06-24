@@ -10,11 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CodeBlock } from "@/components/ui/code-block";
 import { SidebarPageHeader } from "@/components/ui/sidebar-layout";
 import { krakstackPackages } from "@/lib/krakstack-packages";
+import { shikiHighlighter } from "@/lib/shiki";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 import { createFileRoute } from "@tanstack/react-router";
+import { use } from "react";
 
 export const Route = createFileRoute("/docs/packages/auth")({
   component: AuthPackageDocs,
@@ -23,6 +26,8 @@ export const Route = createFileRoute("/docs/packages/auth")({
 const pkg = krakstackPackages[0];
 
 function AuthPackageDocs() {
+  const highlighter = use(shikiHighlighter);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl min-w-0 flex-col gap-8">
       <SidebarPageHeader
@@ -64,9 +69,11 @@ function AuthPackageDocs() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <pre className="bg-muted overflow-x-auto rounded-lg border p-4 text-sm">
-            <code>{pkg.installCommand}</code>
-          </pre>
+          <CodeBlock
+            code={pkg.installCommand}
+            highlighter={highlighter}
+            language="bash"
+          />
         </CardContent>
       </Card>
 
@@ -79,7 +86,7 @@ function AuthPackageDocs() {
         </div>
         <Card>
           <CardContent className="pt-6">
-            <Markdown content={pkg.readme()} />
+            <Markdown content={pkg.readme()} highlighter={highlighter} />
           </CardContent>
         </Card>
       </section>

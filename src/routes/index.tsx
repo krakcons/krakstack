@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { AppBrand } from "@/components/ui/app-brand";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { StatsCard } from "@/components/ui/stats-card";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackPackages } from "@/lib/krakstack-packages";
@@ -28,6 +29,7 @@ import {
   ListChecks,
   Mail,
   MonitorCog,
+  Search,
   Shield,
   Table2,
   UserRound,
@@ -53,9 +55,21 @@ const iconByName = {
   "notification-channel-email-ses": Mail,
   "embedding-layer": Layers,
   "query-helpers": ListFilter,
+  "sidebar-layout": Blocks,
+  "search-menu": Search,
+  "code-block": Blocks,
+  "stats-card": Activity,
   agents: Bot,
   "lint-format": Wrench,
 } as const;
+
+const componentCount = registryItems.filter(
+  (item) => getRegistryGroup(item) === "Components",
+).length;
+
+const serviceCount = registryItems.filter(
+  (item) => getRegistryGroup(item) === "Services",
+).length;
 
 const groupedItems = registryItems.reduce(
   (sections, item) => {
@@ -128,6 +142,27 @@ function Home() {
           <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
             {m.home_description()}
           </p>
+        </section>
+
+        <section className="mb-12 grid gap-5 sm:grid-cols-3">
+          <StatsCard
+            title={m.home_stats_components_title()}
+            value={componentCount}
+            description={m.home_stats_components_description()}
+            icon={<Blocks />}
+          />
+          <StatsCard
+            title={m.home_stats_services_title()}
+            value={serviceCount}
+            description={m.home_stats_services_description()}
+            icon={<Database />}
+          />
+          <StatsCard
+            title={m.home_stats_total_title()}
+            value={registryItems.length}
+            description={m.home_stats_total_description()}
+            icon={<Activity />}
+          />
         </section>
 
         <section className="mb-12">

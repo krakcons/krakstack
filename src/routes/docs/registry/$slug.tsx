@@ -20,7 +20,9 @@ import {
 } from "@/components/ui/card";
 import type { RegistryItem } from "@/lib/registry";
 import { getRegistryGroup, getRegistryItem } from "@/lib/registry";
+import { shikiHighlighter } from "@/lib/shiki";
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { use } from "react";
 
 export const Route = createFileRoute("/docs/registry/$slug")({
   validateSearch: TableSearchSchemaStandard,
@@ -33,6 +35,7 @@ export const Route = createFileRoute("/docs/registry/$slug")({
 });
 
 function RegistryDocs() {
+  const highlighter = use(shikiHighlighter);
   const item = Route.useLoaderData();
   const group = getRegistryGroup(item);
 
@@ -46,7 +49,9 @@ function RegistryDocs() {
 
       <InstallCommand slug={item.name} />
 
-      {item.docs ? <Markdown content={item.docs} /> : null}
+      {item.docs ? (
+        <Markdown content={item.docs} highlighter={highlighter} />
+      ) : null}
       <Dependencies item={item} />
       <RegistryPreview slug={item.name} />
     </main>

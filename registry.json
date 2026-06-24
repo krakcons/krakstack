@@ -469,6 +469,38 @@
       ],
       "registryDependencies": ["badge", "sidebar"],
       "dependencies": ["@tanstack/react-router", "lucide-react", "react"]
+    },
+    {
+      "name": "code-block",
+      "type": "registry:block",
+      "title": "Code Block",
+      "description": "A syntax-highlighted code block with Shiki highlighting, language label, copy action, and plain-text fallback.",
+      "docs": "## Overview\n\n`CodeBlock` renders syntax-highlighted code with Shiki using a highlighter supplied by your app. The component stays synchronous and prop-driven so your project can create one shared highlighter and reuse it across every code block. It falls back to plain text if highlighting fails and includes a copy-to-clipboard button.\n\n## Highlighter Setup\n\nCreate a project-managed highlighter, for example in `src/lib/shiki.ts`. This file is intentionally not included by the registry item so each app can choose its bundled themes and languages. Load both `vitesse-light` and `vitesse-dark` unless you also change the themes in `CodeBlock`.\n\n```ts\nimport bash from \"@shikijs/langs/bash\";\nimport javascript from \"@shikijs/langs/javascript\";\nimport json from \"@shikijs/langs/json\";\nimport tsx from \"@shikijs/langs/tsx\";\nimport typescript from \"@shikijs/langs/typescript\";\nimport vitesseDark from \"@shikijs/themes/vitesse-dark\";\nimport vitesseLight from \"@shikijs/themes/vitesse-light\";\nimport { createHighlighterCore } from \"shiki/core\";\nimport { createOnigurumaEngine } from \"shiki/engine/oniguruma\";\n\nexport const shikiHighlighter = createHighlighterCore({\n  themes: [vitesseLight, vitesseDark],\n  langs: [bash, javascript, json, tsx, typescript],\n  langAlias: { js: \"javascript\", ts: \"typescript\", sh: \"bash\" },\n  engine: createOnigurumaEngine(import(\"shiki/wasm\")),\n});\n```\n\n## Usage\n\nResolve the highlighter outside `CodeBlock` and pass it in.\n\n```tsx\nimport { CodeBlock } from \"@/components/ui/code-block\";\nimport { shikiHighlighter } from \"@/lib/shiki\";\nimport { use } from \"react\";\n\nfunction Example({ source }: { source: string }) {\n  const highlighter = use(shikiHighlighter);\n\n  return (\n    <CodeBlock\n      code={source}\n      highlighter={highlighter}\n      language=\"tsx\"\n      messages={{ copy: \"Copy code\", copied: \"Copied\" }}\n    />\n  );\n}\n```",
+      "files": [
+        {
+          "path": "src/components/ui/code-block.tsx",
+          "type": "registry:component",
+          "target": "components/ui/code-block.tsx"
+        }
+      ],
+      "registryDependencies": ["button"],
+      "dependencies": ["lucide-react", "react", "shiki"]
+    },
+    {
+      "name": "stats-card",
+      "type": "registry:block",
+      "title": "Stats Card",
+      "description": "A compact metric card with title, icon, value, description, optional content, and card-link hover affordances.",
+      "docs": "## Overview\n\n`StatsCard` displays a key metric with a title, icon, value, and short description. It accepts optional children for inline charts or supporting content and works inside card-link groups through its hover classes.\n\n## Usage\n\n```tsx\nimport { StatsCard } from \"@/components/ui/stats-card\";\nimport { Users } from \"lucide-react\";\n\n<StatsCard\n  title=\"Users\"\n  value={128}\n  description=\"Active users this month\"\n  icon={<Users />}\n/>\n```\n\n## Linked Card\n\nWrap the card in a link with `group/card-link` to enable its hover affordances.\n\n```tsx\nimport { StatsCard } from \"@/components/ui/stats-card\";\nimport { Link } from \"@tanstack/react-router\";\nimport { Database } from \"lucide-react\";\n\n<Link to=\"/admin/courses\" className=\"group/card-link min-w-0\">\n  <StatsCard\n    title=\"Storage\"\n    value={formatBytes(stats.storageUsedBytes)}\n    description=\"Storage used by this organization.\"\n    icon={<Database />}\n  />\n</Link>\n```",
+      "files": [
+        {
+          "path": "src/components/ui/stats-card.tsx",
+          "type": "registry:component",
+          "target": "components/ui/stats-card.tsx"
+        }
+      ],
+      "registryDependencies": ["card"],
+      "dependencies": ["react"]
     }
   ]
 }

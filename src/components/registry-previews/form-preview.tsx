@@ -7,7 +7,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState } from "react";
+import { CodeBlock } from "@/components/ui/code-block";
+import { shikiHighlighter } from "@/lib/shiki";
+import { use, useState } from "react";
 
 const interestOptions = [
   { label: "Forms", value: "forms" },
@@ -35,6 +37,7 @@ type FormValues = {
 };
 
 export function FormPreview() {
+  const highlighter = use(shikiHighlighter);
   const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(
     null,
   );
@@ -200,15 +203,15 @@ export function FormPreview() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <pre className="overflow-auto rounded-lg border bg-[#1d2e45] p-4 text-xs text-[#e8efff]">
-            <code>
-              {JSON.stringify(
-                submitted ?? "Submit the form to see its value.",
-                null,
-                2,
-              )}
-            </code>
-          </pre>
+          <CodeBlock
+            code={JSON.stringify(
+              submitted ?? "Submit the form to see its value.",
+              null,
+              2,
+            )}
+            highlighter={highlighter}
+            language="json"
+          />
         </CardContent>
       </Card>
     </div>

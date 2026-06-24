@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "stats-card",
+  "title": "Stats Card",
+  "description": "A compact metric card with title, icon, value, description, optional content, and card-link hover affordances.",
+  "dependencies": ["react"],
+  "registryDependencies": ["card"],
+  "files": [
+    {
+      "path": "src/components/ui/stats-card.tsx",
+      "content": "import {\n  cloneElement,\n  isValidElement,\n  type ComponentProps,\n  type ReactNode,\n} from \"react\";\n\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardFooter,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\n\nconst normalizeIcon = (icon: ReactNode) => {\n  if (!isValidElement<{ className?: string }>(icon)) return icon;\n\n  return cloneElement(icon, {\n    className: [\"size-4\", icon.props.className].filter(Boolean).join(\" \"),\n  });\n};\n\nexport const StatsCard = ({\n  title,\n  icon,\n  value,\n  description,\n  children,\n  className,\n  size = \"default\",\n  valueClassName,\n}: {\n  title: string;\n  value: string | number;\n  description: string;\n  icon: ReactNode;\n  children?: ReactNode;\n  className?: string;\n  size?: ComponentProps<typeof Card>[\"size\"];\n  valueClassName?: string;\n}) => {\n  const normalizedIcon = normalizeIcon(icon);\n\n  return (\n    <Card\n      size={size}\n      className={[\n        \"group-hover/card-link:ring-foreground/20 @container/card h-full flex-1 gap-4 transition-all duration-200 group-hover/card-link:-translate-y-0.5 group-hover/card-link:shadow-md\",\n        className,\n      ]\n        .filter(Boolean)\n        .join(\" \")}\n      key={title}\n    >\n      <CardHeader className=\"relative\">\n        <CardDescription className=\"flex items-center justify-between gap-2\">\n          {title}\n          {normalizedIcon}\n        </CardDescription>\n        <CardTitle\n          className={[\n            \"justify-center font-semibold text-2xl tabular-nums @[250px]/card:text-3xl\",\n            valueClassName,\n          ]\n            .filter(Boolean)\n            .join(\" \")}\n        >\n          {value}\n        </CardTitle>\n      </CardHeader>\n      {children ? <CardContent>{children}</CardContent> : null}\n      <CardFooter className=\"flex-col items-start gap-1 text-sm\">\n        <div className=\"text-muted-foreground text-xs\">{description}</div>\n      </CardFooter>\n    </Card>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/stats-card.tsx"
+    }
+  ],
+  "docs": "## Overview\n\n`StatsCard` displays a key metric with a title, icon, value, and short description. It accepts optional children for inline charts or supporting content and works inside card-link groups through its hover classes.\n\n## Usage\n\n```tsx\nimport { StatsCard } from \"@/components/ui/stats-card\";\nimport { Users } from \"lucide-react\";\n\n<StatsCard\n  title=\"Users\"\n  value={128}\n  description=\"Active users this month\"\n  icon={<Users />}\n/>\n```\n\n## Linked Card\n\nWrap the card in a link with `group/card-link` to enable its hover affordances.\n\n```tsx\nimport { StatsCard } from \"@/components/ui/stats-card\";\nimport { Link } from \"@tanstack/react-router\";\nimport { Database } from \"lucide-react\";\n\n<Link to=\"/admin/courses\" className=\"group/card-link min-w-0\">\n  <StatsCard\n    title=\"Storage\"\n    value={formatBytes(stats.storageUsedBytes)}\n    description=\"Storage used by this organization.\"\n    icon={<Database />}\n  />\n</Link>\n```",
+  "type": "registry:block"
+}
