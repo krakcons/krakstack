@@ -91,7 +91,7 @@ export function CodeBlock({
   };
 
   return (
-    <div className="bg-muted overflow-hidden rounded-md border">
+    <div className="overflow-hidden rounded-md border">
       <div className="border-border/60 flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-xs">
           {language.toLowerCase()}
@@ -109,7 +109,7 @@ export function CodeBlock({
           {copied ? <Check /> : <Clipboard />}
         </Button>
       </div>
-      <div className="max-h-full overflow-auto p-3">
+      <div className="bg-muted max-h-full overflow-auto p-3">
         {tokens ? (
           <div className={codeBodyClassName}>
             <code className={`language-${language}`}>
