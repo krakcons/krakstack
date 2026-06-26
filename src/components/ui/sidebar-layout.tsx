@@ -17,6 +17,7 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 type NavItem = {
@@ -40,9 +41,14 @@ type AppSidebarProps = {
 };
 
 function AppSidebar({ footer, groups, header }: AppSidebarProps) {
+  const { isMobile, setOpenMobile } = useSidebar();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+
+  const closeMobileSidebar = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -64,6 +70,7 @@ function AppSidebar({ footer, groups, header }: AppSidebarProps) {
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         isActive={!item.external && pathname === item.href}
+                        onClick={closeMobileSidebar}
                         render={render}
                         tooltip={item.label()}
                       >
