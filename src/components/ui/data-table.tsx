@@ -49,6 +49,8 @@ import {
   useRouterState,
   type ValidateFromPath,
 } from "@tanstack/react-router";
+import { useAtom } from "@effect/atom-react";
+import { BrowserKeyValueStore } from "@effect/platform-browser";
 import {
   type Column,
   type ColumnDef,
@@ -62,7 +64,6 @@ import {
   type SortingState,
   type Table as TanstackTable,
   useReactTable,
-  type VisibilityState,
 } from "@tanstack/react-table";
 import {
   ArrowDown,
@@ -95,6 +96,7 @@ import {
   type ReactNode,
 } from "react";
 import { Schema } from "effect";
+import { Atom } from "effect/unstable/reactivity";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -114,16 +116,23 @@ export const TableSearchSchema = Schema.Struct({
   globalFilter: Query.fields.globalFilter,
   sort: Query.fields.sort,
   grouping: Schema.optional(Schema.Array(Schema.String)),
-  view: Schema.optional(
-    Schema.Union([Schema.Literal("table"), Schema.Literal("gallery")]),
-  ),
 });
 
 export const TableSearchSchemaStandard =
   Schema.toStandardSchemaV1(TableSearchSchema);
 export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
-type DataTableView = "table" | "gallery";
+const dataTableStorageRuntime = Atom.runtime(
+  BrowserKeyValueStore.layerLocalStorage,
+);
+
+const DataTableViewSchema = Schema.Union([
+  Schema.Literal("table"),
+  Schema.Literal("gallery"),
+]);
+type DataTableView = typeof DataTableViewSchema.Type;
+
+const ColumnVisibilitySchema = Schema.Record(Schema.String, Schema.Boolean);
 
 export type DataTableMessages = {
   pageSize: string;
@@ -696,9 +705,9 @@ const DataTableGalleryCard = <TData,>({
     : null;
 
   if (gallery) {
-    const tagValue = tagCell
-      ? flexRender(tagCell.column.columnDef.cell, tagCell.getContext())
-      : null;
+    const tagValue = gallery.tag ? row.getValue(gallery.tag) : null;
+    const tagLabel =
+      tagValue === null || tagValue === undefined ? null : String(tagValue);
 
     return (
       <Card
@@ -717,19 +726,20 @@ const DataTableGalleryCard = <TData,>({
         {...attributes}
         {...listeners}
       >
-        <CardHeader>
-          {rowActions || tagCell ? (
-            <CardAction onClick={(event) => event.stopPropagation()}>
-              {rowActions ? (
-                <DataTableRowActions actions={rowActions} row={row.original} />
-              ) : null}
-              {tagCell ? (
-                <Badge variant="secondary" className="gap-1">
-                  {gallery.tagIcon}
-                  {tagValue}
-                </Badge>
-              ) : null}
-            </CardAction>
+        {rowActions ? (
+          <div
+            className="absolute top-4 right-4 z-10"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <DataTableRowActions actions={rowActions} row={row.original} />
+          </div>
+        ) : null}
+        <CardHeader className={cn(rowActions && "pr-14")}>
+          {tagCell && tagLabel ? (
+            <Badge variant="secondary" className="mb-1 w-fit gap-1">
+              {gallery.tagIcon}
+              {tagLabel}
+            </Badge>
           ) : null}
           {nameCell ? (
             <CardTitle className="min-w-0 text-base">
@@ -972,9 +982,11 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const labels = dataTableMessages(messages);
   const resolvedEmptyLabel = emptyLabel ?? labels.empty;
-  const search = useRouterState({
-    select: (state) => state.location.search,
-  }) as TableParams | undefined;
+  const location = useRouterState({
+    select: (state) => state.location,
+  });
+  const search = location.search as TableParams | undefined;
+  const pathname = location.pathname;
   const navigate = useNavigate(from ? { from } : undefined);
 
   const {
@@ -983,7 +995,6 @@ export function DataTable<TData, TValue>({
     sort,
     globalFilter = "",
     grouping: urlGrouping,
-    view = "table",
   } = search ?? {};
   const pagination = { pageIndex: page, pageSize };
   const decodedSort = sort ? Schema.decodeSync(SortParamsFromString)(sort) : [];
@@ -1002,7 +1013,46 @@ export function DataTable<TData, TValue>({
     ...DEFAULT_TABLE_FEATURES,
     ...features,
   };
-  const currentView: DataTableView = showGallery ? view : "table";
+  const tableStorageId = useMemo(() => {
+    const columnIds = columns
+      .map((column, index) => {
+        if ("id" in column && typeof column.id === "string") {
+          return column.id;
+        }
+
+        if ("accessorKey" in column && typeof column.accessorKey === "string") {
+          return column.accessorKey;
+        }
+
+        return String(index);
+      })
+      .join(",");
+
+    return `${pathname}:${exportFileName}:${columnIds}`;
+  }, [columns, exportFileName, pathname]);
+  const columnVisibilityAtom = useMemo(
+    () =>
+      Atom.kvs({
+        runtime: dataTableStorageRuntime,
+        key: `data-table:column-visibility:${tableStorageId}`,
+        schema: ColumnVisibilitySchema,
+        defaultValue: () => ({}),
+      }),
+    [tableStorageId],
+  );
+  const viewAtom = useMemo(
+    () =>
+      Atom.kvs({
+        runtime: dataTableStorageRuntime,
+        key: `data-table:view:${tableStorageId}`,
+        schema: DataTableViewSchema,
+        defaultValue: (): DataTableView => "table",
+      }),
+    [tableStorageId],
+  );
+  const [columnVisibility, setColumnVisibility] = useAtom(columnVisibilityAtom);
+  const [storedView, setStoredView] = useAtom(viewAtom);
+  const currentView: DataTableView = showGallery ? storedView : "table";
   const isGalleryView = currentView === "gallery";
   const emptyStateLabel = isLoading ? labels.loading : resolvedEmptyLabel;
   const hasToolbar = Boolean(
@@ -1015,7 +1065,6 @@ export function DataTable<TData, TValue>({
     showExport,
   );
 
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<string, boolean>
@@ -1121,7 +1170,12 @@ export function DataTable<TData, TValue>({
       ? { manualPagination: true, rowCount: serverPagination.rowCount }
       : { getPaginationRowModel: getPaginationRowModel() }),
     autoResetPageIndex: false,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (updater) => {
+      const nextColumnVisibility =
+        typeof updater === "function" ? updater(columnVisibility) : updater;
+
+      setColumnVisibility(nextColumnVisibility);
+    },
     onRowSelectionChange: setRowSelection,
     state: {
       sorting: sorting as SortingState,
@@ -1195,10 +1249,7 @@ export function DataTable<TData, TValue>({
       return;
     }
 
-    updateTableSearch((current) => ({
-      ...current,
-      view: nextView,
-    }));
+    setStoredView(nextView);
   };
 
   const renderTableEmptyState = () => (
