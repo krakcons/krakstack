@@ -35,6 +35,22 @@
       "dependencies": ["@tanstack/react-router", "lucide-react"]
     },
     {
+      "name": "copy-button",
+      "type": "registry:component",
+      "title": "Copy Button",
+      "description": "An accessible clipboard copy button with success and failure announcements for screen readers.",
+      "docs": "## Overview\n\n`CopyButton` copies a string to the clipboard and announces copy results with an `aria-live` status region. It keeps the accessible name stable while the icon changes after a successful copy. Pass `valueDescription` for concise context, such as `install command` or `tsx code`; avoid passing the full copied value when it may be long or sensitive.\n\n## Variants\n\n- Omit `copyVariant` for the default icon-only size.\n- `copyVariant=\"sm\"` renders a smaller compact icon-only button.\n- `copyVariant=\"large\"` renders the copy label next to the icon.\n\n## Usage\n\n```tsx\nimport { CopyButton } from \"@/components/ui/copy-button\";\n\n<CopyButton\n  value=\"bun run dev\"\n  valueDescription=\"install command\"\n  copyVariant=\"large\"\n  variant=\"secondary\"\n  messages={{ copy: \"Copy\", copied: \"Copied\" }}\n/>\n```",
+      "files": [
+        {
+          "path": "src/components/ui/copy-button.tsx",
+          "type": "registry:component",
+          "target": "components/ui/copy-button.tsx"
+        }
+      ],
+      "registryDependencies": ["button"],
+      "dependencies": ["lucide-react", "react"]
+    },
+    {
       "name": "data-table",
       "type": "registry:block",
       "title": "Data Table",
@@ -483,8 +499,8 @@
           "target": "components/ui/code-block.tsx"
         }
       ],
-      "registryDependencies": ["button"],
-      "dependencies": ["lucide-react", "react", "shiki"]
+      "registryDependencies": ["copy-button"],
+      "dependencies": ["react", "shiki"]
     },
     {
       "name": "stats-card",

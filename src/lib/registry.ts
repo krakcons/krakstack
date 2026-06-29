@@ -1,16 +1,20 @@
 import registry from "../../registry.json";
 import {
   Activity,
+  Badge,
   BellRing,
-  Blocks,
   Bot,
+  Building2,
   Cloud,
+  ClipboardList,
+  CodeXml,
+  Copy,
   Database,
+  Languages,
   Globe,
   KeyRound,
   Layers,
   ListFilter,
-  ListChecks,
   Mail,
   MonitorCog,
   PanelLeft,
@@ -34,6 +38,7 @@ export function getRegistryItem(slug: string) {
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "embedding-layer") return "Layers";
   if (item.name === "query-helpers") return "Libraries";
+  if (item.name === "copy-button") return "Components";
   if (
     ["service-notification", "notification-channel-email-ses"].includes(
       item.name,
@@ -49,11 +54,12 @@ export function getRegistryGroup(item: RegistryItem) {
 
 const iconByName = {
   "data-table": Table2,
-  form: ListChecks,
+  form: ClipboardList,
   "locale-switcher": Globe,
   "theme-switcher": MonitorCog,
-  "editing-locale-switcher": Globe,
+  "editing-locale-switcher": Languages,
   "user-button": UserRound,
+  "organization-switcher": Building2,
   "sign-in": KeyRound,
   "sign-up": KeyRound,
   auth: Shield,
@@ -66,11 +72,12 @@ const iconByName = {
   "query-helpers": ListFilter,
   "sidebar-layout": PanelLeft,
   "search-menu": Search,
-  "code-block": Blocks,
+  "code-block": CodeXml,
+  "copy-button": Copy,
   "stats-card": Activity,
   agents: Bot,
   "lint-format": Wrench,
-  "app-brand": Blocks,
+  "app-brand": Badge,
 } as const;
 
 export function getRegistryIcon(item: RegistryItem) {

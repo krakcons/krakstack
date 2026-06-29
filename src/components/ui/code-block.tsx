@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Check, Clipboard } from "lucide-react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { CopyButton } from "@/components/ui/copy-button";
+import { Fragment, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import type { ThemedTokenWithVariants } from "shiki";
 import type { HighlighterCore } from "shiki/core";
@@ -8,6 +7,7 @@ import type { HighlighterCore } from "shiki/core";
 type CodeBlockMessages = {
   copy?: string;
   copied?: string;
+  copyFailed?: string;
 };
 type CodeBlockProps = {
   code: string;
@@ -44,15 +44,6 @@ export function CodeBlock({
   messages,
 }: CodeBlockProps) {
   const [tokens, setTokens] = useState<ThemedTokenWithVariants[][]>();
-  const [copied, setCopied] = useState(false);
-  const copyTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-
-  const labels = {
-    copy: messages?.copy ?? "Copy code",
-    copied: messages?.copied ?? "Copied",
-  };
 
   useEffect(() => {
     let active = true;
@@ -77,37 +68,26 @@ export function CodeBlock({
     };
   }, [code, highlighter, language]);
 
-  useEffect(() => {
-    return () => {
-      if (copyTimeout.current) clearTimeout(copyTimeout.current);
-    };
-  }, []);
-
-  const copy = () => {
-    void navigator.clipboard.writeText(code);
-    setCopied(true);
-    if (copyTimeout.current) clearTimeout(copyTimeout.current);
-    copyTimeout.current = setTimeout(() => setCopied(false), 1500);
-  };
-
   return (
     <div className="overflow-hidden rounded-md border">
       <div className="border-border/60 flex items-center justify-between border-b px-3 py-2">
         <span className="text-muted-foreground font-mono text-xs">
           {language.toLowerCase()}
         </span>
-        <Button
-          size="icon-sm"
+        <CopyButton
+          value={code}
+          valueDescription={`${language.toLowerCase()} code`}
           variant="secondary"
-          disabled={copied}
-          aria-label={copied ? labels.copied : labels.copy}
-          onClick={copy}
-        >
-          <span className="sr-only">
-            {copied ? labels.copied : labels.copy}
-          </span>
-          {copied ? <Check /> : <Clipboard />}
-        </Button>
+          messages={{
+            ...(messages?.copy === undefined ? {} : { copy: messages.copy }),
+            ...(messages?.copied === undefined
+              ? {}
+              : { copied: messages.copied }),
+            ...(messages?.copyFailed === undefined
+              ? {}
+              : { copyFailed: messages.copyFailed }),
+          }}
+        />
       </div>
       <div className="bg-muted max-h-full overflow-auto p-3">
         {tokens ? (

@@ -12,6 +12,7 @@ import { SignInPreview } from "@/components/registry-previews/sign-in-preview";
 import { SignUpPreview } from "@/components/registry-previews/sign-up-preview";
 import { OrganizationSwitcherPreview } from "@/components/registry-previews/organization-switcher-preview";
 import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
+import { CopyButtonPreview } from "@/components/registry-previews/copy-button-preview";
 import {
   Card,
   CardDescription,
@@ -148,6 +149,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <AgentsPreview />
     ) : slug === "lint-format" ? (
       <LintFormatPreview />
+    ) : slug === "copy-button" ? (
+      <CopyButtonPreview />
     ) : null;
 
   if (!preview) return null;
