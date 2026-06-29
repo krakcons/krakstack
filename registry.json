@@ -499,7 +499,7 @@
           "target": "components/ui/code-block.tsx"
         }
       ],
-      "registryDependencies": ["copy-button"],
+      "registryDependencies": ["@krak/copy-button"],
       "dependencies": ["react", "shiki"]
     },
     {

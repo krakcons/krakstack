@@ -3,7 +3,9 @@
   "name": "service-notification",
   "title": "Notification Service",
   "description": "An Effect notification dispatcher that sends dynamic channel payloads through the installed notification channels matching each top-level message key.",
-  "dependencies": ["effect@beta"],
+  "dependencies": [
+    "effect@beta"
+  ],
   "registryDependencies": [],
   "files": [
     {

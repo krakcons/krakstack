@@ -3,8 +3,13 @@
   "name": "code-block",
   "title": "Code Block",
   "description": "A syntax-highlighted code block with Shiki highlighting, language label, copy action, and plain-text fallback.",
-  "dependencies": ["react", "shiki"],
-  "registryDependencies": ["copy-button"],
+  "dependencies": [
+    "react",
+    "shiki"
+  ],
+  "registryDependencies": [
+    "@krak/copy-button"
+  ],
   "files": [
     {
       "path": "src/components/ui/code-block.tsx",

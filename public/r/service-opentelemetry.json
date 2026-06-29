@@ -3,7 +3,9 @@
   "name": "service-opentelemetry",
   "title": "OpenTelemetry",
   "description": "An Effect service that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's unstable observability and HTTP modules, with Effect Logger bridging so all application logs are sent to the collector.",
-  "dependencies": ["effect@beta"],
+  "dependencies": [
+    "effect@beta"
+  ],
   "files": [
     {
       "path": "src/services/opentelemetry.ts",

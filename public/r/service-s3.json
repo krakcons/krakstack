@@ -3,8 +3,12 @@
   "name": "service-s3",
   "title": "S3 Service",
   "description": "An Effect service wrapping Bun's S3 client for object reads, writes, metadata, presigned URLs, listing, and deletion with typed service errors.",
-  "dependencies": ["effect@beta"],
-  "devDependencies": ["@types/bun"],
+  "dependencies": [
+    "effect@beta"
+  ],
+  "devDependencies": [
+    "@types/bun"
+  ],
   "files": [
     {
       "path": "src/services/s3/index.ts",
