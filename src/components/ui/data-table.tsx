@@ -45,6 +45,12 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   useNavigate,
   useRouterState,
   type ValidateFromPath,
@@ -78,6 +84,7 @@ import {
   EyeOff,
   FileJson,
   FileText,
+  GripVertical,
   LayoutGrid,
   LinkIcon,
   MoreHorizontal,
@@ -155,6 +162,7 @@ export type DataTableMessages = {
   sortHide: string;
   sortClear: string;
   sortBy: string;
+  reorder: string;
   pageOf: (page: number, total: number) => string;
   goToFirstPage: string;
   goToPreviousPage: string;
@@ -184,6 +192,7 @@ const messages = {
     sortHide: "Hide",
     sortClear: "Clear",
     sortBy: "Sort by",
+    reorder: "Drag to reorder",
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
     goToFirstPage: "Go to first page",
     goToPreviousPage: "Go to previous page",
@@ -211,6 +220,7 @@ const messages = {
     sortHide: "Cacher",
     sortClear: "Effacer",
     sortBy: "Trier par",
+    reorder: "Glisser pour réordonner",
     pageOf: (page: number, total: number) => `Page ${page} sur ${total}`,
     goToFirstPage: "Aller à la première page",
     goToPreviousPage: "Aller à la page précédente",
@@ -255,6 +265,13 @@ export interface DataTableGalleryConfig {
   tagIcon?: ReactNode;
 }
 
+export interface DataTableReordering<TData> {
+  onReorder: (rows: TData[]) => void;
+  getRowId: (row: TData) => string;
+  getRowLabel?: (row: TData) => string;
+  handleLabel?: string;
+}
+
 export type DataTableRowAction<TData> = {
   name: string;
   icon?: ReactNode;
@@ -276,6 +293,7 @@ interface DataTableProps<TData, TValue> {
   grouping?: DataTableGrouping<TData>;
   gallery?: DataTableGalleryConfig;
   rowActions?: DataTableRowAction<TData>[];
+  reordering?: DataTableReordering<TData>;
   serverPagination?: {
     rowCount: number;
   };
@@ -352,6 +370,7 @@ const getDefaultGrouping = <TData,>(grouping?: DataTableGrouping<TData>) => {
 
 const getGroupTargetDropId = (key: string) => `group-target:${key}`;
 const getRowDragId = (rowId: string) => `row:${rowId}`;
+const getSortableRowId = (rowId: string) => `sortable-row:${rowId}`;
 
 export const DataTableRowActions = <TData,>({
   actions,
@@ -394,6 +413,7 @@ export const DataTableRowActions = <TData,>({
           {visibleActions.map((action) => (
             <DropdownMenuItem
               key={action.name}
+              className="whitespace-nowrap"
               onClick={(event) => {
                 event.stopPropagation();
                 action.onClick(row);
@@ -574,35 +594,59 @@ const GroupHeaderCard = <TData,>({
 
 const DataTableRow = <TData,>({
   canDrag,
+  canReorder,
   dragLabel,
   indentDepth = 0,
+  reorderHandleLabel,
   onRowClick,
   row,
   rowActions,
 }: {
   canDrag: boolean;
+  canReorder: boolean;
   dragLabel?: string | undefined;
   indentDepth?: number | undefined;
+  reorderHandleLabel?: string | undefined;
   onRowClick?: ((row: TData) => void) | undefined;
   row: Row<TData>;
   rowActions?: DataTableRowAction<TData>[] | undefined;
 }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const sortable = useSortable({
+    id: getSortableRowId(row.id),
+    disabled: !canReorder,
+    data: {
+      type: "row-reorder",
+      row: row.original,
+      label: dragLabel,
+    },
+  });
+  const draggable = useDraggable({
     id: getRowDragId(row.id),
-    disabled: !canDrag,
+    disabled: !canDrag || canReorder,
     data: {
       type: "row",
       row: row.original,
       label: dragLabel,
     },
   });
+  const attributes = canReorder ? sortable.attributes : draggable.attributes;
+  const listeners = canReorder ? sortable.listeners : draggable.listeners;
+  const isDragging = canReorder ? sortable.isDragging : draggable.isDragging;
+  const setRowNodeRef = canReorder ? sortable.setNodeRef : draggable.setNodeRef;
+  const transform = canReorder
+    ? CSS.Transform.toString(sortable.transform)
+    : undefined;
   const firstCellIndent =
     indentDepth > 0
       ? `calc(0.5rem + ${(indentDepth - 1) * GROUP_INDENT_PX + GROUP_ROW_INDENT_OFFSET_PX}px)`
       : undefined;
-  const rowAttributes = onRowClick
-    ? { ...attributes, role: "button", tabIndex: 0 }
-    : attributes;
+  const rowAttributes = canReorder
+    ? onRowClick
+      ? { role: "button", tabIndex: 0 }
+      : {}
+    : onRowClick
+      ? { ...attributes, role: "button", tabIndex: 0 }
+      : attributes;
   const visibleCells = row.getVisibleCells();
 
   return (
@@ -627,10 +671,30 @@ const DataTableRow = <TData,>({
         event.preventDefault();
         onRowClick(row.original);
       }}
-      ref={setNodeRef}
+      ref={setRowNodeRef}
+      style={{
+        transform,
+        transition: sortable.transition,
+      }}
       {...rowAttributes}
-      {...listeners}
+      {...(!canReorder ? listeners : {})}
     >
+      {canReorder ? (
+        <TableCell className="w-10 min-w-10 pr-0">
+          <Button
+            aria-label={reorderHandleLabel}
+            className="size-8 cursor-grab active:cursor-grabbing"
+            onClick={(event) => event.stopPropagation()}
+            size="icon"
+            type="button"
+            variant="ghost"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical />
+          </Button>
+        </TableCell>
+      ) : null}
       {visibleCells.map((cell, index) => {
         const isLastCell = index === visibleCells.length - 1;
         return (
@@ -977,6 +1041,7 @@ export function DataTable<TData, TValue>({
   grouping,
   gallery,
   rowActions,
+  reordering,
   serverPagination,
   features = DEFAULT_TABLE_FEATURES,
 }: DataTableProps<TData, TValue>) {
@@ -1104,6 +1169,7 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    ...(reordering ? { getRowId: reordering.getRowId } : {}),
     onPaginationChange: (updater) => {
       const newPagination =
         typeof updater === "function" ? updater(pagination) : updater;
@@ -1202,12 +1268,16 @@ export function DataTable<TData, TValue>({
   const hasActiveGrouping = activeGroupingFields.length > 0;
   const exportRows = table.getPrePaginationRowModel().rows;
   const bodyRows = hasActiveGrouping ? exportRows : table.getRowModel().rows;
+  const sortableRowIds = bodyRows.map((row) => getSortableRowId(row.id));
   const groupedSections = useMemo(
     () => buildGroupedSections(bodyRows, activeGroupingFields),
     [activeGroupingFields, bodyRows],
   );
+  const canReorderRows = Boolean(reordering) && !hasActiveGrouping;
   const colSpan =
-    Math.max(table.getVisibleLeafColumns().length, 1) + (rowActions ? 1 : 0);
+    Math.max(table.getVisibleLeafColumns().length, 1) +
+    (rowActions ? 1 : 0) +
+    (canReorderRows ? 1 : 0);
   const canDragRows = activeGroupingFields.some(
     (field) => !!field.onMoveToGroup,
   );
@@ -1303,6 +1373,7 @@ export function DataTable<TData, TValue>({
               section.rows.map((row) => (
                 <DataTableRow
                   canDrag={canDragRows}
+                  canReorder={false}
                   dragLabel={grouping?.getRowLabel?.(row.original)}
                   indentDepth={section.depth + 1}
                   key={row.id}
@@ -1525,6 +1596,34 @@ export function DataTable<TData, TValue>({
 
           const dragType = active.data.current?.type;
 
+          if (dragType === "row-reorder" && reordering && canReorderRows) {
+            const sourceRowId = String(active.id).replace(/^sortable-row:/, "");
+            const targetRowId = String(over.id).replace(/^sortable-row:/, "");
+
+            if (sourceRowId === targetRowId) {
+              return;
+            }
+
+            const currentIndex = bodyRows.findIndex(
+              (row) => row.id === sourceRowId,
+            );
+            const nextIndex = bodyRows.findIndex(
+              (row) => row.id === targetRowId,
+            );
+
+            if (currentIndex === -1 || nextIndex === -1) {
+              return;
+            }
+
+            const rows = bodyRows.map((row) => row.original);
+            const [rowToMove] = rows.splice(currentIndex, 1);
+            if (!rowToMove) return;
+
+            rows.splice(nextIndex, 0, rowToMove);
+            reordering.onReorder(rows);
+            return;
+          }
+
           if (
             dragType !== "row" ||
             over.data.current?.type !== "group-target"
@@ -1551,7 +1650,10 @@ export function DataTable<TData, TValue>({
         }}
         onDragStart={({ active }) => {
           const label = active.data.current?.label;
-          setActiveDragLabel(typeof label === "string" ? label : null);
+          const dragType = active.data.current?.type;
+          setActiveDragLabel(
+            dragType === "row" && typeof label === "string" ? label : null,
+          );
         }}
         sensors={sensors}
       >
@@ -1577,6 +1679,9 @@ export function DataTable<TData, TValue>({
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id} className="p-4">
+                        {canReorderRows ? (
+                          <TableHead className="w-10 min-w-10 p-0" />
+                        ) : null}
                         {headerGroup.headers.map((header) => {
                           return (
                             <TableHead
@@ -1603,17 +1708,44 @@ export function DataTable<TData, TValue>({
                     )
                   ) : (
                     <TableBody className="px-2">
-                      {bodyRows.length > 0
-                        ? bodyRows.map((row) => (
+                      {bodyRows.length > 0 ? (
+                        canReorderRows ? (
+                          <SortableContext
+                            items={sortableRowIds}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {bodyRows.map((row) => (
+                              <DataTableRow
+                                canDrag={false}
+                                canReorder
+                                dragLabel={reordering?.getRowLabel?.(
+                                  row.original,
+                                )}
+                                key={row.id}
+                                onRowClick={onRowClick}
+                                reorderHandleLabel={
+                                  reordering?.handleLabel ?? labels.reorder
+                                }
+                                row={row}
+                                rowActions={rowActions}
+                              />
+                            ))}
+                          </SortableContext>
+                        ) : (
+                          bodyRows.map((row) => (
                             <DataTableRow
                               canDrag={false}
+                              canReorder={false}
                               key={row.id}
                               onRowClick={onRowClick}
                               row={row}
                               rowActions={rowActions}
                             />
                           ))
-                        : renderTableEmptyState()}
+                        )
+                      ) : (
+                        renderTableEmptyState()
+                      )}
                     </TableBody>
                   )}
                 </Table>
@@ -2051,6 +2183,8 @@ export function DataTableColumnHeader<TData, TValue>({
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const labels = dataTableMessages(messages);
+  const sortDirection = column.getIsSorted();
+
   if (!column.getCanSort()) {
     return (
       <div className={cn("flex h-12 items-center px-2 text-sm", className)}>
@@ -2070,9 +2204,9 @@ export function DataTableColumnHeader<TData, TValue>({
               className="data-[state=open]:bg-accent h-12 w-full justify-start rounded-none px-2"
             >
               <span className="min-w-0 truncate text-sm">{title}</span>
-              {column.getIsSorted() === "desc" ? (
+              {sortDirection === "desc" ? (
                 <ArrowDown />
-              ) : column.getIsSorted() === "asc" ? (
+              ) : sortDirection === "asc" ? (
                 <ArrowUp />
               ) : (
                 <ChevronsUpDown />
@@ -2090,6 +2224,12 @@ export function DataTableColumnHeader<TData, TValue>({
               <ArrowDown className="text-muted-foreground/70 h-3.5 w-3.5" />
               {labels.sortDesc}
             </DropdownMenuItem>
+            {sortDirection ? (
+              <DropdownMenuItem onClick={() => column.clearSorting()}>
+                <X className="text-muted-foreground/70 h-3.5 w-3.5" />
+                {labels.sortClear}
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
               <EyeOff className="text-muted-foreground/70 h-3.5 w-3.5" />

@@ -55,7 +55,7 @@
       "type": "registry:block",
       "title": "Data Table",
       "description": "A URL-state-driven data table with filtering, sorting, client or server pagination, column visibility, CSV export, gallery view, grouping, and drag-and-drop row moves.",
-      "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, client or server pagination, and column visibility\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/ui/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```\n\n## Server Pagination\n\nPass the current page of rows and `serverPagination.rowCount` when data is already paginated by an API. The table keeps TanStack pagination state in the URL and uses `rowCount` to calculate page controls without slicing the current page again.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={page.data}\n  from=\"/your-route\"\n  serverPagination={{ rowCount: page.meta.total }}\n/>\n```",
+      "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, client or server pagination, and column visibility\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Optional sortable row reordering callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/ui/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```\n\n## Row Reordering\n\nPass `reordering` to enable drag handles and receive the newly ordered visible rows. Update your data optimistically in `onReorder` so the dropped row stays in place immediately.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={rows}\n  from=\"/your-route\"\n  reordering={{\n    getRowId: (row) => row.id,\n    getRowLabel: (row) => row.name,\n    onReorder: setRows,\n  }}\n/>\n```\n\n## Server Pagination\n\nPass the current page of rows and `serverPagination.rowCount` when data is already paginated by an API. The table keeps TanStack pagination state in the URL and uses `rowCount` to calculate page controls without slicing the current page again.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={page.data}\n  from=\"/your-route\"\n  serverPagination={{ rowCount: page.meta.total }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/data-table.tsx",
@@ -77,6 +77,8 @@
       ],
       "dependencies": [
         "@dnd-kit/core",
+        "@dnd-kit/sortable",
+        "@dnd-kit/utilities",
         "@tanstack/react-router",
         "@tanstack/react-table"
       ]
