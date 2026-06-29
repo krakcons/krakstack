@@ -406,7 +406,10 @@ export const DataTableRowActions = <TData,>({
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className={contentClassName}>
+      <DropdownMenuContent
+        align="end"
+        className={cn("w-max", contentClassName)}
+      >
         <DropdownMenuGroup>
           <DropdownMenuLabel>{title}</DropdownMenuLabel>
           <DropdownMenuSeparator />
