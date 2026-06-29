@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, type LinkProps } from "@tanstack/react-router";
 import type { ComponentProps } from "react";
 import type { LucideIcon } from "lucide-react";
 
@@ -7,12 +7,10 @@ type AppBrandBaseProps = {
   subtitle: string;
   className?: string;
   variant?: "default" | "sidebar";
-  to?: string | null;
-  href?: string;
 } & (
-  | Omit<ComponentProps<typeof Link>, "to">
-  | ComponentProps<"a">
-  | ComponentProps<"div">
+  | (Omit<LinkProps, "className" | "children"> & { to?: LinkProps["to"] })
+  | (ComponentProps<"a"> & { href: string; to?: never })
+  | (ComponentProps<"div"> & { to: null; href?: never })
 );
 
 type AppBrandProps = AppBrandBaseProps &
@@ -103,7 +101,7 @@ export function AppBrand({
     <Link
       to={to ?? "/"}
       className={brandClassName}
-      {...(props as Omit<ComponentProps<typeof Link>, "to">)}
+      {...(props as Omit<LinkProps, "className" | "children" | "to">)}
     >
       {content}
     </Link>

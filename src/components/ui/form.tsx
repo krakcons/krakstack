@@ -404,10 +404,12 @@ const FileField = ({
   label,
   accept,
   messages,
+  onFileChange,
   required = false,
 }: Omit<DefaultOptions, "description"> & {
   accept: InputHTMLAttributes<HTMLInputElement>["accept"];
   messages?: FormMessageOverrides;
+  onFileChange?: (file: File | "") => void;
   required?: boolean;
 }) => {
   const labels = formMessages(messages);
@@ -423,7 +425,9 @@ const FileField = ({
         type="file"
         accept={accept}
         onChange={(event) => {
-          field.handleChange(event.target.files ? event.target.files[0] : "");
+          const file = event.target.files?.[0] ?? "";
+          field.handleChange(file);
+          onFileChange?.(file);
         }}
         required={required}
         aria-invalid={invalid}
