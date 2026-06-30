@@ -2118,6 +2118,12 @@ export function DataTableRelationshipCell({
                       event.stopPropagation();
                       navigate({ to: option.href });
                     }}
+                    onPointerDown={(event) => {
+                      if (!option.href) return;
+
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
                     className="max-w-48 cursor-pointer"
                   >
                     {option.href && <LinkIcon className="size-3.5 min-w-3.5" />}
@@ -2144,26 +2150,30 @@ export function DataTableRelationshipCell({
         <DropdownMenuGroup>
           <DropdownMenuLabel>{manageLabel}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {options.map((option) => {
-            const checked = selectedValues.has(option.value);
+          {options.length > 0 ? (
+            options.map((option) => {
+              const checked = selectedValues.has(option.value);
 
-            return (
-              <DropdownMenuCheckboxItem
-                checked={checked}
-                key={option.value}
-                onCheckedChange={(nextChecked) => {
-                  if (nextChecked) {
-                    onAdd?.(option.value);
-                    return;
-                  }
+              return (
+                <DropdownMenuCheckboxItem
+                  checked={checked}
+                  key={option.value}
+                  onCheckedChange={(nextChecked) => {
+                    if (nextChecked) {
+                      onAdd?.(option.value);
+                      return;
+                    }
 
-                  onRemove?.(option.value);
-                }}
-              >
-                {option.label}
-              </DropdownMenuCheckboxItem>
-            );
-          })}
+                    onRemove?.(option.value);
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              );
+            })
+          ) : (
+            <DropdownMenuItem disabled>{emptyLabel}</DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
