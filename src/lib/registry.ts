@@ -15,6 +15,7 @@ import {
   KeyRound,
   Layers,
   ListFilter,
+  LoaderCircle,
   Mail,
   MonitorCog,
   PanelLeft,
@@ -38,7 +39,7 @@ export function getRegistryItem(slug: string) {
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "embedding-layer") return "Layers";
   if (item.name === "query-helpers") return "Libraries";
-  if (item.name === "copy-button") return "Components";
+  if (["copy-button", "loading"].includes(item.name)) return "Components";
   if (
     ["service-notification", "notification-channel-email-ses"].includes(
       item.name,
@@ -74,6 +75,7 @@ const iconByName = {
   "search-menu": Search,
   "code-block": CodeXml,
   "copy-button": Copy,
+  loading: LoaderCircle,
   "stats-card": Activity,
   agents: Bot,
   "lint-format": Wrench,

@@ -7,11 +7,11 @@
   "files": [
     {
       "path": "src/components/ui/loading.tsx",
-      "content": "import { Loader2 } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\n\nexport function Loading({\n  className,\n  label,\n}: {\n  className?: string | undefined;\n  label: string;\n}) {\n  return (\n    <div\n      className={cn(\n        \"text-muted-foreground flex items-center justify-center gap-2 text-sm\",\n        className,\n      )}\n    >\n      <Loader2 className=\"size-4 animate-spin\" />\n      {label}\n    </div>\n  );\n}\n",
+      "content": "import { Loader2 } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\nimport { getLocale } from \"@/paraglide/runtime\";\n\ntype LoadingVariant = \"centered\" | \"inline\";\n\nconst labels = {\n  en: {\n    loading: \"Loading...\",\n  },\n  fr: {\n    loading: \"Chargement...\",\n  },\n} as const;\n\nconst loadingLabel = () =>\n  getLocale().startsWith(\"fr\") ? labels.fr.loading : labels.en.loading;\n\nexport function Loading({\n  className,\n  label,\n  variant = \"inline\",\n}: {\n  className?: string | undefined;\n  label?: string | undefined;\n  variant?: LoadingVariant | undefined;\n}) {\n  return (\n    <div\n      className={cn(\n        \"text-muted-foreground flex items-center justify-center gap-2 text-sm\",\n        variant === \"centered\" && \"min-h-[50svh] w-full\",\n        className,\n      )}\n    >\n      <Loader2 className=\"size-4 animate-spin\" />\n      {label ?? loadingLabel()}\n    </div>\n  );\n}\n",
       "type": "registry:component",
       "target": "components/ui/loading.tsx"
     }
   ],
-  "docs": "## Overview\n\n`Loading` renders a small spinner next to loading text. Use it inside pending pages, empty table states, cards, and inline loading regions.\n\n## Usage\n\n```tsx\nimport { Loading } from \"@/components/ui/loading\";\n\n<Loading label=\"Loading...\" />\n```",
+  "docs": "## Overview\n\n`Loading` renders a small spinner next to localized loading text. Use it inside pending pages, empty table states, cards, and inline loading regions. It defaults to the inline variant. Pass `variant=\"centered\"` for route-level pending states and `label` to override the built-in English and French default.\n\n## Usage\n\n```tsx\nimport { Loading } from \"@/components/ui/loading\";\n\n<Loading />\n<Loading variant=\"centered\" />\n<Loading label=\"Refreshing records...\" />\n```",
   "type": "registry:component"
 }
