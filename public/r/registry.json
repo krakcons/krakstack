@@ -51,6 +51,21 @@
       "dependencies": ["lucide-react", "react"]
     },
     {
+      "name": "loading",
+      "type": "registry:component",
+      "title": "Loading",
+      "description": "A compact loading indicator with a spinner and accessible label text.",
+      "docs": "## Overview\n\n`Loading` renders a small spinner next to loading text. Use it inside pending pages, empty table states, cards, and inline loading regions.\n\n## Usage\n\n```tsx\nimport { Loading } from \"@/components/ui/loading\";\n\n<Loading label=\"Loading...\" />\n```",
+      "files": [
+        {
+          "path": "src/components/ui/loading.tsx",
+          "type": "registry:component",
+          "target": "components/ui/loading.tsx"
+        }
+      ],
+      "dependencies": ["lucide-react"]
+    },
+    {
       "name": "data-table",
       "type": "registry:block",
       "title": "Data Table",
@@ -71,6 +86,7 @@
         "button",
         "input",
         "label",
+        "loading",
         "scroll-area",
         "select",
         "table"

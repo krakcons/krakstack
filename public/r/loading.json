@@ -1,0 +1,17 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "loading",
+  "title": "Loading",
+  "description": "A compact loading indicator with a spinner and accessible label text.",
+  "dependencies": ["lucide-react"],
+  "files": [
+    {
+      "path": "src/components/ui/loading.tsx",
+      "content": "import { Loader2 } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\n\nexport function Loading({\n  className,\n  label,\n}: {\n  className?: string | undefined;\n  label: string;\n}) {\n  return (\n    <div\n      className={cn(\n        \"text-muted-foreground flex items-center justify-center gap-2 text-sm\",\n        className,\n      )}\n    >\n      <Loader2 className=\"size-4 animate-spin\" />\n      {label}\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "components/ui/loading.tsx"
+    }
+  ],
+  "docs": "## Overview\n\n`Loading` renders a small spinner next to loading text. Use it inside pending pages, empty table states, cards, and inline loading regions.\n\n## Usage\n\n```tsx\nimport { Loading } from \"@/components/ui/loading\";\n\n<Loading label=\"Loading...\" />\n```",
+  "type": "registry:component"
+}

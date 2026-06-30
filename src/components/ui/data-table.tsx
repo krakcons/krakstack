@@ -114,6 +114,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getLocale } from "@/paraglide/runtime";
+import { Loading } from "@/components/ui/loading";
 
 const DataTableViewContext = createContext<DataTableView>("table");
 
@@ -1325,17 +1326,19 @@ export function DataTable<TData, TValue>({
     setStoredView(nextView);
   };
 
+  const renderLoadingState = () => <Loading label={labels.loading} />;
+
   const renderTableEmptyState = () => (
     <TableRow>
       <TableCell className="h-24 text-center" colSpan={colSpan}>
-        {emptyStateLabel}
+        {isLoading ? renderLoadingState() : emptyStateLabel}
       </TableCell>
     </TableRow>
   );
 
   const renderGalleryEmptyState = (message: ReactNode = emptyStateLabel) => (
     <div className="text-muted-foreground rounded-xl border border-dashed px-4 py-10 text-center text-sm">
-      {message}
+      {isLoading ? renderLoadingState() : message}
     </div>
   );
 
@@ -1394,8 +1397,10 @@ export function DataTable<TData, TValue>({
                     paddingLeft: `calc(0.5rem + ${section.depth * GROUP_INDENT_PX + GROUP_ROW_INDENT_OFFSET_PX}px)`,
                   }}
                 >
-                  {section.field.renderEmptyGroup?.(section.groupId) ??
-                    labels.empty}
+                  {isLoading
+                    ? renderLoadingState()
+                    : (section.field.renderEmptyGroup?.(section.groupId) ??
+                      labels.empty)}
                 </TableCell>
               </TableRow>
             ))}
@@ -1427,8 +1432,10 @@ export function DataTable<TData, TValue>({
               : section.rows.length > 0
                 ? renderGalleryRows(section.rows, canDragRows)
                 : renderGalleryEmptyState(
-                    section.field.renderEmptyGroup?.(section.groupId) ??
-                      labels.empty,
+                    isLoading
+                      ? renderLoadingState()
+                      : (section.field.renderEmptyGroup?.(section.groupId) ??
+                          labels.empty),
                   ))}
         </div>
       );

@@ -3,14 +3,8 @@
   "name": "theme-switcher",
   "title": "Theme Switcher",
   "description": "A localStorage-persisted light, dark, and system theme switcher with a ScriptOnce startup script to avoid theme flash.",
-  "dependencies": [
-    "lucide-react",
-    "react"
-  ],
-  "registryDependencies": [
-    "button",
-    "dropdown-menu"
-  ],
+  "dependencies": ["lucide-react", "react"],
+  "registryDependencies": ["button", "dropdown-menu"],
   "files": [
     {
       "path": "src/components/ui/theme-switcher.tsx",
