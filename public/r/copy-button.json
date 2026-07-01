@@ -3,8 +3,13 @@
   "name": "copy-button",
   "title": "Copy Button",
   "description": "An accessible clipboard copy button with success and failure announcements for screen readers.",
-  "dependencies": ["lucide-react", "react"],
-  "registryDependencies": ["button"],
+  "dependencies": [
+    "lucide-react",
+    "react"
+  ],
+  "registryDependencies": [
+    "button"
+  ],
   "files": [
     {
       "path": "src/components/ui/copy-button.tsx",

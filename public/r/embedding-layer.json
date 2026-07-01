@@ -3,7 +3,10 @@
   "name": "embedding-layer",
   "title": "Embedding Layer",
   "description": "An Effect layer that configures an OpenAI-compatible embeddings model from EMBEDDINGS_URL, EMBEDDINGS_MODEL, and EMBEDDINGS_DIMENSIONS.",
-  "dependencies": ["@effect/ai-openai-compat@beta", "effect@beta"],
+  "dependencies": [
+    "@effect/ai-openai-compat@beta",
+    "effect@beta"
+  ],
   "files": [
     {
       "path": "src/services/embedding.ts",

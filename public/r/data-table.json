@@ -18,7 +18,7 @@
     "button",
     "input",
     "label",
-    "loading",
+    "@krak/loading",
     "scroll-area",
     "select",
     "table"
