@@ -1,10 +1,12 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Effect-TS/language-service/refs/heads/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json",
   "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
+    "incremental": true,
     "target": "ES2022",
     "jsx": "react-jsx",
-    "module": "ESNext",
+    "module": "preserve",
+    "moduleDetection": "force",
     "paths": {
       "@/*": ["./src/*"]
     },
@@ -16,12 +18,13 @@
     "noEmit": true,
     "skipLibCheck": true,
     "strict": true,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noUncheckedSideEffectImports": true,
+    "ignoreDeprecations": "6.0",
     "sourceMap": true,
     "allowJs": true,
     "plugins": [
