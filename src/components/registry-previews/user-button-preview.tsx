@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/services/auth/client";
+import { authClient, centralAuthBaseUrl } from "@/services/auth/client";
 
 const authUiClient = authClient as unknown as AuthUiClient;
 
@@ -27,6 +27,7 @@ export function UserButtonPreview() {
       <CardContent className="flex items-center justify-center py-12">
         <UserButton
           authClient={authUiClient}
+          baseUrl={centralAuthBaseUrl}
           apiKeyPermissions={{ projects: ["read"] }}
           signOutRedirect="/docs/registry/user-button"
           renderUnauthenticated={() => (

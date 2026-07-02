@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { m } from "@/paraglide/messages";
-import { authClient } from "@/services/auth/client";
+import { authClient, centralAuthBaseUrl } from "@/services/auth/client";
 
 const authUiClient = authClient as unknown as AuthUiClient;
 
@@ -33,6 +33,7 @@ export function OrganizationSwitcherPreview() {
           </p>
           <OrganizationSwitcher
             authClient={authUiClient}
+            baseUrl={centralAuthBaseUrl}
             className="max-w-xs"
             renderUnauthenticated={() => (
               <Button
@@ -58,6 +59,7 @@ export function OrganizationSwitcherPreview() {
           <div className="group w-8" data-collapsible="icon">
             <OrganizationSwitcher
               authClient={authUiClient}
+              baseUrl={centralAuthBaseUrl}
               className="w-8"
               renderUnauthenticated={() => (
                 <Button

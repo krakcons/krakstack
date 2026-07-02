@@ -6,30 +6,29 @@ import {
   twoFactorClient,
 } from "better-auth/client/plugins";
 
+export const centralAuthBaseUrl = import.meta.env.VITE_KRAKSTACK_AUTH_URL;
+
 export const centralAuthUrl = (path: string) =>
-  new URL(path, import.meta.env.VITE_KRAKSTACK_AUTH_URL).toString();
+  new URL(path, centralAuthBaseUrl).toString();
 
 export const centralLoginUrl = (
   callbackURL: string,
   locale: "en" | "fr" = "en",
 ) => {
-  const url = new URL(
-    `/${locale}/sign-in`,
-    import.meta.env.VITE_KRAKSTACK_AUTH_URL,
-  );
+  const url = new URL(`/${locale}/sign-in`, centralAuthBaseUrl);
   url.searchParams.set("redirect", callbackURL);
   return url.toString();
 };
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_KRAKSTACK_AUTH_URL,
+  baseURL: centralAuthBaseUrl,
   fetchOptions: {
     credentials: "include",
   },
   plugins: [
     genericOAuthClient(),
     twoFactorClient({
-      twoFactorPage: `${import.meta.env.VITE_KRAKSTACK_AUTH_URL}/2fa`,
+      twoFactorPage: centralAuthUrl("/2fa"),
     }),
     organizationClient(),
     apiKeyClient(),
