@@ -21,7 +21,7 @@ import { OpenApi } from "effect/unstable/httpapi";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 
 const JsonObjectSchema = Schema.Record(Schema.String, Schema.Unknown).annotate({
-  identifier: "OpenApiCliJsonObject",
+  identifier: "HttpApiCliJsonObject",
   title: "CLI JSON Object",
   description: "A JSON object passed to the CLI.",
   examples: [{ id: "example-id" }],
@@ -30,18 +30,18 @@ const JsonObjectFromString = Schema.fromJsonString(JsonObjectSchema);
 const JsonResponseFromString = Schema.fromJsonString(Schema.Unknown);
 
 type JsonObject = typeof JsonObjectSchema.Type;
-type OpenApiSpec = ReturnType<typeof OpenApi.fromApi>;
-type OpenApiMethod = "get" | "post" | "put" | "patch" | "delete";
-type OpenApiParameter = {
+type HttpApiSpec = ReturnType<typeof OpenApi.fromApi>;
+type HttpApiMethod = "get" | "post" | "put" | "patch" | "delete";
+type HttpApiParameter = {
   name: string;
   in: "path" | "query" | "header" | "cookie";
   required?: boolean;
 };
-type OpenApiOperation = {
+type HttpApiOperation = {
   operationId?: string;
   summary?: string;
   description?: string;
-  parameters?: ReadonlyArray<OpenApiParameter>;
+  parameters?: ReadonlyArray<HttpApiParameter>;
   tags?: ReadonlyArray<string>;
 };
 type CliOperation = {
@@ -51,7 +51,7 @@ type CliOperation = {
   method: string;
   path: string;
   summary: string;
-  operation: OpenApiOperation;
+  operation: HttpApiOperation;
 };
 type CliOperationGroup = {
   name: string;
@@ -64,7 +64,7 @@ type CallOperationConfig = {
   readonly apiKey: string;
   readonly baseUrl: string;
 };
-export type OpenApiCliConfig = {
+export type HttpApiCliConfig = {
   readonly api: Parameters<typeof OpenApi.fromApi>[0];
   readonly name: string;
   readonly version: string;
@@ -73,25 +73,25 @@ export type OpenApiCliConfig = {
   readonly serviceName?: string;
   readonly apiKeyEnv?: string;
   readonly apiKeyHeader?: string;
-  readonly methods?: ReadonlyArray<OpenApiMethod>;
+  readonly methods?: ReadonlyArray<HttpApiMethod>;
 };
 
-export class OpenApiCli extends Context.Service<OpenApiCli>()("OpenApiCli", {
-  make: (config: OpenApiCliConfig) =>
+export class HttpApiCli extends Context.Service<HttpApiCli>()("HttpApiCli", {
+  make: (config: HttpApiCliConfig) =>
     Effect.sync(() => {
-      const command = makeOpenApiCliCommand(config);
+      const command = makeHttpApiCliCommand(config);
 
       return {
         command,
         run: (args: ReadonlyArray<string>) =>
-          Command.runWith(command, { version: config.version })(args),
+          Command.runWith(command, { version: config.version })(args).pipe(
+            Effect.provide(FetchHttpClient.layer),
+          ),
       };
     }),
 }) {
-  static readonly layer = (config: OpenApiCliConfig) =>
-    Layer.effect(this, this.make(config)).pipe(
-      Layer.provide(FetchHttpClient.layer),
-    );
+  static readonly layer = (config: HttpApiCliConfig) =>
+    Layer.effect(this, this.make(config));
 }
 
 const toError = (message: string, error: unknown) =>
@@ -106,22 +106,22 @@ const sanitizeName = (name: string) =>
 const fallbackName = (value: string, fallback: string) =>
   sanitizeName(value) || fallback;
 
-const operationIdParts = (operation: OpenApiOperation) =>
+const operationIdParts = (operation: HttpApiOperation) =>
   operation.operationId?.split(".").filter(Boolean) ?? [];
 
-const operationGroupName = (operation: OpenApiOperation) =>
+const operationGroupName = (operation: HttpApiOperation) =>
   fallbackName(
     operationIdParts(operation)[0] ?? operation.tags?.[0] ?? "default",
     "default",
   );
 
-const operationGroupTitle = (operation: OpenApiOperation) =>
+const operationGroupTitle = (operation: HttpApiOperation) =>
   operation.tags?.[0] ?? operationGroupName(operation);
 
 const operationName = (
   method: string,
   path: string,
-  operation: OpenApiOperation,
+  operation: HttpApiOperation,
 ) =>
   fallbackName(
     operationIdParts(operation).at(-1) ??
@@ -129,18 +129,18 @@ const operationName = (
     `${method}_operation`,
   );
 
-export const openApiCliOperations = ({
+export const httpApiCliOperations = ({
   spec,
   methods = ["get"],
 }: {
-  readonly spec: OpenApiSpec;
-  readonly methods?: ReadonlyArray<OpenApiMethod>;
+  readonly spec: HttpApiSpec;
+  readonly methods?: ReadonlyArray<HttpApiMethod>;
 }): ReadonlyArray<CliOperation> => {
   const operations: Array<CliOperation> = [];
 
   for (const [path, pathItem] of Object.entries(spec.paths)) {
     for (const method of methods) {
-      const operation = pathItem[method] as OpenApiOperation | undefined;
+      const operation = pathItem[method] as HttpApiOperation | undefined;
       if (!operation) continue;
 
       operations.push({
@@ -158,7 +158,7 @@ export const openApiCliOperations = ({
   return operations;
 };
 
-export const openApiCliOperationGroups = (
+export const httpApiCliOperationGroups = (
   operations: ReadonlyArray<CliOperation>,
 ): ReadonlyArray<CliOperationGroup> => {
   const groups = new Map<
@@ -190,7 +190,7 @@ export const openApiCliOperationGroups = (
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
-const parseJsonObject = Effect.fn("OpenApiCli.parseJsonObject")(function* (
+const parseJsonObject = Effect.fn("HttpApiCli.parseJsonObject")(function* (
   value: string | undefined,
   label: string,
 ) {
@@ -201,7 +201,7 @@ const parseJsonObject = Effect.fn("OpenApiCli.parseJsonObject")(function* (
   );
 });
 
-const renderPath = Effect.fn("OpenApiCli.renderPath")(function* (
+const renderPath = Effect.fn("HttpApiCli.renderPath")(function* (
   path: string,
   params: JsonObject,
 ) {
@@ -232,7 +232,7 @@ const appendQuery = (url: URL, query: JsonObject) => {
   }
 };
 
-const buildUrl = Effect.fn("OpenApiCli.buildUrl")(function* (
+const buildUrl = Effect.fn("HttpApiCli.buildUrl")(function* (
   operation: CliOperation,
   params: JsonObject,
   query: JsonObject,
@@ -264,11 +264,11 @@ const requestForOperation = (operation: CliOperation, url: URL) => {
   }
 };
 
-const fetchOperation = Effect.fn("OpenApiCli.fetchOperation")(function* (
+const fetchOperation = Effect.fn("HttpApiCli.fetchOperation")(function* (
   operation: CliOperation,
   url: URL,
   apiKey: string | undefined,
-  config: Pick<OpenApiCliConfig, "apiKeyHeader" | "serviceName">,
+  config: Pick<HttpApiCliConfig, "apiKeyHeader" | "serviceName">,
 ) {
   const http = yield* HttpClient.HttpClient;
   const apiKeyHeader = config.apiKeyHeader ?? "x-api-key";
@@ -284,7 +284,7 @@ const fetchOperation = Effect.fn("OpenApiCli.fetchOperation")(function* (
   );
 });
 
-const formatResponse = Effect.fn("OpenApiCli.formatResponse")(function* (
+const formatResponse = Effect.fn("HttpApiCli.formatResponse")(function* (
   text: string,
 ) {
   if (!text) return "null";
@@ -315,7 +315,7 @@ const callOperation = (
   operation: CliOperation,
   callConfig: CallOperationConfig,
   cliConfig: Pick<
-    OpenApiCliConfig,
+    HttpApiCliConfig,
     "apiKeyEnv" | "apiKeyHeader" | "serviceName"
   >,
 ) =>
@@ -348,7 +348,7 @@ const groupListCommand = (group: CliOperationGroup) =>
     Command.withDescription(`List ${group.title} operations`),
   );
 
-const operationCommand = (operation: CliOperation, config: OpenApiCliConfig) =>
+const operationCommand = (operation: CliOperation, config: HttpApiCliConfig) =>
   Command.make(
     operation.name,
     {
@@ -378,7 +378,7 @@ const operationCommand = (operation: CliOperation, config: OpenApiCliConfig) =>
     ),
   );
 
-const groupCommand = (group: CliOperationGroup, config: OpenApiCliConfig) =>
+const groupCommand = (group: CliOperationGroup, config: HttpApiCliConfig) =>
   Command.make(group.name).pipe(
     Command.withDescription(group.title),
     Command.withSubcommands([
@@ -389,12 +389,12 @@ const groupCommand = (group: CliOperationGroup, config: OpenApiCliConfig) =>
     ]),
   );
 
-export const makeOpenApiCliCommand = (config: OpenApiCliConfig) => {
-  const operations = openApiCliOperations({
+export const makeHttpApiCliCommand = (config: HttpApiCliConfig) => {
+  const operations = httpApiCliOperations({
     spec: OpenApi.fromApi(config.api),
     methods: config.methods,
   });
-  const groups = openApiCliOperationGroups(operations);
+  const groups = httpApiCliOperationGroups(operations);
 
   return Command.make(config.name).pipe(
     Command.withDescription(config.description ?? `${config.name} CLI`),
@@ -433,23 +433,23 @@ const cliEnvironmentLayer = (args: ReadonlyArray<string>) =>
     ),
   );
 
-export const openApiCliEnvironmentLayer = (args: ReadonlyArray<string>) =>
+export const httpApiCliEnvironmentLayer = (args: ReadonlyArray<string>) =>
   cliEnvironmentLayer(args);
 
-export const openApiCli = (args = process.argv.slice(2)) =>
+export const httpApiCli = (args = process.argv.slice(2)) =>
   Effect.gen(function* () {
-    const cli = yield* OpenApiCli;
+    const cli = yield* HttpApiCli;
     return yield* cli.run(args);
   });
 
-export const runOpenApiCli = (
-  layer: Layer.Layer<OpenApiCli>,
+export const runHttpApiCli = (
+  layer: Layer.Layer<HttpApiCli>,
   args = process.argv.slice(2),
 ) => {
   Effect.runPromise(
-    openApiCli(args).pipe(
+    httpApiCli(args).pipe(
       Effect.provide(layer),
-      Effect.provide(openApiCliEnvironmentLayer(args)),
+      Effect.provide(httpApiCliEnvironmentLayer(args)),
     ),
   ).catch((error) => {
     console.error(error instanceof Error ? error.message : error);

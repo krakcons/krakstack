@@ -40,7 +40,7 @@ export function getRegistryItem(slug: string) {
 
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "embedding-layer") return "Layers";
-  if (["query-helpers", "openapi-cli", "openapi-mcp"].includes(item.name)) {
+  if (["query-helpers", "httpapi-cli", "openapi-mcp"].includes(item.name)) {
     return "Libraries";
   }
   if (["copy-button", "loading"].includes(item.name)) return "Components";
@@ -75,7 +75,7 @@ const iconByName = {
   "service-s3": Cloud,
   "embedding-layer": Layers,
   "query-helpers": ListFilter,
-  "openapi-cli": SquareTerminal,
+  "httpapi-cli": SquareTerminal,
   "openapi-mcp": Workflow,
   "sidebar-layout": PanelLeft,
   "search-menu": Search,
