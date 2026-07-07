@@ -11,14 +11,14 @@
     "@tanstack/react-table"
   ],
   "registryDependencies": [
-    "@krak/query-helpers",
+    "@krak-stack/query-helpers",
     "badge",
     "card",
     "dropdown-menu",
     "button",
     "input",
     "label",
-    "@krak/loading",
+    "@krak-stack/loading",
     "scroll-area",
     "select",
     "table"

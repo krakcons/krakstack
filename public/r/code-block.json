@@ -8,7 +8,7 @@
     "shiki"
   ],
   "registryDependencies": [
-    "@krak/copy-button"
+    "@krak-stack/copy-button"
   ],
   "files": [
     {

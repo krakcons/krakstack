@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry.json",
-  "name": "krak",
+  "name": "krak-stack",
   "homepage": "https://krakstack.net",
   "items": [
     {
@@ -79,14 +79,14 @@
         }
       ],
       "registryDependencies": [
-        "@krak/query-helpers",
+        "@krak-stack/query-helpers",
         "badge",
         "card",
         "dropdown-menu",
         "button",
         "input",
         "label",
-        "@krak/loading",
+        "@krak-stack/loading",
         "scroll-area",
         "select",
         "table"
@@ -193,7 +193,7 @@
       "registryDependencies": [
         "badge",
         "button",
-        "@krak/data-table",
+        "@krak-stack/data-table",
         "dialog",
         "dropdown-menu",
         "form",
@@ -226,10 +226,10 @@
       "registryDependencies": [
         "badge",
         "button",
-        "@krak/data-table",
+        "@krak-stack/data-table",
         "dialog",
         "dropdown-menu",
-        "@krak/editing-locale-switcher",
+        "@krak-stack/editing-locale-switcher",
         "form",
         "label",
         "select",
@@ -351,7 +351,7 @@
       "type": "registry:lib",
       "docs": "## Overview\n\n`notification-channel-email-ses` adds AWS SES email delivery to `service-notification`. It handles the `email` top-level key in notification messages, contributes the `email` payload type to `NotificationChannels`, and keeps the SES-specific payload schema beside the channel implementation.\n\n## Included Files\n\n- `services/notification/channels/ses/index.ts` - SES channel, config service, and channel layer\n- `services/notification/channels/ses/schema.ts` - SES email payload schema\n\n## Usage\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { NotificationService } from \"@/services/notification\";\nimport { NotificationChannelRegistry } from \"@/services/notification/channels\";\nimport { SesNotificationChannel } from \"@/services/notification/channels/ses\";\n\nconst notificationChannelsLayer = Layer.effect(\n  NotificationChannelRegistry,\n  Effect.gen(function* () {\n    const email = yield* SesNotificationChannel;\n    return NotificationChannelRegistry.make(email);\n  }),\n).pipe(Layer.provide(SesNotificationChannel.layer));\n\nconst notificationServiceLayer = NotificationService.layer.pipe(\n  Layer.provide(notificationChannelsLayer),\n);\n\nconst program = Effect.gen(function* () {\n  const notifications = yield* NotificationService;\n\n  yield* notifications.send({\n    email: {\n      to: \"alice@example.com\",\n      subject: \"Deploy succeeded\",\n      html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n    },\n  });\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(notificationServiceLayer)),\n);\n```\n\nThe payload can include `from`, or the channel can read `NOTIFICATION_EMAIL_FROM` from the environment.\n\n## Merging With Other Channels\n\nUse `SesNotificationChannel.layer` when building a multi-channel registry. Pull `SesNotificationChannel` and any other channel services into one `NotificationChannelRegistry.make(...)`, then provide that registry to `NotificationService.layer`. See the `service-notification` docs for a complete merge example.\n\n## Environment Variables\n\n- `SES_REGION` - AWS SES region\n- `SES_ACCESS_KEY_ID` - AWS access key ID\n- `SES_SECRET_ACCESS_KEY` - AWS secret access key\n- `NOTIFICATION_EMAIL_FROM` - Optional default sender address when the payload omits `from`",
       "dependencies": ["@aws-sdk/client-sesv2", "effect@beta"],
-      "registryDependencies": ["@krak/service-notification"],
+      "registryDependencies": ["@krak-stack/service-notification"],
       "files": [
         {
           "path": "src/services/notification/channels/ses/index.ts",
@@ -517,7 +517,7 @@
           "target": "components/ui/code-block.tsx"
         }
       ],
-      "registryDependencies": ["@krak/copy-button"],
+      "registryDependencies": ["@krak-stack/copy-button"],
       "dependencies": ["react", "shiki"]
     },
     {

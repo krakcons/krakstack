@@ -15,10 +15,10 @@
   "registryDependencies": [
     "badge",
     "button",
-    "@krak/data-table",
+    "@krak-stack/data-table",
     "dialog",
     "dropdown-menu",
-    "@krak/editing-locale-switcher",
+    "@krak-stack/editing-locale-switcher",
     "form",
     "label",
     "select",
@@ -27,7 +27,7 @@
   "files": [
     {
       "path": "src/services/auth/client/index.ts",
-      "content": "import { apiKeyClient } from \"@better-auth/api-key/client\";\nimport { createAuthClient } from \"better-auth/react\";\nimport {\n  genericOAuthClient,\n  organizationClient,\n  twoFactorClient,\n} from \"better-auth/client/plugins\";\n\nexport const centralAuthBaseUrl = import.meta.env.VITE_KRAKSTACK_AUTH_URL;\n\nexport const centralAuthUrl = (path: string) =>\n  new URL(path, centralAuthBaseUrl).toString();\n\nexport const centralLoginUrl = (\n  callbackURL: string,\n  locale: \"en\" | \"fr\" = \"en\",\n) => {\n  const url = new URL(\n    `/${locale}/sign-in`,\n    centralAuthBaseUrl,\n  );\n  url.searchParams.set(\"redirect\", callbackURL);\n  return url.toString();\n};\n\nexport const authClient = createAuthClient({\n  baseURL: centralAuthBaseUrl,\n  fetchOptions: {\n    credentials: \"include\",\n  },\n  plugins: [\n    genericOAuthClient(),\n    twoFactorClient({\n      twoFactorPage: centralAuthUrl(\"/2fa\"),\n    }),\n    organizationClient(),\n    apiKeyClient(),\n  ],\n});\n",
+      "content": "import { apiKeyClient } from \"@better-auth/api-key/client\";\nimport { createAuthClient } from \"better-auth/react\";\nimport {\n  genericOAuthClient,\n  organizationClient,\n  twoFactorClient,\n} from \"better-auth/client/plugins\";\n\nexport const centralAuthBaseUrl = import.meta.env.VITE_KRAKSTACK_AUTH_URL;\n\nexport const centralAuthUrl = (path: string) =>\n  new URL(path, centralAuthBaseUrl).toString();\n\nexport const centralLoginUrl = (\n  callbackURL: string,\n  locale: \"en\" | \"fr\" = \"en\",\n) => {\n  const url = new URL(`/${locale}/sign-in`, centralAuthBaseUrl);\n  url.searchParams.set(\"redirect\", callbackURL);\n  return url.toString();\n};\n\nexport const authClient = createAuthClient({\n  baseURL: centralAuthBaseUrl,\n  fetchOptions: {\n    credentials: \"include\",\n  },\n  plugins: [\n    genericOAuthClient(),\n    twoFactorClient({\n      twoFactorPage: centralAuthUrl(\"/2fa\"),\n    }),\n    organizationClient(),\n    apiKeyClient(),\n  ],\n});\n",
       "type": "registry:file",
       "target": "services/auth/client/index.ts"
     }

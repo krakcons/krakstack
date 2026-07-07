@@ -8,7 +8,7 @@
     "effect@beta"
   ],
   "registryDependencies": [
-    "@krak/service-notification"
+    "@krak-stack/service-notification"
   ],
   "files": [
     {
