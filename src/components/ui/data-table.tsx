@@ -1219,7 +1219,6 @@ export function DataTable<TData, TValue>({
       }));
     },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     onGlobalFilterChange: (updater) => {
       const newGlobalFilter =
         typeof updater === "function" ? updater(globalFilter) : updater;
@@ -1235,7 +1234,12 @@ export function DataTable<TData, TValue>({
         { replace: true },
       );
     },
-    getFilteredRowModel: getFilteredRowModel(),
+    ...(serverPagination
+      ? { manualFiltering: true, manualSorting: true }
+      : {
+          getFilteredRowModel: getFilteredRowModel(),
+          getSortedRowModel: getSortedRowModel(),
+        }),
     ...(serverPagination
       ? { manualPagination: true, rowCount: serverPagination.rowCount }
       : { getPaginationRowModel: getPaginationRowModel() }),
@@ -1774,7 +1778,11 @@ export function DataTable<TData, TValue>({
       </DndContext>
       {showPagination && !hasActiveGrouping && (
         <div className="p-2">
-          <DataTablePagination messages={labels} table={table} />
+          <DataTablePagination
+            messages={labels}
+            rowCount={serverPagination?.rowCount}
+            table={table}
+          />
         </div>
       )}
     </div>
@@ -1983,6 +1991,7 @@ function DataTableViewOptions<TData>({
 
 interface DataTablePaginationProps<TData> {
   messages?: DataTableMessageOverrides;
+  rowCount?: number | undefined;
   table: TanstackTable<TData>;
 }
 
@@ -1998,18 +2007,20 @@ interface DataTableRelationshipCellProps {
 
 export function DataTablePagination<TData>({
   messages,
+  rowCount,
   table,
 }: DataTablePaginationProps<TData>) {
   const labels = dataTableMessages(messages);
   const selectedRows = table.getFilteredSelectedRowModel().rows.length;
   const filteredRows = table.getFilteredRowModel().rows.length;
+  const totalRows = rowCount ?? filteredRows;
 
   return (
     <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <span>{labels.results(filteredRows)}</span>
+        <span>{labels.results(totalRows)}</span>
         {selectedRows > 0 ? (
-          <span>{labels.selectedOf(selectedRows, filteredRows)}</span>
+          <span>{labels.selectedOf(selectedRows, totalRows)}</span>
         ) : null}
       </div>
       <div className="flex items-center gap-4 sm:justify-end">
