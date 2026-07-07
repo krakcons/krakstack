@@ -83,7 +83,7 @@ Service methods should accept object inputs, scope by the current user or tenant
 - Merge service API groups into the root API with `.add(...)`.
 - Keep OpenAPI annotations on the root API.
 - OpenAPI documentation is served at `/api/docs`.
-- MCP server support is served at `/api/mcp` and should use `@krak-stack/openapi-mcp`.
+- MCP server support is served at `/api/mcp` and should use `@krak-stack/httpapi-mcp`.
 - CLI support should use `@krak-stack/httpapi-cli`.
 
 ## Tooling

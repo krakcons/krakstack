@@ -9,26 +9,26 @@ import {
 import { OpenApi } from "effect/unstable/httpapi";
 
 type JsonSchema = Record<string, unknown>;
-type OpenApiMethod = "get" | "post" | "put" | "patch" | "delete";
-type OpenApiParameter = {
+type HttpApiMethod = "get" | "post" | "put" | "patch" | "delete";
+type HttpApiParameter = {
   name: string;
   in: "path" | "query" | "header" | "cookie";
   required?: boolean;
   description?: string;
   schema?: JsonSchema;
 };
-type OpenApiOperation = {
+type HttpApiOperation = {
   operationId?: string;
   summary?: string;
   description?: string;
-  parameters?: ReadonlyArray<OpenApiParameter>;
+  parameters?: ReadonlyArray<HttpApiParameter>;
   requestBody?: {
     content?: Record<string, { schema?: JsonSchema }>;
   };
 };
 
 const JsonObjectSchema = Schema.Record(Schema.String, Schema.Unknown).annotate({
-  identifier: "OpenApiMcpJsonObject",
+  identifier: "HttpApiMcpJsonObject",
   title: "MCP JSON Object",
   description: "A JSON object passed to an MCP tool.",
   examples: [{ id: "example-id" }],
@@ -41,7 +41,7 @@ const ToolInputSchema = Schema.Struct({
   query: Schema.optional(JsonObjectSchema),
   body: Schema.optional(Schema.Unknown),
 }).annotate({
-  identifier: "OpenApiMcpToolInput",
+  identifier: "HttpApiMcpToolInput",
   title: "MCP Tool Input",
   description: "Input accepted by API-backed MCP tools.",
   examples: [{ params: { id: "example-id" }, query: { limit: 10 } }],
@@ -49,26 +49,24 @@ const ToolInputSchema = Schema.Struct({
 
 type JsonObject = typeof JsonObjectSchema.Type;
 type ToolInput = typeof ToolInputSchema.Type;
-export type OpenApiMcpConfig = {
+export type HttpApiMcpConfig = {
   readonly api: Parameters<typeof OpenApi.fromApi>[0];
   readonly baseUrl: string;
   readonly serviceName?: string;
   readonly apiKeyEnv?: string;
   readonly apiKeyHeader?: string;
-  readonly methods?: ReadonlyArray<OpenApiMethod>;
+  readonly methods?: ReadonlyArray<HttpApiMethod>;
   readonly toolMetaKey?: string;
 };
 
-export class OpenApiMcp extends Context.Service<OpenApiMcp>()("OpenApiMcp", {
-  make: (config: OpenApiMcpConfig) =>
+export class HttpApiMcp extends Context.Service<HttpApiMcp>()("HttpApiMcp", {
+  make: (config: HttpApiMcpConfig) =>
     Effect.succeed({
-      registerTools: registerOpenApiTools(config),
+      registerTools: registerHttpApiTools(config),
     }),
 }) {
-  static readonly layer = (config: OpenApiMcpConfig) =>
-    Layer.effect(this, this.make(config)).pipe(
-      Layer.provide(FetchHttpClient.layer),
-    );
+  static readonly layer = (config: HttpApiMcpConfig) =>
+    Layer.effect(this, this.make(config));
 }
 
 const toError = (message: string, error: unknown) =>
@@ -83,7 +81,7 @@ const sanitizeName = (name: string) =>
 const operationName = (
   method: string,
   path: string,
-  operation: OpenApiOperation,
+  operation: HttpApiOperation,
 ) =>
   sanitizeName(
     operation.operationId ??
@@ -91,8 +89,8 @@ const operationName = (
   );
 
 const parameterObjectSchema = (
-  parameters: ReadonlyArray<OpenApiParameter>,
-  location: OpenApiParameter["in"],
+  parameters: ReadonlyArray<HttpApiParameter>,
+  location: HttpApiParameter["in"],
 ) => {
   const scoped = parameters.filter((parameter) => parameter.in === location);
 
@@ -118,12 +116,12 @@ const parameterObjectSchema = (
   };
 };
 
-const jsonBodySchema = (operation: OpenApiOperation) =>
+const jsonBodySchema = (operation: HttpApiOperation) =>
   operation.requestBody?.content?.["application/json"]?.schema;
 
 const inputSchema = (
-  operation: OpenApiOperation,
-  config: Pick<OpenApiMcpConfig, "apiKeyEnv" | "apiKeyHeader" | "serviceName">,
+  operation: HttpApiOperation,
+  config: Pick<HttpApiMcpConfig, "apiKeyEnv" | "apiKeyHeader" | "serviceName">,
 ) => {
   const serviceName = config.serviceName ?? "API";
   const apiKeyHeader = config.apiKeyHeader ?? "x-api-key";
@@ -154,7 +152,7 @@ const inputSchema = (
   };
 };
 
-const decodeToolInput = Effect.fn("OpenApiMcp.decodeToolInput")(function* (
+const decodeToolInput = Effect.fn("HttpApiMcp.decodeToolInput")(function* (
   input: unknown,
 ) {
   return yield* Schema.decodeUnknownEffect(ToolInputSchema)(input ?? {}).pipe(
@@ -162,7 +160,7 @@ const decodeToolInput = Effect.fn("OpenApiMcp.decodeToolInput")(function* (
   );
 });
 
-const renderPath = Effect.fn("OpenApiMcp.renderPath")(function* (
+const renderPath = Effect.fn("HttpApiMcp.renderPath")(function* (
   path: string,
   params: JsonObject = {},
 ) {
@@ -182,7 +180,7 @@ const renderPath = Effect.fn("OpenApiMcp.renderPath")(function* (
   });
 });
 
-const appendQuery = Effect.fn("OpenApiMcp.appendQuery")(function* (
+const appendQuery = Effect.fn("HttpApiMcp.appendQuery")(function* (
   url: URL,
   query: JsonObject = {},
 ) {
@@ -196,7 +194,7 @@ const appendQuery = Effect.fn("OpenApiMcp.appendQuery")(function* (
   }
 });
 
-const buildUrl = Effect.fn("OpenApiMcp.buildUrl")(function* (
+const buildUrl = Effect.fn("HttpApiMcp.buildUrl")(function* (
   path: string,
   input: ToolInput,
   baseUrl: string,
@@ -252,12 +250,12 @@ const requestForMethod = (method: string, url: URL) => {
   }
 };
 
-const fetchOperation = Effect.fn("OpenApiMcp.fetchOperation")(function* (
+const fetchOperation = Effect.fn("HttpApiMcp.fetchOperation")(function* (
   method: string,
   url: URL,
   body: unknown,
   apiKey: string | undefined,
-  config: Pick<OpenApiMcpConfig, "apiKeyHeader" | "serviceName">,
+  config: Pick<HttpApiMcpConfig, "apiKeyHeader" | "serviceName">,
 ) {
   const http = yield* HttpClient.HttpClient;
   const apiKeyHeader = config.apiKeyHeader ?? "x-api-key";
@@ -280,7 +278,7 @@ const fetchOperation = Effect.fn("OpenApiMcp.fetchOperation")(function* (
   );
 });
 
-const parseResponseBody = Effect.fn("OpenApiMcp.parseResponseBody")(function* (
+const parseResponseBody = Effect.fn("HttpApiMcp.parseResponseBody")(function* (
   text: string,
 ) {
   if (!text) return null;
@@ -290,11 +288,11 @@ const parseResponseBody = Effect.fn("OpenApiMcp.parseResponseBody")(function* (
   );
 });
 
-const executeOperation = Effect.fn("OpenApiMcp.executeOperation")(function* (
+const executeOperation = Effect.fn("HttpApiMcp.executeOperation")(function* (
   method: string,
   path: string,
   input: unknown,
-  config: OpenApiMcpConfig,
+  config: HttpApiMcpConfig,
 ) {
   const payload = yield* decodeToolInput(input);
   const apiKey = payload.apiKey ?? process.env[config.apiKeyEnv ?? ""];
@@ -307,8 +305,8 @@ const executeOperation = Effect.fn("OpenApiMcp.executeOperation")(function* (
 const registerOperation = (
   method: string,
   path: string,
-  operation: OpenApiOperation,
-  config: OpenApiMcpConfig,
+  operation: HttpApiOperation,
+  config: HttpApiMcpConfig,
 ) =>
   Effect.gen(function* () {
     const server = yield* McpServer.McpServer;
@@ -345,22 +343,22 @@ const registerOperation = (
     });
   });
 
-const registerOpenApiTools = (config: OpenApiMcpConfig) =>
+const registerHttpApiTools = (config: HttpApiMcpConfig) =>
   Effect.gen(function* () {
     const spec = OpenApi.fromApi(config.api);
 
     for (const [path, pathItem] of Object.entries(spec.paths)) {
       for (const method of config.methods ?? ["get"]) {
-        const operation = pathItem[method] as OpenApiOperation | undefined;
+        const operation = pathItem[method] as HttpApiOperation | undefined;
         if (!operation) continue;
         yield* registerOperation(method, path, operation, config);
       }
     }
   });
 
-export const mcpOpenApiToolsLayer = Layer.effectDiscard(
+export const httpApiMcpToolsLayer = Layer.effectDiscard(
   Effect.gen(function* () {
-    const mcp = yield* OpenApiMcp;
+    const mcp = yield* HttpApiMcp;
     yield* mcp.registerTools;
   }),
 );
