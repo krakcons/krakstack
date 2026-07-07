@@ -3,9 +3,7 @@
   "name": "loading",
   "title": "Loading",
   "description": "A compact loading indicator with a spinner and accessible label text.",
-  "dependencies": [
-    "lucide-react"
-  ],
+  "dependencies": ["lucide-react"],
   "files": [
     {
       "path": "src/components/ui/loading.tsx",

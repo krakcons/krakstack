@@ -1,11 +1,17 @@
 import { Effect } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
-import type { CreateExamplePayload, Example, UpdateExamplePayload } from "./schema";
+import type {
+  CreateExamplePayload,
+  Example,
+  UpdateExamplePayload,
+} from "./schema";
 
 const seed: ReadonlyArray<Example> = [];
 
-const current = (result: AsyncResult.AsyncResult<ReadonlyArray<Example>, unknown>) =>
+const current = (
+  result: AsyncResult.AsyncResult<ReadonlyArray<Example>, unknown>,
+) =>
   AsyncResult.match(result, {
     onInitial: () => [],
     onFailure: () => [],
@@ -39,10 +45,7 @@ export const createExampleAtom = Atom.optimisticFn(allExamplesAtom, {
 });
 
 export const updateExampleAtom = Atom.optimisticFn(allExamplesAtom, {
-  reducer: (
-    state,
-    input: { id: string; payload: UpdateExamplePayload },
-  ) =>
+  reducer: (state, input: { id: string; payload: UpdateExamplePayload }) =>
     AsyncResult.success(
       current(state).map((example: Example) =>
         example.id === input.id

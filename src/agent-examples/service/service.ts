@@ -1,9 +1,15 @@
 import { Context, Effect, Layer } from "effect";
 
-import type { CreateExamplePayload, Example, UpdateExamplePayload } from "./schema";
+import type {
+  CreateExamplePayload,
+  Example,
+  UpdateExamplePayload,
+} from "./schema";
 
 export interface ExamplesShape {
-  readonly list: (input: { userId: string }) => Effect.Effect<ReadonlyArray<Example>>;
+  readonly list: (input: {
+    userId: string;
+  }) => Effect.Effect<ReadonlyArray<Example>>;
   readonly get: (input: {
     userId: string;
     id: string;

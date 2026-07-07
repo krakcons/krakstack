@@ -11,11 +11,7 @@ import {
 } from "@/components/ui/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import {
-  allExamplesAtom,
-  deleteExampleAtom,
-  updateExampleAtom,
-} from "./atom";
+import { allExamplesAtom, deleteExampleAtom, updateExampleAtom } from "./atom";
 import { ExampleDialog } from "./form";
 import type { Example } from "./schema";
 

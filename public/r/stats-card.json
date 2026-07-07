@@ -3,12 +3,8 @@
   "name": "stats-card",
   "title": "Stats Card",
   "description": "A compact metric card with title, icon, value, description, optional content, and card-link hover affordances.",
-  "dependencies": [
-    "react"
-  ],
-  "registryDependencies": [
-    "card"
-  ],
+  "dependencies": ["react"],
+  "registryDependencies": ["card"],
   "files": [
     {
       "path": "src/components/ui/stats-card.tsx",

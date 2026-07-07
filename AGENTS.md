@@ -54,6 +54,8 @@ The application is divided into two areas: frontend and backend.
 - Prefer arrow functions `() => void` over function expressions `function () {}` except where Effect generator APIs require `function*`.
 - Avoid `as any`, `as Type`, and `as unknown` unless absolutely necessary.
 - Use Effect `Schema` for validation. Do not use Zod or other validation libraries.
+- Prefer Effect-native integrations over ad hoc boundaries: use `FetchHttpClient`/`HttpClient` instead of raw `fetch`, Effect `Schema` codecs such as `Schema.fromJsonString(...)` and `HttpClientResponse.schemaBodyJson(...)` instead of manual `JSON.parse` or custom validation, and typed Effect errors instead of broad `try`/`tryPromise` wrappers.
+- Use `Effect.try` or `Effect.tryPromise` only when wrapping a non-Effect API that has no suitable Effect adapter; keep the boundary as small as possible and map failures into domain-specific errors.
 - Annotate schemas with `.annotate({ identifier: "Name" })`.
 - Use `Schema.toStandardSchemaV1(...)` when integrating Effect schemas with form validators.
 - Use `Effect.fn` for service methods when practical.

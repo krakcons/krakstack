@@ -21,9 +21,11 @@ import {
   PanelLeft,
   Search,
   Shield,
+  SquareTerminal,
   Table2,
   UserRound,
   Wrench,
+  Workflow,
 } from "lucide-react";
 
 export type RegistryItem = (typeof registry.items)[number] & {
@@ -38,7 +40,9 @@ export function getRegistryItem(slug: string) {
 
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "embedding-layer") return "Layers";
-  if (item.name === "query-helpers") return "Libraries";
+  if (["query-helpers", "openapi-cli", "openapi-mcp"].includes(item.name)) {
+    return "Libraries";
+  }
   if (["copy-button", "loading"].includes(item.name)) return "Components";
   if (
     ["service-notification", "notification-channel-email-ses"].includes(
@@ -71,6 +75,8 @@ const iconByName = {
   "service-s3": Cloud,
   "embedding-layer": Layers,
   "query-helpers": ListFilter,
+  "openapi-cli": SquareTerminal,
+  "openapi-mcp": Workflow,
   "sidebar-layout": PanelLeft,
   "search-menu": Search,
   "code-block": CodeXml,

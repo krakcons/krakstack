@@ -128,7 +128,7 @@ function DeveloperSetupDocs() {
   const page = content[getLocale()];
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl min-w-0 flex-col gap-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl min-w-0 flex-col gap-8">
       <SidebarPageHeader
         title={page.title}
         description={page.description}

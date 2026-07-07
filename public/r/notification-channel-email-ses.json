@@ -3,13 +3,8 @@
   "name": "notification-channel-email-ses",
   "title": "SES Channel",
   "description": "An AWS SES email channel for the notification service. It handles the `email` message key and validates its own email payload schema.",
-  "dependencies": [
-    "@aws-sdk/client-sesv2",
-    "effect@beta"
-  ],
-  "registryDependencies": [
-    "@krak-stack/service-notification"
-  ],
+  "dependencies": ["@aws-sdk/client-sesv2", "effect@beta"],
+  "registryDependencies": ["@krak-stack/service-notification"],
   "files": [
     {
       "path": "src/services/notification/channels/ses/index.ts",

@@ -13,7 +13,11 @@ import {
 } from "@/components/ui/dialog";
 import { useAppForm } from "@/components/ui/form";
 import { createExampleAtom, updateExampleAtom } from "./atom";
-import { CreateExample, type CreateExamplePayload, type Example } from "./schema";
+import {
+  CreateExample,
+  type CreateExamplePayload,
+  type Example,
+} from "./schema";
 
 type Props = {
   readonly example?: Example | undefined;
@@ -67,7 +71,9 @@ export function ExampleDialog({ example, open, onOpenChange, trigger }: Props) {
       {trigger ? <DialogTrigger render={<Button>{trigger}</Button>} /> : null}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? messages.edit : messages.create}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? messages.edit : messages.create}
+          </DialogTitle>
         </DialogHeader>
         <form.AppForm>
           <form
