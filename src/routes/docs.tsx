@@ -1,4 +1,4 @@
-import { Blocks } from "lucide-react";
+import { Blocks, Wrench } from "lucide-react";
 import {
   getRegistryGroup,
   getRegistryIcon,
@@ -12,6 +12,7 @@ import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackPackages } from "@/lib/krakstack-packages";
 import { krakstackSites } from "@/lib/krakstack-sites";
+import { getLocale } from "@/paraglide/runtime";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/docs")({ component: DocsLayout });
@@ -30,6 +31,26 @@ const docsNavGroups: NavGroup[] = registryItems.reduce((sections, item) => {
 
   return sections;
 }, [] as NavGroup[]);
+
+const developerSetupNavItem = {
+  label: () =>
+    getLocale() === "fr" ? "Configuration développeur" : "Developer setup",
+  href: "/docs/developer-setup",
+  icon: Wrench,
+};
+
+const configurationNavGroup = docsNavGroups.find(
+  (entry) => entry.label() === "Configuration",
+);
+
+if (configurationNavGroup) {
+  configurationNavGroup.items.unshift(developerSetupNavItem);
+} else {
+  docsNavGroups.push({
+    label: () => "Configuration",
+    items: [developerSetupNavItem],
+  });
+}
 
 const siteNavGroup: NavGroup = {
   label: () => m.krakstack_sites_heading(),

@@ -13,6 +13,7 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsDeveloperSetupRouteImport } from './routes/docs/developer-setup'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as DocsSitesTemplateRouteImport } from './routes/docs/sites/template'
 import { Route as DocsSitesAuthRouteImport } from './routes/docs/sites/auth'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DocsDeveloperSetupRoute = DocsDeveloperSetupRouteImport.update({
+  id: '/developer-setup',
+  path: '/developer-setup',
+  getParentRoute: () => DocsRoute,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/api/$': typeof ApiSplatRoute
+  '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/docs/packages/auth': typeof DocsPackagesAuthRoute
   '/docs/registry/$slug': typeof DocsRegistrySlugRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/api/$': typeof ApiSplatRoute
+  '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/docs/packages/auth': typeof DocsPackagesAuthRoute
   '/docs/registry/$slug': typeof DocsRegistrySlugRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/api/$': typeof ApiSplatRoute
+  '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/docs/packages/auth': typeof DocsPackagesAuthRoute
   '/docs/registry/$slug': typeof DocsRegistrySlugRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/api/$'
+    | '/docs/developer-setup'
     | '/api/auth/$'
     | '/docs/packages/auth'
     | '/docs/registry/$slug'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/api/$'
+    | '/docs/developer-setup'
     | '/api/auth/$'
     | '/docs/packages/auth'
     | '/docs/registry/$slug'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/api/$'
+    | '/docs/developer-setup'
     | '/api/auth/$'
     | '/docs/packages/auth'
     | '/docs/registry/$slug'
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/docs/developer-setup': {
+      id: '/docs/developer-setup'
+      path: '/developer-setup'
+      fullPath: '/docs/developer-setup'
+      preLoaderRoute: typeof DocsDeveloperSetupRouteImport
+      parentRoute: typeof DocsRoute
     }
     '/api/$': {
       id: '/api/$'
@@ -232,6 +251,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface DocsRouteChildren {
+  DocsDeveloperSetupRoute: typeof DocsDeveloperSetupRoute
   DocsPackagesAuthRoute: typeof DocsPackagesAuthRoute
   DocsRegistrySlugRoute: typeof DocsRegistrySlugRoute
   DocsSitesAuthRoute: typeof DocsSitesAuthRoute
@@ -239,6 +259,7 @@ interface DocsRouteChildren {
 }
 
 const DocsRouteChildren: DocsRouteChildren = {
+  DocsDeveloperSetupRoute: DocsDeveloperSetupRoute,
   DocsPackagesAuthRoute: DocsPackagesAuthRoute,
   DocsRegistrySlugRoute: DocsRegistrySlugRoute,
   DocsSitesAuthRoute: DocsSitesAuthRoute,

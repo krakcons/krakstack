@@ -88,6 +88,8 @@ Service methods should accept object inputs, scope by the current user or tenant
 
 - Use KrakStack Auth for user management, auth components, sessions, and organizations.
 - Use KrakStack Components where possible and keep installed registry components current.
+- Install KrakStack registry items with shadcn using the `@krak-stack` registry alias configured in `components.json`; do not copy registry item files manually unless explicitly requested.
+- Before creating a custom component, check the shadcn MCP server for a compatible component or registry item.
 - Use shadcn through the registry workflow. If needed, initialize MCP with `bunx --bun shadcn@latest mcp init --client opencode`.
 
 ## Testing
