@@ -95,6 +95,7 @@
         "@dnd-kit/core",
         "@dnd-kit/sortable",
         "@dnd-kit/utilities",
+        "@effect/platform-browser@beta",
         "@tanstack/react-router",
         "@tanstack/react-table"
       ]
