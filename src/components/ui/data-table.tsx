@@ -284,6 +284,9 @@ export type DataTableRowAction<TData> = {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  search?: TableParams;
+  onSearchChange?: (search: TableParams) => void;
+  searchState?: "url" | "local";
   emptyLabel?: string;
   messages?: DataTableMessageOverrides;
   exportFileName?: string;
@@ -1035,6 +1038,9 @@ const exportTableToJson = <TData,>(
 export function DataTable<TData, TValue>({
   columns,
   data,
+  search: controlledSearch,
+  onSearchChange,
+  searchState = "url",
   emptyLabel,
   messages,
   exportFileName = "table.csv",
@@ -1057,6 +1063,11 @@ export function DataTable<TData, TValue>({
   const search = location.search as TableParams | undefined;
   const pathname = location.pathname;
   const navigate = useNavigate(from ? { from } : undefined);
+  const [localSearch, setLocalSearch] = useState<TableParams>({
+    globalFilter: "",
+  });
+  const tableSearch =
+    controlledSearch ?? (searchState === "local" ? localSearch : search);
 
   const {
     page = 0,
@@ -1064,7 +1075,7 @@ export function DataTable<TData, TValue>({
     sort,
     globalFilter = "",
     grouping: urlGrouping,
-  } = search ?? {};
+  } = tableSearch ?? {};
   const pagination = { pageIndex: page, pageSize };
   const decodedSort = sort ? Schema.decodeSync(SortParamsFromString)(sort) : [];
   const sorting: SortingState = decodedSort.map((sortParam) => ({
@@ -1161,6 +1172,20 @@ export function DataTable<TData, TValue>({
     ) => Record<string, unknown>,
     options?: { replace?: boolean },
   ) => {
+    if (controlledSearch || onSearchChange || searchState === "local") {
+      const nextSearch = updater(
+        ((controlledSearch ?? localSearch) ?? {}) as TableParams &
+          Record<string, unknown>,
+      ) as TableParams;
+
+      if (onSearchChange) {
+        onSearchChange(nextSearch);
+      } else {
+        setLocalSearch(nextSearch);
+      }
+      return;
+    }
+
     navigate({
       to: ".",
       replace: options?.replace ?? false,
