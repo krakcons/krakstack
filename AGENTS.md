@@ -122,6 +122,7 @@ Run checks after code changes when practical:
 ## Examples
 
 Use `https://github.com/krakcons/krakstack` as the external reference for this project pattern.
+Use `https://github.com/krakcons/krakstack/tree/main/src/agent-examples` as the external template reference for this project pattern.
 
 - `schema.ts` shows Effect schemas and standard schema exports.
 - `api.group.ts` shows HttpApiGroup endpoint contracts.
