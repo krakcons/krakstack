@@ -1174,7 +1174,7 @@ export function DataTable<TData, TValue>({
   ) => {
     if (controlledSearch || onSearchChange || searchState === "local") {
       const nextSearch = updater(
-        ((controlledSearch ?? localSearch) ?? {}) as TableParams &
+        (controlledSearch ?? localSearch ?? {}) as TableParams &
           Record<string, unknown>,
       ) as TableParams;
 
