@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: ""
+      vite_krakstack_auth_organization_id:
+        description: "Public KrakStack auth organization ID injected into the Vite build"
+        required: false
+        type: string
+        default: ""
       vite_analytics_website_id:
         description: "Public analytics website ID injected into the Vite build"
         required: false
@@ -114,6 +119,7 @@ jobs:
             VITE_SITE_URL=${{ inputs.vite_site_url }}
             VITE_KRAKSTACK_AUTH_URL=${{ inputs.vite_krakstack_auth_url }}
             VITE_KRAKSTACK_AUTH_PROJECT_ID=${{ inputs.vite_krakstack_auth_project_id }}
+            VITE_KRAKSTACK_AUTH_ORGANIZATION_ID=${{ inputs.vite_krakstack_auth_organization_id }}
             VITE_ANALYTICS_WEBSITE_ID=${{ inputs.vite_analytics_website_id }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
