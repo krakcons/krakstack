@@ -6,6 +6,7 @@ import {
   Bot,
   Building2,
   Cloud,
+  ChevronsUpDown,
   ClipboardList,
   CodeXml,
   Copy,
@@ -15,6 +16,7 @@ import {
   Globe,
   KeyRound,
   Layers,
+  List,
   ListFilter,
   LoaderCircle,
   Mail,
@@ -44,7 +46,17 @@ export function getRegistryGroup(item: RegistryItem) {
   if (["query-helpers", "httpapi-cli", "httpapi-mcp"].includes(item.name)) {
     return "Libraries";
   }
-  if (["copy-button", "icon-input", "loading"].includes(item.name)) {
+  if (
+    [
+      "combobox",
+      "copy-button",
+      "icon-input",
+      "loading",
+      "combobox-list-virtualized",
+    ].includes(
+      item.name,
+    )
+  ) {
     return "Components";
   }
   if (
@@ -84,9 +96,11 @@ const iconByName = {
   "search-menu": Search,
   "code-block": CodeXml,
   "copy-button": Copy,
+  combobox: ChevronsUpDown,
   loading: LoaderCircle,
   "icon-input": ImageIcon,
   "stats-card": Activity,
+  "combobox-list-virtualized": List,
   agents: Bot,
   "lint-format": Wrench,
   "app-brand": Badge,

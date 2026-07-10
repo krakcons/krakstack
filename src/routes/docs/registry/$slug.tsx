@@ -15,6 +15,7 @@ import { UserButtonPreview } from "@/components/registry-previews/user-button-pr
 import { CopyButtonPreview } from "@/components/registry-previews/copy-button-preview";
 import { LoadingPreview } from "@/components/registry-previews/loading-preview";
 import { IconInputPreview } from "@/components/registry-previews/icon-input-preview";
+import { ComboboxListVirtualizedPreview } from "@/components/registry-previews/combobox-list-virtualized-preview";
 import {
   Card,
   CardDescription,
@@ -157,6 +158,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <LoadingPreview />
     ) : slug === "icon-input" ? (
       <IconInputPreview />
+    ) : slug === "combobox-list-virtualized" ? (
+      <ComboboxListVirtualizedPreview />
     ) : null;
 
   if (!preview) return null;

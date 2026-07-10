@@ -603,6 +603,43 @@
       ],
       "registryDependencies": ["card"],
       "dependencies": ["react"]
+    },
+    {
+      "name": "combobox",
+      "type": "registry:component",
+      "title": "Combobox",
+      "description": "A Base UI combobox with styled input, popup content, list items, and empty state.",
+      "docs": "## Overview\n\n`Combobox` provides the Base UI primitives used by `combobox-list-virtualized`, including styled input, popup, list, item, and empty-state components.",
+      "files": [
+        {
+          "path": "src/components/ui/combobox.tsx",
+          "type": "registry:component",
+          "target": "components/ui/combobox.tsx"
+        },
+        {
+          "path": "src/components/ui/input-group.tsx",
+          "type": "registry:component",
+          "target": "components/ui/input-group.tsx"
+        }
+      ],
+      "registryDependencies": ["button", "input", "textarea"],
+      "dependencies": ["@base-ui/react", "class-variance-authority", "lucide-react", "react"]
+    },
+    {
+      "name": "combobox-list-virtualized",
+      "type": "registry:component",
+      "title": "Virtualized Combobox List",
+      "description": "A virtualized list renderer for Base UI comboboxes with accessible item positions.",
+      "docs": "## Overview\n\n`ComboboxListVirtualized` renders filtered Base UI combobox items with TanStack Virtual. Use it when a combobox can contain enough items that rendering every option would be expensive. It owns the combobox list and scroll container, so render it directly inside an open combobox popup.\n\n## Usage\n\n```tsx\nimport {\n  Combobox,\n  ComboboxContent,\n  ComboboxEmpty,\n  ComboboxInput,\n} from \"@/components/ui/combobox\";\nimport { ComboboxListVirtualized } from \"@/components/ui/combobox-list-virtualized\";\n\nconst cities = [\n  { id: \"halifax\", label: \"Halifax\" },\n  { id: \"montreal\", label: \"Montreal\" },\n  { id: \"vancouver\", label: \"Vancouver\" },\n];\n\nexport function CityCombobox() {\n  return (\n    <Combobox items={cities}>\n      <ComboboxInput placeholder=\"Choose a city\" />\n      <ComboboxContent>\n        <ComboboxEmpty>No cities found.</ComboboxEmpty>\n        <ComboboxListVirtualized getItemKey={(city) => city.id}>\n          {(city) => city.label}\n        </ComboboxListVirtualized>\n      </ComboboxContent>\n    </Combobox>\n  );\n}\n```",
+      "files": [
+        {
+          "path": "src/components/ui/combobox-list-virtualized.tsx",
+          "type": "registry:component",
+          "target": "components/ui/combobox-list-virtualized.tsx"
+        }
+      ],
+      "registryDependencies": ["@krak-stack/combobox"],
+      "dependencies": ["@base-ui/react", "@tanstack/react-virtual", "react"]
     }
   ]
 }
