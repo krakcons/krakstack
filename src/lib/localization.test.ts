@@ -13,6 +13,13 @@ describe("LocaleContext", () => {
     ).toEqual({ fallbackLocale: "en", locale: "fr" });
 
     expect(
+      LocaleContext.fromRequest({
+        headers: new Headers(),
+        url: "/api/pages?locale=fr",
+      }),
+    ).toEqual({ fallbackLocale: "en", locale: "fr" });
+
+    expect(
       LocaleContext.fromRequest(
         new Request("https://example.com", {
           headers: { cookie: "locale=fr", locale: "en" },

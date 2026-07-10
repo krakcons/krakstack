@@ -51,7 +51,7 @@ export class LocaleContext extends Context.Service<
   static fromRequest = (request: { headers: HeadersInit; url: string }) =>
     localeContextFromHeaders(
       new Headers(request.headers),
-      new URL(request.url).searchParams.get("locale"),
+      new URL(request.url, "http://localhost").searchParams.get("locale"),
     );
 }
 
