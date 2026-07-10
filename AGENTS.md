@@ -61,6 +61,16 @@ The application is divided into two areas: frontend and backend.
 - Use `Effect.fn` for service methods when practical.
 - Add OpenTelemetry through Effect runtime patterns where relevant.
 
+## Schema
+
+- Use Effect `Schema` for all parsing, decoding, validation, and type-safe boundary checks.
+- Define reusable schemas in the nearest `schema.ts` file and annotate them with `.annotate({ identifier: "Name" })`.
+- Validate untrusted inputs at boundaries using Effect schema decoders, including API payloads, query params, route params, form inputs, external API responses, environment variables, JSON blobs, and persisted data.
+- Do not write custom runtime validation such as `typeof value === "object"`, `Array.isArray(value)`, manual property checks, custom type guards, or ad hoc `JSON.parse` validation when an Effect `Schema` can express the shape.
+- Prefer Effect codecs and helpers such as `Schema.decodeUnknown`, `Schema.decodeUnknownSync`, `Schema.fromJsonString(...)`, and `HttpClientResponse.schemaBodyJson(...)` over manual parsing.
+- Keep validation failures typed and explicit. Map schema parse errors into domain-specific errors where needed instead of throwing broad errors.
+- Use custom predicates only inside Effect schema refinements or filters, and only when the rule cannot be represented with built-in schema combinators.
+
 ## Services
 
 Use service-based design for CRUD, features, integrations, and related domain concerns.
