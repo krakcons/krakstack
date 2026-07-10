@@ -66,6 +66,28 @@
       "dependencies": ["lucide-react"]
     },
     {
+      "name": "icon-input",
+      "type": "registry:component",
+      "title": "Icon Input",
+      "description": "An Iconify-backed icon picker with a popover command menu, live preview, and localized empty states.",
+      "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It renders the selected icon as an outline button, opens a searchable shadcn command menu, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`; trace propagation is disabled only for the cross-origin Iconify request so browser CORS preflights remain simple. The Iconify catalogue link is generated from the selected collection.\n\n## Features\n\n- Controlled `value` and `onValueChange` props\n- Lucide Icons collection by default\n- Searchable Command menu in a Popover\n- Live selected-icon preview\n- English and French built-in copy based on the active Paraglide locale\n- Fixed-height results area to avoid layout shifts\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\n## Other Collections\n\nPass an Iconify collection prefix. The picker derives its matching Iconify catalogue link automatically, and `onValueChange` receives the unprefixed icon name.\n\n```tsx\n<IconInput\n  collection=\"mdi\"\n  value={icon}\n  onValueChange={setIcon}\n/>\n```\n\n## Requirements\n\nThe component uses the active Paraglide locale through `getLocale()`. Install it in a Paraglide-enabled application and ensure `button`, `command`, and `popover` are available from shadcn.",
+      "files": [
+        {
+          "path": "src/components/ui/icon-input.tsx",
+          "type": "registry:component",
+          "target": "components/ui/icon-input.tsx"
+        }
+      ],
+      "registryDependencies": ["button", "command", "popover"],
+      "dependencies": [
+        "@effect/atom-react@beta",
+        "@iconify/react",
+        "effect@beta",
+        "lucide-react",
+        "react"
+      ]
+    },
+    {
       "name": "data-table",
       "type": "registry:block",
       "title": "Data Table",

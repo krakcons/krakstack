@@ -14,6 +14,7 @@ import { OrganizationSwitcherPreview } from "@/components/registry-previews/orga
 import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
 import { CopyButtonPreview } from "@/components/registry-previews/copy-button-preview";
 import { LoadingPreview } from "@/components/registry-previews/loading-preview";
+import { IconInputPreview } from "@/components/registry-previews/icon-input-preview";
 import {
   Card,
   CardDescription,
@@ -154,6 +155,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <CopyButtonPreview />
     ) : slug === "loading" ? (
       <LoadingPreview />
+    ) : slug === "icon-input" ? (
+      <IconInputPreview />
     ) : null;
 
   if (!preview) return null;

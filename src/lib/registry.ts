@@ -10,6 +10,7 @@ import {
   CodeXml,
   Copy,
   Database,
+  ImageIcon,
   Languages,
   Globe,
   KeyRound,
@@ -43,7 +44,9 @@ export function getRegistryGroup(item: RegistryItem) {
   if (["query-helpers", "httpapi-cli", "httpapi-mcp"].includes(item.name)) {
     return "Libraries";
   }
-  if (["copy-button", "loading"].includes(item.name)) return "Components";
+  if (["copy-button", "icon-input", "loading"].includes(item.name)) {
+    return "Components";
+  }
   if (
     ["service-notification", "notification-channel-email-ses"].includes(
       item.name,
@@ -82,6 +85,7 @@ const iconByName = {
   "code-block": CodeXml,
   "copy-button": Copy,
   loading: LoaderCircle,
+  "icon-input": ImageIcon,
   "stats-card": Activity,
   agents: Bot,
   "lint-format": Wrench,
