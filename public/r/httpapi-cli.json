@@ -3,7 +3,9 @@
   "name": "httpapi-cli",
   "title": "HttpApi CLI",
   "description": "An Effect CLI generator that builds grouped commands from an Effect HttpApi and calls API operations with JSON params, query values, and API-key headers.",
-  "dependencies": ["effect@beta"],
+  "dependencies": [
+    "effect@beta"
+  ],
   "files": [
     {
       "path": "src/lib/httpapi-cli.ts",

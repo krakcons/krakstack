@@ -1,18 +1,44 @@
-import { extractLocaleFromHeader } from "@/paraglide/runtime";
+import {
+  extractLocaleFromHeader,
+  locales as paraglideLocales,
+} from "@/paraglide/runtime";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { Cookies, HttpServerRequest } from "effect/unstable/http";
 import { HttpApiMiddleware } from "effect/unstable/httpapi";
 
-const LocaleSchema = Schema.Union([Schema.Literal("en"), Schema.Literal("fr")]);
+export type Locale = (typeof paraglideLocales)[number];
 
-type Locale = typeof LocaleSchema.Type;
+export const LocaleSchema = Schema.Literals(paraglideLocales).annotate({
+  identifier: "Locale",
+  title: "Locale",
+  description: "A supported application locale.",
+  examples: ["en", "fr"],
+});
 
-export type LocalizedInputType = {
-  locale: Locale;
-  fallbackLocale?: Locale | "none" | null;
-};
+const LocaleOrNone = Schema.Union([LocaleSchema, Schema.Literal("none")]);
+
+export const LocalizedInputSchema = Schema.Struct({
+  locale: LocaleSchema.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed("en")),
+  ),
+  fallbackLocale: Schema.optional(Schema.NullOr(LocaleOrNone)),
+}).annotate({
+  identifier: "LocalizedInput",
+  title: "Localized input",
+  description: "Locale selection options for resolving localized content.",
+});
+
+export type LocalizedInputType = typeof LocalizedInputSchema.Type;
 
 const decodeLocale = Schema.decodeUnknownOption(LocaleSchema);
+
+const parseAcceptLanguage = (input?: string | null): Locale | undefined => {
+  if (!input) return undefined;
+  const request = new Request("https://dummy.com", {
+    headers: { "accept-language": input },
+  });
+  return extractLocaleFromHeader(request);
+};
 
 const localeContextFromHeaders = (
   headers: Headers,
@@ -26,14 +52,7 @@ const localeContextFromHeaders = (
       Option.orElse(() => decodeLocale(headers.get("locale"))),
       Option.orElse(() => decodeLocale(cookies.locale)),
       Option.getOrElse(
-        () =>
-          extractLocaleFromHeader(
-            new Request("https://dummy.com", {
-              headers: {
-                "accept-language": headers.get("accept-language") ?? "",
-              },
-            }),
-          ) ?? "en",
+        () => parseAcceptLanguage(headers.get("accept-language")) ?? "en",
       ),
     ),
     fallbackLocale: Option.getOrElse(
@@ -79,11 +98,12 @@ export const LocaleMiddlewareLive = Layer.effect(
 );
 
 export const localize = <
-  TBase extends { translations: Array<{ locale: string }> },
+  TBase extends { name?: unknown; translations: Array<{ locale: string }> },
   TTranslation = TBase["translations"][number],
   TResult = Omit<TBase, "translations"> & TTranslation,
+  TVariables extends LocalizedInputType = LocalizedInputType,
 >(
-  context: LocalizedInputType,
+  context: TVariables,
   obj: TBase,
   customLocale?: Locale,
 ): TResult => {
@@ -103,7 +123,7 @@ export const localize = <
     }
   }
 
-  const { translations: _translations, ...rest } = obj;
+  const { translations: _translations, name: _name, ...rest } = obj;
 
   return {
     ...rest,
