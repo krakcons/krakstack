@@ -33,22 +33,33 @@ const JsonObjectSchema = Schema.Record(Schema.String, Schema.Unknown).annotate({
   description: "A JSON object passed to an MCP tool.",
   examples: [{ id: "example-id" }],
 });
+const JsonSchemaAnnotations = Schema.Struct({
+  title: Schema.optional(Schema.String),
+  description: Schema.optional(Schema.String),
+  examples: Schema.optional(Schema.Array(Schema.Unknown)),
+}).annotate({
+  identifier: "HttpApiMcpJsonSchemaAnnotations",
+  title: "MCP JSON Schema Annotations",
+  description: "JSON Schema annotations surfaced on MCP tool inputs.",
+});
 const JsonResponseFromString = Schema.fromJsonString(Schema.Unknown);
 
 const ToolInputSchema = Schema.Struct({
   apiKey: Schema.optional(Schema.String),
-  params: Schema.optional(JsonObjectSchema),
-  query: Schema.optional(JsonObjectSchema),
   body: Schema.optional(Schema.Unknown),
 }).annotate({
   identifier: "HttpApiMcpToolInput",
   title: "MCP Tool Input",
   description: "Input accepted by API-backed MCP tools.",
-  examples: [{ params: { id: "example-id" }, query: { limit: 10 } }],
+  examples: [{ apiKey: "example-key", body: { id: "example-id" } }],
 });
 
 type JsonObject = typeof JsonObjectSchema.Type;
 type ToolInput = typeof ToolInputSchema.Type;
+type OperationInput = ToolInput & {
+  readonly params: JsonObject;
+  readonly query: JsonObject;
+};
 export type HttpApiMcpConfig = {
   readonly api: Parameters<typeof OpenApi.fromApi>[0];
   readonly baseUrl: string;
@@ -88,33 +99,46 @@ const operationName = (
       `${method}_${path.replace(/^\/api\//, "").replace(/[/:{}]/g, "_")}`,
   );
 
-const parameterObjectSchema = (
-  parameters: ReadonlyArray<HttpApiParameter>,
-  location: HttpApiParameter["in"],
-) => {
-  const scoped = parameters.filter((parameter) => parameter.in === location);
+const decodeAnnotations = Schema.decodeUnknownOption(JsonSchemaAnnotations);
 
-  if (scoped.length === 0) return undefined;
+const schemaWithVisibleAnnotations = (schema: JsonSchema): JsonSchema => {
+  const directAnnotations = decodeAnnotations(schema).pipe(
+    Option.getOrElse(() => ({})),
+  );
+  const allOf = Array.isArray(schema.allOf) ? schema.allOf : [];
+  const annotations = allOf.reduce(
+    (acc, item) => ({
+      ...acc,
+      ...decodeAnnotations(item).pipe(Option.getOrElse(() => ({}))),
+    }),
+    directAnnotations,
+  );
 
   return {
-    type: "object",
-    properties: Object.fromEntries(
-      scoped.map((parameter) => [
-        parameter.name,
-        {
-          ...(parameter.schema ?? { type: "string" }),
-          ...(parameter.description
-            ? { description: parameter.description }
-            : {}),
-        },
-      ]),
-    ),
-    required: scoped
-      .filter((parameter) => parameter.required)
-      .map((parameter) => parameter.name),
-    additionalProperties: false,
+    ...schema,
+    ...("title" in annotations && !("title" in schema)
+      ? { title: annotations.title }
+      : {}),
+    ...("description" in annotations && !("description" in schema)
+      ? { description: annotations.description }
+      : {}),
+    ...("examples" in annotations && !("examples" in schema)
+      ? { examples: annotations.examples }
+      : {}),
   };
 };
+
+const parameterInputSchema = (parameter: HttpApiParameter) => ({
+  ...(parameter.schema
+    ? schemaWithVisibleAnnotations(parameter.schema)
+    : { type: "string" }),
+  ...(parameter.description ? { description: parameter.description } : {}),
+});
+
+const operationParameters = (
+  parameters: ReadonlyArray<HttpApiParameter>,
+  location: HttpApiParameter["in"],
+) => parameters.filter((parameter) => parameter.in === location);
 
 const jsonBodySchema = (operation: HttpApiOperation) =>
   operation.requestBody?.content?.["application/json"]?.schema;
@@ -126,6 +150,8 @@ const inputSchema = (
   const serviceName = config.serviceName ?? "API";
   const apiKeyHeader = config.apiKeyHeader ?? "x-api-key";
   const parameters = operation.parameters ?? [];
+  const pathParameters = operationParameters(parameters, "path");
+  const queryParameters = operationParameters(parameters, "query");
   const properties: Record<string, unknown> = {
     apiKey: {
       type: "string",
@@ -133,15 +159,12 @@ const inputSchema = (
     },
   };
   const required: Array<string> = [];
-  const params = parameterObjectSchema(parameters, "path");
-  const query = parameterObjectSchema(parameters, "query");
   const body = jsonBodySchema(operation);
 
-  if (params) {
-    properties.params = params;
-    if ((params.required as Array<string>).length > 0) required.push("params");
+  for (const parameter of [...pathParameters, ...queryParameters]) {
+    properties[parameter.name] = parameterInputSchema(parameter);
+    if (parameter.required) required.push(parameter.name);
   }
-  if (query) properties.query = query;
   if (body) properties.body = body;
 
   return {
@@ -154,10 +177,41 @@ const inputSchema = (
 
 const decodeToolInput = Effect.fn("HttpApiMcp.decodeToolInput")(function* (
   input: unknown,
+  operation: HttpApiOperation,
 ) {
-  return yield* Schema.decodeUnknownEffect(ToolInputSchema)(input ?? {}).pipe(
+  const payload = yield* Schema.decodeUnknownEffect(JsonObjectSchema)(
+    input ?? {},
+  ).pipe(
     Effect.mapError(() => new Error("MCP tool input must be a JSON object")),
   );
+
+  const decoded = yield* Schema.decodeUnknownEffect(ToolInputSchema)(
+    payload,
+  ).pipe(
+    Effect.mapError(() => new Error("MCP tool input must be a JSON object")),
+  );
+  const parameters = operation.parameters ?? [];
+  const pickParameters = (location: HttpApiParameter["in"]) => {
+    const nestedKey = location === "path" ? "params" : location;
+    const nested: JsonObject = decodeStructuredContent(payload[nestedKey]).pipe(
+      Option.getOrElse((): JsonObject => ({})),
+    );
+
+    return Object.fromEntries(
+      operationParameters(parameters, location)
+        .map((parameter) => [
+          parameter.name,
+          nested[parameter.name] ?? payload[parameter.name],
+        ])
+        .filter(([, value]) => value !== undefined),
+    );
+  };
+
+  return {
+    ...decoded,
+    params: pickParameters("path"),
+    query: pickParameters("query"),
+  };
 });
 
 const renderPath = Effect.fn("HttpApiMcp.renderPath")(function* (
@@ -196,7 +250,7 @@ const appendQuery = Effect.fn("HttpApiMcp.appendQuery")(function* (
 
 const buildUrl = Effect.fn("HttpApiMcp.buildUrl")(function* (
   path: string,
-  input: ToolInput,
+  input: OperationInput,
   baseUrl: string,
 ) {
   const renderedPath = yield* renderPath(path, input.params);
@@ -291,10 +345,11 @@ const parseResponseBody = Effect.fn("HttpApiMcp.parseResponseBody")(function* (
 const executeOperation = Effect.fn("HttpApiMcp.executeOperation")(function* (
   method: string,
   path: string,
+  operation: HttpApiOperation,
   input: unknown,
   config: HttpApiMcpConfig,
 ) {
-  const payload = yield* decodeToolInput(input);
+  const payload = yield* decodeToolInput(input, operation);
   const apiKey = payload.apiKey ?? process.env[config.apiKeyEnv ?? ""];
   const url = yield* buildUrl(path, payload, config.baseUrl);
   const text = yield* fetchOperation(method, url, payload.body, apiKey, config);
@@ -333,7 +388,7 @@ const registerOperation = (
       }),
       annotations: Context.empty(),
       handle: (payload) =>
-        executeOperation(method, path, payload, config).pipe(
+        executeOperation(method, path, operation, payload, config).pipe(
           Effect.provide(FetchHttpClient.layer),
           Effect.match({
             onFailure: toolError,
