@@ -202,7 +202,8 @@ const messages = {
     goToPreviousPage: "Go to previous page",
     goToNextPage: "Go to next page",
     goToLastPage: "Go to last page",
-    listOthers: (count: number) => `and ${count} others`,
+    listOthers: (count: number) =>
+      count === 1 ? "and 1 other" : `and ${count} others`,
   },
   fr: {
     actions: "Actions",
@@ -232,7 +233,8 @@ const messages = {
     goToPreviousPage: "Aller à la page précédente",
     goToNextPage: "Aller à la page suivante",
     goToLastPage: "Aller à la dernière page",
-    listOthers: (count: number) => `et ${count} autres`,
+    listOthers: (count: number) =>
+      count === 1 ? "et 1 autre" : `et ${count} autres`,
   },
 } as const satisfies Record<"en" | "fr", DataTableMessages>;
 
@@ -838,7 +840,7 @@ const DataTableRow = <TData,>({
           <TableCell
             key={cell.id}
             className={cn(
-              "align-center min-w-32 max-w-0 overflow-hidden whitespace-normal [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:min-w-56 [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0 [&:has([data-slot=relationship-cell])>div]:line-clamp-none",
+              "align-center min-w-32 max-w-0 overflow-hidden whitespace-normal [&:has([data-slot=list-summary])>div]:line-clamp-none [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:min-w-56 [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0 [&:has([data-slot=relationship-cell])>div]:line-clamp-none",
               rowActions &&
                 isLastCell &&
                 "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:min-w-56 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])>div]:mr-11",
@@ -2389,14 +2391,16 @@ export function DataTableListSummary({
   }
 
   return remaining > 0 ? (
-    <span className="flex min-w-0 items-center text-sm">
-      <span className="min-w-0 truncate">{visibleItems}</span>
-      <span className="shrink-0">
-        , {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
+    <span className="block min-w-0 text-sm" data-slot="list-summary">
+      <span>{visibleItems}</span>
+      <span className="ml-1 inline-block">
+        {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
       </span>
     </span>
   ) : (
-    <span className="block truncate text-sm">{visibleItems}</span>
+    <span className="block min-w-0 text-sm" data-slot="list-summary">
+      {visibleItems}
+    </span>
   );
 }
 
