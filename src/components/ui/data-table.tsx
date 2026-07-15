@@ -141,6 +141,7 @@ const DataTableViewSchema = Schema.Union([
 type DataTableView = typeof DataTableViewSchema.Type;
 
 const ColumnVisibilitySchema = Schema.Record(Schema.String, Schema.Boolean);
+const ColumnSizingSchema = Schema.Record(Schema.String, Schema.Number);
 
 export type DataTableMessages = {
   actions: string;
@@ -165,6 +166,7 @@ export type DataTableMessages = {
   sortClear: string;
   sortBy: string;
   reorder: string;
+  resizeColumn: (column: string) => string;
   pageOf: (page: number, total: number) => string;
   goToFirstPage: string;
   goToPreviousPage: string;
@@ -197,6 +199,7 @@ const messages = {
     sortClear: "Clear",
     sortBy: "Sort by",
     reorder: "Drag to reorder",
+    resizeColumn: (column: string) => `Resize ${column} column`,
     pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
     goToFirstPage: "Go to first page",
     goToPreviousPage: "Go to previous page",
@@ -228,6 +231,7 @@ const messages = {
     sortClear: "Effacer",
     sortBy: "Trier par",
     reorder: "Glisser pour réordonner",
+    resizeColumn: (column: string) => `Redimensionner la colonne ${column}`,
     pageOf: (page: number, total: number) => `Page ${page} sur ${total}`,
     goToFirstPage: "Aller à la première page",
     goToPreviousPage: "Aller à la page précédente",
@@ -840,18 +844,21 @@ const DataTableRow = <TData,>({
           <TableCell
             key={cell.id}
             className={cn(
-              "align-center min-w-32 max-w-0 overflow-hidden whitespace-normal [&:has([data-slot=list-summary])>div]:line-clamp-none [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:min-w-56 [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0 [&:has([data-slot=relationship-cell])>div]:line-clamp-none",
+              "align-center min-w-32 overflow-hidden whitespace-nowrap [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0",
               rowActions &&
                 isLastCell &&
-                "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:min-w-56 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])>div]:mr-11",
+                "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])>div]:mr-11",
             )}
             style={
               index === 0 && firstCellIndent
-                ? { paddingLeft: firstCellIndent }
-                : undefined
+                ? {
+                    paddingLeft: firstCellIndent,
+                    width: cell.column.getSize(),
+                  }
+                : { width: cell.column.getSize() }
             }
           >
-            <div className="line-clamp-3 max-w-full min-w-0 overflow-hidden break-words">
+            <div className="max-w-full min-w-0 truncate">
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </div>
           </TableCell>
@@ -1301,6 +1308,16 @@ export function DataTable<TData, TValue>({
       }),
     [tableStorageId],
   );
+  const columnSizingAtom = useMemo(
+    () =>
+      Atom.kvs({
+        runtime: dataTableStorageRuntime,
+        key: `data-table:column-sizing:${tableStorageId}`,
+        schema: ColumnSizingSchema,
+        defaultValue: () => ({}),
+      }),
+    [tableStorageId],
+  );
   const viewAtom = useMemo(
     () =>
       Atom.kvs({
@@ -1312,6 +1329,7 @@ export function DataTable<TData, TValue>({
     [tableStorageId],
   );
   const [columnVisibility, setColumnVisibility] = useAtom(columnVisibilityAtom);
+  const [columnSizing, setColumnSizing] = useAtom(columnSizingAtom);
   const [storedView, setStoredView] = useAtom(viewAtom);
   const currentView: DataTableView = showGallery ? storedView : "table";
   const isGalleryView = currentView === "gallery";
@@ -1378,6 +1396,19 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    defaultColumn: {
+      minSize: 128,
+      size: 224,
+      maxSize: 640,
+    },
+    columnResizeMode: "onChange",
+    enableColumnResizing: true,
+    onColumnSizingChange: (updater) => {
+      const nextColumnSizing =
+        typeof updater === "function" ? updater(columnSizing) : updater;
+
+      setColumnSizing(nextColumnSizing);
+    },
     ...(reordering ? { getRowId: reordering.getRowId } : {}),
     onPaginationChange: (updater) => {
       const newPagination =
@@ -1461,6 +1492,7 @@ export function DataTable<TData, TValue>({
       pagination,
       globalFilter,
       columnVisibility,
+      columnSizing,
       rowSelection,
     },
   });
@@ -1903,7 +1935,12 @@ export function DataTable<TData, TValue>({
           ) : (
             <ScrollArea className="-m-1 max-w-full min-w-0">
               <div className="max-w-full min-w-0 p-1">
-                <Table className="min-w-full">
+                <Table
+                  className="table-fixed"
+                  style={{
+                    width: table.getTotalSize() + (canReorderRows ? 40 : 0),
+                  }}
+                >
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id} className="p-4">
@@ -1914,9 +1951,28 @@ export function DataTable<TData, TValue>({
                           return (
                             <TableHead
                               key={header.id}
-                              className="h-12 min-w-32 p-0"
+                              className="relative h-12 min-w-32 p-0"
+                              style={{ width: header.getSize() }}
                             >
                               {renderHeader(header)}
+                              {header.column.getCanResize() ? (
+                                <button
+                                  aria-label={labels.resizeColumn(
+                                    getHeaderName(header),
+                                  )}
+                                  className={cn(
+                                    "hover:bg-primary/60 absolute inset-y-0 right-0 z-10 w-1 cursor-col-resize touch-none bg-transparent p-0 select-none",
+                                    header.column.getIsResizing() &&
+                                      "bg-primary",
+                                  )}
+                                  type="button"
+                                  onDoubleClick={() =>
+                                    header.column.resetSize()
+                                  }
+                                  onMouseDown={header.getResizeHandler()}
+                                  onTouchStart={header.getResizeHandler()}
+                                />
+                              ) : null}
                             </TableHead>
                           );
                         })}
@@ -2387,18 +2443,22 @@ export function DataTableListSummary({
   const remaining = Math.max(items.length - visibleCount, 0);
 
   if (items.length === 0) {
-    return <span className="text-muted-foreground text-sm">{emptyLabel}</span>;
+    return (
+      <span className="text-muted-foreground block truncate text-sm">
+        {emptyLabel}
+      </span>
+    );
   }
 
   return remaining > 0 ? (
-    <span className="block min-w-0 text-sm" data-slot="list-summary">
+    <span className="block min-w-0 truncate text-sm" data-slot="list-summary">
       <span>{visibleItems}</span>
       <span className="ml-1 inline-block">
         {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
       </span>
     </span>
   ) : (
-    <span className="block min-w-0 text-sm" data-slot="list-summary">
+    <span className="block min-w-0 truncate text-sm" data-slot="list-summary">
       {visibleItems}
     </span>
   );
@@ -2424,7 +2484,12 @@ export function DataTableColumnHeader<TData, TValue>({
 
   if (!column.getCanSort()) {
     return (
-      <div className={cn("flex h-12 items-center px-2 text-sm", className)}>
+      <div
+        className={cn(
+          "flex h-12 items-center truncate px-2 text-sm",
+          className,
+        )}
+      >
         {title}
       </div>
     );
