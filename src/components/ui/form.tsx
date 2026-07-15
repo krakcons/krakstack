@@ -233,7 +233,7 @@ type SelectFieldOption = {
 
 type SelectFieldProps = DefaultOptions & {
   options: readonly SelectFieldOption[];
-  placeholder?: string;
+  placeholder?: string | undefined;
 } & ({ multiple?: false } | { multiple: true });
 
 const SingleSelectControl = ({
