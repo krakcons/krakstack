@@ -16,7 +16,6 @@ import {
   Globe,
   KeyRound,
   Layers,
-  List,
   ListFilter,
   LoaderCircle,
   Mail,
@@ -47,13 +46,7 @@ export function getRegistryGroup(item: RegistryItem) {
     return "Libraries";
   }
   if (
-    [
-      "combobox",
-      "copy-button",
-      "icon-input",
-      "loading",
-      "combobox-list-virtualized",
-    ].includes(
+    ["copy-button", "icon-input", "loading", "virtualized-combobox"].includes(
       item.name,
     )
   ) {
@@ -96,11 +89,10 @@ const iconByName = {
   "search-menu": Search,
   "code-block": CodeXml,
   "copy-button": Copy,
-  combobox: ChevronsUpDown,
+  "virtualized-combobox": ChevronsUpDown,
   loading: LoaderCircle,
   "icon-input": ImageIcon,
   "stats-card": Activity,
-  "combobox-list-virtualized": List,
   agents: Bot,
   "lint-format": Wrench,
   "app-brand": Badge,

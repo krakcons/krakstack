@@ -39,6 +39,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { getLocale } from "@/paraglide/runtime";
+import {
+  VirtualizedCombobox,
+  virtualizedComboboxMessages,
+  type VirtualizedComboboxMessageOverrides,
+  type VirtualizedComboboxOption,
+} from "@/components/ui/virtualized-combobox";
 
 export type FormMessages = {
   keyValueKey: string;
@@ -147,7 +153,7 @@ const TextField = ({
   const invalid = !field.state.meta.isValid;
 
   return (
-    <Field data-invalid={invalid}>
+    <Field className="min-w-0" data-invalid={invalid}>
       <div className="flex w-full items-center gap-2">
         <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
         {children}
@@ -175,7 +181,7 @@ const TextAreaField = ({
   const invalid = !field.state.meta.isValid;
 
   return (
-    <Field data-invalid={invalid}>
+    <Field className="min-w-0" data-invalid={invalid}>
       <div className="flex w-full items-center gap-2">
         <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
         {children}
@@ -220,43 +226,107 @@ const CheckboxField = (props: DefaultOptions) => {
   );
 };
 
-const SelectField = ({
+type SelectFieldOption = {
+  label: string;
+  value: string;
+};
+
+type SelectFieldProps = DefaultOptions & {
+  options: readonly SelectFieldOption[];
+  placeholder?: string;
+} & ({ multiple?: false } | { multiple: true });
+
+const SingleSelectControl = ({
+  invalid,
   options,
-  ...props
-}: DefaultOptions & {
-  options: {
-    label: string;
-    value: string;
-  }[];
+  placeholder,
+}: Omit<SelectFieldProps, "description" | "label" | "multiple"> & {
+  invalid: boolean;
 }) => {
   const field = useFieldContext<string>();
+
+  return (
+    <Select
+      items={[...options]}
+      required
+      onValueChange={(value) => field.handleChange(value ?? "")}
+      defaultValue={field.state.value}
+    >
+      <SelectTrigger className="gap-1" id={field.name} aria-invalid={invalid}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectOptions options={options} />
+    </Select>
+  );
+};
+
+const MultipleSelectControl = ({
+  invalid,
+  options,
+  placeholder,
+}: Omit<SelectFieldProps, "description" | "label" | "multiple"> & {
+  invalid: boolean;
+}) => {
+  const field = useFieldContext<string[]>();
+
+  return (
+    <Select
+      items={[...options]}
+      onValueChange={(value) => field.handleChange(value ?? [])}
+      multiple
+      value={field.state.value ?? []}
+    >
+      <SelectTrigger className="gap-1" id={field.name} aria-invalid={invalid}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectOptions options={options} />
+    </Select>
+  );
+};
+
+const SelectOptions = ({
+  options,
+}: {
+  options: readonly SelectFieldOption[];
+}) => (
+  <SelectContent>
+    <SelectGroup>
+      {options.map((option) => (
+        <SelectItem key={option.label} value={option.value}>
+          {option.label}
+        </SelectItem>
+      ))}
+    </SelectGroup>
+  </SelectContent>
+);
+
+const SelectField = ({
+  description,
+  label,
+  multiple,
+  options,
+  placeholder,
+}: SelectFieldProps) => {
+  const field = useFieldContext<unknown>();
   const invalid = !field.state.meta.isValid;
 
   return (
     <Field data-invalid={invalid}>
-      <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
-      <Select
-        items={options}
-        required
-        onValueChange={(value) => field.handleChange(value ?? "")}
-        defaultValue={field.state.value}
-      >
-        <SelectTrigger className="gap-1" id={field.name} aria-invalid={invalid}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {options.map((option) => (
-              <SelectItem key={option.label} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      {props.description && (
-        <FieldDescription>{props.description}</FieldDescription>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      {multiple ? (
+        <MultipleSelectControl
+          invalid={invalid}
+          options={options}
+          placeholder={placeholder}
+        />
+      ) : (
+        <SingleSelectControl
+          invalid={invalid}
+          options={options}
+          placeholder={placeholder}
+        />
       )}
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -357,44 +427,162 @@ const KeyValueField = (
   );
 };
 
-const MultiSelectField = ({
-  options,
-  ...props
-}: DefaultOptions & {
-  options: {
-    label: string;
-    value: string;
-  }[];
-  placeholder?: string;
-}) => {
-  const field = useFieldContext<string[]>();
-  const invalid = !field.state.meta.isValid;
+/** @deprecated Use SelectField with the multiple prop. */
+const MultiSelectField = (props: Omit<SelectFieldProps, "multiple">) => (
+  <SelectField {...props} multiple />
+);
+
+type SearchableSelectFieldSharedProps<TData> = DefaultOptions & {
+  emptyLabel: React.ReactNode;
+  initialItems?: readonly VirtualizedComboboxOption<TData>[];
+  items: readonly VirtualizedComboboxOption<TData>[];
+  messages?: VirtualizedComboboxMessageOverrides;
+  onSearchValueChange?: (value: string) => void;
+  placeholder: React.ReactNode;
+  renderItem?: (item: VirtualizedComboboxOption<TData>) => React.ReactNode;
+  searchValue?: string;
+};
+
+type SearchableSelectFieldProps<TData> =
+  SearchableSelectFieldSharedProps<TData> &
+    ({ multiple?: false } | { multiple: true });
+
+const getSearchableSelectItems = <TData,>(
+  values: readonly string[],
+  initialItems: readonly VirtualizedComboboxOption<TData>[],
+  items: readonly VirtualizedComboboxOption<TData>[],
+) => {
+  const itemsByValue = new Map(
+    [...initialItems, ...items].map((item) => [item.value, item]),
+  );
+  const selectedItems = values.map(
+    (value) => itemsByValue.get(value) ?? { value, label: value },
+  );
+  const selectedValues = new Set(values);
+
+  return {
+    selectedItems,
+    mergedItems: [
+      ...selectedItems,
+      ...items.filter(({ value }) => !selectedValues.has(value)),
+    ],
+  };
+};
+
+type SearchableSelectControlProps<TData> = Omit<
+  SearchableSelectFieldSharedProps<TData>,
+  "description" | "label"
+> & {
+  ariaLabel: string;
+  invalid: boolean;
+  name: string;
+};
+
+const SingleSearchableSelectControl = <TData,>({
+  ariaLabel,
+  emptyLabel,
+  initialItems = [],
+  invalid,
+  items,
+  messages,
+  name,
+  onSearchValueChange,
+  placeholder,
+  renderItem,
+  searchValue,
+}: SearchableSelectControlProps<TData>) => {
+  const field = useFieldContext<string>();
+  const { selectedItems, mergedItems } = getSearchableSelectItems(
+    field.state.value ? [field.state.value] : [],
+    initialItems,
+    items,
+  );
 
   return (
-    <Field data-invalid={invalid}>
-      <FieldLabel htmlFor={field.name}>{props.label}</FieldLabel>
-      <Select
-        items={options}
-        onValueChange={(value) => field.handleChange(value ?? [])}
-        multiple
-        value={field.state.value ?? []}
-      >
-        <SelectTrigger className="gap-1" id={field.name} aria-invalid={invalid}>
-          <SelectValue placeholder={props.placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {options.map((option) => (
-              <SelectItem key={option.label} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-      {props.description && (
-        <FieldDescription>{props.description}</FieldDescription>
+    <VirtualizedCombobox<TData>
+      ariaInvalid={invalid}
+      ariaLabel={ariaLabel}
+      emptyLabel={emptyLabel}
+      items={mergedItems}
+      {...(messages ? { messages } : {})}
+      onValueChange={(option) => field.handleChange(option?.value ?? "")}
+      placeholder={placeholder}
+      triggerId={name}
+      value={selectedItems[0] ?? null}
+      {...(onSearchValueChange ? { onSearchValueChange } : {})}
+      {...(renderItem ? { renderItem } : {})}
+      {...(searchValue === undefined ? {} : { searchValue })}
+    />
+  );
+};
+
+const MultipleSearchableSelectControl = <TData,>({
+  ariaLabel,
+  emptyLabel,
+  initialItems = [],
+  invalid,
+  items,
+  messages,
+  name,
+  onSearchValueChange,
+  placeholder,
+  renderItem,
+  searchValue,
+}: SearchableSelectControlProps<TData>) => {
+  const field = useFieldContext<string[]>();
+  const { selectedItems, mergedItems } = getSearchableSelectItems(
+    field.state.value ?? [],
+    initialItems,
+    items,
+  );
+
+  return (
+    <VirtualizedCombobox<TData>
+      ariaInvalid={invalid}
+      ariaLabel={ariaLabel}
+      emptyLabel={emptyLabel}
+      items={mergedItems}
+      {...(messages ? { messages } : {})}
+      multiple
+      onValueChange={(options) =>
+        field.handleChange(options.map(({ value }) => value))
+      }
+      placeholder={placeholder}
+      triggerId={name}
+      value={selectedItems}
+      {...(onSearchValueChange ? { onSearchValueChange } : {})}
+      {...(renderItem ? { renderItem } : {})}
+      {...(searchValue === undefined ? {} : { searchValue })}
+    />
+  );
+};
+
+const SearchableSelectField = <TData,>({
+  description,
+  label,
+  multiple,
+  ...props
+}: SearchableSelectFieldProps<TData>) => {
+  const field = useFieldContext<unknown>();
+  const labels = virtualizedComboboxMessages(props.messages);
+  const invalid = !field.state.meta.isValid;
+  const ariaLabel = typeof label === "string" ? label : labels.search;
+  const controlProps = {
+    ...props,
+    ariaLabel,
+    invalid,
+    name: field.name,
+  };
+
+  return (
+    <Field className="min-w-0" data-invalid={invalid}>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      {multiple ? (
+        <MultipleSearchableSelectControl {...controlProps} />
+      ) : (
+        <SingleSearchableSelectControl {...controlProps} />
       )}
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -683,6 +871,7 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
     TextAreaField,
     SelectField,
     MultiSelectField,
+    SearchableSelectField,
     CheckboxField,
     FileField,
     KeyValueField,

@@ -69,8 +69,8 @@
       "name": "icon-input",
       "type": "registry:component",
       "title": "Icon Input",
-      "description": "An Iconify-backed icon picker with a popover command menu, live preview, and localized empty states.",
-      "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It renders the selected icon as an outline button, opens a searchable shadcn command menu, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`; trace propagation is disabled only for the cross-origin Iconify request so browser CORS preflights remain simple. The Iconify catalogue link is generated from the selected collection.\n\n## Features\n\n- Controlled `value` and `onValueChange` props\n- Lucide Icons collection by default\n- Searchable Command menu in a Popover\n- Live selected-icon preview\n- English and French built-in copy based on the active Paraglide locale\n- Fixed-height results area to avoid layout shifts\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\n## Other Collections\n\nPass an Iconify collection prefix. The picker derives its matching Iconify catalogue link automatically, and `onValueChange` receives the unprefixed icon name.\n\n```tsx\n<IconInput\n  collection=\"mdi\"\n  value={icon}\n  onValueChange={setIcon}\n/>\n```\n\n## Requirements\n\nThe component uses the active Paraglide locale through `getLocale()`. Install it in a Paraglide-enabled application and ensure `button`, `command`, and `popover` are available from shadcn.",
+      "description": "An Iconify-backed icon picker with virtualized search, live preview, and localized empty states.",
+      "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It uses `VirtualizedCombobox` to search and render large result sets efficiently, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`.\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\nPass `collection` to use another Iconify collection.",
       "files": [
         {
           "path": "src/components/ui/icon-input.tsx",
@@ -78,7 +78,7 @@
           "target": "components/ui/icon-input.tsx"
         }
       ],
-      "registryDependencies": ["button", "command", "popover"],
+      "registryDependencies": ["button", "@krak-stack/virtualized-combobox"],
       "dependencies": [
         "@effect/atom-react@beta",
         "@iconify/react",
@@ -91,7 +91,7 @@
       "name": "data-table",
       "type": "registry:block",
       "title": "Data Table",
-      "description": "A URL-state-driven data table with filtering, sorting, client or server pagination, column visibility, CSV export, gallery view, grouping, and drag-and-drop row moves.",
+      "description": "A configurable data table with URL or local state, filtering, sorting, pagination, exports, gallery view, grouping, row actions, and drag-and-drop row moves.",
       "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, client or server pagination, and column visibility\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Optional sortable row reordering callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/ui/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```\n\n## Row Reordering\n\nPass `reordering` to enable drag handles and receive the newly ordered visible rows. Update your data optimistically in `onReorder` so the dropped row stays in place immediately.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={rows}\n  from=\"/your-route\"\n  reordering={{\n    getRowId: (row) => row.id,\n    getRowLabel: (row) => row.name,\n    onReorder: setRows,\n  }}\n/>\n```\n\n## Server Pagination\n\nPass the current page of rows and `serverPagination.rowCount` when data is already paginated by an API. The table keeps TanStack pagination state in the URL and uses `rowCount` to calculate page controls without slicing the current page again.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={page.data}\n  from=\"/your-route\"\n  serverPagination={{ rowCount: page.meta.total }}\n/>\n```",
       "files": [
         {
@@ -109,6 +109,7 @@
         "input",
         "label",
         "@krak-stack/loading",
+        "@krak-stack/virtualized-combobox",
         "scroll-area",
         "select",
         "table"
@@ -126,7 +127,7 @@
       "name": "form",
       "type": "registry:block",
       "title": "Form",
-      "description": "A TanStack Form setup with reusable field wrappers, text inputs, text areas, selects, multi-selects, key/value editing, file uploads, submit state, and dirty-navigation blocking.",
+      "description": "A TanStack Form setup with reusable field wrappers, compact and searchable selects, file inputs, submit state, and dirty-navigation blocking.",
       "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection. Built-in labels are stored in the component file and can be overridden with message props on the relevant field or form component.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- In-file English and French defaults with override props\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n  <form.SubmitButton messages={{ submit: \"Save\" }} />\n</form.AppForm>\n```\n\n## File Selection Side Effects\n\n`FileField` accepts `onFileChange` when selecting a file needs to update adjacent UI, upload metadata, or derived form state before submit.\n\n```tsx\n<form.AppField name=\"attachment\">\n  {(field) => (\n    <field.FileField\n      accept=\".pdf,.txt\"\n      label=\"Attachment\"\n      onFileChange={(file) => setSelectedFile(file || null)}\n    />\n  )}\n</form.AppField>\n```",
       "files": [
         {
@@ -139,11 +140,13 @@
         "select",
         "alert-dialog",
         "button",
+        "badge",
         "checkbox",
         "field",
         "input",
         "label",
-        "textarea"
+        "textarea",
+        "@krak-stack/virtualized-combobox"
       ],
       "dependencies": [
         "lucide-react",
@@ -605,41 +608,25 @@
       "dependencies": ["react"]
     },
     {
-      "name": "combobox",
+      "name": "virtualized-combobox",
       "type": "registry:component",
-      "title": "Combobox",
-      "description": "A Base UI combobox with styled input, popup content, list items, and empty state.",
-      "docs": "## Overview\n\n`Combobox` provides the Base UI primitives used by `combobox-list-virtualized`, including styled input, popup, list, item, and empty-state components.",
+      "title": "Virtualized Combobox",
+      "description": "A searchable, virtualized Base UI combobox with single and multiple selection, controlled search, custom triggers, and localized labels.",
+      "docs": "## Overview\n\n`VirtualizedCombobox` combines Base UI and TanStack Virtual into a complete searchable selector for large or remotely filtered option sets. It supports single and multiple selection, controlled open and search state, custom item rendering, and custom triggers.\n\n## Usage\n\n```tsx\nconst [value, setValue] = useState(null);\n\n<VirtualizedCombobox\n  ariaLabel=\"Select a city\"\n  emptyLabel=\"No cities found.\"\n  items={cities}\n  onValueChange={setValue}\n  placeholder=\"Select a city\"\n  value={value}\n/>\n```\n\nSet `multiple` and pass an array value for multi-selection. Use `searchValue` and `onSearchValueChange` for remote search.",
       "files": [
         {
-          "path": "src/components/ui/combobox.tsx",
+          "path": "src/components/ui/virtualized-combobox.tsx",
           "type": "registry:component",
-          "target": "components/ui/combobox.tsx"
-        },
-        {
-          "path": "src/components/ui/input-group.tsx",
-          "type": "registry:component",
-          "target": "components/ui/input-group.tsx"
+          "target": "components/ui/virtualized-combobox.tsx"
         }
       ],
-      "registryDependencies": ["button", "input", "textarea"],
-      "dependencies": ["@base-ui/react", "class-variance-authority", "lucide-react", "react"]
-    },
-    {
-      "name": "combobox-list-virtualized",
-      "type": "registry:component",
-      "title": "Virtualized Combobox List",
-      "description": "A virtualized list renderer for Base UI comboboxes with accessible item positions.",
-      "docs": "## Overview\n\n`ComboboxListVirtualized` renders filtered Base UI combobox items with TanStack Virtual. Use it when a combobox can contain enough items that rendering every option would be expensive. It owns the combobox list and scroll container, so render it directly inside an open combobox popup.\n\n## Usage\n\n```tsx\nimport {\n  Combobox,\n  ComboboxContent,\n  ComboboxEmpty,\n  ComboboxInput,\n} from \"@/components/ui/combobox\";\nimport { ComboboxListVirtualized } from \"@/components/ui/combobox-list-virtualized\";\n\nconst cities = [\n  { id: \"halifax\", label: \"Halifax\" },\n  { id: \"montreal\", label: \"Montreal\" },\n  { id: \"vancouver\", label: \"Vancouver\" },\n];\n\nexport function CityCombobox() {\n  return (\n    <Combobox items={cities}>\n      <ComboboxInput placeholder=\"Choose a city\" />\n      <ComboboxContent>\n        <ComboboxEmpty>No cities found.</ComboboxEmpty>\n        <ComboboxListVirtualized getItemKey={(city) => city.id}>\n          {(city) => city.label}\n        </ComboboxListVirtualized>\n      </ComboboxContent>\n    </Combobox>\n  );\n}\n```",
-      "files": [
-        {
-          "path": "src/components/ui/combobox-list-virtualized.tsx",
-          "type": "registry:component",
-          "target": "components/ui/combobox-list-virtualized.tsx"
-        }
-      ],
-      "registryDependencies": ["@krak-stack/combobox"],
-      "dependencies": ["@base-ui/react", "@tanstack/react-virtual", "react"]
+      "registryDependencies": ["button", "input-group"],
+      "dependencies": [
+        "@base-ui/react",
+        "@tanstack/react-virtual",
+        "lucide-react",
+        "react"
+      ]
     }
   ]
 }

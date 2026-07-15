@@ -7,24 +7,12 @@ import {
   HttpClientResponse,
 } from "effect/unstable/http";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
-import { useDeferredValue, useId, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { Icon } from "@iconify/react";
 import { ExternalLink, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
 import { getLocale } from "@/paraglide/runtime";
 
 const IconifySearchResponse = Schema.Struct({
@@ -104,7 +92,6 @@ export function IconInput({
 }: IconInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const searchInputId = useId();
   const deferredQuery = useDeferredValue(query);
   const iconSearchResult = useIconSearchAtom(collection, deferredQuery);
   const icons = AsyncResult.isSuccess(iconSearchResult)
@@ -114,92 +101,75 @@ export function IconInput({
   const isWaiting =
     deferredQuery.trim() !== "" && AsyncResult.isWaiting(iconSearchResult);
 
-  const selectIcon = (icon: string) => {
-    onValueChange(icon);
-    setQuery("");
-    setIsOpen(false);
-  };
+  const items = icons.map((icon) => ({ label: icon, value: icon }));
+  const selectedItem = value ? { label: value, value } : null;
 
   return (
-    <Popover
+    <VirtualizedCombobox
+      ariaLabel={copy.select}
+      contentClassName="w-80"
+      emptyLabel={
+        isWaiting ? null : (
+          <div className="text-muted-foreground flex flex-col items-center gap-2 px-3">
+            <Search className="size-5" />
+            <p>{query ? copy.empty : copy.searchPrompt}</p>
+            <Button
+              render={
+                <a
+                  href={iconifyCollectionUrl(collection)}
+                  rel="noreferrer"
+                  target="_blank"
+                />
+              }
+              size="sm"
+              variant="link"
+            >
+              {copy.browse} <ExternalLink className="inline size-3" />
+            </Button>
+          </div>
+        )
+      }
+      items={items}
+      messages={{ search: copy.searchPlaceholder }}
       onOpenChange={(open) => {
         setIsOpen(open);
-        if (open) {
-          setQuery("");
-          window.requestAnimationFrame(() =>
-            document
-              .getElementById(searchInputId)
-              ?.focus({ preventScroll: true }),
-          );
-        }
+        if (open) setQuery("");
       }}
       open={isOpen}
-    >
-      <PopoverTrigger
-        render={
-          <Button
-            aria-label={copy.select}
-            disabled={disabled}
-            id={id}
-            size="icon"
-            title={value}
-            type="button"
-            variant="outline"
-          >
-            <Icon className="size-5" icon={`${collection}:${value}`} />
-          </Button>
-        }
-      />
-      <PopoverContent align="start" className="w-80 p-0">
-        <Command shouldFilter={false} value={query}>
-          <CommandInput
-            id={searchInputId}
-            onValueChange={setQuery}
-            placeholder={copy.searchPlaceholder}
-            value={query}
+      onSearchValueChange={setQuery}
+      onValueChange={(item) => {
+        if (!item) return;
+        onValueChange(item.value);
+        setQuery("");
+        setIsOpen(false);
+      }}
+      placeholder={copy.select}
+      renderItem={(item) => (
+        <>
+          <Icon
+            className="size-5 shrink-0"
+            icon={`${collection}:${item.value}`}
           />
-          <CommandList className="h-72">
-            {isWaiting ? null : icons.length > 0 ? (
-              <CommandGroup>
-                {icons.map((icon) => (
-                  <CommandItem
-                    key={icon}
-                    onSelect={() => selectIcon(icon)}
-                    value={icon}
-                  >
-                    <Icon
-                      className="size-5 shrink-0"
-                      icon={`${collection}:${icon}`}
-                    />
-                    <span className="truncate">{icon}</span>
-                    <span className="sr-only">{copy.select}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            ) : (
-              <CommandEmpty className="flex h-72 items-center justify-center">
-                <div className="text-muted-foreground flex flex-col items-center gap-2">
-                  <Search className="size-5" />
-                  <p>{query ? copy.empty : copy.searchPrompt}</p>
-                  <Button
-                    render={
-                      <a
-                        href={iconifyCollectionUrl(collection)}
-                        rel="noreferrer"
-                        target="_blank"
-                      />
-                    }
-                    size="sm"
-                    variant="link"
-                  >
-                    {copy.browse} <ExternalLink className="inline size-3" />
-                  </Button>
-                </div>
-              </CommandEmpty>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+          <span className="truncate">{item.label}</span>
+          <span className="sr-only">{copy.select}</span>
+        </>
+      )}
+      searchValue={query}
+      trigger={
+        <Button
+          aria-label={copy.select}
+          disabled={disabled}
+          id={id}
+          size="icon"
+          title={value}
+          type="button"
+          variant="outline"
+        >
+          <Icon className="size-5" icon={`${collection}:${value}`} />
+        </Button>
+      }
+      value={selectedItem}
+      {...(disabled === undefined ? {} : { disabled })}
+    />
   );
 }

@@ -218,9 +218,11 @@ export function DataTablePreview() {
         <DataTable
           columns={columns}
           data={projects}
-          exportFileName="projects.csv"
-          from="/docs/registry/$slug"
-          gallery={{ name: "name", description: "summary", tag: "status" }}
+          features={{
+            export: { baseName: "projects", scope: "filteredRows" },
+            gallery: { name: "name", description: "summary", tag: "status" },
+            rowActions: { items: rowActions },
+          }}
           grouping={{
             initial: ["status"],
             getRowLabel: (project) => project.name,
@@ -251,7 +253,7 @@ export function DataTablePreview() {
             ],
           }}
           onRowClick={(project) => window.alert(`Selected ${project.name}`)}
-          rowActions={rowActions}
+          routeFrom="/docs/registry/$slug"
         />
       </CardContent>
     </Card>

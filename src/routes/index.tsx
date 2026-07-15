@@ -26,7 +26,6 @@ import {
   Globe,
   KeyRound,
   Layers,
-  List,
   ListFilter,
   ListChecks,
   Mail,
@@ -60,9 +59,8 @@ const iconByName = {
   "sidebar-layout": Blocks,
   "search-menu": Search,
   "code-block": Blocks,
-  combobox: ChevronsUpDown,
+  "virtualized-combobox": ChevronsUpDown,
   "stats-card": Activity,
-  "combobox-list-virtualized": List,
   agents: Bot,
   "lint-format": Wrench,
 } as const;

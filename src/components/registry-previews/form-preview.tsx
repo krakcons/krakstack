@@ -29,6 +29,7 @@ type FormValues = {
   email: string;
   plan: string;
   interests: string[];
+  searchableInterest: string;
   notes: string;
   metadata: Record<string, string>;
   acceptedTerms: boolean;
@@ -47,6 +48,7 @@ export function FormPreview() {
       email: "ada@example.com",
       plan: "growth",
       interests: ["forms", "tables"],
+      searchableInterest: "registry",
       notes: "Show me a workflow with reusable fields and guarded navigation.",
       metadata: { source: "docs", priority: "high" },
       acceptedTerms: true,
@@ -119,11 +121,24 @@ export function FormPreview() {
                 </form.AppField>
                 <form.AppField name="interests">
                   {(field) => (
-                    <field.MultiSelectField
-                      description="MultiSelectField stores an array of string values."
+                    <field.SelectField
+                      description="SelectField supports single or multiple values."
                       label="Interests"
+                      multiple
                       options={interestOptions}
                       placeholder="Pick interests"
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="searchableInterest">
+                  {(field) => (
+                    <field.SearchableSelectField
+                      description="SearchableSelectField supports searchable single or multiple selection."
+                      emptyLabel="No interests found."
+                      initialItems={interestOptions}
+                      items={interestOptions}
+                      label="Primary interest"
+                      placeholder="Search interests"
                     />
                   )}
                 </form.AppField>
