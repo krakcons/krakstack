@@ -20,11 +20,11 @@ const messages = {
   en: {
     title: "Switch language",
     en: "English",
-    fr: "French",
+    fr: "Français",
   },
   fr: {
     title: "Changer de langue",
-    en: "Anglais",
+    en: "English",
     fr: "Français",
   },
 } as const satisfies Record<Locale, Record<Locale | "title", string>>;
