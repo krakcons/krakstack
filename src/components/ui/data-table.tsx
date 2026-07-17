@@ -16,20 +16,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Pagination,
+  paginationMessages,
+  type PaginationMessages,
+} from "@/components/ui/pagination";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -88,10 +85,7 @@ import {
   ArrowDown,
   ArrowUp,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   ChevronsUpDown,
   Download,
   EyeOff,
@@ -174,18 +168,15 @@ type DataTableView = typeof DataTableViewSchema.Type;
 const ColumnVisibilitySchema = Schema.Record(Schema.String, Schema.Boolean);
 const ColumnSizingSchema = Schema.Record(Schema.String, Schema.Number);
 
-export type DataTableMessages = {
+export type DataTableMessages = PaginationMessages & {
   actions: string;
-  pageSize: string;
   empty: string;
   loading: string;
   filter: string;
-  results: (count: number) => string;
   export: string;
   exportCsv: string;
   exportJson: string;
   refresh: string;
-  selectedOf: (selected: number, total: number) => string;
   view: string;
   tableView: string;
   galleryView: string;
@@ -198,27 +189,20 @@ export type DataTableMessages = {
   sortBy: string;
   reorder: string;
   resizeColumn: (column: string) => string;
-  pageOf: (page: number, total: number) => string;
-  goToFirstPage: string;
-  goToPreviousPage: string;
-  goToNextPage: string;
-  goToLastPage: string;
   listOthers: (count: number) => string;
 };
 
 const messages = {
   en: {
+    ...paginationMessages("en"),
     actions: "Actions",
-    pageSize: "Page size",
     empty: "No results.",
     loading: "Loading...",
     filter: "Filter results...",
-    results: (count: number) => `${count} results`,
     export: "Export",
     exportCsv: "CSV",
     exportJson: "JSON",
     refresh: "Refresh",
-    selectedOf: (selected: number, total: number) => `${selected} of ${total}`,
     view: "View",
     tableView: "Table",
     galleryView: "Gallery",
@@ -231,26 +215,19 @@ const messages = {
     sortBy: "Sort by",
     reorder: "Drag to reorder",
     resizeColumn: (column: string) => `Resize ${column} column`,
-    pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
-    goToFirstPage: "Go to first page",
-    goToPreviousPage: "Go to previous page",
-    goToNextPage: "Go to next page",
-    goToLastPage: "Go to last page",
     listOthers: (count: number) =>
       count === 1 ? "and 1 other" : `and ${count} others`,
   },
   fr: {
+    ...paginationMessages("fr"),
     actions: "Actions",
-    pageSize: "Taille de la page",
     empty: "Aucun résultat.",
     loading: "Chargement...",
     filter: "Filtrer les résultats...",
-    results: (count: number) => `${count} résultats`,
     export: "Exporter",
     exportCsv: "CSV",
     exportJson: "JSON",
     refresh: "Rafraîchir",
-    selectedOf: (selected: number, total: number) => `${selected} sur ${total}`,
     view: "Affichage",
     tableView: "Tableau",
     galleryView: "Galerie",
@@ -263,11 +240,6 @@ const messages = {
     sortBy: "Trier par",
     reorder: "Glisser pour réordonner",
     resizeColumn: (column: string) => `Redimensionner la colonne ${column}`,
-    pageOf: (page: number, total: number) => `Page ${page} sur ${total}`,
-    goToFirstPage: "Aller à la première page",
-    goToPreviousPage: "Aller à la page précédente",
-    goToNextPage: "Aller à la page suivante",
-    goToLastPage: "Aller à la dernière page",
     listOthers: (count: number) =>
       count === 1 ? "et 1 autre" : `et ${count} autres`,
   },
@@ -2323,84 +2295,26 @@ export function DataTablePagination<TData>({
   const totalRows = rowCount ?? filteredRows;
 
   return (
-    <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
-      <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <span>{labels.results(totalRows)}</span>
-        {selectedRows > 0 ? (
-          <span>{labels.selectedOf(selectedRows, totalRows)}</span>
-        ) : null}
-      </div>
-      <div className="flex items-center gap-4 sm:justify-end">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="page-size" className="hidden text-sm sm:block">
-            {labels.pageSize}
-          </Label>
-          <Select
-            items={pageSizes.map((pageSize) => ({
-              label: pageSize.toString(),
-              value: pageSize.toString(),
-            }))}
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value));
-            }}
-          >
-            <SelectTrigger className="h-8 w-[70px]" id="page-size">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {pageSizes.map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center text-sm font-medium sm:block">
-            {labels.pageOf(
-              table.getState().pagination.pageIndex + 1,
-              table.getPageCount(),
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">{labels.goToFirstPage}</span>
-              <ChevronsLeft />
-            </Button>
-            <Button
-              className="h-8 w-8 p-0"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">{labels.goToPreviousPage}</span>
-              <ChevronLeft />
-            </Button>
-            <Button
-              className="h-8 w-8 p-0"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">{labels.goToNextPage}</span>
-              <ChevronRight />
-            </Button>
-            <Button
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">{labels.goToLastPage}</span>
-              <ChevronsRight />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Pagination
+      messages={{
+        pageSize: labels.pageSize,
+        results: labels.results,
+        selectedOf: labels.selectedOf,
+        pageOf: labels.pageOf,
+        goToFirstPage: labels.goToFirstPage,
+        goToPreviousPage: labels.goToPreviousPage,
+        goToNextPage: labels.goToNextPage,
+        goToLastPage: labels.goToLastPage,
+      }}
+      onPageChange={(page) => table.setPageIndex(page)}
+      onPageSizeChange={(pageSize) => table.setPageSize(pageSize)}
+      page={table.getState().pagination.pageIndex}
+      pageCount={table.getPageCount()}
+      pageSize={table.getState().pagination.pageSize}
+      pageSizes={pageSizes}
+      selectedRows={selectedRows}
+      totalRows={totalRows}
+    />
   );
 }
 

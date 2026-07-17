@@ -88,6 +88,22 @@
       ]
     },
     {
+      "name": "pagination",
+      "type": "registry:component",
+      "title": "Pagination",
+      "description": "Controlled pagination controls with page-size selection, result summaries, compact layouts, and localized labels.",
+      "docs": "## Overview\n\n`Pagination` is a controlled paginator for lists, cards, and tables. It includes a page-size selector, current-page status, first/previous/next/last navigation, optional result and selection summaries, and a compact mode for narrow containers. English and French labels are built in and can be overridden through `messages`.\n\n## Usage\n\n```tsx\nimport { Pagination } from \"@/components/ui/pagination\";\n\n<Pagination\n  page={page}\n  pageCount={pageCount}\n  pageSize={pageSize}\n  totalRows={total}\n  onPageChange={setPage}\n  onPageSizeChange={(size) => {\n    setPage(0);\n    setPageSize(size);\n  }}\n/>\n```\n\nUse `compact` in sidebars or narrow result panels, and `showResults={false}` when the surrounding view already displays a result count.",
+      "files": [
+        {
+          "path": "src/components/ui/pagination.tsx",
+          "type": "registry:component",
+          "target": "components/ui/pagination.tsx"
+        }
+      ],
+      "registryDependencies": ["button", "label", "select"],
+      "dependencies": ["lucide-react", "react"]
+    },
+    {
       "name": "data-table",
       "type": "registry:block",
       "title": "Data Table",
@@ -102,17 +118,16 @@
       ],
       "registryDependencies": [
         "@krak-stack/query-helpers",
+        "@krak-stack/pagination",
         "badge",
         "card",
         "dropdown-menu",
         "button",
         "input",
-        "label",
         "@krak-stack/loading",
         "@krak-stack/virtualized-combobox",
         "popover",
         "scroll-area",
-        "select",
         "table"
       ],
       "dependencies": [
