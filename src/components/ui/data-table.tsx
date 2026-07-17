@@ -17,6 +17,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -68,10 +73,17 @@ import {
   getSortedRowModel,
   type Header,
   type Row,
+  type RowData,
   type SortingState,
   type Table as TanstackTable,
   useReactTable,
 } from "@tanstack/react-table";
+
+declare module "@tanstack/react-table" {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    truncate?: boolean;
+  }
+}
 import {
   ArrowDown,
   ArrowUp,
@@ -102,7 +114,8 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
+import { KeyValueStore } from "effect/unstable/persistence";
 import { Atom } from "effect/unstable/reactivity";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -130,9 +143,27 @@ export const TableSearchSchemaStandard =
   Schema.toStandardSchemaV1(TableSearchSchema);
 export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
-const dataTableStorageRuntime = Atom.runtime(
-  BrowserKeyValueStore.layerLocalStorage,
-);
+const compactDataTableStorage = Layer.effect(
+  KeyValueStore.KeyValueStore,
+  Effect.map(KeyValueStore.KeyValueStore, (store) =>
+    KeyValueStore.make({
+      clear: store.clear,
+      get: (key) =>
+        Effect.flatMap(store.get(key), (value) =>
+          value === "{}"
+            ? Effect.as(store.remove(key), undefined)
+            : Effect.succeed(value),
+        ),
+      getUint8Array: store.getUint8Array,
+      remove: store.remove,
+      set: (key, value) =>
+        value === "{}" ? store.remove(key) : store.set(key, value),
+      size: store.size,
+    }),
+  ),
+).pipe(Layer.provide(BrowserKeyValueStore.layerLocalStorage));
+
+const dataTableStorageRuntime = Atom.runtime(compactDataTableStorage);
 
 const DataTableViewSchema = Schema.Union([
   Schema.Literal("table"),
@@ -844,7 +875,10 @@ const DataTableRow = <TData,>({
           <TableCell
             key={cell.id}
             className={cn(
-              "align-center min-w-32 overflow-hidden whitespace-nowrap [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0",
+              "align-center min-w-32 overflow-hidden [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0",
+              cell.column.columnDef.meta?.truncate
+                ? "whitespace-nowrap"
+                : "whitespace-normal",
               rowActions &&
                 isLastCell &&
                 "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])>div]:mr-11",
@@ -858,7 +892,14 @@ const DataTableRow = <TData,>({
                 : { width: cell.column.getSize() }
             }
           >
-            <div className="max-w-full min-w-0 truncate">
+            <div
+              className={cn(
+                "w-full max-w-full min-w-0 overflow-hidden break-words [&:has([data-slot=list-summary])]:line-clamp-none",
+                cell.column.columnDef.meta?.truncate
+                  ? "truncate"
+                  : "line-clamp-3",
+              )}
+            >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </div>
           </TableCell>
@@ -1259,6 +1300,7 @@ export function DataTable<TData, TValue>({
   const search = location.search as TableParams | undefined;
   const pathname = location.pathname;
   const resolvedRouteFrom = routeFrom ?? from;
+  const [storagePath] = useState(() => resolvedRouteFrom ?? pathname);
   const navigate = useNavigate(
     resolvedRouteFrom ? { from: resolvedRouteFrom } : undefined,
   );
@@ -1296,8 +1338,8 @@ export function DataTable<TData, TValue>({
       })
       .join(",");
 
-    return `${pathname}:${columnIds}`;
-  }, [columns, pathname]);
+    return `${storagePath}:${columnIds}`;
+  }, [columns, storagePath]);
   const columnVisibilityAtom = useMemo(
     () =>
       Atom.kvs({
@@ -1938,7 +1980,7 @@ export function DataTable<TData, TValue>({
                 <Table
                   className="table-fixed"
                   style={{
-                    width: table.getTotalSize() + (canReorderRows ? 40 : 0),
+                    width: `max(100%, ${table.getTotalSize() + (canReorderRows ? 40 : 0)}px)`,
                   }}
                 >
                   <TableHeader>
@@ -2417,6 +2459,7 @@ export function DataTableRelationshipCell({
         >
           <DataTableListSummary
             emptyLabel={emptyLabel}
+            expandable={false}
             items={selectedOptions.map(({ label }) => label)}
           />
           <ChevronDown className="text-muted-foreground size-4 shrink-0" />
@@ -2429,11 +2472,13 @@ export function DataTableRelationshipCell({
 
 export function DataTableListSummary({
   emptyLabel,
+  expandable = true,
   items,
   overflowLabel,
   visibleCount = 3,
 }: {
   emptyLabel: ReactNode;
+  expandable?: boolean | undefined;
   items: readonly string[];
   overflowLabel?: ((remaining: number) => ReactNode) | undefined;
   visibleCount?: number | undefined;
@@ -2441,24 +2486,58 @@ export function DataTableListSummary({
   const labels = dataTableMessages();
   const visibleItems = items.slice(0, visibleCount).join(", ");
   const remaining = Math.max(items.length - visibleCount, 0);
+  const remainingLabel =
+    overflowLabel?.(remaining) ?? labels.listOthers(remaining);
 
   if (items.length === 0) {
-    return (
-      <span className="text-muted-foreground block truncate text-sm">
-        {emptyLabel}
-      </span>
-    );
+    return <span className="text-muted-foreground text-sm">{emptyLabel}</span>;
   }
 
   return remaining > 0 ? (
-    <span className="block min-w-0 truncate text-sm" data-slot="list-summary">
-      <span>{visibleItems}</span>
-      <span className="ml-1 inline-block">
-        {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
+    <span
+      className="block min-w-0 text-sm whitespace-normal"
+      data-slot="list-summary"
+    >
+      <span>{visibleItems}</span>{" "}
+      <span className="inline-block whitespace-nowrap">
+        {expandable ? (
+          <Popover>
+            <PopoverTrigger
+              render={
+                <button
+                  className="text-muted-foreground hover:text-foreground underline decoration-dotted underline-offset-2"
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  type="button"
+                >
+                  {remainingLabel}
+                </button>
+              }
+            />
+            <PopoverContent
+              align="start"
+              className="max-h-72 w-72 overflow-y-auto p-2"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <ul className="grid gap-1">
+                {items.map((item, index) => (
+                  <li
+                    className="rounded-sm px-2 py-1.5 break-words"
+                    key={`${item}-${index}`}
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          remainingLabel
+        )}
       </span>
     </span>
   ) : (
-    <span className="block min-w-0 truncate text-sm" data-slot="list-summary">
+    <span className="block min-w-0 text-sm" data-slot="list-summary">
       {visibleItems}
     </span>
   );

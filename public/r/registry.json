@@ -110,6 +110,7 @@
         "label",
         "@krak-stack/loading",
         "@krak-stack/virtualized-combobox",
+        "popover",
         "scroll-area",
         "select",
         "table"
