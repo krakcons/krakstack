@@ -220,106 +220,6 @@
       "dependencies": ["lucide-react", "react"]
     },
     {
-      "name": "user-button",
-      "type": "registry:block",
-      "title": "User Button",
-      "description": "A Better Auth user menu with a central-auth-backed account dialog, localized labels, and sign-out handling.",
-      "docs": "## Overview\n\n`user-button` provides a compact authenticated-user dropdown for apps that use Krakstack Auth as a central identity provider. It reads the visible app session and central account state from `authClient`, including profile updates, linked accounts, password settings, two-factor authentication, and user API keys.\n\n## Features\n\n- Central Krakstack Auth session display\n- Central Krakstack Auth account mutations through `authClient`\n- Profile, linked accounts, password, 2FA, and API-key dialogs\n- Reconnect state when the central auth session is missing\n- Localized menu and form labels\n- Configurable sign-out redirect\n- Configurable dropdown side\n\n## Usage\n\n```tsx\nimport { UserButton } from \"@krak-stack/auth\";\n\n<UserButton signOutRedirect=\"/\" side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`.",
-      "files": [
-        {
-          "path": "src/services/auth/client/index.ts",
-          "type": "registry:file",
-          "target": "services/auth/client/index.ts"
-        }
-      ],
-      "registryDependencies": [
-        "badge",
-        "button",
-        "@krak-stack/data-table",
-        "dialog",
-        "dropdown-menu",
-        "form",
-        "separator"
-      ],
-      "dependencies": [
-        "@better-auth/api-key",
-        "@krak-stack/auth",
-        "@tanstack/react-table",
-        "better-auth",
-        "effect",
-        "lucide-react",
-        "react",
-        "react-qr-code"
-      ]
-    },
-    {
-      "name": "organization-switcher",
-      "type": "registry:block",
-      "title": "Organization Switcher",
-      "description": "A Better Auth organization switcher backed by the central Krakstack Auth client, with localized organization profile metadata, organization invitations, and organization API keys.",
-      "docs": "## Overview\n\n`organization-switcher` provides an organization-aware dropdown for apps using Krakstack Auth as the central identity provider. It uses `authClient` so the active organization, memberships, invitations, organization metadata, and organization API keys stay scoped to the central auth service.\n\n## Features\n\n- Central Krakstack Auth organization list and active organization state\n- Create organizations and auto-generate slugs\n- Switch between organizations\n- View, accept, and decline pending organization invitations\n- Edit the active organization's canonical name and slug\n- Store localized public profile data in `metadata.translations`\n- Locale editing selector registered as `editing-locale-switcher`\n- Localized organization name, logo, contact email, and location fields\n- Manage organization-scoped API keys\n- Configurable unauthenticated render slot\n- Configurable locked mode for fixed-organization contexts\n- Localized menu and form labels\n\n## Usage\n\n```tsx\nimport { OrganizationSwitcher } from \"@krak-stack/auth\";\n\n<OrganizationSwitcher side=\"bottom\" />\n```\n\nSet `VITE_KRAKSTACK_AUTH_URL` to your central auth origin, for example `http://localhost:3001`. The central auth server must have Better Auth's organization and API-key plugins enabled.",
-      "files": [
-        {
-          "path": "src/services/auth/client/index.ts",
-          "type": "registry:file",
-          "target": "services/auth/client/index.ts"
-        }
-      ],
-      "registryDependencies": [
-        "badge",
-        "button",
-        "@krak-stack/data-table",
-        "dialog",
-        "dropdown-menu",
-        "@krak-stack/editing-locale-switcher",
-        "form",
-        "label",
-        "select",
-        "separator"
-      ],
-      "dependencies": [
-        "@better-auth/api-key",
-        "@krak-stack/auth",
-        "@tanstack/react-table",
-        "better-auth",
-        "effect",
-        "lucide-react",
-        "react"
-      ]
-    },
-    {
-      "name": "sign-in",
-      "type": "registry:block",
-      "title": "Sign In",
-      "description": "A Better Auth email/password sign-in card with TanStack Form validation and localized labels.",
-      "docs": "## Overview\n\n`sign-in` provides a self-contained email/password sign-in card for Better Auth projects. It submits credentials through `authClient.signIn.email()`, displays form-level errors, and links to the sign-up route.\n\n## Features\n\n- Better Auth email/password sign-in\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n- Card-based layout ready to drop into a route\n\n## Usage\n\n```tsx\nimport { SignIn } from \"@/components/ui/sign-in\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignIn />\n</main>\n```",
-      "files": [
-        {
-          "path": "src/components/ui/sign-in.tsx",
-          "type": "registry:component",
-          "target": "components/ui/sign-in.tsx"
-        }
-      ],
-      "registryDependencies": ["card", "form"],
-      "dependencies": ["@tanstack/react-router", "better-auth", "react"]
-    },
-    {
-      "name": "sign-up",
-      "type": "registry:block",
-      "title": "Sign Up",
-      "description": "A Better Auth email/password registration card with TanStack Form validation and localized labels.",
-      "docs": "## Overview\n\n`sign-up` provides a self-contained account creation card for Better Auth projects. It creates users through `authClient.signUp.email()`, displays form-level errors, and links back to the sign-in route.\n\n## Features\n\n- Better Auth email/password registration\n- Name, email, and password fields\n- TanStack Form state and submit handling\n- Localized labels, descriptions, and errors\n\n## Usage\n\n```tsx\nimport { SignUp } from \"@/components/ui/sign-up\";\n\n<main className=\"grid min-h-screen place-items-center px-6 py-10\">\n  <SignUp />\n</main>\n```",
-      "files": [
-        {
-          "path": "src/components/ui/sign-up.tsx",
-          "type": "registry:component",
-          "target": "components/ui/sign-up.tsx"
-        }
-      ],
-      "registryDependencies": ["card", "form"],
-      "dependencies": ["@tanstack/react-router", "better-auth", "react"]
-    },
-    {
       "name": "krakstack-auth",
       "type": "registry:lib",
       "title": "Krakstack Auth",
@@ -526,7 +426,7 @@
     },
     {
       "name": "embedding-layer",
-      "title": "Embedding Layer",
+      "title": "Embeddings",
       "description": "An Effect layer that configures an OpenAI-compatible embeddings model from EMBEDDINGS_URL, EMBEDDINGS_MODEL, and EMBEDDINGS_DIMENSIONS.",
       "type": "registry:lib",
       "docs": "## Overview\n\n`embedding-layer` provides an OpenAI-compatible embedding model layer configured through Effect `Config`. It reads the embeddings endpoint, model name, and output dimensions from the environment, then wires the OpenAI-compatible client through `FetchHttpClient`.\n\n## Layers\n\n```ts\nimport { OpenAiClient, OpenAiEmbeddingModel } from \"@effect/ai-openai-compat\";\nimport { Config, Effect, Layer, Redacted } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nexport const EmbeddingLayer = Layer.unwrap(\n  Effect.gen(function* () {\n    const apiUrl = yield* Config.string(\"EMBEDDINGS_URL\");\n    const embeddingModel = yield* Config.string(\"EMBEDDINGS_MODEL\");\n    const embeddingDimensions = yield* Config.number(\"EMBEDDINGS_DIMENSIONS\");\n\n    const embeddingClientLayer = OpenAiClient.layer({\n      apiKey: Redacted.make(\"embedding\"),\n      apiUrl,\n    });\n\n    return OpenAiEmbeddingModel.layer({\n      model: embeddingModel,\n      config: {\n        dimensions: embeddingDimensions,\n        encoding_format: \"float\",\n      },\n    }).pipe(\n      Layer.provide(embeddingClientLayer),\n      Layer.provide(FetchHttpClient.layer),\n    );\n  }),\n);\n```\n\n## Environment Variables\n\n- `EMBEDDINGS_URL` - OpenAI-compatible embeddings API URL\n- `EMBEDDINGS_MODEL` - Embeddings model name\n- `EMBEDDINGS_DIMENSIONS` - Embedding vector dimensions",

@@ -8,12 +8,9 @@ import {
 import { AgentsPreview } from "@/components/registry-previews/agents-preview";
 import { FormPreview } from "@/components/registry-previews/form-preview";
 import { LintFormatPreview } from "@/components/registry-previews/lint-format-preview";
-import { SignInPreview } from "@/components/registry-previews/sign-in-preview";
-import { SignUpPreview } from "@/components/registry-previews/sign-up-preview";
-import { OrganizationSwitcherPreview } from "@/components/registry-previews/organization-switcher-preview";
-import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
 import { CopyButtonPreview } from "@/components/registry-previews/copy-button-preview";
 import { LoadingPreview } from "@/components/registry-previews/loading-preview";
+import { PaginationPreview } from "@/components/registry-previews/pagination-preview";
 import { IconInputPreview } from "@/components/registry-previews/icon-input-preview";
 import { VirtualizedComboboxPreview } from "@/components/registry-previews/virtualized-combobox-preview";
 import {
@@ -140,14 +137,6 @@ function RegistryPreview({ slug }: { slug: string }) {
       <DataTablePreview />
     ) : slug === "form" ? (
       <FormPreview />
-    ) : slug === "user-button" ? (
-      <UserButtonPreview />
-    ) : slug === "organization-switcher" ? (
-      <OrganizationSwitcherPreview />
-    ) : slug === "sign-in" ? (
-      <SignInPreview />
-    ) : slug === "sign-up" ? (
-      <SignUpPreview />
     ) : slug === "agents" ? (
       <AgentsPreview />
     ) : slug === "lint-format" ? (
@@ -156,6 +145,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <CopyButtonPreview />
     ) : slug === "loading" ? (
       <LoadingPreview />
+    ) : slug === "pagination" ? (
+      <PaginationPreview />
     ) : slug === "icon-input" ? (
       <IconInputPreview />
     ) : slug === "virtualized-combobox" ? (

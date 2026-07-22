@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "embedding-layer",
-  "title": "Embedding Layer",
+  "title": "Embeddings",
   "description": "An Effect layer that configures an OpenAI-compatible embeddings model from EMBEDDINGS_URL, EMBEDDINGS_MODEL, and EMBEDDINGS_DIMENSIONS.",
   "dependencies": [
     "@effect/ai-openai-compat@beta",

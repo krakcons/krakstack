@@ -22,7 +22,7 @@ const registryConfig = `{
 }`;
 
 const installCommands = `bunx shadcn@latest add @krak-stack/data-table
-bunx shadcn@latest add @krak-stack/user-button`;
+bunx shadcn@latest add @krak-stack/pagination`;
 
 const verificationCommands = `bun type:check
 bun lint

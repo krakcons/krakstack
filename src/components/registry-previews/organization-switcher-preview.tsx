@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { OrganizationSwitcher, type AuthUiClient } from "@krak-stack/auth";
+import { OrganizationSwitcher } from "@krak-stack/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,8 +11,6 @@ import {
 } from "@/components/ui/card";
 import { m } from "@/paraglide/messages";
 import { authClient, centralAuthBaseUrl } from "@/services/auth/client";
-
-const authUiClient = authClient as unknown as AuthUiClient;
 
 export function OrganizationSwitcherPreview() {
   const navigate = useNavigate();
@@ -32,7 +30,7 @@ export function OrganizationSwitcherPreview() {
             {m.organization_switcher_preview_expanded()}
           </p>
           <OrganizationSwitcher
-            authClient={authUiClient}
+            authClient={authClient}
             baseUrl={centralAuthBaseUrl}
             className="max-w-xs"
             renderUnauthenticated={() => (
@@ -40,7 +38,7 @@ export function OrganizationSwitcherPreview() {
                 onClick={async () => {
                   const result = await authClient.signIn.oauth2({
                     providerId: "krakstack-auth",
-                    callbackURL: "/docs/registry/organization-switcher",
+                    callbackURL: "/docs/packages/auth",
                   });
                   if (result.data?.url) {
                     navigate({ href: result.data.url });
@@ -58,7 +56,7 @@ export function OrganizationSwitcherPreview() {
           </p>
           <div className="group w-8" data-collapsible="icon">
             <OrganizationSwitcher
-              authClient={authUiClient}
+              authClient={authClient}
               baseUrl={centralAuthBaseUrl}
               className="w-8"
               renderUnauthenticated={() => (
@@ -67,7 +65,7 @@ export function OrganizationSwitcherPreview() {
                   onClick={async () => {
                     const result = await authClient.signIn.oauth2({
                       providerId: "krakstack-auth",
-                      callbackURL: "/docs/registry/organization-switcher",
+                      callbackURL: "/docs/packages/auth",
                     });
                     if (result.data?.url) {
                       navigate({ href: result.data.url });

@@ -17,6 +17,9 @@ const config = defineConfig({
   server: {
     port: Number(process.env.PORT) || 3000,
   },
+  ssr: {
+    noExternal: ["@krak-stack/auth"],
+  },
   plugins: [
     paraglideVitePlugin({
       project: "./project.inlang",

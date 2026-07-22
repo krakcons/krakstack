@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { UserButton, type AuthUiClient } from "@krak-stack/auth";
+import { UserButton } from "@krak-stack/auth";
 import {
   Card,
   CardContent,
@@ -10,8 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { authClient, centralAuthBaseUrl } from "@/services/auth/client";
-
-const authUiClient = authClient as unknown as AuthUiClient;
 
 export function UserButtonPreview() {
   const navigate = useNavigate();
@@ -26,16 +24,16 @@ export function UserButtonPreview() {
       </CardHeader>
       <CardContent className="flex items-center justify-center py-12">
         <UserButton
-          authClient={authUiClient}
+          authClient={authClient}
           baseUrl={centralAuthBaseUrl}
           apiKeyPermissions={{ projects: ["read"] }}
-          signOutRedirect="/docs/registry/user-button"
+          signOutRedirect="/docs/packages/auth"
           renderUnauthenticated={() => (
             <Button
               onClick={async () => {
                 const result = await authClient.signIn.oauth2({
                   providerId: "krakstack-auth",
-                  callbackURL: "/docs/registry/user-button",
+                  callbackURL: "/docs/packages/auth",
                 });
                 if (result.data?.url) {
                   navigate({ href: result.data.url });

@@ -4,28 +4,26 @@ import {
   Badge,
   BellRing,
   Bot,
-  Building2,
   Cloud,
   ChevronsUpDown,
   ClipboardList,
   CodeXml,
   Copy,
   Database,
+  GalleryHorizontalEnd,
   ImageIcon,
   Languages,
   Globe,
-  KeyRound,
-  Layers,
   ListFilter,
   LoaderCircle,
   Mail,
   MonitorCog,
+  Orbit,
   PanelLeft,
   Search,
   Shield,
   SquareTerminal,
   Table2,
-  UserRound,
   Wrench,
   Workflow,
 } from "lucide-react";
@@ -41,14 +39,18 @@ export function getRegistryItem(slug: string) {
 }
 
 export function getRegistryGroup(item: RegistryItem) {
-  if (item.name === "embedding-layer") return "Layers";
+  if (item.name === "embedding-layer") return "Services";
   if (["query-helpers", "httpapi-cli", "httpapi-mcp"].includes(item.name)) {
     return "Libraries";
   }
   if (
-    ["copy-button", "icon-input", "loading", "virtualized-combobox"].includes(
-      item.name,
-    )
+    [
+      "copy-button",
+      "icon-input",
+      "loading",
+      "pagination",
+      "virtualized-combobox",
+    ].includes(item.name)
   ) {
     return "Components";
   }
@@ -71,17 +73,13 @@ const iconByName = {
   "locale-switcher": Globe,
   "theme-switcher": MonitorCog,
   "editing-locale-switcher": Languages,
-  "user-button": UserRound,
-  "organization-switcher": Building2,
-  "sign-in": KeyRound,
-  "sign-up": KeyRound,
   auth: Shield,
   "service-database": Database,
   "service-opentelemetry": Activity,
   "service-notification": BellRing,
   "notification-channel-email-ses": Mail,
   "service-s3": Cloud,
-  "embedding-layer": Layers,
+  "embedding-layer": Orbit,
   "query-helpers": ListFilter,
   "httpapi-cli": SquareTerminal,
   "httpapi-mcp": Workflow,
@@ -92,6 +90,8 @@ const iconByName = {
   "virtualized-combobox": ChevronsUpDown,
   loading: LoaderCircle,
   "icon-input": ImageIcon,
+  pagination: GalleryHorizontalEnd,
+  localization: Languages,
   "stats-card": Activity,
   agents: Bot,
   "lint-format": Wrench,
