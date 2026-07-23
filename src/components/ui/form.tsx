@@ -13,7 +13,7 @@ import {
 } from "@tanstack/react-form";
 import { Block } from "@tanstack/react-router";
 import { Loader2, Plus, Trash, Languages } from "lucide-react";
-import { useRef, type InputHTMLAttributes, type JSX } from "react";
+import type { InputHTMLAttributes, JSX } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FilePicker } from "@/components/ui/file-picker";
 import {
   Field,
   FieldDescription,
@@ -607,20 +607,30 @@ const FileField = ({
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-      <Input
+      <FilePicker
+        accept={accept as string}
+        canClear={field.state.value instanceof File}
+        {...(field.state.value instanceof File
+          ? { file: field.state.value }
+          : {})}
         id={field.name}
+        invalid={invalid}
+        messages={{ accepts: labels.accepts, deleteFile: labels.delete }}
         name={field.name}
-        type="file"
-        accept={accept}
-        onChange={(event) => {
-          const file = event.target.files?.[0] ?? "";
+        onBlur={field.handleBlur}
+        onChange={(file) => {
           field.handleChange(file);
           onFileChange?.(file);
         }}
+        onClear={() => {
+          field.handleChange("");
+          onFileChange?.("");
+        }}
         required={required}
-        aria-invalid={invalid}
+        title={
+          field.state.value instanceof File ? field.state.value.name : label
+        }
       />
-      <FieldDescription>{labels.accepts(accept as string)}</FieldDescription>
       <FieldError errors={field.getMeta().errors} />
     </Field>
   );
@@ -628,12 +638,10 @@ const FileField = ({
 
 const ImageField = ({
   label,
-  defaultImageUrl,
   messages,
   size,
 }: {
   label: string;
-  defaultImageUrl?: string;
   messages?: FormMessageOverrides;
   size: {
     width: number;
@@ -643,66 +651,38 @@ const ImageField = ({
   };
 }) => {
   const labels = formMessages(messages);
-  const { width, height } = size;
   const field = useFieldContext<File | string | null>();
-  const inputRef = useRef<HTMLInputElement>(null);
   const invalid = !field.state.meta.isValid;
 
   const imageUrl =
-    field.state.value instanceof File
-      ? URL.createObjectURL(field.state.value).toString()
-      : (field.state.value ?? defaultImageUrl);
+    typeof field.state.value === "string" ? field.state.value : undefined;
 
   return (
     <Field data-invalid={invalid}>
-      <Label htmlFor={field.name} className="flex-col items-start">
-        {label}
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            height={height}
-            style={{
-              maxHeight: size.height,
-            }}
-            alt={label}
-            className="rounded-md border"
-          />
-        ) : (
-          <div
-            className="bg-muted rounded-md"
-            style={{
-              width,
-              height,
-            }}
-          />
-        )}
-      </Label>
-      <div className="flex items-center gap-2">
-        <Input
-          ref={inputRef}
-          id={field.name}
-          name={field.name}
-          type="file"
-          accept="image/*"
-          onChange={(event) => {
-            field.handleChange(event.target.files?.[0] ?? null);
-          }}
-          aria-invalid={invalid}
-        />
-        {field.state.value && (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={(e) => {
-              e.preventDefault();
-              field.handleChange(null);
-              if (inputRef.current) inputRef.current.value = "";
-            }}
-          >
-            {labels.delete}
-          </Button>
-        )}
-      </div>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <FilePicker
+        accept="image/*"
+        canClear={Boolean(field.state.value)}
+        {...(field.state.value instanceof File
+          ? { file: field.state.value }
+          : {})}
+        id={field.name}
+        image={{
+          alt: label,
+          height: size.height,
+          ...(imageUrl ? { src: imageUrl } : {}),
+          width: size.width,
+        }}
+        invalid={invalid}
+        messages={{ accepts: labels.accepts, deleteFile: labels.delete }}
+        name={field.name}
+        onBlur={field.handleBlur}
+        onChange={field.handleChange}
+        onClear={() => field.handleChange(null)}
+        title={
+          field.state.value instanceof File ? field.state.value.name : label
+        }
+      />
       {size.suggestedWidth && size.suggestedHeight && (
         <FieldDescription>
           {labels.suggestedImageSize(

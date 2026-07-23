@@ -12,10 +12,12 @@ import {
   Copy,
   Database,
   GalleryHorizontalEnd,
+  FileUp,
   ImageIcon,
   Languages,
   Globe,
   ListFilter,
+  ListChecks,
   LoaderCircle,
   Mail,
   MonitorCog,
@@ -55,6 +57,7 @@ export function getRegistryGroup(item: RegistryItem) {
   if (
     [
       "copy-button",
+      "file-picker",
       "icon-input",
       "loading",
       "pagination",
@@ -79,6 +82,8 @@ export function getRegistryGroup(item: RegistryItem) {
 const iconByName = {
   "data-table": Table2,
   form: ClipboardList,
+  "effect-form": ListChecks,
+  "file-picker": FileUp,
   "locale-switcher": Globe,
   "theme-switcher": MonitorCog,
   "editing-locale-switcher": Languages,

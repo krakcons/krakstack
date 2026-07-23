@@ -34,6 +34,8 @@
     "@effect/sql-pg": "4.0.0-beta.85",
     "@iconify/react": "^6.0.2",
     "@krak-stack/auth": "0.1.51",
+    "@lucas-barake/effect-form": "0.25.0-beta.6",
+    "@lucas-barake/effect-form-react": "0.26.0-beta.5",
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",

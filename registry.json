@@ -140,6 +140,22 @@
       ]
     },
     {
+      "name": "file-picker",
+      "type": "registry:component",
+      "title": "File Picker",
+      "description": "An accessible controlled file picker with drag-and-drop, attachment metadata, image previews, and replace and delete actions.",
+      "docs": "## Overview\n\n`FilePicker` is a form-library-independent controlled file input. It combines a visually hidden native input with an accessible choose button, drag-and-drop selection, shadcn Attachment presentation, file metadata, image previews, and replace/delete actions. English and French labels are built in and can be overridden through `messages`.\n\n## Usage\n\n```tsx\nconst [file, setFile] = useState<File>();\n\n<FilePicker\n  accept=\"application/pdf\"\n  canClear={Boolean(file)}\n  file={file}\n  id=\"document\"\n  name=\"document\"\n  onChange={setFile}\n  onClear={() => setFile(undefined)}\n  title={file?.name ?? \"Document\"}\n/>\n```\n\nPass `image={{ alt, width, height, src }}` to enable image previews. `src` can represent a persisted image while a newly selected `file` is previewed through a managed object URL.",
+      "files": [
+        {
+          "path": "src/components/ui/file-picker.tsx",
+          "type": "registry:component",
+          "target": "components/ui/file-picker.tsx"
+        }
+      ],
+      "registryDependencies": ["attachment", "button", "input"],
+      "dependencies": ["lucide-react", "react"]
+    },
+    {
       "name": "form",
       "type": "registry:block",
       "title": "Form",
@@ -160,8 +176,8 @@
         "checkbox",
         "field",
         "input",
-        "label",
         "textarea",
+        "@krak-stack/file-picker",
         "@krak-stack/virtualized-combobox"
       ],
       "dependencies": [
@@ -169,6 +185,41 @@
         "react",
         "@tanstack/react-form",
         "@tanstack/react-router"
+      ]
+    },
+    {
+      "name": "effect-form",
+      "type": "registry:block",
+      "title": "Effect Form",
+      "description": "Reusable Effect Form fields, submission state, errors, grouping, file inputs, and dirty-navigation blocking.",
+      "docs": "## Overview\n\n`effect-form` provides reusable field components for `@lucas-barake/effect-form-react`. It includes schema-backed fields, submission errors and state, grouped fields, revert actions, and form-owned dirty-navigation blocking. Built-in English and French labels can be read or overridden with `effectFormMessages`.\n\n## Available Fields\n\n- `TextField` and `NameField` — string inputs, with a standard localized name variant\n- `TextAreaField`, `DescriptionField`, and `NullableTextAreaField` — required and nullable multiline values\n- `CheckboxField` — boolean values\n- `SelectField` and `FolderField` — single string selection\n- `MultiSelectField` and `NullableMultiSelectField` — array and nullable array selection\n- `SearchableSelectField` and `SingleSearchableSelectField` — virtualized searchable multiple and single selection\n- `KeyValueField` and `NullableKeyValueField` — record editors\n- `FileField` — clearable native `File` values through the shared `FilePicker`\n- `ImageField` — local file and persisted URL image values with previews\n- `RevertButton` — restores a string field to its original value\n\n## Form Helpers\n\n- `FieldWrapper` groups related fields with a legend and optional locale badge\n- `SubmitButton` observes dirty, changed-since-submit, and waiting state\n- `SubmitError` and `ErrorMessage` present typed failures\n- `BlockNavigation` observes the form and guards unsaved navigation\n\n## Usage\n\n```tsx\nconst builder = FormBuilder.empty.addField(\"name\", Schema.String);\n\nconst form = FormReact.make(builder, {\n  fields: { name: TextField },\n  onSubmit: (_, { decoded }) => save(decoded),\n});\n\n<form.Initialize defaultValues={{ name: \"\" }}>\n  <form.name label=\"Name\" />\n  <SubmitError result={submitResult} />\n  <SubmitButton form={form} />\n  <BlockNavigation form={form} />\n</form.Initialize>\n```",
+      "files": [
+        {
+          "path": "src/components/ui/effect-form.tsx",
+          "type": "registry:component",
+          "target": "components/ui/effect-form.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "alert-dialog",
+        "badge",
+        "button",
+        "checkbox",
+        "field",
+        "input",
+        "select",
+        "textarea",
+        "@krak-stack/file-picker",
+        "@krak-stack/virtualized-combobox"
+      ],
+      "dependencies": [
+        "@effect/atom-react@beta",
+        "@lucas-barake/effect-form@0.25.0-beta.6",
+        "@lucas-barake/effect-form-react@0.26.0-beta.5",
+        "@tanstack/react-router",
+        "effect@beta",
+        "lucide-react",
+        "react"
       ]
     },
     {

@@ -7,6 +7,8 @@ import {
 } from "@/components/registry-previews/data-table-preview";
 import { AgentsPreview } from "@/components/registry-previews/agents-preview";
 import { FormPreview } from "@/components/registry-previews/form-preview";
+import { EffectFormPreview } from "@/components/registry-previews/effect-form-preview";
+import { FilePickerPreview } from "@/components/registry-previews/file-picker-preview";
 import { LintFormatPreview } from "@/components/registry-previews/lint-format-preview";
 import { CopyButtonPreview } from "@/components/registry-previews/copy-button-preview";
 import { LoadingPreview } from "@/components/registry-previews/loading-preview";
@@ -122,9 +124,13 @@ function getNpmHref(dependency: string) {
 }
 
 function getPackageName(dependency: string) {
-  if (dependency.startsWith("@"))
-    return dependency.split("@").slice(0, 3).join("@");
-  return dependency.split("@")[0] ?? dependency;
+  const versionSeparator = dependency.indexOf(
+    "@",
+    dependency.startsWith("@") ? 1 : 0,
+  );
+  return versionSeparator === -1
+    ? dependency
+    : dependency.slice(0, versionSeparator);
 }
 
 function getShadcnHref(dependency: string) {
@@ -137,6 +143,10 @@ function RegistryPreview({ slug }: { slug: string }) {
       <DataTablePreview />
     ) : slug === "form" ? (
       <FormPreview />
+    ) : slug === "effect-form" ? (
+      <EffectFormPreview />
+    ) : slug === "file-picker" ? (
+      <FilePickerPreview />
     ) : slug === "agents" ? (
       <AgentsPreview />
     ) : slug === "lint-format" ? (
