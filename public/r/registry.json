@@ -380,11 +380,48 @@
       ]
     },
     {
+      "name": "httpapi-client",
+      "title": "HttpApi Client",
+      "description": "A generated Effect HttpApi client service with shared OpenAPI operation discovery, input decoding, and tool schema helpers.",
+      "type": "registry:lib",
+      "docs": "## Overview\n\n`httpapi-client` provides the shared foundation for generated HTTP API adapters. `HttpApiSpec` discovers operations from an Effect `HttpApi`, builds self-contained input schemas, and decodes tool or CLI input. `ApiClient` executes those operations through Effect's generated `HttpApiClient`, preserving the API's typed transport and response decoding.\n\n## Included Files\n\n- `lib/httpapi-client.ts` - `ApiClient`, its configuration, and generated operation execution\n- `lib/httpapi-helpers.tsx` - shared OpenAPI operation types, input schemas, decoders, naming, and `HttpApiSpec`\n\n## Usage\n\n```ts\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\nimport { AppApi } from \"@/api\";\n\nexport const apiClientLayer = ApiClient.layer({\n  api: AppApi,\n  baseUrl: \"https://example.com\",\n}).pipe(Layer.provide(FetchHttpClient.layer));\n\nexport const apiSpecLayer = HttpApiSpec.layer({\n  api: AppApi,\n  methods: [\"get\", \"post\"],\n});\n```",
+      "dependencies": ["effect@beta"],
+      "files": [
+        {
+          "path": "src/lib/httpapi-client.ts",
+          "type": "registry:file",
+          "target": "lib/httpapi-client.ts"
+        },
+        {
+          "path": "src/lib/httpapi-helpers.tsx",
+          "type": "registry:file",
+          "target": "lib/httpapi-helpers.tsx"
+        }
+      ]
+    },
+    {
+      "name": "httpapi-ai",
+      "title": "HttpApi AI",
+      "description": "An Effect AI toolkit generator that exposes selected HttpApi operations as typed dynamic tools backed by the generated API client.",
+      "type": "registry:lib",
+      "docs": "## Overview\n\n`httpapi-ai` turns operations selected by `HttpApiSpec` into Effect AI dynamic tools. Read operations run without approval by default, writes require approval, and standard read-only, destructive, idempotent, and open-world annotations are derived from each HTTP method.\n\n## Usage\n\nProvide `HttpApiSpec` and `ApiClient`, then create or layer the toolkit:\n\n```ts\nconst httpApiAiLayer = HttpApiAi.layer({\n  needsApproval: (operation) => operation.method !== \"get\",\n}).pipe(\n  Layer.provide(HttpApiSpec.layer({ api: AppApi })),\n  Layer.provide(apiClientLayer),\n);\n```",
+      "registryDependencies": ["@krak-stack/httpapi-client"],
+      "dependencies": ["effect@beta"],
+      "files": [
+        {
+          "path": "src/lib/httpapi-ai.ts",
+          "type": "registry:file",
+          "target": "lib/httpapi-ai.ts"
+        }
+      ]
+    },
+    {
       "name": "httpapi-cli",
       "title": "HttpApi CLI",
-      "description": "An Effect CLI generator that builds grouped commands from an Effect HttpApi and calls API operations with JSON params, query values, and API-key headers.",
+      "description": "An Effect CLI generator that groups selected HttpApi operations and executes them through the generated API client.",
       "type": "registry:lib",
-      "docs": "## Overview\n\n`httpapi-cli` turns an Effect `HttpApi` into a command-line interface. It generates an OpenAPI spec from `OpenApi.fromApi` internally, groups operations by `operationId` or tag, and creates commands that call API endpoints with `--params`, `--query`, `--api-key`, and `--base-url` flags.\n\nThe registry item installs the reusable library. Your app owns the small CLI handler because the API, package metadata, environment variables, binary entrypoint, and build script are product-specific.\n\n## Included Files\n\n- `lib/httpapi-cli.ts` - `HttpApiCli`, `makeHttpApiCliCommand`, `httpApiCli`, `httpApiCliEnvironmentLayer`, and `runHttpApiCli`\n\n## Create A CLI Handler\n\nCreate an app-specific handler, for example `src/lib/cli-handler.ts`:\n\n```ts\nimport { AppApi } from \"@/api\";\nimport { env } from \"@/env\";\nimport { HttpApiCli, runHttpApiCli } from \"@/lib/httpapi-cli\";\n\nimport packageJson from \"../../package.json\";\n\nconst cliLayer = HttpApiCli.layer({\n  api: AppApi,\n  name: packageJson.name,\n  version: packageJson.version,\n  description: \"App CLI\",\n  serviceName: \"App API\",\n  baseUrl: env.VITE_SITE_URL,\n  apiKeyEnv: \"APP_API_KEY\",\n});\n\nexport const runCli = (args = process.argv.slice(2)) =>\n  runHttpApiCli(cliLayer, args);\n\nif (import.meta.main) {\n  runCli();\n}\n```\n\n## Create A Binary Entrypoint\n\nCreate a thin binary file, for example `src/bin/app.ts`:\n\n```ts\n#!/usr/bin/env node\n\nimport { runCli } from \"@/lib/cli-handler\";\n\nrunCli();\n```\n\nThen add package metadata and a build script that fit your app:\n\n```json\n{\n  \"bin\": {\n    \"app\": \"./dist/cli.js\"\n  },\n  \"files\": [\"dist/cli.js\"],\n  \"scripts\": {\n    \"build:cli\": \"bun build src/bin/app.ts --target=node --outfile=dist/cli.js\",\n    \"cli\": \"bun src/lib/cli-handler.ts\"\n  }\n}\n```\n\n## Usage\n\nList command groups:\n\n```bash\nbun run cli list\n```\n\nList operations in a group:\n\n```bash\nbun run cli users list\n```\n\nCall an operation with path params and query values:\n\n```bash\nAPP_API_KEY=secret bun run cli users getUser \\\n  --params '{\"id\":\"user_123\"}' \\\n  --query '{\"locale\":\"en\"}'\n```\n\n## Configuration\n\n- `api` - Effect `HttpApi` value used to generate the OpenAPI spec\n- `name` - root CLI command name\n- `version` - CLI version passed to Effect CLI\n- `baseUrl` - default API origin\n- `description` - optional root command description\n- `serviceName` - label used in error messages\n- `apiKeyEnv` - environment variable fallback for API keys\n- `apiKeyHeader` - request header for API keys, defaulting to `x-api-key`\n- `methods` - HTTP methods to expose, defaulting to `get`\n\nCommands are grouped using the first segment of `operationId` when present, then the first OpenAPI tag, then `default`.",
+      "registryDependencies": ["@krak-stack/httpapi-client"],
+      "docs": "## Overview\n\n`httpapi-cli` turns operations selected by `HttpApiSpec` into grouped Effect CLI commands. Calls are delegated to `ApiClient`, so request encoding, transport customization, authentication, and response decoding stay aligned with the generated Effect `HttpApiClient`.\n\n## Setup\n\nProvide both shared services when creating the CLI layer:\n\n```ts\nconst cliLayer = HttpApiCli.layer({\n  name: packageJson.name,\n  version: packageJson.version,\n  description: \"App CLI\",\n}).pipe(\n  Layer.provide(\n    Layer.mergeAll(\n      HttpApiSpec.layer({ api: AppApi }),\n      ApiClient.layer({\n        api: AppApi,\n        baseUrl: env.VITE_SITE_URL,\n      }).pipe(Layer.provide(FetchHttpClient.layer)),\n    ),\n  ),\n);\n```\n\nUse `--body`, `--headers`, `--params`, and `--query` to pass JSON input to an operation. Your app owns the binary entrypoint and any custom `HttpClient` layer used for authentication or transport overrides.",
       "dependencies": ["effect@beta"],
       "files": [
         {
@@ -397,9 +434,10 @@
     {
       "name": "httpapi-mcp",
       "title": "HttpApi MCP",
-      "description": "An Effect MCP tool registrar that exposes selected Effect HttpApi operations as API-backed MCP tools with params, query input, API-key support, and operation metadata.",
+      "description": "An Effect MCP registrar that exposes selected HttpApi operations as tools backed by the generated API client.",
       "type": "registry:lib",
-      "docs": "## Overview\n\n`httpapi-mcp` turns an Effect `HttpApi` into MCP tools. It generates an OpenAPI spec from `OpenApi.fromApi` internally, creates tool input schemas from path and query parameters, forwards calls to your HTTP API, and returns structured JSON results.\n\nThe registry item installs the reusable library. Your app owns the MCP handler because the API, public base URL, server name, MCP path, tool metadata key, and authentication environment variable are product-specific.\n\n## Included Files\n\n- `lib/httpapi-mcp.ts` - `HttpApiMcp`, `HttpApiMcpConfig`, and `httpApiMcpToolsLayer`\n\n## Create An MCP Handler\n\nCreate an app-specific handler, for example `src/lib/mcp-handler.ts`:\n\n```ts\nimport { Layer } from \"effect\";\nimport { McpServer } from \"effect/unstable/ai\";\n\nimport { AppApi } from \"@/api\";\nimport { env } from \"@/env\";\nimport { HttpApiMcp, httpApiMcpToolsLayer } from \"@/lib/httpapi-mcp\";\n\nconst mcpToolsLayer = httpApiMcpToolsLayer.pipe(\n  Layer.provide(\n    HttpApiMcp.layer({\n      api: AppApi,\n      baseUrl: env.VITE_SITE_URL,\n      serviceName: \"App API\",\n      apiKeyEnv: \"APP_MCP_API_KEY\",\n      toolMetaKey: \"app/httpapi\",\n    }),\n  ),\n);\n\nconst mcpHttpLayer = McpServer.layerHttp({\n  name: \"App\",\n  version: \"1.0.0\",\n  path: \"/api/mcp\",\n});\n\nexport const mcpLayer = Layer.mergeAll(mcpToolsLayer).pipe(\n  Layer.provideMerge(mcpHttpLayer),\n);\n```\n\nThen provide `mcpLayer` from your custom API route or server handler alongside the rest of your Effect HTTP runtime. Keep this route wiring app-owned so it can share your project's auth, telemetry, error mapping, deployment target, and path conventions.\n\n## API Handler Wiring Example\n\nA TanStack Start catch-all API route can merge your MCP layer with your existing API layers:\n\n```ts\nimport { Layer } from \"effect\";\nimport { HttpRouter, HttpServer } from \"effect/unstable/http\";\nimport { HttpApiScalar } from \"effect/unstable/httpapi\";\n\nimport { mcpLayer } from \"@/lib/mcp-handler\";\nimport { ApiLive, ApiScalarLive } from \"@/lib/api-handler\";\n\nconst appLayer = Layer.mergeAll(ApiScalarLive, mcpLayer).pipe(\n  Layer.provideMerge(ApiLive),\n);\n\nexport const ServerRoute = createServerFileRoute(\"/api/$\").methods({\n  GET: ({ request }) => HttpServer.fetchHandler(appLayer)(request),\n  POST: ({ request }) => HttpServer.fetchHandler(appLayer)(request),\n});\n```\n\nAdjust the exact route code to match your application's server runtime and route file conventions.\n\n## Tool Inputs\n\nEach generated MCP tool accepts:\n\n- `apiKey` - optional API key sent as `x-api-key` by default\n- `params` - path parameters for routes like `/users/:id`\n- `query` - query string values\n- `body` - JSON request body for non-GET methods when present in the generated spec\n\n## Configuration\n\n- `api` - Effect `HttpApi` value used to generate the OpenAPI spec\n- `baseUrl` - public API origin used by the MCP tool calls\n- `serviceName` - label used in input descriptions and error messages\n- `apiKeyEnv` - environment variable fallback for API keys\n- `apiKeyHeader` - request header for API keys, defaulting to `x-api-key`\n- `methods` - HTTP methods to expose, defaulting to `get`\n- `toolMetaKey` - metadata key used to store operation details on each generated tool",
+      "registryDependencies": ["@krak-stack/httpapi-client"],
+      "docs": "## Overview\n\n`httpapi-mcp` turns operations selected by `HttpApiSpec` into MCP tools. Tool calls are delegated to `ApiClient`, keeping request encoding, authentication, transport overrides, and response decoding in the generated Effect HTTP API client.\n\n## Setup\n\nProvide `HttpApiSpec` and `ApiClient` to the MCP service:\n\n```ts\nconst mcpToolsLayer = httpApiMcpToolsLayer.pipe(\n  Layer.provide(\n    HttpApiMcp.layer({ toolMetaKey: \"app/httpapi\" }).pipe(\n      Layer.provide(\n        Layer.mergeAll(\n          HttpApiSpec.layer({ api: AppApi, methods: [\"get\"] }),\n          ApiClient.layer({\n            api: AppApi,\n            baseUrl: env.VITE_SITE_URL,\n          }).pipe(Layer.provide(FetchHttpClient.layer)),\n        ),\n      ),\n    ),\n  ),\n);\n```\n\nMerge the resulting tools layer with your app-owned `McpServer` HTTP layer. Configure authentication and request-scoped headers in the `HttpClient` layer rather than exposing credentials in MCP tool inputs.",
       "dependencies": ["effect@beta"],
       "files": [
         {

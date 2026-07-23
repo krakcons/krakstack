@@ -8,6 +8,7 @@ import {
   ChevronsUpDown,
   ClipboardList,
   CodeXml,
+  Combine,
   Copy,
   Database,
   GalleryHorizontalEnd,
@@ -40,7 +41,15 @@ export function getRegistryItem(slug: string) {
 
 export function getRegistryGroup(item: RegistryItem) {
   if (item.name === "embedding-layer") return "Services";
-  if (["query-helpers", "httpapi-cli", "httpapi-mcp"].includes(item.name)) {
+  if (
+    [
+      "query-helpers",
+      "httpapi-ai",
+      "httpapi-cli",
+      "httpapi-client",
+      "httpapi-mcp",
+    ].includes(item.name)
+  ) {
     return "Libraries";
   }
   if (
@@ -82,6 +91,8 @@ const iconByName = {
   "embedding-layer": Orbit,
   "query-helpers": ListFilter,
   "httpapi-cli": SquareTerminal,
+  "httpapi-client": Combine,
+  "httpapi-ai": Bot,
   "httpapi-mcp": Workflow,
   "sidebar-layout": PanelLeft,
   "search-menu": Search,

@@ -5,50 +5,29 @@ import {
   FileSystem,
   Layer,
   Path,
-  Schema,
   Stdio,
   Stream,
   Terminal,
 } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
-import {
-  FetchHttpClient,
-  HttpClient,
-  HttpClientRequest,
-  HttpClientResponse,
-} from "effect/unstable/http";
-import { OpenApi } from "effect/unstable/httpapi";
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 
-const JsonObjectSchema = Schema.Record(Schema.String, Schema.Unknown).annotate({
-  identifier: "HttpApiCliJsonObject",
-  title: "CLI JSON Object",
-  description: "A JSON object passed to the CLI.",
-  examples: [{ id: "example-id" }],
-});
-const JsonObjectFromString = Schema.fromJsonString(JsonObjectSchema);
-const JsonResponseFromString = Schema.fromJsonString(Schema.Unknown);
+import { ApiClient, type ApiClientService } from "@/lib/httpapi-client";
+import {
+  HttpApiSpec,
+  parseJsonObject,
+  parseJsonValue,
+  sanitizeHttpName,
+  type HttpApiMethod,
+  type HttpApiOperation,
+  type HttpApiOperationEntry,
+} from "@/lib/httpapi-helpers";
 
-type JsonObject = typeof JsonObjectSchema.Type;
-type HttpApiSpec = ReturnType<typeof OpenApi.fromApi>;
-type HttpApiMethod = "get" | "post" | "put" | "patch" | "delete";
-type HttpApiParameter = {
-  name: string;
-  in: "path" | "query" | "header" | "cookie";
-  required?: boolean;
-};
-type HttpApiOperation = {
-  operationId?: string;
-  summary?: string;
-  description?: string;
-  parameters?: ReadonlyArray<HttpApiParameter>;
-  tags?: ReadonlyArray<string>;
-};
 type CliOperation = {
   groupName: string;
   groupTitle: string;
   name: string;
-  method: string;
+  method: HttpApiMethod;
   path: string;
   summary: string;
   operation: HttpApiOperation;
@@ -59,34 +38,26 @@ type CliOperationGroup = {
   operations: ReadonlyArray<CliOperation>;
 };
 type CallOperationConfig = {
+  readonly body: string;
+  readonly headers: string;
   readonly params: string;
   readonly query: string;
-  readonly apiKey: string;
-  readonly baseUrl: string;
 };
 export type HttpApiCliConfig = {
-  readonly api: Parameters<typeof OpenApi.fromApi>[0];
   readonly name: string;
   readonly version: string;
-  readonly baseUrl: string;
   readonly description?: string;
-  readonly serviceName?: string;
-  readonly apiKeyEnv?: string;
-  readonly apiKeyHeader?: string;
-  readonly methods?: ReadonlyArray<HttpApiMethod>;
 };
 
 export class HttpApiCli extends Context.Service<HttpApiCli>()("HttpApiCli", {
   make: (config: HttpApiCliConfig) =>
-    Effect.sync(() => {
-      const command = makeHttpApiCliCommand(config);
+    Effect.gen(function* () {
+      const command = yield* makeHttpApiCliCommand(config);
 
       return {
         command,
         run: (args: ReadonlyArray<string>) =>
-          Command.runWith(command, { version: config.version })(args).pipe(
-            Effect.provide(FetchHttpClient.layer),
-          ),
+          Command.runWith(command, { version: config.version })(args),
       };
     }),
 }) {
@@ -94,17 +65,8 @@ export class HttpApiCli extends Context.Service<HttpApiCli>()("HttpApiCli", {
     Layer.effect(this, this.make(config));
 }
 
-const toError = (message: string, error: unknown) =>
-  error instanceof Error ? error : new Error(`${message}: ${String(error)}`);
-
-const sanitizeName = (name: string) =>
-  name
-    .replace(/[^a-zA-Z0-9_-]/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "");
-
 const fallbackName = (value: string, fallback: string) =>
-  sanitizeName(value) || fallback;
+  sanitizeHttpName(value) || fallback;
 
 const operationIdParts = (operation: HttpApiOperation) =>
   operation.operationId?.split(".").filter(Boolean) ?? [];
@@ -129,36 +91,21 @@ const operationName = (
     `${method}_operation`,
   );
 
-export const httpApiCliOperations = ({
-  spec,
-  methods = ["get"],
-}: {
-  readonly spec: HttpApiSpec;
-  readonly methods?: ReadonlyArray<HttpApiMethod>;
-}): ReadonlyArray<CliOperation> => {
-  const operations: Array<CliOperation> = [];
+const toCliOperation = ({
+  method,
+  operation,
+  path,
+}: HttpApiOperationEntry): CliOperation => ({
+  groupName: operationGroupName(operation),
+  groupTitle: operationGroupTitle(operation),
+  name: operationName(method, path, operation),
+  method,
+  path,
+  summary: operation.summary ?? operation.description ?? "",
+  operation,
+});
 
-  for (const [path, pathItem] of Object.entries(spec.paths)) {
-    for (const method of methods) {
-      const operation = pathItem[method] as HttpApiOperation | undefined;
-      if (!operation) continue;
-
-      operations.push({
-        groupName: operationGroupName(operation),
-        groupTitle: operationGroupTitle(operation),
-        name: operationName(method, path, operation),
-        method: method.toUpperCase(),
-        path,
-        summary: operation.summary ?? operation.description ?? "",
-        operation,
-      });
-    }
-  }
-
-  return operations;
-};
-
-export const httpApiCliOperationGroups = (
+const httpApiCliOperationGroups = (
   operations: ReadonlyArray<CliOperation>,
 ): ReadonlyArray<CliOperationGroup> => {
   const groups = new Map<
@@ -190,121 +137,13 @@ export const httpApiCliOperationGroups = (
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
-const parseJsonObject = Effect.fn("HttpApiCli.parseJsonObject")(function* (
-  value: string | undefined,
-  label: string,
-) {
-  if (!value) return {};
-
-  return yield* Schema.decodeUnknownEffect(JsonObjectFromString)(value).pipe(
-    Effect.mapError(() => new Error(`${label} must be a JSON object`)),
-  );
-});
-
-const renderPath = Effect.fn("HttpApiCli.renderPath")(function* (
-  path: string,
-  params: JsonObject,
-) {
-  return yield* Effect.try({
-    try: () =>
-      path.replace(/\{([^}]+)\}|:([A-Za-z0-9_]+)/g, (_, braced, colon) => {
-        const key = braced || colon;
-        const value = params[key];
-
-        if (value === undefined || value === null) {
-          throw new Error(`Missing path parameter: ${key}`);
-        }
-
-        return encodeURIComponent(String(value));
-      }),
-    catch: (error) => toError("Failed to render API path", error),
-  });
-});
-
-const appendQuery = (url: URL, query: JsonObject) => {
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null || value === "") continue;
-    if (Array.isArray(value)) {
-      for (const item of value) url.searchParams.append(key, String(item));
-    } else {
-      url.searchParams.set(key, String(value));
-    }
-  }
-};
-
-const buildUrl = Effect.fn("HttpApiCli.buildUrl")(function* (
-  operation: CliOperation,
-  params: JsonObject,
-  query: JsonObject,
-  baseUrl: string,
-) {
-  const path = yield* renderPath(operation.path, params);
-  return yield* Effect.try({
-    try: () => {
-      const url = new URL(path, baseUrl);
-      appendQuery(url, query);
-      return url;
-    },
-    catch: (error) => toError("Failed to build API URL", error),
-  });
-});
-
-const requestForOperation = (operation: CliOperation, url: URL) => {
-  switch (operation.method) {
-    case "DELETE":
-      return HttpClientRequest.delete(url);
-    case "PATCH":
-      return HttpClientRequest.patch(url);
-    case "POST":
-      return HttpClientRequest.post(url);
-    case "PUT":
-      return HttpClientRequest.put(url);
-    default:
-      return HttpClientRequest.get(url);
-  }
-};
-
-const fetchOperation = Effect.fn("HttpApiCli.fetchOperation")(function* (
-  operation: CliOperation,
-  url: URL,
-  apiKey: string | undefined,
-  config: Pick<HttpApiCliConfig, "apiKeyHeader" | "serviceName">,
-) {
-  const http = yield* HttpClient.HttpClient;
-  const apiKeyHeader = config.apiKeyHeader ?? "x-api-key";
-  const serviceName = config.serviceName ?? "API";
-
-  return yield* requestForOperation(operation, url).pipe(
-    HttpClientRequest.acceptJson,
-    HttpClientRequest.setHeaders(apiKey ? { [apiKeyHeader]: apiKey } : {}),
-    (request) => http.execute(request),
-    Effect.flatMap(HttpClientResponse.filterStatusOk),
-    Effect.flatMap((response) => response.text),
-    Effect.mapError((error) => toError(`Failed to call ${serviceName}`, error)),
-  );
-});
-
-const formatResponse = Effect.fn("HttpApiCli.formatResponse")(function* (
-  text: string,
-) {
-  if (!text) return "null";
-
-  const parsed = yield* Schema.decodeUnknownEffect(JsonResponseFromString)(
-    text,
-  ).pipe(
-    Effect.mapError((error) => toError("Failed to format API response", error)),
-  );
-
-  return JSON.stringify(parsed, null, 2);
-});
-
 const print = (value: string) => Console.log(value);
 
 const formatOperations = (operations: ReadonlyArray<CliOperation>) =>
   operations
     .map(
       (operation) =>
-        `${operation.groupName}\t${operation.name}\t${operation.method}\t${operation.path}\t${operation.summary}`,
+        `${operation.groupName}\t${operation.name}\t${operation.method.toUpperCase()}\t${operation.path}\t${operation.summary}`,
     )
     .join("\n");
 
@@ -314,19 +153,22 @@ const listOperations = (operations: ReadonlyArray<CliOperation>) =>
 const callOperation = (
   operation: CliOperation,
   callConfig: CallOperationConfig,
-  cliConfig: Pick<
-    HttpApiCliConfig,
-    "apiKeyEnv" | "apiKeyHeader" | "serviceName"
-  >,
+  client: ApiClientService,
 ) =>
   Effect.gen(function* () {
+    const body = yield* parseJsonValue(callConfig.body, "--body");
+    const headers = yield* parseJsonObject(callConfig.headers, "--headers");
     const params = yield* parseJsonObject(callConfig.params, "--params");
     const query = yield* parseJsonObject(callConfig.query, "--query");
-    const apiKey = callConfig.apiKey || process.env[cliConfig.apiKeyEnv ?? ""];
-    const baseUrl = callConfig.baseUrl;
-    const url = yield* buildUrl(operation, params, query, baseUrl);
-    const text = yield* fetchOperation(operation, url, apiKey, cliConfig);
-    const formatted = yield* formatResponse(text);
+    const response = yield* client.execute({
+      operation: {
+        method: operation.method,
+        path: operation.path,
+        operation: operation.operation,
+      },
+      input: { body, headers, params, query },
+    });
+    const formatted = JSON.stringify(response, null, 2) ?? "null";
 
     return yield* print(formatted);
   });
@@ -348,10 +190,18 @@ const groupListCommand = (group: CliOperationGroup) =>
     Command.withDescription(`List ${group.title} operations`),
   );
 
-const operationCommand = (operation: CliOperation, config: HttpApiCliConfig) =>
+const operationCommand = (operation: CliOperation, client: ApiClientService) =>
   Command.make(
     operation.name,
     {
+      body: Flag.string("body").pipe(
+        Flag.withDefault(""),
+        Flag.withDescription("JSON request body"),
+      ),
+      headers: Flag.string("headers").pipe(
+        Flag.withDefault("{}"),
+        Flag.withDescription("JSON object for request headers"),
+      ),
       params: Flag.string("params").pipe(
         Flag.withDefault("{}"),
         Flag.withDescription("JSON object for path parameters"),
@@ -360,50 +210,43 @@ const operationCommand = (operation: CliOperation, config: HttpApiCliConfig) =>
         Flag.withDefault("{}"),
         Flag.withDescription("JSON object for query parameters"),
       ),
-      apiKey: Flag.string("api-key").pipe(
-        Flag.withDefault(process.env[config.apiKeyEnv ?? ""] ?? ""),
-        Flag.withDescription(
-          `API key sent as ${config.apiKeyHeader ?? "x-api-key"}${config.apiKeyEnv ? `; defaults to ${config.apiKeyEnv}` : ""}`,
-        ),
-      ),
-      baseUrl: Flag.string("base-url").pipe(
-        Flag.withDefault(config.baseUrl),
-        Flag.withDescription("API base URL"),
-      ),
     },
-    (callConfig) => callOperation(operation, callConfig, config),
+    (callConfig) => callOperation(operation, callConfig, client),
   ).pipe(
     Command.withDescription(
-      operation.summary || `${operation.method} ${operation.path}`,
+      operation.summary ||
+        `${operation.method.toUpperCase()} ${operation.path}`,
     ),
   );
 
-const groupCommand = (group: CliOperationGroup, config: HttpApiCliConfig) =>
+const groupCommand = (group: CliOperationGroup, client: ApiClientService) =>
   Command.make(group.name).pipe(
     Command.withDescription(group.title),
     Command.withSubcommands([
       groupListCommand(group),
       ...group.operations.map((operation) =>
-        operationCommand(operation, config),
+        operationCommand(operation, client),
       ),
     ]),
   );
 
-export const makeHttpApiCliCommand = (config: HttpApiCliConfig) => {
-  const operations = httpApiCliOperations({
-    spec: OpenApi.fromApi(config.api),
-    methods: config.methods,
-  });
-  const groups = httpApiCliOperationGroups(operations);
+export const makeHttpApiCliCommand = Effect.fn("HttpApiCli.makeCommand")(
+  function* (config: HttpApiCliConfig) {
+    const spec = yield* HttpApiSpec;
+    const client = yield* ApiClient;
+    const groups = httpApiCliOperationGroups(
+      spec.operations.map(toCliOperation),
+    );
 
-  return Command.make(config.name).pipe(
-    Command.withDescription(config.description ?? `${config.name} CLI`),
-    Command.withSubcommands([
-      listCommand(groups),
-      ...groups.map((group) => groupCommand(group, config)),
-    ]),
-  );
-};
+    return Command.make(config.name).pipe(
+      Command.withDescription(config.description ?? `${config.name} CLI`),
+      Command.withSubcommands([
+        listCommand(groups),
+        ...groups.map((group) => groupCommand(group, client)),
+      ]),
+    );
+  },
+);
 
 const cliEnvironmentLayer = (args: ReadonlyArray<string>) =>
   Layer.mergeAll(
@@ -442,8 +285,8 @@ export const httpApiCli = (args = process.argv.slice(2)) =>
     return yield* cli.run(args);
   });
 
-export const runHttpApiCli = (
-  layer: Layer.Layer<HttpApiCli>,
+export const runHttpApiCli = <E>(
+  layer: Layer.Layer<HttpApiCli, E>,
   args = process.argv.slice(2),
 ) => {
   Effect.runPromise(
