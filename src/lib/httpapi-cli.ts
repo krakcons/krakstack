@@ -43,26 +43,20 @@ type CallOperationConfig = {
   readonly params: string;
   readonly query: string;
 };
-export type HttpApiCliConfig = {
-  readonly name: string;
-  readonly version: string;
-  readonly description?: string;
-};
-
 export class HttpApiCli extends Context.Service<HttpApiCli>()("HttpApiCli", {
-  make: (config: HttpApiCliConfig) =>
+  make: () =>
     Effect.gen(function* () {
-      const command = yield* makeHttpApiCliCommand(config);
+      const spec = yield* HttpApiSpec;
+      const command = yield* makeHttpApiCliCommand();
 
       return {
         command,
         run: (args: ReadonlyArray<string>) =>
-          Command.runWith(command, { version: config.version })(args),
+          Command.runWith(command, { version: spec.info.version })(args),
       };
     }),
 }) {
-  static readonly layer = (config: HttpApiCliConfig) =>
-    Layer.effect(this, this.make(config));
+  static readonly layer = Layer.effect(this, this.make());
 }
 
 const fallbackName = (value: string, fallback: string) =>
@@ -231,15 +225,16 @@ const groupCommand = (group: CliOperationGroup, client: ApiClientService) =>
   );
 
 export const makeHttpApiCliCommand = Effect.fn("HttpApiCli.makeCommand")(
-  function* (config: HttpApiCliConfig) {
+  function* () {
     const spec = yield* HttpApiSpec;
     const client = yield* ApiClient;
+    const name = sanitizeHttpName(spec.info.title);
     const groups = httpApiCliOperationGroups(
       spec.operations.map(toCliOperation),
     );
 
-    return Command.make(config.name).pipe(
-      Command.withDescription(config.description ?? `${config.name} CLI`),
+    return Command.make(name).pipe(
+      Command.withDescription(spec.info.description ?? spec.info.title),
       Command.withSubcommands([
         listCommand(groups),
         ...groups.map((group) => groupCommand(group, client)),

@@ -146,3 +146,18 @@ export const httpApiMcpToolsLayer = Layer.effectDiscard(
     yield* mcp.registerTools;
   }),
 );
+
+export const httpApiMcpServerLayer = (
+  path: Parameters<typeof McpServer.layerHttp>[0]["path"],
+) =>
+  Layer.unwrap(
+    Effect.gen(function* () {
+      const spec = yield* HttpApiSpec;
+
+      return McpServer.layerHttp({
+        name: spec.info.title,
+        version: spec.info.version,
+        path,
+      });
+    }),
+  );

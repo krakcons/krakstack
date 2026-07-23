@@ -307,6 +307,7 @@ export class HttpApiSpec extends Context.Service<HttpApiSpec>()("HttpApiSpec", {
         };
 
         return {
+          info: spec.info,
           operations,
           decodeOperationInput: decodeHttpApiOperationInput,
           operationJsonSchema,

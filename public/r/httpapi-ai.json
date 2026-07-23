@@ -3,8 +3,12 @@
   "name": "httpapi-ai",
   "title": "HttpApi AI",
   "description": "An Effect AI toolkit generator that exposes selected HttpApi operations as typed dynamic tools backed by the generated API client.",
-  "dependencies": ["effect@beta"],
-  "registryDependencies": ["@krak-stack/httpapi-client"],
+  "dependencies": [
+    "effect@beta"
+  ],
+  "registryDependencies": [
+    "@krak-stack/httpapi-client"
+  ],
   "files": [
     {
       "path": "src/lib/httpapi-ai.ts",
