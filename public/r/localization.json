@@ -3,10 +3,7 @@
   "name": "localization",
   "title": "Localization",
   "description": "Request-scoped locale resolution and Effect HttpApi middleware for Paraglide applications.",
-  "dependencies": [
-    "@inlang/paraglide-js",
-    "effect@beta"
-  ],
+  "dependencies": ["@inlang/paraglide-js", "effect@beta"],
   "files": [
     {
       "path": "src/lib/localization.ts",

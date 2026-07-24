@@ -35,7 +35,7 @@ export function Loading({
       )}
     >
       <Loader2 className="size-4 animate-spin" />
-      <span className="shimmer">{label ?? loadingLabel()}</span>
+      {label ?? loadingLabel()}
     </div>
   );
 }

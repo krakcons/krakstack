@@ -3,9 +3,7 @@
   "name": "chat-service",
   "title": "Chat Service",
   "description": "A composable Effect AI chat service with streaming text, tool execution, approvals, bounded agent rounds, and serializable history.",
-  "dependencies": [
-    "effect@beta"
-  ],
+  "dependencies": ["effect@beta"],
   "files": [
     {
       "path": "src/services/chat/index.ts",
