@@ -11,6 +11,7 @@ import { EffectFormPreview } from "@/components/registry-previews/effect-form-pr
 import { FilePickerPreview } from "@/components/registry-previews/file-picker-preview";
 import { LintFormatPreview } from "@/components/registry-previews/lint-format-preview";
 import { CopyButtonPreview } from "@/components/registry-previews/copy-button-preview";
+import { ChatWidgetPreview } from "@/components/registry-previews/chat-widget-preview";
 import { LoadingPreview } from "@/components/registry-previews/loading-preview";
 import { PaginationPreview } from "@/components/registry-previews/pagination-preview";
 import { IconInputPreview } from "@/components/registry-previews/icon-input-preview";
@@ -153,6 +154,8 @@ function RegistryPreview({ slug }: { slug: string }) {
       <LintFormatPreview />
     ) : slug === "copy-button" ? (
       <CopyButtonPreview />
+    ) : slug === "chat-widget" ? (
+      <ChatWidgetPreview />
     ) : slug === "loading" ? (
       <LoadingPreview />
     ) : slug === "pagination" ? (

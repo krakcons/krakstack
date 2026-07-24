@@ -131,17 +131,20 @@ Run checks after code changes when practical:
 
 ## Examples
 
-Use `https://github.com/krakcons/krakstack` as the external reference for this project pattern.
-Use `https://github.com/krakcons/krakstack/tree/main/src/agent-examples` as the external template reference for this project pattern.
+KrakStack examples are the canonical architecture reference for this project. Prefer the configured `krakstack` project reference. If it is unavailable, use `https://github.com/krakcons/krakstack/tree/main/src/agent-examples`.
 
-- `schema.ts` shows Effect schemas and standard schema exports.
-- `api.group.ts` shows HttpApiGroup endpoint contracts.
-- `api.builder.ts` shows HttpApiBuilder handlers with auth and error mapping.
-- `service.ts` shows an Effect `Context.Service` implementation.
-- `atom.ts` shows Effect Atom queries and optimistic mutations.
-- `form.tsx` shows a reusable create/edit form pattern.
-- `table.tsx` shows a TanStack table with row actions and edit dialog wiring.
-- `api-entry.ts` shows root API registration.
+Before implementing or substantially refactoring one of the areas below, read the corresponding KrakStack example and the nearest equivalent implementation in this repository.
+
+| Task                  | Required KrakStack reference                |
+| --------------------- | ------------------------------------------- |
+| Effect service        | `src/agent-examples/service/service.ts`     |
+| Effect schemas        | `src/agent-examples/service/schema.ts`      |
+| HttpApi contract      | `src/agent-examples/service/api.group.ts`   |
+| HttpApi handlers      | `src/agent-examples/service/api.builder.ts` |
+| Root API registration | `src/agent-examples/service/api-entry.ts`   |
+| Client atoms          | `src/agent-examples/service/atom.ts`        |
+| Forms                 | `src/agent-examples/service/form.tsx`       |
+| Tables                | `src/agent-examples/service/table.tsx`      |
 
 <!-- intent-skills:start -->
 

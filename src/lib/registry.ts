@@ -46,6 +46,7 @@ export function getRegistryGroup(item: RegistryItem) {
   if (
     [
       "query-helpers",
+      "docs",
       "httpapi-ai",
       "httpapi-cli",
       "httpapi-client",
@@ -80,6 +81,9 @@ export function getRegistryGroup(item: RegistryItem) {
 }
 
 const iconByName = {
+  "chat-service": Bot,
+  "chat-widget": Bot,
+  docs: CodeXml,
   "data-table": Table2,
   form: ClipboardList,
   "effect-form": ListChecks,
