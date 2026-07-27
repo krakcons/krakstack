@@ -3,7 +3,10 @@
   "name": "docs",
   "title": "Documentation",
   "description": "Localized MDX documentation discovery, validated frontmatter, page lookup, and an Effect AI documentation toolkit contribution.",
-  "dependencies": ["effect@beta", "yaml"],
+  "dependencies": [
+    "effect@beta",
+    "yaml"
+  ],
   "files": [
     {
       "path": "src/lib/docs.tsx",

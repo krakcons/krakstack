@@ -120,11 +120,26 @@ Service methods should accept object inputs, scope by the current user or tenant
 - Use Drizzle queries for test setup and cleanup where possible.
 - Avoid raw SQL unless a migration or lifecycle task requires it.
 
+## End-to-End Testing
+
+- Use Playwright for browser-level tests of user journeys, UI behavior, routing, authentication, and frontend-to-API integrations.
+- Keep end-to-end tests in `e2e/` as `*.spec.ts` files and share repeated setup through focused helpers.
+- Run `bun run test:e2e:install` once when Chromium is not installed, `bun run test:e2e` for the full suite, and `bun run test:e2e:ui` when interactive debugging is useful.
+- Use the Playwright CLI to exercise changed UI and integrations as you build, not only after implementation is complete. Start with the smallest relevant spec or title filter, inspect the browser result, and rerun after each meaningful change before running the full suite.
+- Run a focused test with `bun run test:e2e -- e2e/<name>.spec.ts` or `bun run test:e2e -- --grep "<test name>"`.
+- Prefer assertions against user-visible outcomes and accessible locators such as `getByRole`, `getByLabel`, and `getByText`. Avoid implementation-coupled selectors and arbitrary sleeps.
+- Cover complete high-value flows across UI and API boundaries. Keep lower-level edge cases in Vitest rather than duplicating them in browser tests.
+- Make test data unique and deterministic, isolate browser contexts where roles or sessions differ, and clean up persistent state when a test can affect later runs.
+- End-to-end tests must use `TEST_DATABASE_URL`; never use `DATABASE_URL`. The Playwright configuration maps the test database into the application process and starts the development server automatically.
+- Use Playwright traces, screenshots, and the UI runner to diagnose failures. Do not weaken assertions, add unconditional delays, or increase timeouts until the underlying behavior has been investigated.
+- Before considering a UI or integration change complete, run the focused Playwright coverage for the changed journey and, when practical, the full end-to-end suite.
+
 ## Checks
 
 Run checks after code changes when practical:
 
 - `bun run test`
+- `bun run test:e2e`
 - `bun type:check`
 - `bun lint`
 - `bun fmt`

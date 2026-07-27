@@ -3,7 +3,9 @@
   "name": "query-helpers",
   "title": "Query Helpers",
   "description": "Reusable Effect query helper schemas and types for paginated, filtered, and sorted API request and response envelopes.",
-  "dependencies": ["effect@beta"],
+  "dependencies": [
+    "effect@beta"
+  ],
   "files": [
     {
       "path": "src/lib/query.ts",

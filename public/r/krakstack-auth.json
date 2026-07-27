@@ -3,7 +3,11 @@
   "name": "krakstack-auth",
   "title": "Krakstack Auth",
   "description": "A Better Auth foundation for TanStack Start that connects to Krakstack Auth via OAuth, with server config, React client, an /api/auth route handler, and an Effect auth service with HttpApiMiddleware.",
-  "dependencies": ["@tanstack/react-router", "better-auth", "effect@beta"],
+  "dependencies": [
+    "@tanstack/react-router",
+    "better-auth",
+    "effect@beta"
+  ],
   "registryDependencies": [],
   "files": [
     {

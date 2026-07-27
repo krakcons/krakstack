@@ -9,7 +9,10 @@
     "lucide-react",
     "react"
   ],
-  "registryDependencies": ["button", "input-group"],
+  "registryDependencies": [
+    "button",
+    "input-group"
+  ],
   "files": [
     {
       "path": "src/components/ui/virtualized-combobox.tsx",
