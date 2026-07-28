@@ -35,6 +35,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Query, SortParamsFromString } from "@/lib/query";
 import { cn } from "@/lib/utils";
 import {
@@ -273,6 +279,7 @@ export interface DataTableGrouping<TData> {
 }
 
 export interface DataTableRelationshipOption {
+  icon?: ReactNode;
   label: string;
   value: string;
 }
@@ -2374,7 +2381,8 @@ export function DataTableRelationshipCell({
           <DataTableListSummary
             emptyLabel={emptyLabel}
             expandable={false}
-            items={selectedOptions.map(({ label }) => label)}
+            items={selectedOptions}
+            variant={selectedOptions.some(({ icon }) => icon) ? "icon" : "text"}
           />
           <ChevronDown className="text-muted-foreground size-4 shrink-0" />
         </Button>
@@ -2389,22 +2397,105 @@ export function DataTableListSummary({
   expandable = true,
   items,
   overflowLabel,
+  totalCount = items.length,
+  variant = "text",
   visibleCount = 3,
 }: {
   emptyLabel: ReactNode;
   expandable?: boolean | undefined;
-  items: readonly string[];
+  items: readonly (
+    | string
+    | { icon?: ReactNode; label: string; value?: string }
+  )[];
   overflowLabel?: ((remaining: number) => ReactNode) | undefined;
+  totalCount?: number | undefined;
+  variant?: "icon" | "text" | undefined;
   visibleCount?: number | undefined;
 }) {
   const labels = dataTableMessages();
-  const visibleItems = items.slice(0, visibleCount).join(", ");
-  const remaining = Math.max(items.length - visibleCount, 0);
+  const normalizedItems = items.map((item) =>
+    typeof item === "string" ? { label: item } : item,
+  );
+  const visibleItems = normalizedItems.slice(0, visibleCount);
+  const visibleLabels = visibleItems.map(({ label }) => label).join(", ");
+  const remaining = Math.max(totalCount - visibleItems.length, 0);
   const remainingLabel =
     overflowLabel?.(remaining) ?? labels.listOthers(remaining);
+  const expandedItems = (
+    <PopoverContent
+      align="start"
+      className="max-h-72 w-72 overflow-y-auto p-2"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <ul className="grid gap-1">
+        {normalizedItems.map((item, index) => (
+          <li
+            className="flex items-center gap-2 rounded-sm px-2 py-1.5 break-words"
+            key={item.value ?? `${item.label}-${index}`}
+          >
+            {item.icon ? (
+              <span className="bg-muted flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full text-[9px] font-semibold">
+                {item.icon}
+              </span>
+            ) : null}
+            <span className="min-w-0">{item.label}</span>
+          </li>
+        ))}
+      </ul>
+    </PopoverContent>
+  );
 
-  if (items.length === 0) {
+  if (normalizedItems.length === 0) {
     return <span className="text-muted-foreground text-sm">{emptyLabel}</span>;
+  }
+
+  if (variant === "icon") {
+    return (
+      <TooltipProvider>
+        <span className="flex min-w-0 items-center pl-2">
+          {visibleItems.map((item, index) => (
+            <Tooltip key={item.value ?? item.label}>
+              <TooltipTrigger
+                render={
+                  <span
+                    aria-label={item.label}
+                    className="bg-muted border-background relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-[10px] font-semibold"
+                    style={{ marginLeft: index ? -8 : 0 }}
+                  >
+                    {item.icon ?? item.label.slice(0, 2).toUpperCase()}
+                  </span>
+                }
+              />
+              <TooltipContent>{item.label}</TooltipContent>
+            </Tooltip>
+          ))}
+          {remaining ? (
+            expandable ? (
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <button
+                      aria-label={labels.listOthers(remaining)}
+                      className="bg-muted border-background relative -ml-2 flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-semibold tabular-nums"
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      type="button"
+                    >
+                      +{remaining}
+                    </button>
+                  }
+                />
+                {expandedItems}
+              </Popover>
+            ) : (
+              <span className="bg-muted border-background relative -ml-2 flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-semibold tabular-nums">
+                +{remaining}
+              </span>
+            )
+          ) : null}
+        </span>
+      </TooltipProvider>
+    );
   }
 
   return remaining > 0 ? (
@@ -2412,7 +2503,7 @@ export function DataTableListSummary({
       className="block min-w-0 text-sm whitespace-normal"
       data-slot="list-summary"
     >
-      <span>{visibleItems}</span>{" "}
+      <span>{visibleLabels}</span>{" "}
       <span className="inline-block whitespace-nowrap">
         {expandable ? (
           <Popover>
@@ -2428,22 +2519,7 @@ export function DataTableListSummary({
                 </button>
               }
             />
-            <PopoverContent
-              align="start"
-              className="max-h-72 w-72 overflow-y-auto p-2"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <ul className="grid gap-1">
-                {items.map((item, index) => (
-                  <li
-                    className="rounded-sm px-2 py-1.5 break-words"
-                    key={`${item}-${index}`}
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </PopoverContent>
+            {expandedItems}
           </Popover>
         ) : (
           remainingLabel
@@ -2452,7 +2528,7 @@ export function DataTableListSummary({
     </span>
   ) : (
     <span className="block min-w-0 text-sm" data-slot="list-summary">
-      {visibleItems}
+      {visibleLabels}
     </span>
   );
 }
