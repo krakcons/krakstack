@@ -78,6 +78,9 @@ export type SearchMenuProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSelect?: (item: SearchMenuItem) => void;
+  query?: string;
+  onQueryChange?: (query: string) => void;
+  shouldFilter?: boolean;
 };
 
 export function SearchMenu({
@@ -93,6 +96,9 @@ export function SearchMenu({
   open,
   onOpenChange,
   onSelect,
+  query,
+  onQueryChange,
+  shouldFilter,
 }: SearchMenuProps) {
   const labels = searchMenuMessages(messages);
   const resolvedTitle = title ?? labels.title;
@@ -151,8 +157,12 @@ export function SearchMenu({
         title={resolvedTitle}
         description={resolvedDescription}
       >
-        <Command>
-          <CommandInput placeholder={resolvedInputPlaceholder} />
+        <Command {...(shouldFilter === undefined ? {} : { shouldFilter })}>
+          <CommandInput
+            placeholder={resolvedInputPlaceholder}
+            {...(query === undefined ? {} : { value: query })}
+            {...(onQueryChange ? { onValueChange: onQueryChange } : {})}
+          />
           <CommandList>
             <CommandEmpty>{resolvedEmptyMessage}</CommandEmpty>
             {groups.map((group) => (
