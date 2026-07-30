@@ -44,6 +44,13 @@ const files = Object.fromEntries(
         item.docs ?? `## Overview\n\n${item.description}`,
         item.name,
       );
+      const documentedContent =
+        item.name === "docs"
+          ? content.replace(
+              "\n## Content Sources",
+              `\n## Configure Tailwind\n\nAdd these sources to the application's global stylesheet so Tailwind generates the utility classes used by Streamdown and its code plugin. Paths are relative to the stylesheet and may need additional \`../\` segments in a monorepo.\n\n\`\`\`css\n@source "../node_modules/streamdown/dist/*.js";\n@source "../node_modules/@streamdown/code/dist/*.js";\n\`\`\`\n\n## Content Sources`,
+            )
+          : content;
       const source = [
         "---",
         `slug: ${JSON.stringify(item.name)}`,
@@ -59,7 +66,7 @@ const files = Object.fromEntries(
         "",
         `# ${title}`,
         "",
-        content,
+        documentedContent,
       ].join("\n");
 
       return [`../content/docs/${locale}/registry/${item.name}.mdx`, source];
