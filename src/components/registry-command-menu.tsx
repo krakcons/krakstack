@@ -51,7 +51,7 @@ export function RegistryCommandMenu({ className }: { className?: string }) {
           icon: <Icon className="size-4" />,
           onSelect: () =>
             navigate({
-              to: "/docs/registry/$slug",
+              to: "/docs/{-$slug}",
               params: { slug: item.name },
             }),
         };

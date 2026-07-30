@@ -824,7 +824,7 @@ const DocsArticle = ({
 
   return (
     <Streamdown
-      className="[&_a:hover]:text-primary [&_a]:decoration-border text-[0.98rem] leading-7 [&_[data-streamdown=code-block-body]_code>span]:block [&_[data-streamdown=code-block-body]_code>span]:min-w-max [&_a]:font-medium [&_a]:underline [&_a]:decoration-1 [&_a]:underline-offset-4 [&_a]:transition-colors [&_h2]:mt-12 [&_h2]:border-t [&_h2]:pt-8 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:tracking-tight [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:tracking-tight [&_ol]:my-5 [&_p]:my-5 [&_pre]:my-5 [&_table]:text-sm [&_ul]:my-5"
+      className="[&_a:hover]:text-primary [&_a]:decoration-border text-[0.98rem] leading-7 [&_[data-streamdown=code-block-actions]]:pointer-events-auto [&_[data-streamdown=code-block-body]_code_span_span]:text-[var(--sdm-c,inherit)] dark:[&_[data-streamdown=code-block-body]_code_span_span]:text-[var(--shiki-dark,var(--sdm-c,inherit))] [&_[data-streamdown=code-block-body]_code>span]:block [&_[data-streamdown=code-block-body]_code>span]:min-w-max [&_[data-streamdown=code-block-copy-button]]:pointer-events-auto [&_[data-streamdown=code-block-header]+div]:-mt-10 [&_[data-streamdown=code-block-header]+div]:flex [&_[data-streamdown=code-block-header]+div]:h-8 [&_[data-streamdown=code-block-header]+div]:items-center [&_[data-streamdown=code-block-header]+div]:justify-end [&_a]:font-medium [&_a]:underline [&_a]:decoration-1 [&_a]:underline-offset-4 [&_a]:transition-colors [&_h2]:mt-12 [&_h2]:border-t [&_h2]:pt-8 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:tracking-tight [&_h2:first-of-type]:mt-0 [&_h2:first-of-type]:border-t-0 [&_h2:first-of-type]:pt-0 [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:tracking-tight [&_ol]:my-5 [&_p]:my-5 [&_table]:text-sm [&_ul]:my-5"
       components={components}
       controls={{
         code: { copy: true, download: false },
@@ -1075,14 +1075,120 @@ export const DocsLayout = ({
 };
 
 export type DocsPageProps = {
+  children?: ReactNode;
   docs: DocsCatalog;
   resolution: DocsResolution;
 };
 
-export const DocsPage = ({ docs, resolution }: DocsPageProps) => {
+type DocsPageSectionProps = Omit<DocsPageProps, "children">;
+
+export const DocsHeader = ({ docs, resolution }: DocsPageSectionProps) => {
+  const { page } = resolution;
+  const resolvedMessages = docs.getMessages(page.locale);
+
+  return (
+    <header className="mb-8 border-b pb-8">
+      <p className="text-primary mb-3 font-mono text-xs font-semibold tracking-[0.18em] uppercase">
+        {resolvedMessages.sectionLabel(page.section)} ·{" "}
+        {resolvedMessages.pageTypeLabel(page.type)}
+      </p>
+      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+        {page.title}
+      </h1>
+      <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-7">
+        {page.description}
+      </p>
+    </header>
+  );
+};
+
+export const DocsContent = ({ docs, resolution }: DocsPageSectionProps) => {
+  const { page } = resolution;
+  const resolvedMessages = docs.getMessages(page.locale);
+
+  return (
+    <>
+      <DocsMobileTableOfContents
+        headings={page.headings}
+        label={resolvedMessages.onThisPage}
+      />
+      <DocsArticle docs={docs} messages={resolvedMessages} page={page} />
+    </>
+  );
+};
+
+export const DocsFooter = ({ docs, resolution }: DocsPageSectionProps) => {
   const { page, neighbors } = resolution;
   const resolvedMessages = docs.getMessages(page.locale);
   const editUrl = docs.editUrl(page);
+
+  return (
+    <footer className="mt-14 border-t pt-8">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 text-sm">
+        {editUrl ? (
+          <a
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+            href={editUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {resolvedMessages.editPage}
+            <Icon className="size-3.5" icon="lucide:external-link" ssr />
+          </a>
+        ) : null}
+        <span className="text-muted-foreground">
+          {resolvedMessages.latestVersionNotice}
+        </span>
+      </div>
+      <nav
+        aria-label={resolvedMessages.pageNavigation}
+        className="grid gap-3 sm:grid-cols-2"
+      >
+        {neighbors.previous ? (
+          <Link
+            className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
+            to={neighbors.previous.path}
+          >
+            <span className="text-muted-foreground flex items-center gap-1 text-xs font-medium uppercase">
+              <Icon className="size-3.5" icon="lucide:arrow-left" ssr />
+              {resolvedMessages.previous}
+            </span>
+            <span className="mt-1 block font-semibold">
+              {neighbors.previous.title}
+            </span>
+          </Link>
+        ) : (
+          <span />
+        )}
+        {neighbors.next ? (
+          <Link
+            className="hover:bg-muted/50 rounded-lg border p-4 text-right transition-colors"
+            to={neighbors.next.path}
+          >
+            <span className="text-muted-foreground flex items-center justify-end gap-1 text-xs font-medium uppercase">
+              {resolvedMessages.next}
+              <Icon className="size-3.5" icon="lucide:arrow-right" ssr />
+            </span>
+            <span className="mt-1 block font-semibold">
+              {neighbors.next.title}
+            </span>
+          </Link>
+        ) : null}
+      </nav>
+    </footer>
+  );
+};
+
+export const DocsPage = ({ children, docs, resolution }: DocsPageProps) => {
+  const { page } = resolution;
+  const resolvedMessages = docs.getMessages(page.locale);
+  const content = children ?? (
+    <>
+      <DocsHeader docs={docs} resolution={resolution} />
+      <DocsContent docs={docs} resolution={resolution} />
+      <DocsFooter docs={docs} resolution={resolution} />
+    </>
+  );
 
   return (
     <>
@@ -1094,79 +1200,7 @@ export const DocsPage = ({ docs, resolution }: DocsPageProps) => {
       </a>
       <div className="mx-auto grid w-full max-w-6xl gap-10 xl:grid-cols-[minmax(0,48rem)_14rem]">
         <article id="docs-content" className="min-w-0 pb-16" tabIndex={-1}>
-          <header className="mb-8 border-b pb-8">
-            <p className="text-primary mb-3 font-mono text-xs font-semibold tracking-[0.18em] uppercase">
-              {resolvedMessages.sectionLabel(page.section)} ·{" "}
-              {resolvedMessages.pageTypeLabel(page.type)}
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {page.title}
-            </h1>
-            <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-7">
-              {page.description}
-            </p>
-          </header>
-
-          <DocsMobileTableOfContents
-            headings={page.headings}
-            label={resolvedMessages.onThisPage}
-          />
-
-          <DocsArticle docs={docs} messages={resolvedMessages} page={page} />
-
-          <footer className="mt-14 border-t pt-8">
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-4 text-sm">
-              {editUrl ? (
-                <a
-                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
-                  href={editUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {resolvedMessages.editPage}
-                  <Icon className="size-3.5" icon="lucide:external-link" ssr />
-                </a>
-              ) : null}
-              <span className="text-muted-foreground">
-                {resolvedMessages.latestVersionNotice}
-              </span>
-            </div>
-            <nav
-              aria-label={resolvedMessages.pageNavigation}
-              className="grid gap-3 sm:grid-cols-2"
-            >
-              {neighbors.previous ? (
-                <Link
-                  className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
-                  to={neighbors.previous.path}
-                >
-                  <span className="text-muted-foreground flex items-center gap-1 text-xs font-medium uppercase">
-                    <Icon className="size-3.5" icon="lucide:arrow-left" ssr />
-                    {resolvedMessages.previous}
-                  </span>
-                  <span className="mt-1 block font-semibold">
-                    {neighbors.previous.title}
-                  </span>
-                </Link>
-              ) : (
-                <span />
-              )}
-              {neighbors.next ? (
-                <Link
-                  className="hover:bg-muted/50 rounded-lg border p-4 text-right transition-colors"
-                  to={neighbors.next.path}
-                >
-                  <span className="text-muted-foreground flex items-center justify-end gap-1 text-xs font-medium uppercase">
-                    {resolvedMessages.next}
-                    <Icon className="size-3.5" icon="lucide:arrow-right" ssr />
-                  </span>
-                  <span className="mt-1 block font-semibold">
-                    {neighbors.next.title}
-                  </span>
-                </Link>
-              ) : null}
-            </nav>
-          </footer>
+          {content}
         </article>
         <aside className="hidden xl:block">
           <DocsTableOfContents

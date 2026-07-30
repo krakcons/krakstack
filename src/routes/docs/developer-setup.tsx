@@ -1,4 +1,5 @@
 import { CodeBlock } from "@/components/ui/code-block";
+import { RegistryDocsLayout } from "@/components/registry-docs-layout";
 import { SidebarPageHeader } from "@/components/ui/sidebar-layout";
 import { shikiHighlighter } from "@/lib/shiki";
 import { getLocale } from "@/paraglide/runtime";
@@ -11,8 +12,14 @@ import {
 } from "lucide-react";
 import { use, type ReactNode } from "react";
 
+const DeveloperSetupDocsRoute = () => (
+  <RegistryDocsLayout>
+    <DeveloperSetupDocs />
+  </RegistryDocsLayout>
+);
+
 export const Route = createFileRoute("/docs/developer-setup")({
-  component: DeveloperSetupDocs,
+  component: DeveloperSetupDocsRoute,
 });
 
 const registryConfig = `{

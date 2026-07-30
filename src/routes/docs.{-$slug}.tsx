@@ -1,6 +1,4 @@
-import { SidebarPageHeader } from "@/components/ui/sidebar-layout";
-import { InstallCommand } from "@/components/install-command";
-import { Markdown } from "@/components/markdown";
+import { RegistryDocsLayout } from "@/components/registry-docs-layout";
 import {
   DataTablePreview,
   TableSearchSchemaStandard,
@@ -23,42 +21,58 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { RegistryItem } from "@/lib/registry";
-import { getRegistryGroup, getRegistryItem } from "@/lib/registry";
-import { shikiHighlighter } from "@/lib/shiki";
-import { createFileRoute, notFound } from "@tanstack/react-router";
-import { use } from "react";
+import { getRegistryItem } from "@/lib/registry";
+import {
+  DocsContent,
+  DocsFooter,
+  DocsHeader,
+  DocsNotFound,
+  DocsPage,
+} from "@/lib/docs";
+import { registryDocs } from "@/lib/registry-docs";
+import { getLocale } from "@/paraglide/runtime";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/docs/registry/$slug")({
+export const Route = createFileRoute("/docs/{-$slug}")({
   validateSearch: TableSearchSchemaStandard,
-  loader: ({ params }): RegistryItem => {
-    const item = getRegistryItem(params.slug);
+  loader: ({ params }) => {
+    const resolution = registryDocs.resolve(params.slug, getLocale());
+    if (!resolution) throw notFound();
+    if (!resolution.canonical) {
+      throw redirect({ to: resolution.page.path, statusCode: 301 });
+    }
+    const item = getRegistryItem(resolution.page.slug);
     if (!item) throw notFound();
-    return item;
+    return { item, resolution };
   },
+  head: ({ loaderData }) =>
+    registryDocs.getHead({
+      locale: loaderData?.resolution.page.locale ?? getLocale(),
+      ...(loaderData?.resolution.page
+        ? { page: loaderData.resolution.page }
+        : {}),
+    }),
   component: RegistryDocs,
+  notFoundComponent: () => (
+    <DocsNotFound docs={registryDocs} locale={getLocale()} />
+  ),
 });
 
 function RegistryDocs() {
-  const highlighter = use(shikiHighlighter);
-  const item = Route.useLoaderData();
-  const group = getRegistryGroup(item);
+  const { item, resolution } = Route.useLoaderData();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl min-w-0 flex-col gap-8">
-      <SidebarPageHeader
-        title={item.title ?? item.name}
-        description={item.description}
-        badge={{ label: group }}
-      />
-
-      <InstallCommand slug={item.name} />
-
-      {item.docs ? (
-        <Markdown content={item.docs} highlighter={highlighter} />
-      ) : null}
-      <Dependencies item={item} />
-      <RegistryPreview slug={item.name} />
-    </main>
+    <RegistryDocsLayout>
+      <DocsPage docs={registryDocs} resolution={resolution}>
+        <DocsHeader docs={registryDocs} resolution={resolution} />
+        <DocsContent docs={registryDocs} resolution={resolution} />
+        <div className="mt-12 grid gap-8">
+          <Dependencies item={item} />
+          <RegistryPreview slug={item.name} />
+        </div>
+        <DocsFooter docs={registryDocs} resolution={resolution} />
+      </DocsPage>
+    </RegistryDocsLayout>
   );
 }
 

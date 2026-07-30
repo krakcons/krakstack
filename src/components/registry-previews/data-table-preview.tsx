@@ -253,7 +253,7 @@ export function DataTablePreview() {
             ],
           }}
           onRowClick={(project) => window.alert(`Selected ${project.name}`)}
-          routeFrom="/docs/registry/$slug"
+          routeFrom="/docs/{-$slug}"
         />
       </CardContent>
     </Card>

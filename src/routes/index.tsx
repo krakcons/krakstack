@@ -100,7 +100,7 @@ function Home() {
           <AppBrand label="Krakstack" subtitle={m.app_name()} icon={Blocks} />
           <div className="flex items-center gap-5 text-sm">
             <Link
-              to="/docs/registry/$slug"
+              to="/docs/{-$slug}"
               params={{ slug: "data-table" }}
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -232,7 +232,7 @@ function Home() {
                 <Link
                   key={item.name}
                   params={{ slug: item.name }}
-                  to="/docs/registry/$slug"
+                  to="/docs/{-$slug}"
                   className="group"
                 >
                   <Card className="cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md">
@@ -262,7 +262,7 @@ function Home() {
         <div className="text-muted-foreground mx-auto flex max-w-5xl items-center justify-between px-4 text-sm">
           <span>Built with the sea in mind.</span>
           <Link
-            to="/docs/registry/$slug"
+            to="/docs/{-$slug}"
             params={{ slug: "data-table" }}
             className="hover:text-foreground transition-colors"
           >

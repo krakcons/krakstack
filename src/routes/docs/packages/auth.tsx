@@ -11,6 +11,7 @@ import {
 import { use } from "react";
 
 import { OrganizationSwitcherPreview } from "@/components/registry-previews/organization-switcher-preview";
+import { RegistryDocsLayout } from "@/components/registry-docs-layout";
 import { UserButtonPreview } from "@/components/registry-previews/user-button-preview";
 import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
@@ -30,8 +31,14 @@ import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 import { createFileRoute } from "@tanstack/react-router";
 
+const AuthPackageDocsRoute = () => (
+  <RegistryDocsLayout>
+    <AuthPackageDocs />
+  </RegistryDocsLayout>
+);
+
 export const Route = createFileRoute("/docs/packages/auth")({
-  component: AuthPackageDocs,
+  component: AuthPackageDocsRoute,
 });
 
 const pkg = krakstackPackages[0];
