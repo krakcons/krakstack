@@ -39,7 +39,7 @@
   "krakstack_package_auth_components_heading": "Components",
   "krakstack_package_auth_components_description": "Production UI for the complete account lifecycle. The forms render as focused cards; the user and organization controls render as compact dropdown triggers with full management dialogs.",
   "krakstack_package_auth_forms_title": "Authentication forms",
-  "krakstack_package_auth_forms_description": "Signin and Signup are responsive card forms for password, email-code, and Google flows. ResetPassword handles token-based password recovery, while TwoFactor supports authenticator, email, and backup codes.",
+  "krakstack_package_auth_forms_description": "Signin and Signup are responsive card forms for password, email-code, and Google flows. ResetPassword handles both the email request and token-based password recovery steps, while TwoFactor supports authenticator, email, and backup codes.",
   "krakstack_package_auth_user_button_title": "User Button",
   "krakstack_package_auth_user_button_description": "An avatar trigger opens account, security, API-key, and sign-out actions. Its dialogs cover profile photos, linked accounts, passwords, two-factor setup, and personal API keys.",
   "krakstack_package_auth_org_switcher_title": "Organization Switcher",

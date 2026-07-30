@@ -34,7 +34,7 @@
     "@effect/sql-pg": "4.0.0-beta.85",
     "@iconify-json/lucide": "^1.2.83",
     "@iconify/react": "^6.0.2",
-    "@krak-stack/auth": "0.1.56",
+    "@krak-stack/auth": "0.1.62",
     "@lucas-barake/effect-form": "0.25.0-beta.6",
     "@lucas-barake/effect-form-react": "0.26.0-beta.5",
     "@shadcn/react": "^0.2.1",

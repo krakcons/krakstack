@@ -39,7 +39,7 @@
   "krakstack_package_auth_components_heading": "Composants",
   "krakstack_package_auth_components_description": "Une interface de production pour tout le cycle de vie du compte. Les formulaires sont des cartes ciblées; les contrôles d'utilisateur et d'organisation sont des déclencheurs compacts avec des dialogues de gestion complets.",
   "krakstack_package_auth_forms_title": "Formulaires d'authentification",
-  "krakstack_package_auth_forms_description": "Signin et Signup sont des cartes adaptatives pour les flux par mot de passe, code courriel et Google. ResetPassword gère la récupération par jeton, tandis que TwoFactor prend en charge l'application d'authentification, le courriel et les codes de secours.",
+  "krakstack_package_auth_forms_description": "Signin et Signup sont des cartes adaptatives pour les flux par mot de passe, code courriel et Google. ResetPassword gère la demande par courriel et la récupération par jeton, tandis que TwoFactor prend en charge l'application d'authentification, le courriel et les codes de secours.",
   "krakstack_package_auth_user_button_title": "Bouton utilisateur",
   "krakstack_package_auth_user_button_description": "Un avatar ouvre les actions de compte, sécurité, clés API et déconnexion. Les dialogues couvrent la photo de profil, les comptes liés, les mots de passe, la double authentification et les clés API personnelles.",
   "krakstack_package_auth_org_switcher_title": "Sélecteur d'organisation",
