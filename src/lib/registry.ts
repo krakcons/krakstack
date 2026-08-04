@@ -20,6 +20,7 @@ import {
   ListChecks,
   LoaderCircle,
   Mail,
+  MapPinned,
   MonitorCog,
   Orbit,
   PanelLeft,
@@ -60,6 +61,7 @@ export function getRegistryGroup(item: RegistryItem) {
     [
       "copy-button",
       "file-picker",
+      "google-map",
       "icon-input",
       "loading",
       "pagination",
@@ -90,6 +92,7 @@ const iconByName = {
   form: ClipboardList,
   "effect-form": ListChecks,
   "file-picker": FileUp,
+  "google-map": MapPinned,
   "locale-switcher": Globe,
   "theme-switcher": MonitorCog,
   "editing-locale-switcher": Languages,

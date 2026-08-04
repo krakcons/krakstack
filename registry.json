@@ -66,6 +66,21 @@
       "dependencies": ["lucide-react"]
     },
     {
+      "name": "google-map",
+      "type": "registry:component",
+      "title": "Google Map",
+      "description": "A reusable Google Maps renderer with centered markers, radius circles, interaction controls, shared script loading, and localized states.",
+      "docs": "## Overview\n\n`GoogleMap` is a product-neutral renderer for the Google Maps JavaScript API. The caller owns the browser API key and controlled map values; the component owns safe shared script loading, map initialization, centered overlays, status presentation, and cleanup. English and French status and accessibility labels are built in through `getLocale` and can be overridden with `messages`.\n\n## Features\n\n- Shared Google Maps script loading across component instances\n- SSR-safe loading, missing-key, script failure, and initialization failure states\n- Controlled center and zoom updates without recreating the map\n- Optional centered marker with a custom icon URL\n- Optional centered radius circle with fill and stroke customization\n- Configurable interaction, zoom controls, and minimum and maximum zoom\n- Semantic shadcn/Tailwind styling and localized accessibility labels\n\n## API Key Requirement\n\nPass a browser key with the Google Maps JavaScript API enabled. Restrict the key to the consumer application's allowed HTTP referrers and do not pass a server key or secret. The component does not read environment variables or runtime configuration.\n\n## Usage\n\n```tsx\nimport { GoogleMap } from \"@/components/ui/google-map\";\n\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={{ lat: 45.5019, lng: -73.5674 }}\n  zoom={11}\n  className=\"h-96\"\n  marker\n/>\n```\n\n`center` is a `{ lat, lng }` literal and `zoom` is clamped to `minZoom` and `maxZoom`. Provide a height through `className`; the default minimum height is `16rem`.\n\n## Marker And Radius Customization\n\nA boolean `marker` uses Google's default marker. Pass an object to supply an icon URL. `radiusMeters` is expressed in meters, and the circle always follows `center`.\n\n```tsx\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={position}\n  zoom={9}\n  marker={{ icon: \"/map-marker.svg\" }}\n  radius={{\n    radiusMeters: 25_000,\n    fillColor: \"#2563eb\",\n    fillOpacity: 0.12,\n    strokeColor: \"#1d4ed8\",\n    strokeOpacity: 0.8,\n    strokeWeight: 2,\n  }}\n/>\n```\n\n## Interaction Constraints\n\nSet `interactive={false}` for a static preview. This disables dragging, gestures, scrolling, keyboard shortcuts, and clickable map icons while leaving the optional custom zoom controls available. Set `zoomControls={false}` to hide the component's plus/minus controls independently of direct map interaction. `minZoom` and `maxZoom` constrain both prop updates and custom controls. All map instances on a page share one Google Maps script and should receive the same API key. Remount the component to retry after a script-load failure. Google Maps usage remains subject to Google's API availability, billing, and terms.",
+      "files": [
+        {
+          "path": "src/components/ui/google-map.tsx",
+          "type": "registry:component",
+          "target": "components/ui/google-map.tsx"
+        }
+      ],
+      "dependencies": ["lucide-react", "react"]
+    },
+    {
       "name": "icon-input",
       "type": "registry:component",
       "title": "Icon Input",
