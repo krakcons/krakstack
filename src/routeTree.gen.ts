@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,11 +20,6 @@ import { Route as DocsSitesAuthRouteImport } from './routes/docs/sites/auth'
 import { Route as DocsPackagesAuthRouteImport } from './routes/docs/packages/auth'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
-const SignUpRoute = SignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
@@ -81,7 +75,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
-  '/sign-up': typeof SignUpRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
@@ -94,7 +87,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
-  '/sign-up': typeof SignUpRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
@@ -108,7 +100,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
-  '/sign-up': typeof SignUpRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
@@ -123,7 +114,6 @@ export interface FileRouteTypes {
     | '/'
     | '/reset-password'
     | '/sign-in'
-    | '/sign-up'
     | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
@@ -136,7 +126,6 @@ export interface FileRouteTypes {
     | '/'
     | '/reset-password'
     | '/sign-in'
-    | '/sign-up'
     | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
@@ -149,7 +138,6 @@ export interface FileRouteTypes {
     | '/'
     | '/reset-password'
     | '/sign-in'
-    | '/sign-up'
     | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
@@ -163,7 +151,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignInRoute: typeof SignInRoute
-  SignUpRoute: typeof SignUpRoute
   ApiSplatRoute: typeof ApiSplatRoute
   DocsDeveloperSetupRoute: typeof DocsDeveloperSetupRoute
   DocsChar123SlugChar125Route: typeof DocsChar123SlugChar125Route
@@ -175,13 +162,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sign-up': {
-      id: '/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
-      preLoaderRoute: typeof SignUpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sign-in': {
       id: '/sign-in'
       path: '/sign-in'
@@ -259,7 +239,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignInRoute: SignInRoute,
-  SignUpRoute: SignUpRoute,
   ApiSplatRoute: ApiSplatRoute,
   DocsDeveloperSetupRoute: DocsDeveloperSetupRoute,
   DocsChar123SlugChar125Route: DocsChar123SlugChar125Route,

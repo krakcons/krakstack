@@ -109,7 +109,7 @@ function AuthPackageDocs() {
       icon: KeyRound,
       title: m.krakstack_package_auth_forms_title(),
       description: m.krakstack_package_auth_forms_description(),
-      exports: ["Signin", "Signup", "ResetPassword", "TwoFactor"],
+      exports: ["Signin", "ResetPassword", "TwoFactor"],
     },
     {
       icon: UserRound,
