@@ -2,6 +2,7 @@ import { Signin } from "@krak-stack/auth";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/sign-in")({
+  ssr: false,
   component: SignInPage,
 });
 
