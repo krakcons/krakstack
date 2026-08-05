@@ -87,9 +87,11 @@ const iconForTheme = {
 const themeScript = `(function() {
   try {
     const theme = localStorage.getItem('theme') || 'auto';
+    const preference = theme === 'auto' ? 'system' : theme;
     const resolved = theme === 'auto' || theme === 'system'
       ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
       : theme;
+    document.documentElement.dataset.theme = preference;
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(resolved);
   } catch (e) {}
@@ -103,6 +105,7 @@ const currentSystemTheme = (): SystemTheme =>
 
 const applyDocumentTheme = ({ theme, systemTheme }: ThemePayload) => {
   const resolvedTheme = theme === "system" ? systemTheme : theme;
+  document.documentElement.dataset.theme = theme;
   document.documentElement.classList.remove("light", "dark");
   document.documentElement.classList.add(resolvedTheme);
 };
@@ -198,14 +201,24 @@ export const ThemeSwitcher = ({
   onChange,
 }: ThemeSwitcherProps) => {
   const labels = themeMessages(messages);
-  const Icon = iconForTheme[value];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <Button variant="outline" size="icon" aria-label={labels.title}>
-            <Icon aria-hidden="true" />
+            <Sun
+              aria-hidden="true"
+              className="hidden [[data-theme=light]_&]:block"
+            />
+            <Moon
+              aria-hidden="true"
+              className="hidden [[data-theme=dark]_&]:block"
+            />
+            <Monitor
+              aria-hidden="true"
+              className="[[data-theme=dark]_&]:hidden [[data-theme=light]_&]:hidden"
+            />
             <span className="sr-only">{labels.title}</span>
           </Button>
         }
