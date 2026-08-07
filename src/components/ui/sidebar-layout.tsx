@@ -1,4 +1,8 @@
+import { useAtom } from "@effect/atom-react";
+import { BrowserKeyValueStore } from "@effect/platform-browser";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Schema } from "effect";
+import { Atom } from "effect/unstable/reactivity";
 import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +23,16 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+
+const sidebarStorageRuntime = Atom.runtime(
+  BrowserKeyValueStore.layerLocalStorage,
+);
+const sidebarOpenAtom = Atom.kvs({
+  runtime: sidebarStorageRuntime,
+  key: "sidebar:open",
+  schema: Schema.Boolean,
+  defaultValue: () => true,
+});
 
 type NavItem = {
   label: () => string;
@@ -142,8 +156,10 @@ export function SidebarLayout({
   sidebarHeader?: React.ReactNode;
   headerActions?: React.ReactNode;
 }) {
+  const [sidebarOpen, setSidebarOpen] = useAtom(sidebarOpenAtom);
+
   return (
-    <SidebarProvider>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <AppSidebar
         footer={sidebarFooter}
         groups={groups}
