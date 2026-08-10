@@ -86,6 +86,18 @@ const files = (directory: string): string[] =>
     return entry.isDirectory() ? files(path) : [path];
   });
 
+const developmentRuntimeFiles = files(outputRoot).filter(
+  (file) =>
+    extname(file) === ".js" &&
+    readFileSync(file, "utf8").includes("react/jsx-dev-runtime"),
+);
+
+if (developmentRuntimeFiles.length > 0) {
+  throw new Error(
+    `Production registry build contains react/jsx-dev-runtime imports:\n${developmentRuntimeFiles.join("\n")}`,
+  );
+}
+
 const emittedSpecifier = (
   outputFile: string,
   sourceFile: string,
