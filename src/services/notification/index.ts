@@ -55,4 +55,11 @@ export class NotificationService extends Context.Service<
   static readonly noopLayer = Layer.succeed(this, {
     send: () => Effect.void,
   });
+
+  static readonly localLayer = this.makeLayer([
+    {
+      key: "email",
+      send: (payload) => Effect.logInfo("[fake email]", payload),
+    },
+  ]);
 }

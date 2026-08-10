@@ -189,9 +189,11 @@ export type SubmitForm<A, E> = {
 export const SubmitButton = <A, E>({
   children,
   form,
+  onSubmit,
 }: {
   children?: ReactNode;
   form: SubmitForm<A, E>;
+  onSubmit?: () => void;
 }) => {
   const submit = useAtomSet(form.submit);
   const submitResult = useAtomValue(form.submit);
@@ -206,7 +208,10 @@ export const SubmitButton = <A, E>({
       type="button"
       disabled={!hasPendingChanges || submitResult.waiting}
       className="self-start"
-      onClick={() => submit()}
+      onClick={() => {
+        onSubmit?.();
+        submit();
+      }}
     >
       {submitResult.waiting && (
         <Loader2 data-icon="inline-start" className="animate-spin" />

@@ -23,6 +23,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const sidebarStorageRuntime = Atom.runtime(
   BrowserKeyValueStore.layerLocalStorage,
@@ -47,6 +48,11 @@ type NavGroup = {
 };
 
 export type { NavItem, NavGroup };
+
+export const useSidebarLayout = () => {
+  const { isMobile } = useSidebar();
+  return { isMobile };
+};
 
 type AppSidebarProps = {
   footer?: React.ReactNode;
@@ -149,28 +155,45 @@ export function SidebarLayout({
   sidebarFooter,
   sidebarHeader,
   headerActions,
+  contentClassName,
+  fullPage = false,
 }: {
   groups: NavGroup[];
   children?: React.ReactNode;
   sidebarFooter?: React.ReactNode;
   sidebarHeader?: React.ReactNode;
   headerActions?: React.ReactNode;
+  contentClassName?: string;
+  fullPage?: boolean;
 }) {
   const [sidebarOpen, setSidebarOpen] = useAtom(sidebarOpenAtom);
 
   return (
-    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+    <SidebarProvider
+      open={sidebarOpen}
+      onOpenChange={setSidebarOpen}
+      className={cn(fullPage && "xl:h-svh xl:min-h-0 xl:overflow-hidden")}
+    >
       <AppSidebar
         footer={sidebarFooter}
         groups={groups}
         header={sidebarHeader}
       />
-      <SidebarInset className="min-w-0 overflow-x-hidden">
+      <SidebarInset
+        className={cn(
+          "min-w-0 overflow-x-hidden",
+          fullPage && "xl:h-svh xl:min-h-0 xl:overflow-hidden",
+        )}
+      >
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur">
           <SidebarTrigger />
           <div className="ml-auto flex items-center gap-2">{headerActions}</div>
         </header>
-        <div className="flex flex-col gap-6 px-5 py-6 md:px-8">
+        <div
+          className={
+            contentClassName ?? "flex flex-col gap-6 px-5 py-6 md:px-8"
+          }
+        >
           {children ?? <Outlet />}
         </div>
       </SidebarInset>

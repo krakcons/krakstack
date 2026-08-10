@@ -1,0 +1,218 @@
+{
+  "name": "@krak-stack/registry",
+  "version": "0.1.2",
+  "description": "Tree-shakable KrakStack components and Effect services.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krakcons/krakstack-site.git",
+    "directory": "packages/registry"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "tailwind.css"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./app-brand": {
+      "types": "./dist/components/ui/app-brand.d.ts",
+      "import": "./dist/components/ui/app-brand.js"
+    },
+    "./code-block": {
+      "types": "./dist/components/ui/code-block.d.ts",
+      "import": "./dist/components/ui/code-block.js"
+    },
+    "./copy-button": {
+      "types": "./dist/components/ui/copy-button.d.ts",
+      "import": "./dist/components/ui/copy-button.js"
+    },
+    "./data-table": {
+      "types": "./dist/components/ui/data-table.d.ts",
+      "import": "./dist/components/ui/data-table.js"
+    },
+    "./editing-locale-switcher": {
+      "types": "./dist/components/ui/editing-locale-switcher.d.ts",
+      "import": "./dist/components/ui/editing-locale-switcher.js"
+    },
+    "./effect-form": {
+      "types": "./dist/components/ui/effect-form.d.ts",
+      "import": "./dist/components/ui/effect-form.js"
+    },
+    "./file-picker": {
+      "types": "./dist/components/ui/file-picker.d.ts",
+      "import": "./dist/components/ui/file-picker.js"
+    },
+    "./form": {
+      "types": "./dist/components/ui/form.d.ts",
+      "import": "./dist/components/ui/form.js"
+    },
+    "./google-map": {
+      "types": "./dist/components/ui/google-map.d.ts",
+      "import": "./dist/components/ui/google-map.js"
+    },
+    "./icon-input": {
+      "types": "./dist/components/ui/icon-input.d.ts",
+      "import": "./dist/components/ui/icon-input.js"
+    },
+    "./loading": {
+      "types": "./dist/components/ui/loading.d.ts",
+      "import": "./dist/components/ui/loading.js"
+    },
+    "./locale-switcher": {
+      "types": "./dist/components/ui/locale-switcher.d.ts",
+      "import": "./dist/components/ui/locale-switcher.js"
+    },
+    "./pagination": {
+      "types": "./dist/components/ui/pagination.d.ts",
+      "import": "./dist/components/ui/pagination.js"
+    },
+    "./search-menu": {
+      "types": "./dist/components/ui/search-menu.d.ts",
+      "import": "./dist/components/ui/search-menu.js"
+    },
+    "./sidebar-layout": {
+      "types": "./dist/components/ui/sidebar-layout.d.ts",
+      "import": "./dist/components/ui/sidebar-layout.js"
+    },
+    "./stats-card": {
+      "types": "./dist/components/ui/stats-card.d.ts",
+      "import": "./dist/components/ui/stats-card.js"
+    },
+    "./theme-switcher": {
+      "types": "./dist/components/ui/theme-switcher.d.ts",
+      "import": "./dist/components/ui/theme-switcher.js"
+    },
+    "./virtualized-combobox": {
+      "types": "./dist/components/ui/virtualized-combobox.d.ts",
+      "import": "./dist/components/ui/virtualized-combobox.js"
+    },
+    "./service-notification": {
+      "types": "./dist/services/notification/index.d.ts",
+      "import": "./dist/services/notification/index.js"
+    },
+    "./service-notification/channels": {
+      "types": "./dist/services/notification/channels/index.d.ts",
+      "import": "./dist/services/notification/channels/index.js"
+    },
+    "./service-notification/schema": {
+      "types": "./dist/services/notification/schema.d.ts",
+      "import": "./dist/services/notification/schema.js"
+    },
+    "./notification-channel-email-ses": {
+      "types": "./dist/services/notification/channels/ses/index.d.ts",
+      "import": "./dist/services/notification/channels/ses/index.js"
+    },
+    "./notification-channel-email-ses/schema": {
+      "types": "./dist/services/notification/channels/ses/schema.d.ts",
+      "import": "./dist/services/notification/channels/ses/schema.js"
+    },
+    "./service-s3": {
+      "types": "./dist/services/s3/index.d.ts",
+      "import": "./dist/services/s3/index.js"
+    },
+    "./service-s3/schema": {
+      "types": "./dist/services/s3/schema.d.ts",
+      "import": "./dist/services/s3/schema.js"
+    },
+    "./service-opentelemetry": {
+      "types": "./dist/services/opentelemetry.d.ts",
+      "import": "./dist/services/opentelemetry.js"
+    },
+    "./embedding-layer": {
+      "types": "./dist/services/embedding.d.ts",
+      "import": "./dist/services/embedding.js"
+    },
+    "./tailwind.css": "./tailwind.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bun run build.ts",
+    "prepack": "bun run build"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-sesv2": "^3.1068.0",
+    "@base-ui/react": "^1.5.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@effect/ai-openai-compat": "4.0.0-beta.85",
+    "@effect/atom-react": "4.0.0-beta.85",
+    "@effect/platform-browser": "4.0.0-beta.85",
+    "@iconify/react": "^6.0.2",
+    "@inlang/paraglide-js": "^2.19.0",
+    "@lucas-barake/effect-form": "0.25.0-beta.6",
+    "@lucas-barake/effect-form-react": "0.26.0-beta.5",
+    "@streamdown/code": "^1.1.1",
+    "@tanstack/react-form": "^1.33.0",
+    "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.14.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "effect": "4.0.0-beta.99",
+    "lucide-react": "^1.18.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "shiki": "^4.2.0",
+    "streamdown": "^2.5.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-sesv2": {
+      "optional": true
+    },
+    "@dnd-kit/core": {
+      "optional": true
+    },
+    "@dnd-kit/sortable": {
+      "optional": true
+    },
+    "@dnd-kit/utilities": {
+      "optional": true
+    },
+    "@effect/ai-openai-compat": {
+      "optional": true
+    },
+    "@effect/atom-react": {
+      "optional": true
+    },
+    "@effect/platform-browser": {
+      "optional": true
+    },
+    "@iconify/react": {
+      "optional": true
+    },
+    "@lucas-barake/effect-form": {
+      "optional": true
+    },
+    "@lucas-barake/effect-form-react": {
+      "optional": true
+    },
+    "@streamdown/code": {
+      "optional": true
+    },
+    "@tanstack/react-form": {
+      "optional": true
+    },
+    "@tanstack/react-router": {
+      "optional": true
+    },
+    "@tanstack/react-table": {
+      "optional": true
+    },
+    "@tanstack/react-virtual": {
+      "optional": true
+    },
+    "shiki": {
+      "optional": true
+    },
+    "streamdown": {
+      "optional": true
+    }
+  }
+}

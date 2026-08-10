@@ -140,8 +140,9 @@ export const TableSearchSchema = Schema.Struct({
   grouping: Schema.optional(Schema.Array(Schema.String)),
 });
 
-export const TableSearchSchemaStandard =
-  Schema.toStandardSchemaV1(TableSearchSchema);
+export const TableSearchSchemaStandard: ReturnType<
+  typeof Schema.toStandardSchemaV1<typeof TableSearchSchema>
+> = Schema.toStandardSchemaV1(TableSearchSchema);
 export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
 
 const compactDataTableStorage = Layer.effect(
