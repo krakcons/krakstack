@@ -45,14 +45,22 @@ export type AgentSubmitAction<Resource = never> =
       readonly approved: boolean;
     };
 
-export type AgentState = {
+export type AgentConversationContext<Resource> = AgentReference<Resource> & {
+  readonly key: string;
+};
+
+export type AgentState<Resource = never> = {
+  readonly context: AgentConversationContext<Resource> | undefined;
+  readonly contextLocked: boolean;
   readonly messages: ReadonlyArray<AgentMessage>;
   readonly history?: string;
   readonly pending: boolean;
   readonly error?: AgentErrorCode;
 };
 
-export const initialAgentState: AgentState = {
+export const initialAgentState: AgentState<never> = {
+  context: undefined,
+  contextLocked: false,
   messages: [],
   pending: false,
 };
@@ -69,10 +77,10 @@ const updateTool = (
     ),
   }));
 
-const failAgentState = (
-  state: AgentState,
+const failAgentState = <Resource>(
+  state: AgentState<Resource>,
   error: AgentErrorCode,
-): AgentState => {
+): AgentState<Resource> => {
   const lastMessage = state.messages.at(-1);
   const messages =
     lastMessage?.role === "assistant" &&
@@ -83,10 +91,10 @@ const failAgentState = (
   return { ...state, messages, error };
 };
 
-export const reduceAgentEvent = (
-  state: AgentState,
+export const reduceAgentEvent = <Resource>(
+  state: AgentState<Resource>,
   event: AgentEvent,
-): AgentState => {
+): AgentState<Resource> => {
   switch (event.type) {
     case "message-start":
       return {
@@ -161,7 +169,7 @@ export type AgentAtomsConfig<Resource> = {
 
 export type AgentSubmitInput<Resource> = {
   readonly action: AgentSubmitAction<Resource>;
-  readonly context?: AgentReference<Resource>;
+  readonly context?: AgentConversationContext<Resource>;
   readonly scope: string;
 };
 
@@ -170,13 +178,14 @@ export const makeAgentAtoms = <Resource>({
   stream,
 }: AgentAtomsConfig<Resource>) => {
   const state = Atom.family((_scope: string) =>
-    Atom.make<AgentState>(initialAgentState),
+    Atom.make<AgentState<Resource>>(initialAgentState),
   );
 
   const submit = Atom.fn<AgentSubmitInput<Resource>>()((input, get) => {
     const submitAction = input.action;
     const stateAtom = state(input.scope);
     const current = get(stateAtom);
+    const context = current.contextLocked ? current.context : input.context;
     const approvalStatus: AgentToolStatus | undefined =
       submitAction.type === "approval"
         ? submitAction.approved
@@ -205,6 +214,8 @@ export const makeAgentAtoms = <Resource>({
 
     get.set(stateAtom, {
       ...current,
+      context,
+      contextLocked: true,
       messages,
       pending: true,
       error: undefined,
@@ -221,7 +232,9 @@ export const makeAgentAtoms = <Resource>({
 
     return stream(get, {
       action,
-      context: input.context,
+      context: context
+        ? { label: context.label, resource: context.resource }
+        : undefined,
       history: current.history,
     }).pipe(
       Effect.flatMap(
@@ -248,5 +261,14 @@ export const makeAgentAtoms = <Resource>({
     get.set(state(scope), initialAgentState);
   });
 
-  return { reset, state, submit } as const;
+  const removeContext = Atom.fnSync<string>()((scope, get) => {
+    const stateAtom = state(scope);
+    get.set(stateAtom, {
+      ...get(stateAtom),
+      context: undefined,
+      contextLocked: true,
+    });
+  });
+
+  return { removeContext, reset, state, submit } as const;
 };

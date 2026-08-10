@@ -2,6 +2,7 @@
   "name": "site",
   "private": true,
   "type": "module",
+  "workspaces": ["packages/*"],
   "imports": {
     "@/*": "./src/*"
   },
@@ -13,6 +14,8 @@
     "test": "vitest run",
     "type:check": "tsc --noEmit",
     "registry:build": "bun -e 'import { readdirSync, readFileSync, rmSync } from \"node:fs\"; const names = new Set(JSON.parse(readFileSync(\"registry.json\", \"utf8\")).items.map((item) => item.name)); for (const file of readdirSync(\"public/r\")) { if (file === \"registry.json\" || !file.endsWith(\".json\")) continue; const item = JSON.parse(readFileSync(`public/r/${file}`, \"utf8\")); if (!names.has(item.name)) rmSync(`public/r/${file}`); }' && shadcn build",
+    "registry:package:build": "bun --cwd packages/registry run build",
+    "registry:package:pack": "bun --cwd packages/registry pm pack",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check .",

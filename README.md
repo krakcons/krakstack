@@ -46,6 +46,14 @@ Registry items are published as shadcn-compatible JSON files. For example:
 npx shadcn@latest add https://krakstack.net/r/krakstack-auth.json
 ```
 
+The same manifests are available for programmatic use from `@krak-stack/registry`:
+
+```ts
+import dataTable from "@krak-stack/registry/data-table" with {
+  type: "json",
+};
+```
+
 Use the docs site to browse available components, services, and configuration packages before installing them. Use [template.krakstack.net](https://template.krakstack.net) and the template source on GitHub when starting a full application.
 
 ## Stack

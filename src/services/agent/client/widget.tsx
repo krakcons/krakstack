@@ -279,7 +279,7 @@ const highlightedInput = (
 };
 
 const referenceSearchQuery = (input: string) =>
-  input.match(/(?:^|\s)@([^@\s]*)$/)?.[1];
+  input.match(/(?:^|\s)@([^@\n]*)$/)?.[1].trimEnd();
 
 const ToolLabel = ({
   description,
@@ -455,58 +455,74 @@ function ToolActivityLog({
     currentTool.status !== "approval-required";
   const loggedTools = showWorkedSummary ? tools : tools.slice(0, -1);
 
+  if (currentTool.status === "approval-required") {
+    return (
+      <div className="flex flex-col gap-2">
+        {loggedTools.length > 0 ? (
+          <Collapsible open={logOpen} onOpenChange={setLogOpen}>
+            <CollapsibleTrigger
+              render={<Button variant="ghost" size="sm" className="ml-auto" />}
+            >
+              {logOpen ? labels.viewLess : labels.viewMore}
+              <ChevronDownIcon
+                data-icon="inline-end"
+                className={cn("transition-transform", logOpen && "rotate-180")}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 ml-2 flex flex-col gap-2 border-l pl-3">
+              {loggedTools.map((tool) => (
+                <ToolActivityCard
+                  key={tool.toolCallId}
+                  disabled={disabled}
+                  labels={labels}
+                  onApproval={onApproval}
+                  tool={tool}
+                />
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        ) : null}
+        <ToolActivityCard
+          disabled={disabled}
+          labels={labels}
+          onApproval={onApproval}
+          tool={currentTool}
+        />
+      </div>
+    );
+  }
+
   return (
     <Collapsible open={logOpen} onOpenChange={setLogOpen}>
-      {currentTool.status === "approval-required" ? (
-        <>
-          <ToolActivityCard
-            disabled={disabled}
-            labels={labels}
-            onApproval={onApproval}
-            tool={currentTool}
+      <CollapsibleTrigger
+        render={
+          <Marker
+            className="focus-visible:ring-ring/50 cursor-pointer rounded-sm outline-none focus-visible:ring-3"
+            render={<button type="button" />}
           />
-          <CollapsibleTrigger
-            render={<Button variant="ghost" size="sm" className="ml-auto" />}
+        }
+      >
+        <MarkerContent className="flex-1">
+          <span
+            className={cn("block w-fit max-w-full", isWorking && "shimmer")}
           >
-            {logOpen ? labels.viewLess : labels.viewMore}
-            <ChevronDownIcon
-              data-icon="inline-end"
-              className={cn("transition-transform", logOpen && "rotate-180")}
-            />
-          </CollapsibleTrigger>
-        </>
-      ) : (
-        <CollapsibleTrigger
-          render={
-            <Marker
-              className="focus-visible:ring-ring/50 cursor-pointer rounded-sm outline-none focus-visible:ring-3"
-              render={<button type="button" />}
-            />
-          }
-        >
-          <MarkerContent className="flex-1">
-            <span
-              className={cn("block w-fit max-w-full", isWorking && "shimmer")}
-            >
-              {showWorkedSummary ? labels.toolWorked(workedSeconds) : label}
-            </span>
-          </MarkerContent>
-          {currentTool.status === "failed" ||
-          currentTool.status === "denied" ? (
-            <Badge variant="destructive">
-              {currentTool.status === "failed"
-                ? labels.toolFailed
-                : labels.toolDenied}
-            </Badge>
-          ) : null}
-          <ChevronDownIcon
-            className={cn("transition-transform", logOpen && "rotate-180")}
-          />
-          <span className="sr-only">
-            {logOpen ? labels.viewLess : labels.viewMore}
+            {showWorkedSummary ? labels.toolWorked(workedSeconds) : label}
           </span>
-        </CollapsibleTrigger>
-      )}
+        </MarkerContent>
+        {currentTool.status === "failed" || currentTool.status === "denied" ? (
+          <Badge variant="destructive">
+            {currentTool.status === "failed"
+              ? labels.toolFailed
+              : labels.toolDenied}
+          </Badge>
+        ) : null}
+        <ChevronDownIcon
+          className={cn("transition-transform", logOpen && "rotate-180")}
+        />
+        <span className="sr-only">
+          {logOpen ? labels.viewLess : labels.viewMore}
+        </span>
+      </CollapsibleTrigger>
       <CollapsibleContent className="mt-2 ml-2 flex flex-col gap-2 border-l pl-3">
         <Marker>
           <MarkerContent>{labels.toolRunning}</MarkerContent>
@@ -539,16 +555,28 @@ function AgentMessageRow({
   readonly pending: boolean;
 }) {
   const isUser = message.role === "user";
-  const startedAt = useRef(Date.now());
+  const activeStartedAt = useRef<number | undefined>(undefined);
+  const activeMilliseconds = useRef(0);
   const wasPending = useRef(pending);
   const [workedSeconds, setWorkedSeconds] = useState<number>();
   const hasPendingApproval = message.tools.some(
     (tool) => tool.status === "approval-required",
   );
 
-  if (pending) wasPending.current = true;
-
   useEffect(() => {
+    const isWorking = pending && !hasPendingApproval;
+
+    if (isWorking) {
+      wasPending.current = true;
+      activeStartedAt.current ??= Date.now();
+      return;
+    }
+
+    if (activeStartedAt.current !== undefined) {
+      activeMilliseconds.current += Date.now() - activeStartedAt.current;
+      activeStartedAt.current = undefined;
+    }
+
     const completed =
       !isUser &&
       message.tools.length > 0 &&
@@ -559,7 +587,7 @@ function AgentMessageRow({
     }
 
     setWorkedSeconds(
-      Math.max(1, Math.round((Date.now() - startedAt.current) / 1000)),
+      Math.max(1, Math.round(activeMilliseconds.current / 1000)),
     );
   }, [
     hasPendingApproval,
@@ -633,7 +661,7 @@ export function AgentWidget<Resource = never>({
   readonly onRemoveContext?: () => void;
   readonly onReset: () => void;
   readonly onSubmit: (action: AgentSubmitAction<Resource>) => void;
-  readonly state: AgentState;
+  readonly state: AgentState<Resource>;
 }) {
   const labels = agentWidgetMessages(getLocale(), messageOverrides);
   const referenceInputId = useId();
@@ -646,13 +674,24 @@ export function AgentWidget<Resource = never>({
   const [references, setReferences] = useState<
     ReadonlyArray<AgentWidgetReference<Resource>>
   >([]);
+  const activeContext: AgentWidgetReference<Resource> | undefined =
+    state.contextLocked
+      ? state.context
+        ? {
+            ...state.context,
+            icon: availableReferences.find(
+              ({ key }) => key === state.context?.key,
+            )?.icon,
+          }
+        : undefined
+      : context;
   const referenceQuery = referenceSearchQuery(input);
   const selectedKeys = new Set(references.map(({ key }) => key));
   const selectedLabels = new Set(references.map(({ label }) => label));
   const selectableReferences = availableReferences.filter(
     (reference) =>
       references.length < AGENT_REFERENCE_LIMIT &&
-      reference.key !== context?.key &&
+      reference.key !== activeContext?.key &&
       !selectedKeys.has(reference.key) &&
       !selectedLabels.has(reference.label),
   );
@@ -708,7 +747,7 @@ export function AgentWidget<Resource = never>({
 
   const selectReference = (reference: AgentWidgetReference<Resource>) => {
     setReferences((current) => [...current, reference]);
-    setInput((current) => current.replace(/@[^@\s]*$/, `@${reference.label}`));
+    setInput((current) => current.replace(/@[^@\n]*$/, `@${reference.label}`));
     setReferencePickerOpen(false);
   };
 
@@ -852,19 +891,19 @@ export function AgentWidget<Resource = never>({
             }}
           >
             <InputGroup>
-              {context ? (
+              {activeContext ? (
                 <InputGroupAddon
                   align="block-start"
                   className="bg-background rounded-t-[calc(var(--radius-md)-1px)] border-b"
                 >
-                  {context.icon}
+                  {activeContext.icon}
                   <span className="min-w-0 flex-1 truncate text-left">
-                    {context.label}
+                    {activeContext.label}
                   </span>
                   {onRemoveContext ? (
                     <InputGroupButton
                       size="icon-xs"
-                      aria-label={`${labels.removeContext}: ${context.label}`}
+                      aria-label={`${labels.removeContext}: ${activeContext.label}`}
                       onClick={onRemoveContext}
                     >
                       <XIcon />
@@ -882,9 +921,6 @@ export function AgentWidget<Resource = never>({
                 <Popover
                   open={referencePickerOpen}
                   triggerId={referenceInputId}
-                  onOpenChange={(nextOpen) => {
-                    if (!nextOpen) setReferencePickerOpen(false);
-                  }}
                 >
                   <PopoverTrigger
                     id={referenceInputId}
@@ -914,9 +950,14 @@ export function AgentWidget<Resource = never>({
                             ),
                           );
                           const query = referenceSearchQuery(value);
-                          setReferencePickerOpen(
+                          const startsReferenceQuery =
                             query !== undefined &&
-                              selectableReferences.length > 0,
+                            value.lastIndexOf("@") > input.lastIndexOf("@");
+                          setReferencePickerOpen(
+                            (current) =>
+                              current ||
+                              (startsReferenceQuery &&
+                                selectableReferences.length > 0),
                           );
                         }}
                         onKeyDown={(event) => {

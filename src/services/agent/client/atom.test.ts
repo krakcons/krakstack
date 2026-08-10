@@ -1,11 +1,16 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Effect, Stream } from "effect";
+import { AtomRegistry } from "effect/unstable/reactivity";
 
 import {
+  makeAgentAtoms,
   reduceAgentEvent,
   type AgentState,
 } from "@/services/agent/client/atom";
 
 const initial: AgentState = {
+  context: undefined,
+  contextLocked: false,
   messages: [],
   pending: true,
 };
@@ -73,5 +78,39 @@ describe("agent client state", () => {
 
     expect(failed.messages).toEqual([]);
     expect(failed.error).toBe("stream-failed");
+  });
+
+  it("locks the first conversation context until removal", () => {
+    const atoms = makeAgentAtoms<{ readonly id: string }>({
+      stream: () => Effect.succeed(Stream.empty),
+    });
+    const registry = AtomRegistry.make();
+    const scope = "organization-1";
+
+    registry.set(atoms.submit, {
+      action: { type: "message", text: "First" },
+      context: {
+        key: "course:course-1",
+        label: "First course",
+        resource: { id: "course-1" },
+      },
+      scope,
+    });
+    registry.set(atoms.submit, {
+      action: { type: "message", text: "Second" },
+      context: {
+        key: "course:course-2",
+        label: "Second course",
+        resource: { id: "course-2" },
+      },
+      scope,
+    });
+
+    expect(registry.get(atoms.state(scope)).context?.key).toBe(
+      "course:course-1",
+    );
+
+    registry.set(atoms.removeContext, scope);
+    expect(registry.get(atoms.state(scope)).context).toBeUndefined();
   });
 });
