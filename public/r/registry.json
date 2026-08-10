@@ -466,65 +466,56 @@
       ]
     },
     {
-      "name": "chat-service",
-      "title": "Chat Service",
-      "description": "A composable Effect AI chat service with streaming text, tool execution, approvals, bounded agent rounds, and serializable history.",
-      "type": "registry:lib",
-      "docs": "## Overview\n\n`chat-service` installs a generic Effect AI streaming service and its request/event schemas. It handles serializable chat history, streamed text, tool execution, approval responses, bounded agent rounds, and client-facing event conversion. Authentication, model selection, toolkit composition, persistence, and HTTP transport stay application-owned.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/chat-service\n```\n\nThe item creates `services/chat/index.ts` and `services/chat/schema.ts`.\n\n## Configure A Model And Toolkit\n\nBuild the model and toolkit in your application layer or request handler. The model is provided through Effect context; the toolkit and system prompt are passed per conversation.\n\n```ts\nconst chat = yield* ChatService;\nconst events = yield* chat.stream({\n  action: request.action,\n  history: request.history,\n  systemPrompt,\n  toolkit,\n}).pipe(Effect.provide(model));\n```\n\n`events` is an Effect `Stream` of `ChatEvent`. Forward it through SSE, NDJSON, a server function, or another streaming transport.\n\n## Add An HTTP API Endpoint\n\nDefine an endpoint with `ChatRequest` as its payload and `ChatEvent` as its streaming success type.\n\n```ts\nexport const ChatApiGroup = HttpApiGroup.make(\"chat\").add(\n  HttpApiEndpoint.post(\"stream\", \"/chat\", {\n    payload: ChatRequest,\n    success: HttpApiSchema.StreamSse({ data: ChatEvent }),\n  }),\n);\n```\n\nIn the handler, authenticate first, build request-scoped tool handlers, then return the stream from `ChatService`. Provide `ChatService.layer` where the API layer is assembled.\n\n```ts\nconst chatHandler = HttpApiBuilder.group(AppApi, \"chat\", (handlers) =>\n  handlers.handle(\"stream\", ({ payload }) =>\n    Effect.gen(function* () {\n      const chat = yield* ChatService;\n      return yield* chat.stream({\n        action: payload.action,\n        history: payload.history,\n        systemPrompt,\n        toolkit,\n      }).pipe(Effect.provide(model));\n    }),\n  ),\n).pipe(Layer.provide(ChatService.layer));\n```\n\n## Conversation History\n\nEach completed response emits a `history` event containing the serialized Effect AI chat. Send that value back in the next `ChatRequest`. Validate ownership before accepting persisted history, and enforce an application-appropriate size limit.\n\n## Tool Approvals\n\nTools marked with `needsApproval` emit an `approval-required` event. Resume the conversation with an approval action containing the emitted `approvalId`. The service rejects missing, duplicate, or already-resolved approvals as invalid history.\n\n## Agent Rounds\n\nThe service continues after resolved tool calls until the model returns text, requests approval, or reaches the built-in five-round limit. A `round-limit` error event tells clients to ask a more specific question.",
-      "dependencies": ["effect@beta"],
-      "files": [
-        {
-          "path": "src/services/chat/index.ts",
-          "type": "registry:file",
-          "target": "services/chat/index.ts"
-        },
-        {
-          "path": "src/services/chat/schema.ts",
-          "type": "registry:file",
-          "target": "services/chat/schema.ts"
-        }
-      ]
-    },
-    {
-      "name": "chat-widget",
-      "title": "Chat Widget",
-      "description": "A controlled React chat widget with streaming Markdown, tool activity, approval cards, localized labels, and responsive dialog layouts.",
+      "name": "agent",
+      "title": "Agent",
+      "description": "A generic Effect AI agent service, typed streaming API, client atoms, and localized assistant widget with tools, approvals, context, and references.",
       "type": "registry:block",
-      "docs": "## Overview\n\n`chat-widget` installs a controlled assistant dialog and a transport-neutral event reducer. It renders streaming Markdown, tool progress, tool descriptions, approval cards, errors, and responsive minimized or maximized layouts. English and French labels are built in and every label can be overridden.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/chat-widget\n```\n\nThe widget installs `chat-service` automatically and creates `components/ui/chat-widget.tsx` plus `services/chat/state.ts`. Add `TooltipProvider` near your application root if it is not already present.\n\n```tsx\n<TooltipProvider>\n  <RouterProvider router={router} />\n</TooltipProvider>\n```\n\n## Controlled Setup\n\nThe widget does not own a network client. Keep `ChatState` in Effect Atom, React state, TanStack Query, or another store and implement the four callbacks.\n\n```tsx\nconst [state, setState] = useState(initialChatState);\nconst controller = new AbortController();\n\nconst submit = async (action: ChatSubmitAction) => {\n  setState((current) => ({ ...current, pending: true, error: undefined }));\n\n  for await (const event of streamChat({\n    action,\n    history: state.history,\n    signal: controller.signal,\n  })) {\n    setState((current) => reduceChatEvent(current, event));\n  }\n\n  setState((current) => ({ ...current, pending: false }));\n};\n\n<ChatWidget\n  state={state}\n  onSubmit={submit}\n  onInterrupt={() => controller.abort()}\n  onReset={() => setState(initialChatState)}\n/>;\n```\n\nUse a fresh abort controller for each request in production. Add the user message optimistically before starting the stream; the reducer owns assistant messages and tool state emitted by the server.\n\n## Event Reduction\n\nCall `reduceChatEvent(current, event)` for every decoded `ChatEvent`. The reducer appends text deltas, stores serialized history, updates tool completion, exposes approval requests, and removes empty assistant placeholders after errors.\n\n## Approval Actions\n\nWhen a tool asks for approval, the widget calls `onSubmit` with `approvalId`, `toolCallId`, and the user's decision. Forward `approvalId` and `approved` to the server together with the latest history. `toolCallId` is client-side correlation data.\n\n## Messages\n\nThe widget selects English or French through Paraglide's current locale and accepts partial overrides.\n\n```tsx\n<ChatWidget\n  {...props}\n  messages={{\n    title: \"Support Assistant\",\n    description: \"Ask about billing, projects, or account access.\",\n    placeholder: \"How can we help?\",\n  }}\n/>\n```\n\nExported `chatWidgetMessages(locale, overrides)` can also resolve labels for tests or surrounding UI.",
+      "docs": "## Overview\n\n`agent` installs a complete generic agent foundation: Effect request and event schemas, a streaming AI service, scoped client atoms, and a controlled React widget. It supports serializable history, multi-round tool execution, approval responses, contextual resources, `@` references, streamed Markdown, tool activity, and English and French labels. Authentication, model selection, toolkit composition, and application-specific resources remain application-owned.\n\n## Included Files\n\n- `services/agent/schema.ts` - generic resource schemas and the `/agent` SSE HttpApi group\n- `services/agent/index.ts` - `AgentService` streaming implementation\n- `services/agent/client/atom.ts` - scoped state, event reduction, submit, reset, and interruption-ready effects\n- `services/agent/client/widget.tsx` - controlled localized assistant widget\n\n## API Setup\n\nCreate the group with your application's resource schema and add it to the root API.\n\n```ts\nexport const AgentApiGroup = makeAgentApiGroup(Resource);\nexport class AppApi extends HttpApi.make(\"app\").add(AgentApiGroup) {}\n```\n\nIn the handler, authenticate the request, build a request-scoped toolkit and system prompt, then return `AgentService.stream`. Provide the selected `LanguageModel` and `AgentService.layer` where the API layers are assembled.\n\n## Client Setup\n\nAdapt your generated SSE client to the atom factory, then bind a scope to the widget.\n\n```tsx\nconst agent = makeAgentAtoms({\n  stream: (get, request) => apiClient.agent.stream({ payload: request }),\n});\n\nconst state = useAtomValue(agent.state(scope));\nconst submit = useAtomSet(agent.submit, { mode: \"promiseExit\" });\n\n<AgentWidget\n  state={state}\n  onSubmit={(action) => submit({ action, scope })}\n  onInterrupt={() => interrupt()}\n  onReset={() => reset(scope)}\n/>\n```\n\nPass `context` for the resource currently being viewed and `availableReferences` to enable searchable `@reference` mentions. Resource values are generic and validated by the schema supplied to `makeAgentApiGroup`.\n\n## Localization\n\nThe widget selects English or French through Paraglide's `getLocale`. Override any label through the `messages` prop when an application needs different copy.",
       "registryDependencies": [
-        "@krak-stack/chat-service",
         "alert",
         "badge",
         "bubble",
         "button",
         "card",
         "collapsible",
+        "command",
         "dialog",
         "empty",
         "input-group",
-        "@krak-stack/loading",
         "marker",
         "message",
         "message-scroller",
+        "popover",
         "tooltip"
       ],
       "dependencies": [
         "@base-ui/react",
         "@streamdown/code",
+        "effect@4.0.0-beta.99",
         "lucide-react",
         "react",
         "streamdown"
       ],
       "files": [
         {
-          "path": "src/components/ui/chat-widget.tsx",
-          "type": "registry:component",
-          "target": "components/ui/chat-widget.tsx"
+          "path": "src/services/agent/schema.ts",
+          "type": "registry:file",
+          "target": "services/agent/schema.ts"
         },
         {
-          "path": "src/services/chat/state.ts",
+          "path": "src/services/agent/index.ts",
           "type": "registry:file",
-          "target": "services/chat/state.ts"
+          "target": "services/agent/index.ts"
+        },
+        {
+          "path": "src/services/agent/client/atom.ts",
+          "type": "registry:file",
+          "target": "services/agent/client/atom.ts"
+        },
+        {
+          "path": "src/services/agent/client/widget.tsx",
+          "type": "registry:component",
+          "target": "services/agent/client/widget.tsx"
         }
       ]
     },

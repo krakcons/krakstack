@@ -1,0 +1,300 @@
+import { Context, Data, Effect, Layer, Option, Ref, Stream } from "effect";
+import {
+  Chat,
+  LanguageModel,
+  Prompt,
+  type Response,
+  Tool,
+  Toolkit,
+} from "effect/unstable/ai";
+
+import type { AgentAction, AgentEvent } from "./schema";
+
+export type AgentStreamOptions<Tools extends Record<string, Tool.Any>> = {
+  readonly action: AgentAction;
+  readonly history?: string;
+  readonly systemPrompt: string;
+  readonly toolkit: Toolkit.WithHandler<Tools>;
+};
+
+class AgentHistoryError extends Data.TaggedError("AgentHistoryError") {}
+
+export class AgentService extends Context.Service<AgentService>()(
+  "AgentService",
+  {
+    make: Effect.gen(function* () {
+      const streamErrorDetails = (error: unknown) => {
+        if (!error || typeof error !== "object") {
+          return { error: String(error) };
+        }
+
+        const message = Reflect.get(error, "message");
+        const reason = Reflect.get(error, "reason");
+        const status = Reflect.get(error, "status");
+        const tag = Reflect.get(error, "_tag");
+
+        return {
+          ...(typeof message === "string" ? { message } : {}),
+          ...(typeof reason === "string" ? { reason } : {}),
+          ...(typeof status === "number" ? { status } : {}),
+          ...(typeof tag === "string" ? { tag } : {}),
+        };
+      };
+
+      const eventsForPart = ({
+        messageId,
+        part,
+        toolkit,
+      }: {
+        readonly messageId: string;
+        readonly part: Response.AnyPart;
+        readonly toolkit: { readonly tools: Record<string, Tool.Any> };
+      }): ReadonlyArray<AgentEvent> => {
+        switch (part.type) {
+          case "text-delta":
+            return [{ type: "text-delta", messageId, delta: part.delta }];
+          case "tool-call": {
+            const tool = toolkit.tools[part.name];
+            const title = tool
+              ? Option.getOrUndefined(
+                  Context.getOption(tool.annotations, Tool.Title),
+                )
+              : undefined;
+            return [
+              {
+                type: "tool-call",
+                messageId,
+                toolCallId: part.id,
+                name: part.name,
+                input: part.params,
+                metadata: {
+                  ...(title ? { title } : {}),
+                  ...(tool?.description
+                    ? { description: tool.description }
+                    : {}),
+                  destructive: tool
+                    ? Context.get(tool.annotations, Tool.Destructive)
+                    : false,
+                },
+              },
+            ];
+          }
+          case "tool-result":
+            return [
+              {
+                type: "tool-result",
+                toolCallId: part.id,
+                name: part.name,
+                isFailure: part.isFailure,
+              },
+            ];
+          case "tool-approval-request":
+            return [
+              {
+                type: "approval-required",
+                approvalId: part.approvalId,
+                toolCallId: part.toolCallId,
+              },
+            ];
+          case "error":
+            return [{ type: "error", code: "stream-failed" }];
+          default:
+            return [];
+        }
+      };
+
+      const agentRounds = <Tools extends Record<string, Tool.Any>>({
+        conversation,
+        messageId,
+        prompt,
+        round,
+        toolkit,
+      }: {
+        readonly conversation: Chat.Service;
+        readonly messageId: string;
+        readonly prompt: Prompt.RawInput;
+        readonly round: number;
+        readonly toolkit: Toolkit.WithHandler<Tools>;
+      }): Stream.Stream<
+        AgentEvent,
+        unknown,
+        | LanguageModel.LanguageModel
+        | Tool.HandlerServices<Tools[keyof Tools]>
+        | Tool.ResultDecodingServices<Tools[keyof Tools]>
+      > =>
+        Stream.suspend(() => {
+          let hasApproval = false;
+          const toolCallIds = new Set<string>();
+          const toolResultIds = new Set<string>();
+
+          const current = conversation.streamText({ prompt, toolkit }).pipe(
+            Stream.tap((part) =>
+              Effect.sync(() => {
+                if (
+                  part.type === "tool-call" &&
+                  part.providerExecuted !== true
+                ) {
+                  toolCallIds.add(part.id);
+                }
+                if (
+                  part.type === "tool-result" &&
+                  part.providerExecuted !== true &&
+                  part.preliminary !== true
+                ) {
+                  toolResultIds.add(part.id);
+                }
+                if (part.type === "tool-approval-request") hasApproval = true;
+              }),
+            ),
+            Stream.tap((part) =>
+              part.type === "error"
+                ? Effect.logError(
+                    "Agent model response failed",
+                    streamErrorDetails(part.error),
+                  )
+                : Effect.void,
+            ),
+            Stream.flatMap((part) =>
+              Stream.fromIterable(eventsForPart({ messageId, part, toolkit })),
+            ),
+          );
+
+          const continuation = Stream.suspend(() => {
+            if (hasApproval || toolCallIds.size === 0) return Stream.empty;
+            if (![...toolCallIds].every((id) => toolResultIds.has(id))) {
+              return Stream.succeed<AgentEvent>({
+                type: "error",
+                code: "stream-failed",
+              });
+            }
+            if (round >= 5) {
+              return Stream.succeed<AgentEvent>({
+                type: "error",
+                code: "round-limit",
+              });
+            }
+
+            return agentRounds({
+              conversation,
+              messageId,
+              prompt: [],
+              round: round + 1,
+              toolkit,
+            });
+          });
+
+          return Stream.concat(current, continuation);
+        });
+
+      const appendApproval = Effect.fn("AgentService.appendApproval")(
+        function* (
+          conversation: Chat.Service,
+          action: Extract<AgentAction, { readonly type: "approval" }>,
+        ) {
+          const history = yield* Ref.get(conversation.history);
+          let pendingToolCallId: string | undefined;
+          const respondedApprovalIds = new Set<string>();
+          const resolvedToolCallIds = new Set<string>();
+
+          for (const message of history.content) {
+            for (const part of message.content) {
+              if (typeof part === "string") continue;
+              if (
+                part.type === "tool-approval-request" &&
+                part.approvalId === action.approvalId
+              ) {
+                pendingToolCallId = part.toolCallId;
+              }
+              if (part.type === "tool-approval-response") {
+                respondedApprovalIds.add(part.approvalId);
+              }
+              if (part.type === "tool-result") {
+                resolvedToolCallIds.add(part.id);
+              }
+            }
+          }
+
+          if (
+            !pendingToolCallId ||
+            respondedApprovalIds.has(action.approvalId) ||
+            resolvedToolCallIds.has(pendingToolCallId)
+          ) {
+            return yield* new AgentHistoryError();
+          }
+
+          yield* Ref.set(
+            conversation.history,
+            Prompt.concat(history, [
+              Prompt.toolMessage({
+                content: [
+                  Prompt.toolApprovalResponsePart({
+                    approvalId: action.approvalId,
+                    approved: action.approved,
+                  }),
+                ],
+              }),
+            ]),
+          );
+        },
+      );
+
+      const stream = Effect.fn("AgentService.stream")(function* <
+        Tools extends Record<string, Tool.Any>,
+      >({ action, history, systemPrompt, toolkit }: AgentStreamOptions<Tools>) {
+        const model = yield* LanguageModel.LanguageModel;
+        const messageId = crypto.randomUUID();
+        const conversation = history
+          ? yield* Chat.fromJson(history)
+          : yield* Chat.fromPrompt([{ role: "system", content: systemPrompt }]);
+
+        yield* Ref.update(conversation.history, Prompt.setSystem(systemPrompt));
+
+        if (action.type === "approval") {
+          yield* appendApproval(conversation, action);
+        }
+
+        const rounds = agentRounds({
+          conversation,
+          messageId,
+          prompt: action.type === "message" ? action.text : [],
+          round: 1,
+          toolkit,
+        });
+        const complete = Stream.fromEffect(
+          Effect.gen(function* () {
+            const history = yield* conversation.exportJson;
+            return { type: "history", value: history } satisfies AgentEvent;
+          }),
+        ).pipe(Stream.concat(Stream.succeed<AgentEvent>({ type: "finish" })));
+        const response = Stream.concat(rounds, complete).pipe(
+          Stream.provideService(LanguageModel.LanguageModel, model),
+          Stream.catch((error) =>
+            Stream.fromEffect(
+              Effect.logError("Agent stream failed", streamErrorDetails(error)),
+            ).pipe(
+              Stream.drain,
+              Stream.concat(
+                Stream.make(
+                  {
+                    type: "error",
+                    code: "stream-failed",
+                  } satisfies AgentEvent,
+                  { type: "finish" } satisfies AgentEvent,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        return Stream.concat(
+          Stream.succeed<AgentEvent>({ type: "message-start", messageId }),
+          response,
+        );
+      });
+
+      return { stream };
+    }),
+  },
+) {
+  static readonly layer = Layer.effect(this, this.make);
+}

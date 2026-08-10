@@ -1,16 +1,14 @@
-import { useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { code } from "@streamdown/code";
 import {
   ArrowDownIcon,
   BotIcon,
   ChevronDownIcon,
-  DatabaseIcon,
   Maximize2Icon,
   MessageCircleDashedIcon,
   Minimize2Icon,
   MinusIcon,
-  SearchIcon,
   SendIcon,
   SquareIcon,
   XIcon,
@@ -35,6 +33,13 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Dialog,
   DialogClose,
   DialogHeader,
@@ -55,8 +60,7 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "@/components/ui/input-group";
-import { Loading } from "@/components/ui/loading";
-import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
+import { Marker, MarkerContent } from "@/components/ui/marker";
 import { Message, MessageContent } from "@/components/ui/message";
 import {
   MessageScroller,
@@ -67,21 +71,32 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
-import {
-  type ChatErrorCode,
-  type ChatMessage,
-  type ChatState,
-  type ChatSubmitAction,
-  type ChatToolActivity,
-} from "@/services/chat/state";
+import type {
+  AgentMessage,
+  AgentState,
+  AgentSubmitAction,
+  AgentToolActivity,
+} from "@/services/agent/client/atom";
+import type { AgentErrorCode, AgentReference } from "@/services/agent/schema";
+import { AGENT_REFERENCE_LIMIT } from "@/services/agent/schema";
 
-export type ChatWidgetMessages = {
+export type AgentWidgetReference<Resource> = AgentReference<Resource> & {
+  readonly icon?: ReactNode;
+  readonly key: string;
+};
+
+export type AgentWidgetMessages = {
   approve: string;
   approvalDestructive: string;
   approvalDestructiveLabel: string;
@@ -97,8 +112,11 @@ export type ChatWidgetMessages = {
   errorUnavailable: string;
   maximize: string;
   minimize: string;
+  noReferences: string;
   open: string;
   placeholder: string;
+  removeContext: string;
+  references: string;
   restore: string;
   scrollLatest: string;
   send: string;
@@ -107,7 +125,7 @@ export type ChatWidgetMessages = {
   toolDenied: string;
   toolFailed: string;
   toolRunning: string;
-  toolSearch: string;
+  toolWorked: (seconds: number) => string;
   viewLess: string;
   viewMore: string;
   welcome: string;
@@ -134,8 +152,11 @@ const messages = {
     errorUnavailable: "The assistant is currently unavailable.",
     maximize: "Maximize assistant",
     minimize: "Minimize assistant",
+    noReferences: "No references found.",
     open: "Open AI Assistant",
     placeholder: "Ask a question...",
+    removeContext: "Remove context",
+    references: "References",
     restore: "Restore assistant window",
     scrollLatest: "Scroll to latest message",
     send: "Send message",
@@ -144,7 +165,8 @@ const messages = {
     toolDenied: "Cancelled",
     toolFailed: "Failed",
     toolRunning: "Checking the API",
-    toolSearch: "Search documentation",
+    toolWorked: (seconds) =>
+      `Worked for ${seconds} ${seconds === 1 ? "second" : "seconds"}`,
     viewLess: "View less",
     viewMore: "View more",
     welcome: "How can I help?",
@@ -170,8 +192,11 @@ const messages = {
     errorUnavailable: "L'assistant est actuellement indisponible.",
     maximize: "Agrandir l'assistant",
     minimize: "Réduire l'assistant",
+    noReferences: "Aucune référence trouvée.",
     open: "Ouvrir l'assistant IA",
     placeholder: "Posez une question...",
+    removeContext: "Supprimer le contexte",
+    references: "Références",
     restore: "Restaurer la fenêtre de l'assistant",
     scrollLatest: "Défiler jusqu'au dernier message",
     send: "Envoyer le message",
@@ -180,22 +205,23 @@ const messages = {
     toolDenied: "Annulé",
     toolFailed: "Échec",
     toolRunning: "Consultation de l'API",
-    toolSearch: "Rechercher dans la documentation",
+    toolWorked: (seconds) =>
+      `A travaillé pendant ${seconds} ${seconds === 1 ? "seconde" : "secondes"}`,
     viewLess: "Voir moins",
     viewMore: "Voir plus",
     welcome: "Comment puis-je vous aider?",
   },
-} as const satisfies Record<"en" | "fr", ChatWidgetMessages>;
+} as const satisfies Record<"en" | "fr", AgentWidgetMessages>;
 
-export const chatWidgetMessages = (
+export const agentWidgetMessages = (
   locale = getLocale(),
-  overrides?: Partial<ChatWidgetMessages>,
-): ChatWidgetMessages => ({
+  overrides?: Partial<AgentWidgetMessages>,
+): AgentWidgetMessages => ({
   ...(locale.startsWith("fr") ? messages.fr : messages.en),
   ...overrides,
 });
 
-const errorMessage = (code: ChatErrorCode, labels: ChatWidgetMessages) => {
+const errorMessage = (code: AgentErrorCode, labels: AgentWidgetMessages) => {
   switch (code) {
     case "invalid-request":
       return labels.errorInvalidRequest;
@@ -217,6 +243,43 @@ const inputCodeBlock = (input: unknown) => {
   const fence = "`".repeat(Math.max(3, longestFence + 1));
   return `${fence}json\n${value}\n${fence}`;
 };
+
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const referenceMentionPattern = (label: string) =>
+  new RegExp(`@${escapeRegExp(label)}(?![\\p{L}\\p{N}_-])`, "u");
+
+const hasReferenceMention = (input: string, label: string) =>
+  referenceMentionPattern(label).test(input);
+
+const highlightedInput = (
+  input: string,
+  references: ReadonlyArray<AgentWidgetReference<unknown>>,
+) => {
+  const mentions = references
+    .map(({ label }) => `@${label}`)
+    .sort((left, right) => right.length - left.length);
+  if (mentions.length === 0) return input;
+
+  const mentionPattern = new RegExp(
+    `(${mentions.map(escapeRegExp).join("|")})(?![\\p{L}\\p{N}_-])`,
+    "gu",
+  );
+  const mentionSet = new Set(mentions);
+  return input.split(mentionPattern).map((part, index) =>
+    mentionSet.has(part) ? (
+      <span key={`${part}:${index}`} className="text-primary">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+};
+
+const referenceSearchQuery = (input: string) =>
+  input.match(/(?:^|\s)@([^@\s]*)$/)?.[1];
 
 const ToolLabel = ({
   description,
@@ -244,23 +307,26 @@ function ToolActivityCard({
   tool,
 }: {
   readonly disabled: boolean;
-  readonly labels: ChatWidgetMessages;
-  readonly onApproval: (tool: ChatToolActivity, approved: boolean) => void;
-  readonly tool: ChatToolActivity;
+  readonly labels: AgentWidgetMessages;
+  readonly onApproval: (tool: AgentToolActivity, approved: boolean) => void;
+  readonly tool: AgentToolActivity;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const requiresApproval = tool.status === "approval-required";
-  const isSearch = tool.name === "readDocumentation";
-  const label = isSearch
-    ? labels.toolSearch
-    : (tool.metadata.title ?? tool.name);
+  const label = tool.metadata.title ?? tool.name;
 
   if (!requiresApproval) {
     return (
       <Marker>
-        <MarkerIcon>{isSearch ? <SearchIcon /> : <DatabaseIcon />}</MarkerIcon>
         <MarkerContent>
-          <ToolLabel description={tool.metadata.description} label={label} />
+          <span
+            className={cn(
+              "block w-fit max-w-full",
+              tool.status === "running" && "shimmer",
+            )}
+          >
+            <ToolLabel description={tool.metadata.description} label={label} />
+          </span>
         </MarkerContent>
         {tool.status === "failed" || tool.status === "denied" ? (
           <Badge variant="destructive">
@@ -280,9 +346,6 @@ function ToolActivityCard({
       <Card size="sm" className="w-full border shadow-none ring-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MarkerIcon>
-              {isSearch ? <SearchIcon /> : <DatabaseIcon />}
-            </MarkerIcon>
             <ToolLabel description={tool.metadata.description} label={label} />
             {tool.metadata.destructive ? (
               <Badge variant="destructive">
@@ -353,7 +416,116 @@ function ToolActivityCard({
   );
 }
 
-function ChatMessageRow({
+function ToolActivityLog({
+  disabled,
+  labels,
+  onApproval,
+  pending,
+  tools,
+  workedSeconds,
+}: {
+  readonly disabled: boolean;
+  readonly labels: AgentWidgetMessages;
+  readonly onApproval: (tool: AgentToolActivity, approved: boolean) => void;
+  readonly pending: boolean;
+  readonly tools: ReadonlyArray<AgentToolActivity>;
+  readonly workedSeconds?: number;
+}) {
+  const [logOpen, setLogOpen] = useState(false);
+  const currentTool = tools.at(-1);
+
+  if (!currentTool) {
+    return (
+      <Marker>
+        <MarkerContent>
+          <span className="shimmer block w-fit max-w-full">
+            {labels.toolRunning}
+          </span>
+        </MarkerContent>
+      </Marker>
+    );
+  }
+
+  const label = currentTool.metadata.title ?? currentTool.name;
+  const showWorkedSummary =
+    workedSeconds !== undefined && currentTool.status !== "approval-required";
+  const isWorking =
+    pending &&
+    workedSeconds === undefined &&
+    currentTool.status !== "approval-required";
+  const loggedTools = showWorkedSummary ? tools : tools.slice(0, -1);
+
+  return (
+    <Collapsible open={logOpen} onOpenChange={setLogOpen}>
+      {currentTool.status === "approval-required" ? (
+        <>
+          <ToolActivityCard
+            disabled={disabled}
+            labels={labels}
+            onApproval={onApproval}
+            tool={currentTool}
+          />
+          <CollapsibleTrigger
+            render={<Button variant="ghost" size="sm" className="ml-auto" />}
+          >
+            {logOpen ? labels.viewLess : labels.viewMore}
+            <ChevronDownIcon
+              data-icon="inline-end"
+              className={cn("transition-transform", logOpen && "rotate-180")}
+            />
+          </CollapsibleTrigger>
+        </>
+      ) : (
+        <CollapsibleTrigger
+          render={
+            <Marker
+              className="focus-visible:ring-ring/50 cursor-pointer rounded-sm outline-none focus-visible:ring-3"
+              render={<button type="button" />}
+            />
+          }
+        >
+          <MarkerContent className="flex-1">
+            <span
+              className={cn("block w-fit max-w-full", isWorking && "shimmer")}
+            >
+              {showWorkedSummary ? labels.toolWorked(workedSeconds) : label}
+            </span>
+          </MarkerContent>
+          {currentTool.status === "failed" ||
+          currentTool.status === "denied" ? (
+            <Badge variant="destructive">
+              {currentTool.status === "failed"
+                ? labels.toolFailed
+                : labels.toolDenied}
+            </Badge>
+          ) : null}
+          <ChevronDownIcon
+            className={cn("transition-transform", logOpen && "rotate-180")}
+          />
+          <span className="sr-only">
+            {logOpen ? labels.viewLess : labels.viewMore}
+          </span>
+        </CollapsibleTrigger>
+      )}
+      <CollapsibleContent className="mt-2 ml-2 flex flex-col gap-2 border-l pl-3">
+        <Marker>
+          <MarkerContent>{labels.toolRunning}</MarkerContent>
+        </Marker>
+        {loggedTools.map((tool) => (
+          <ToolActivityCard
+            key={tool.toolCallId}
+            disabled={disabled}
+            labels={labels}
+            onApproval={onApproval}
+            tool={tool}
+          />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function AgentMessageRow({
   disabled,
   labels,
   message,
@@ -361,16 +533,56 @@ function ChatMessageRow({
   pending,
 }: {
   readonly disabled: boolean;
-  readonly labels: ChatWidgetMessages;
-  readonly message: ChatMessage;
-  readonly onApproval: (tool: ChatToolActivity, approved: boolean) => void;
+  readonly labels: AgentWidgetMessages;
+  readonly message: AgentMessage;
+  readonly onApproval: (tool: AgentToolActivity, approved: boolean) => void;
   readonly pending: boolean;
 }) {
   const isUser = message.role === "user";
+  const startedAt = useRef(Date.now());
+  const wasPending = useRef(pending);
+  const [workedSeconds, setWorkedSeconds] = useState<number>();
+  const hasPendingApproval = message.tools.some(
+    (tool) => tool.status === "approval-required",
+  );
+
+  if (pending) wasPending.current = true;
+
+  useEffect(() => {
+    const completed =
+      !isUser &&
+      message.tools.length > 0 &&
+      !hasPendingApproval &&
+      (message.text.length > 0 || !pending);
+    if (!completed || !wasPending.current || workedSeconds !== undefined) {
+      return;
+    }
+
+    setWorkedSeconds(
+      Math.max(1, Math.round((Date.now() - startedAt.current) / 1000)),
+    );
+  }, [
+    hasPendingApproval,
+    isUser,
+    message.text,
+    message.tools.length,
+    pending,
+    workedSeconds,
+  ]);
 
   return (
     <Message align={isUser ? "end" : "start"}>
       <MessageContent>
+        {!isUser && (message.tools.length > 0 || (pending && !message.text)) ? (
+          <ToolActivityLog
+            disabled={disabled}
+            labels={labels}
+            onApproval={onApproval}
+            pending={pending}
+            tools={message.tools}
+            workedSeconds={workedSeconds}
+          />
+        ) : null}
         {message.text ? (
           isUser ? (
             <Bubble align="end">
@@ -399,43 +611,65 @@ function ChatMessageRow({
             </Streamdown>
           )
         ) : null}
-        {message.tools.map((tool) => (
-          <ToolActivityCard
-            key={tool.toolCallId}
-            disabled={disabled}
-            labels={labels}
-            onApproval={onApproval}
-            tool={tool}
-          />
-        ))}
-        {!isUser && pending && !message.text && message.tools.length === 0 ? (
-          <Loading
-            className="justify-start px-3 py-2"
-            label={labels.toolRunning}
-          />
-        ) : null}
       </MessageContent>
     </Message>
   );
 }
 
-export function ChatWidget({
+export function AgentWidget<Resource = never>({
+  availableReferences = [],
+  context,
   messages: messageOverrides,
   onInterrupt,
+  onRemoveContext,
   onReset,
   onSubmit,
   state,
 }: {
-  readonly messages?: Partial<ChatWidgetMessages>;
+  readonly availableReferences?: ReadonlyArray<AgentWidgetReference<Resource>>;
+  readonly context?: AgentWidgetReference<Resource>;
+  readonly messages?: Partial<AgentWidgetMessages>;
   readonly onInterrupt: () => void;
+  readonly onRemoveContext?: () => void;
   readonly onReset: () => void;
-  readonly onSubmit: (action: ChatSubmitAction) => void;
-  readonly state: ChatState;
+  readonly onSubmit: (action: AgentSubmitAction<Resource>) => void;
+  readonly state: AgentState;
 }) {
-  const labels = chatWidgetMessages(getLocale(), messageOverrides);
+  const labels = agentWidgetMessages(getLocale(), messageOverrides);
+  const referenceInputId = useId();
+  const referenceListId = `${referenceInputId}-list`;
   const [open, setOpen] = useState(false);
   const [maximized, setMaximized] = useState(false);
+  const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  const [activeReferenceKey, setActiveReferenceKey] = useState("");
   const [input, setInput] = useState("");
+  const [references, setReferences] = useState<
+    ReadonlyArray<AgentWidgetReference<Resource>>
+  >([]);
+  const referenceQuery = referenceSearchQuery(input);
+  const selectedKeys = new Set(references.map(({ key }) => key));
+  const selectedLabels = new Set(references.map(({ label }) => label));
+  const selectableReferences = availableReferences.filter(
+    (reference) =>
+      references.length < AGENT_REFERENCE_LIMIT &&
+      reference.key !== context?.key &&
+      !selectedKeys.has(reference.key) &&
+      !selectedLabels.has(reference.label),
+  );
+  const matchingReferences = selectableReferences.filter((reference) =>
+    referenceQuery === undefined
+      ? false
+      : `${reference.label} ${reference.key}`
+          .toLocaleLowerCase()
+          .includes(referenceQuery.toLocaleLowerCase()),
+  );
+  const activeReferenceIndex = Math.max(
+    0,
+    matchingReferences.findIndex(
+      (reference) => reference.key === activeReferenceKey,
+    ),
+  );
+  const activeReference = matchingReferences[activeReferenceIndex];
   const hasPendingApproval = state.messages.some((message) =>
     message.tools.some((tool) => tool.status === "approval-required"),
   );
@@ -445,10 +679,23 @@ export function ChatWidget({
     if (!text || state.pending || hasPendingApproval) return;
 
     setInput("");
-    onSubmit({ type: "message", text });
+    setReferences([]);
+    setReferencePickerOpen(false);
+    onSubmit({
+      type: "message",
+      text,
+      ...(references.length > 0
+        ? {
+            references: references.map(({ label, resource }) => ({
+              label,
+              resource,
+            })),
+          }
+        : {}),
+    });
   };
 
-  const respondToApproval = (tool: ChatToolActivity, approved: boolean) => {
+  const respondToApproval = (tool: AgentToolActivity, approved: boolean) => {
     if (!tool.approvalId || state.pending) return;
 
     onSubmit({
@@ -459,10 +706,18 @@ export function ChatWidget({
     });
   };
 
+  const selectReference = (reference: AgentWidgetReference<Resource>) => {
+    setReferences((current) => [...current, reference]);
+    setInput((current) => current.replace(/@[^@\s]*$/, `@${reference.label}`));
+    setReferencePickerOpen(false);
+  };
+
   const clearConversation = () => {
     onInterrupt();
     onReset();
     setInput("");
+    setReferences([]);
+    setReferencePickerOpen(false);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -484,7 +739,7 @@ export function ChatWidget({
         render={
           <Button
             size="icon-lg"
-            className="fixed right-4 bottom-4 rounded-full shadow-lg md:right-6 md:bottom-6"
+            className="fixed right-4 bottom-4 z-9999 rounded-full shadow-lg md:right-6 md:bottom-6"
           />
         }
       >
@@ -556,7 +811,7 @@ export function ChatWidget({
                           messageId={message.id}
                           scrollAnchor={message.role === "user"}
                         >
-                          <ChatMessageRow
+                          <AgentMessageRow
                             disabled={state.pending}
                             labels={labels}
                             message={message}
@@ -597,20 +852,147 @@ export function ChatWidget({
             }}
           >
             <InputGroup>
-              <InputGroupTextarea
-                value={input}
-                placeholder={labels.placeholder}
-                aria-label={labels.placeholder}
-                disabled={state.pending || hasPendingApproval}
-                rows={2}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    event.currentTarget.form?.requestSubmit();
-                  }
-                }}
-              />
+              {context ? (
+                <InputGroupAddon
+                  align="block-start"
+                  className="bg-background rounded-t-[calc(var(--radius-md)-1px)] border-b"
+                >
+                  {context.icon}
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {context.label}
+                  </span>
+                  {onRemoveContext ? (
+                    <InputGroupButton
+                      size="icon-xs"
+                      aria-label={`${labels.removeContext}: ${context.label}`}
+                      onClick={onRemoveContext}
+                    >
+                      <XIcon />
+                    </InputGroupButton>
+                  ) : null}
+                </InputGroupAddon>
+              ) : null}
+              <div className="relative w-full min-w-0 self-stretch text-left">
+                <div
+                  aria-hidden="true"
+                  className="text-foreground pointer-events-none absolute inset-0 overflow-hidden px-2.5 py-2 text-left font-[inherit] text-base break-words whitespace-pre-wrap md:text-sm"
+                >
+                  {highlightedInput(input, references)}
+                </div>
+                <Popover
+                  open={referencePickerOpen}
+                  triggerId={referenceInputId}
+                  onOpenChange={(nextOpen) => {
+                    if (!nextOpen) setReferencePickerOpen(false);
+                  }}
+                >
+                  <PopoverTrigger
+                    id={referenceInputId}
+                    render={
+                      <InputGroupTextarea
+                        className="caret-foreground selection:bg-primary selection:text-primary-foreground relative w-full text-left text-transparent"
+                        value={input}
+                        placeholder={labels.placeholder}
+                        aria-label={labels.placeholder}
+                        aria-activedescendant={
+                          referencePickerOpen && activeReference
+                            ? `${referenceInputId}-reference-${activeReferenceIndex}`
+                            : undefined
+                        }
+                        aria-autocomplete="list"
+                        aria-controls={referenceListId}
+                        aria-expanded={referencePickerOpen}
+                        disabled={state.pending || hasPendingApproval}
+                        role="combobox"
+                        rows={2}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setInput(value);
+                          setReferences((current) =>
+                            current.filter(({ label }) =>
+                              hasReferenceMention(value, label),
+                            ),
+                          );
+                          const query = referenceSearchQuery(value);
+                          setReferencePickerOpen(
+                            query !== undefined &&
+                              selectableReferences.length > 0,
+                          );
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Escape" && referencePickerOpen) {
+                            event.preventDefault();
+                            setReferencePickerOpen(false);
+                            return;
+                          }
+                          if (
+                            referencePickerOpen &&
+                            (event.key === "ArrowDown" ||
+                              event.key === "ArrowUp") &&
+                            matchingReferences.length > 0
+                          ) {
+                            event.preventDefault();
+                            const offset = event.key === "ArrowDown" ? 1 : -1;
+                            const nextIndex = Math.min(
+                              matchingReferences.length - 1,
+                              Math.max(0, activeReferenceIndex + offset),
+                            );
+                            setActiveReferenceKey(
+                              matchingReferences[nextIndex].key,
+                            );
+                            return;
+                          }
+                          if (
+                            event.key === "Enter" &&
+                            !event.shiftKey &&
+                            referencePickerOpen &&
+                            activeReference
+                          ) {
+                            event.preventDefault();
+                            selectReference(activeReference);
+                            return;
+                          }
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            event.currentTarget.form?.requestSubmit();
+                          }
+                        }}
+                      />
+                    }
+                  />
+                  <PopoverContent
+                    align="start"
+                    initialFocus={false}
+                    side="top"
+                    className="w-[min(24rem,calc(100vw-2rem))] p-0"
+                  >
+                    <Command
+                      shouldFilter={false}
+                      value={activeReference?.key ?? ""}
+                      onValueChange={setActiveReferenceKey}
+                    >
+                      <CommandList id={referenceListId}>
+                        <CommandEmpty>{labels.noReferences}</CommandEmpty>
+                        <CommandGroup heading={labels.references}>
+                          {matchingReferences.map((reference, index) => (
+                            <CommandItem
+                              key={reference.key}
+                              id={`${referenceInputId}-reference-${index}`}
+                              value={reference.key}
+                              onSelect={() => selectReference(reference)}
+                            >
+                              {reference.icon}
+                              <span className="truncate">
+                                {reference.label}
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <InputGroupAddon align="block-end" className="justify-end">
                 {state.pending ? (
                   <InputGroupButton size="icon-xs" onClick={onInterrupt}>

@@ -1,16 +1,16 @@
 import { useState } from "react";
 
-import { ChatWidget } from "@/components/ui/chat-widget";
+import { AgentWidget } from "@/services/agent/client/widget";
 import {
-  initialChatState,
-  type ChatState,
-  type ChatSubmitAction,
-} from "@/services/chat/state";
+  initialAgentState,
+  type AgentState,
+  type AgentSubmitAction,
+} from "@/services/agent/client/atom";
 
-export function ChatWidgetPreview() {
-  const [state, setState] = useState<ChatState>(initialChatState);
+export function AgentPreview() {
+  const [state, setState] = useState<AgentState>(initialAgentState);
 
-  const submit = (action: ChatSubmitAction) => {
+  const submit = (action: AgentSubmitAction) => {
     if (action.type !== "message") return;
 
     setState((current) => ({
@@ -26,7 +26,7 @@ export function ChatWidgetPreview() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          text: "This preview is ready to connect to your streaming chat endpoint.",
+          text: "This preview is ready to connect to your streaming agent endpoint.",
           tools: [],
         },
       ],
@@ -35,10 +35,10 @@ export function ChatWidgetPreview() {
 
   return (
     <div className="min-h-72">
-      <ChatWidget
+      <AgentWidget
         state={state}
         onInterrupt={() => undefined}
-        onReset={() => setState(initialChatState)}
+        onReset={() => setState(initialAgentState)}
         onSubmit={submit}
       />
     </div>

@@ -84,8 +84,7 @@ export function getRegistryGroup(item: RegistryItem) {
 }
 
 const iconByName = {
-  "chat-service": Bot,
-  "chat-widget": Bot,
+  agent: Bot,
   docs: CodeXml,
   "docs-ai": Bot,
   "data-table": Table2,

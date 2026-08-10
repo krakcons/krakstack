@@ -1,29 +1,30 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { reduceChatEvent, type ChatState } from "@/services/chat/state";
+import {
+  reduceAgentEvent,
+  type AgentState,
+} from "@/services/agent/client/atom";
 
-const initial: ChatState = {
+const initial: AgentState = {
   messages: [],
   pending: true,
 };
 
-describe("chat client state", () => {
+describe("agent client state", () => {
   it("reduces streamed message and approval events", () => {
-    const started = reduceChatEvent(initial, {
+    const started = reduceAgentEvent(initial, {
       type: "message-start",
       messageId: "message-1",
     });
-    const called = reduceChatEvent(started, {
+    const called = reduceAgentEvent(started, {
       type: "tool-call",
       messageId: "message-1",
       toolCallId: "tool-1",
       name: "courses_deleteCourse",
       input: { id: "course-1" },
-      metadata: {
-        destructive: true,
-      },
+      metadata: { destructive: true },
     });
-    const approval = reduceChatEvent(called, {
+    const approval = reduceAgentEvent(called, {
       type: "approval-required",
       approvalId: "approval-1",
       toolCallId: "tool-1",
@@ -37,35 +38,35 @@ describe("chat client state", () => {
   });
 
   it("appends deltas and stores in-memory history", () => {
-    const started = reduceChatEvent(initial, {
+    const started = reduceAgentEvent(initial, {
       type: "message-start",
       messageId: "message-1",
     });
-    const first = reduceChatEvent(started, {
+    const first = reduceAgentEvent(started, {
       type: "text-delta",
       messageId: "message-1",
       delta: "Hello ",
     });
-    const second = reduceChatEvent(first, {
+    const second = reduceAgentEvent(first, {
       type: "text-delta",
       messageId: "message-1",
       delta: "there",
     });
-    const withHistory = reduceChatEvent(second, {
+    const withHistory = reduceAgentEvent(second, {
       type: "history",
-      value: "chat-state",
+      value: "agent-state",
     });
 
     expect(withHistory.messages[0]?.text).toBe("Hello there");
-    expect(withHistory.history).toBe("chat-state");
+    expect(withHistory.history).toBe("agent-state");
   });
 
   it("removes an empty assistant placeholder when streaming fails", () => {
-    const started = reduceChatEvent(initial, {
+    const started = reduceAgentEvent(initial, {
       type: "message-start",
       messageId: "message-1",
     });
-    const failed = reduceChatEvent(started, {
+    const failed = reduceAgentEvent(started, {
       type: "error",
       code: "stream-failed",
     });
