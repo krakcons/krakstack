@@ -544,6 +544,11 @@
       ],
       "files": [
         {
+          "path": "src/lib/docs-core.tsx",
+          "type": "registry:file",
+          "target": "lib/docs-core.tsx"
+        },
+        {
           "path": "src/lib/docs.tsx",
           "type": "registry:file",
           "target": "lib/docs.tsx"

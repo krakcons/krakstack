@@ -180,6 +180,41 @@ const schemaWithVisibleAnnotations = (
   };
 };
 
+const referencedDefinitions = (
+  schema: JsonSchema.JsonSchema,
+  definitions: Record<string, JsonSchema.JsonSchema>,
+) => {
+  const names = new Set<string>();
+  const pending: Array<unknown> = [schema];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || typeof current !== "object") continue;
+    if (Array.isArray(current)) {
+      pending.push(...current);
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(current)) {
+      if (key === "$ref" && typeof value === "string") {
+        const name = value.match(
+          /^#\/(?:\$defs|components\/schemas)\/(.+)$/,
+        )?.[1];
+        if (name && !names.has(name) && definitions[name]) {
+          names.add(name);
+          pending.push(definitions[name]);
+        }
+      } else if (key !== "$defs") {
+        pending.push(value);
+      }
+    }
+  }
+
+  return Object.fromEntries(
+    [...names].map((name) => [name, definitions[name]]),
+  );
+};
+
 const operationParameters = (
   parameters: ReadonlyArray<HttpApiParameter>,
   location: HttpApiParameter["in"],
@@ -299,10 +334,17 @@ export class HttpApiSpec extends Context.Service<HttpApiSpec>()("HttpApiSpec", {
             ...schema,
             $defs: spec.components?.schemas,
           });
+          const definitions = document.definitions ?? {};
+          const usedDefinitions = referencedDefinitions(
+            document.schema,
+            definitions,
+          );
 
           return {
             ...document.schema,
-            $defs: document.definitions,
+            ...(Object.keys(usedDefinitions).length > 0
+              ? { $defs: usedDefinitions }
+              : {}),
           } satisfies JsonSchema.JsonSchema;
         };
 

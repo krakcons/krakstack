@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 import { Tool, Toolkit } from "effect/unstable/ai";
 
-import { DocsPageSchema, type DocsCatalog, type DocsLocale } from "./docs";
+import { DocsPageSchema, type DocsCatalog, type DocsLocale } from "./docs-core";
 
 const SearchDocumentation = Tool.make("searchDocumentation", {
   description:

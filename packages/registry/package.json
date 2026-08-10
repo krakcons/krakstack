@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -16,6 +16,50 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./agent": {
+      "types": "./dist/services/agent/index.d.ts",
+      "import": "./dist/services/agent/index.js"
+    },
+    "./agent/client": {
+      "types": "./dist/services/agent/client/index.d.ts",
+      "import": "./dist/services/agent/client/index.js"
+    },
+    "./agent/schema": {
+      "types": "./dist/services/agent/schema.d.ts",
+      "import": "./dist/services/agent/schema.js"
+    },
+    "./httpapi/ai": {
+      "types": "./dist/lib/httpapi-ai.d.ts",
+      "import": "./dist/lib/httpapi-ai.js"
+    },
+    "./httpapi/cli": {
+      "types": "./dist/lib/httpapi-cli.d.ts",
+      "import": "./dist/lib/httpapi-cli.js"
+    },
+    "./httpapi/client": {
+      "types": "./dist/lib/httpapi-client.d.ts",
+      "import": "./dist/lib/httpapi-client.js"
+    },
+    "./httpapi/helpers": {
+      "types": "./dist/lib/httpapi-helpers.d.ts",
+      "import": "./dist/lib/httpapi-helpers.js"
+    },
+    "./httpapi/mcp": {
+      "types": "./dist/lib/httpapi-mcp.d.ts",
+      "import": "./dist/lib/httpapi-mcp.js"
+    },
+    "./docs": {
+      "types": "./dist/lib/docs-core.d.ts",
+      "import": "./dist/lib/docs-core.js"
+    },
+    "./docs-ai": {
+      "types": "./dist/lib/docs-ai.d.ts",
+      "import": "./dist/lib/docs-ai.js"
+    },
+    "./query": {
+      "types": "./dist/lib/query.d.ts",
+      "import": "./dist/lib/query.js"
+    },
     "./app-brand": {
       "types": "./dist/components/ui/app-brand.d.ts",
       "import": "./dist/components/ui/app-brand.js"
@@ -143,6 +187,7 @@
     "@effect/ai-openai-compat": "4.0.0-beta.85",
     "@effect/atom-react": "4.0.0-beta.85",
     "@effect/platform-browser": "4.0.0-beta.85",
+    "@iconify-json/lucide": "^1.2.83",
     "@iconify/react": "^6.0.2",
     "@inlang/paraglide-js": "^2.19.0",
     "@lucas-barake/effect-form": "0.25.0-beta.6",
@@ -154,13 +199,15 @@
     "@tanstack/react-virtual": "^3.14.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "effect": "4.0.0-beta.99",
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "shiki": "^4.2.0",
     "streamdown": "^2.5.0",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "yaml": "^2.8.2"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-sesv2": {
@@ -184,7 +231,13 @@
     "@effect/platform-browser": {
       "optional": true
     },
+    "@iconify-json/lucide": {
+      "optional": true
+    },
     "@iconify/react": {
+      "optional": true
+    },
+    "cmdk": {
       "optional": true
     },
     "@lucas-barake/effect-form": {
@@ -212,6 +265,9 @@
       "optional": true
     },
     "streamdown": {
+      "optional": true
+    },
+    "yaml": {
       "optional": true
     }
   }

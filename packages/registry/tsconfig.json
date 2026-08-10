@@ -11,6 +11,17 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/services/agent/client/index.ts",
+    "../../src/services/agent/index.ts",
+    "../../src/services/agent/schema.ts",
+    "../../src/lib/httpapi-ai.ts",
+    "../../src/lib/httpapi-cli.ts",
+    "../../src/lib/httpapi-client.ts",
+    "../../src/lib/httpapi-helpers.tsx",
+    "../../src/lib/httpapi-mcp.ts",
+    "../../src/lib/docs-core.tsx",
+    "../../src/lib/docs-ai.ts",
+    "../../src/lib/query.ts",
     "../../src/components/ui/search-menu.tsx",
     "../../src/components/ui/app-brand.tsx",
     "../../src/components/ui/copy-button.tsx",

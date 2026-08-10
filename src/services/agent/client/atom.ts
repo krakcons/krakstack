@@ -1,5 +1,5 @@
-import { Effect, Stream } from "effect";
-import { Atom } from "effect/unstable/reactivity";
+import { Effect, Layer, Stream } from "effect";
+import { Atom, Reactivity } from "effect/unstable/reactivity";
 
 import type {
   AgentAction,
@@ -163,8 +163,13 @@ export type AgentAtomsConfig<Resource> = {
   readonly stream: (
     get: Atom.FnContext,
     request: AgentRequest<Resource>,
-  ) => Effect.Effect<Stream.Stream<AgentEvent, unknown>, unknown>;
+  ) => Effect.Effect<
+    Stream.Stream<AgentEvent, unknown, Reactivity.Reactivity>,
+    unknown
+  >;
   readonly errorCode?: (error: unknown) => AgentErrorCode;
+  readonly reactivityKeys?: ReadonlyArray<unknown>;
+  readonly runtime?: Atom.AtomRuntime<never>;
 };
 
 export type AgentSubmitInput<Resource> = {
@@ -175,87 +180,95 @@ export type AgentSubmitInput<Resource> = {
 
 export const makeAgentAtoms = <Resource>({
   errorCode = defaultErrorCode,
+  reactivityKeys,
+  runtime = Atom.runtime(Layer.empty),
   stream,
 }: AgentAtomsConfig<Resource>) => {
   const state = Atom.family((_scope: string) =>
     Atom.make<AgentState<Resource>>(initialAgentState),
   );
 
-  const submit = Atom.fn<AgentSubmitInput<Resource>>()((input, get) => {
-    const submitAction = input.action;
-    const stateAtom = state(input.scope);
-    const current = get(stateAtom);
-    const context = current.contextLocked ? current.context : input.context;
-    const approvalStatus: AgentToolStatus | undefined =
-      submitAction.type === "approval"
-        ? submitAction.approved
-          ? "approved"
-          : "denied"
-        : undefined;
-    const messages =
-      submitAction.type === "message"
-        ? [
-            ...current.messages,
-            {
-              id: crypto.randomUUID(),
-              role: "user" as const,
-              text: submitAction.text,
-              tools: [],
-            },
-          ]
-        : current.messages.map((message) => ({
-            ...message,
-            tools: message.tools.map((tool) =>
-              tool.toolCallId === submitAction.toolCallId
-                ? { ...tool, status: approvalStatus ?? tool.status }
-                : tool,
+  const submit = runtime.fn<AgentSubmitInput<Resource>>()(
+    (input, get) => {
+      const submitAction = input.action;
+      const stateAtom = state(input.scope);
+      const current = get(stateAtom);
+      const context = current.contextLocked ? current.context : input.context;
+      const approvalStatus: AgentToolStatus | undefined =
+        submitAction.type === "approval"
+          ? submitAction.approved
+            ? "approved"
+            : "denied"
+          : undefined;
+      const messages =
+        submitAction.type === "message"
+          ? [
+              ...current.messages,
+              {
+                id: crypto.randomUUID(),
+                role: "user" as const,
+                text: submitAction.text,
+                tools: [],
+              },
+            ]
+          : current.messages.map((message) => ({
+              ...message,
+              tools: message.tools.map((tool) =>
+                tool.toolCallId === submitAction.toolCallId
+                  ? { ...tool, status: approvalStatus ?? tool.status }
+                  : tool,
+              ),
+            }));
+
+      get.set(stateAtom, {
+        ...current,
+        context,
+        contextLocked: true,
+        messages,
+        pending: true,
+        error: undefined,
+      });
+
+      const action: AgentAction<Resource> =
+        submitAction.type === "message"
+          ? submitAction
+          : {
+              type: submitAction.type,
+              approvalId: submitAction.approvalId,
+              approved: submitAction.approved,
+            };
+
+      return stream(get, {
+        action,
+        context: context
+          ? { label: context.label, resource: context.resource }
+          : undefined,
+        history: current.history,
+      }).pipe(
+        Effect.flatMap(
+          Stream.runForEach((event) =>
+            Effect.sync(() =>
+              get.set(stateAtom, reduceAgentEvent(get(stateAtom), event)),
             ),
-          }));
-
-    get.set(stateAtom, {
-      ...current,
-      context,
-      contextLocked: true,
-      messages,
-      pending: true,
-      error: undefined,
-    });
-
-    const action: AgentAction<Resource> =
-      submitAction.type === "message"
-        ? submitAction
-        : {
-            type: submitAction.type,
-            approvalId: submitAction.approvalId,
-            approved: submitAction.approved,
-          };
-
-    return stream(get, {
-      action,
-      context: context
-        ? { label: context.label, resource: context.resource }
-        : undefined,
-      history: current.history,
-    }).pipe(
-      Effect.flatMap(
-        Stream.runForEach((event) =>
-          Effect.sync(() =>
-            get.set(stateAtom, reduceAgentEvent(get(stateAtom), event)),
           ),
         ),
-      ),
-      Effect.catch((error) =>
-        Effect.sync(() =>
-          get.set(stateAtom, failAgentState(get(stateAtom), errorCode(error))),
+        Effect.catch((error) =>
+          Effect.sync(() =>
+            get.set(
+              stateAtom,
+              failAgentState(get(stateAtom), errorCode(error)),
+            ),
+          ),
         ),
-      ),
-      Effect.ensuring(
-        Effect.sync(() =>
-          get.set(stateAtom, { ...get(stateAtom), pending: false }),
+        Effect.ensuring(
+          Effect.sync(() =>
+            get.set(stateAtom, { ...get(stateAtom), pending: false }),
+          ),
         ),
-      ),
-    );
-  });
+      );
+    },
+    { reactivityKeys },
+  );
 
   const reset = Atom.fnSync<string>()((scope, get) => {
     get.set(state(scope), initialAgentState);
