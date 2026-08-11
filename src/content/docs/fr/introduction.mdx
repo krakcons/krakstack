@@ -1,0 +1,81 @@
+---
+slug: introduction
+path: /docs
+title: Introduction
+description: Utilisez KrakStack comme package installable ou copiez directement le code source du registre dans votre application.
+order: 1
+locale: fr
+section: getting-started
+type: tutorial
+---
+
+# Introduction
+
+KrakStack rassemble des composants React prêts pour la production, des services Effect, des patterns applicatifs et des outils de développement pour les applications TanStack full-stack. L'objectif est de vous donner une architecture cohérente sans masquer le code source.
+
+## Choisir une méthode d'installation
+
+Utilisez le package pour importer des exports runtime réutilisables avec un versionnement classique. Utilisez le registre shadcn pour copier le code source dans votre application et le personnaliser librement.
+
+## Installer le package
+
+Installez le package tree-shakable pour les composants, services et helpers réutilisables :
+
+```bash
+bun add @krak-stack/registry
+```
+
+Importez uniquement les sous-chemins utilisés :
+
+```tsx
+import { DataTable } from "@krak-stack/registry/data-table";
+import { AgentService } from "@krak-stack/registry/agent";
+import { Query } from "@krak-stack/registry/query";
+```
+
+Si vous utilisez les helpers de style du package, ajoutez sa source Tailwind à votre feuille de style globale :
+
+```css
+@import "@krak-stack/registry/tailwind.css";
+```
+
+Le package convient particulièrement au code runtime partagé, aux services Effect, aux helpers HTTP API et aux composants gérés par les dépendances.
+
+## Installer depuis le registre shadcn
+
+Ajoutez cet alias de registre au `components.json` de votre application :
+
+```json
+{
+  "registries": {
+    "@krak-stack": "https://krakstack.net/r/{name}.json"
+  }
+}
+```
+
+Installez ensuite chaque élément avec son nom de registre :
+
+```bash
+bunx shadcn@latest add @krak-stack/data-table
+bunx shadcn@latest add @krak-stack/service-database
+```
+
+Cette méthode copie l'implémentation dans votre projet. Elle convient particulièrement aux blocs UI, templates, configurations et au code que vous souhaitez adapter à votre produit. Vérifiez le diff généré et gardez le code source avec la fonctionnalité qui l'utilise.
+
+## Quelle méthode choisir ?
+
+- Utilisez `@krak-stack/registry` pour les imports réutilisables, services Effect, helpers HTTP API et mises à jour gérées par le package.
+- Utilisez `components.json` avec l'alias `@krak-stack` pour garder le code source, personnaliser l'UI, les templates et les configurations.
+- Les deux méthodes utilisent les mêmes patterns KrakStack documentés. N'installez pas le même élément avec les deux méthodes sans raison précise.
+
+## Contribuer
+
+Les contributions sont les bienvenues. Commencez par ouvrir le [dépôt KrakStack](https://github.com/krakcons/krakstack-site) et consultez les issues existantes avant de modifier le code.
+
+1. Forkez le dépôt et créez une branche ciblée.
+2. Mettez à jour l'implémentation source et sa définition de registre si nécessaire.
+3. Lancez `bun run registry:build` si vous modifiez un élément publié.
+4. Lancez `bun run test`, `bun type:check`, `bun lint` et `bun fmt`.
+5. Ouvrez une pull request en expliquant la raison du changement, avec des captures pour les changements UI et les notes de migration nécessaires.
+
+Pour les demandes de fonctionnalité ou les bugs, utilisez le [suivi des issues GitHub](https://github.com/krakcons/krakstack-site/issues). Pour une application complète, consultez le [code source du template KrakStack](https://github.com/krakcons/krakstack-template) et son [aperçu en ligne](https://template.krakstack.net).

@@ -21,6 +21,7 @@ export function getRegistryGroup(item: RegistryItem) {
       "httpapi-cli",
       "httpapi-client",
       "httpapi-mcp",
+      "seo",
     ].includes(item.name)
   ) {
     return "Libraries";

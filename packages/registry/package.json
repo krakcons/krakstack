@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -59,6 +59,10 @@
     "./query": {
       "types": "./dist/lib/query.d.ts",
       "import": "./dist/lib/query.js"
+    },
+    "./seo": {
+      "types": "./dist/lib/seo.d.ts",
+      "import": "./dist/lib/seo.js"
     },
     "./app-brand": {
       "types": "./dist/components/ui/app-brand.d.ts",

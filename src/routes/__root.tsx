@@ -22,11 +22,24 @@ export const Route = createRootRoute({
       {
         title: `Krakstack ${m.app_name()}`,
       },
+      {
+        name: "description",
+        content: m.home_description(),
+      },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "icon",
+        href: "/favicon.svg",
+        type: "image/svg+xml",
+      },
+      {
+        rel: "manifest",
+        href: "/manifest.json",
       },
       {
         rel: "preconnect",

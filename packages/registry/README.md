@@ -20,8 +20,32 @@ import { HttpApiSpec } from "@krak-stack/registry/httpapi/helpers";
 import { createMdxDocsSource, makeDocs } from "@krak-stack/registry/docs";
 import { makeChatDocumentation } from "@krak-stack/registry/docs-ai";
 import { Query } from "@krak-stack/registry/query";
+import { createSeo } from "@krak-stack/registry/seo";
 import { NotificationService } from "@krak-stack/registry/service-notification";
 ```
+
+Create a configured SEO helper once with site-wide defaults, then use it for each page:
+
+```tsx
+const siteSeo = createSeo({
+  origin: "https://krakstack.net",
+  locales: ["en", "fr"],
+  siteName: "KrakStack",
+  sameAs: ["https://github.com/krakcons/krakstack"],
+});
+
+<Route
+  head={() =>
+    siteSeo({
+      title: "KrakStack",
+      description: "Production-ready building blocks for TanStack apps.",
+      locale: "en",
+    })
+  }
+/>;
+```
+
+The returned object contains `meta`, `links`, and derived JSON-LD `scripts`. Website pages receive `WebSite` and `Organization` data; documentation pages can pass `type: "article"` for `Article` data. Use the lower-level `seo` function directly when a configured factory is not useful.
 
 HTTP API client, schema, AI tool, CLI, and MCP utilities are available under
 the `@krak-stack/registry/httpapi/*` subpaths. Keep application-specific API

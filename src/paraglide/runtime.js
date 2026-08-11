@@ -52,6 +52,14 @@ export const routeStrategies = [
   {
     "match": "/api/:path(.*)?",
     "exclude": true
+  },
+  {
+    "match": "/sitemap.xml",
+    "exclude": true
+  },
+  {
+    "match": "/llms.txt",
+    "exclude": true
   }
 ];
 /**

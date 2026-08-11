@@ -9,14 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsChar123SlugChar125RouteImport } from './routes/docs.{-$slug}'
 import { Route as DocsDeveloperSetupRouteImport } from './routes/docs/developer-setup'
 import { Route as DocsSitesTemplateRouteImport } from './routes/docs/sites/template'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsChar123SlugChar125Route = DocsChar123SlugChar125RouteImport.update({
@@ -37,54 +55,100 @@ const DocsSitesTemplateRoute = DocsSitesTemplateRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/llms.txt': typeof LlmsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
+  '/docs/': typeof DocsIndexRoute
   '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/llms.txt': typeof LlmsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
+  '/docs': typeof DocsIndexRoute
   '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/llms.txt': typeof LlmsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
+  '/docs/': typeof DocsIndexRoute
   '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/llms.txt'
+    | '/sitemap.xml'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
+    | '/docs/'
     | '/docs/sites/template'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs/developer-setup' | '/docs/{-$slug}' | '/docs/sites/template'
+  to:
+    | '/'
+    | '/llms.txt'
+    | '/sitemap.xml'
+    | '/docs/developer-setup'
+    | '/docs/{-$slug}'
+    | '/docs'
+    | '/docs/sites/template'
   id:
     | '__root__'
     | '/'
+    | '/llms.txt'
+    | '/sitemap.xml'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
+    | '/docs/'
     | '/docs/sites/template'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LlmsDottxtRoute: typeof LlmsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   DocsDeveloperSetupRoute: typeof DocsDeveloperSetupRoute
   DocsChar123SlugChar125Route: typeof DocsChar123SlugChar125Route
+  DocsIndexRoute: typeof DocsIndexRoute
   DocsSitesTemplateRoute: typeof DocsSitesTemplateRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/{-$slug}': {
@@ -113,8 +177,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LlmsDottxtRoute: LlmsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   DocsDeveloperSetupRoute: DocsDeveloperSetupRoute,
   DocsChar123SlugChar125Route: DocsChar123SlugChar125Route,
+  DocsIndexRoute: DocsIndexRoute,
   DocsSitesTemplateRoute: DocsSitesTemplateRoute,
 }
 export const routeTree = rootRouteImport

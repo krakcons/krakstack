@@ -22,6 +22,7 @@
     "../../src/lib/docs-core.tsx",
     "../../src/lib/docs-ai.ts",
     "../../src/lib/query.ts",
+    "../../src/lib/seo.ts",
     "../../src/components/ui/search-menu.tsx",
     "../../src/components/ui/app-brand.tsx",
     "../../src/components/ui/copy-button.tsx",

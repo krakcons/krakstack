@@ -488,7 +488,8 @@
         "@krak-stack/app-brand",
         "collapsible",
         "@krak-stack/search-menu",
-        "@krak-stack/sidebar-layout"
+        "@krak-stack/sidebar-layout",
+        "@krak-stack/seo"
       ],
       "dependencies": [
         "@iconify-json/lucide",
@@ -529,6 +530,21 @@
           "target": "lib/docs-ai.ts"
         }
       ]
+    },
+    {
+      "name": "seo",
+      "title": "SEO Metadata",
+      "description": "A framework-neutral SEO helper for TanStack Start head metadata, localized canonical links, Open Graph and Twitter tags, and derived JSON-LD.",
+      "type": "registry:lib",
+      "docs": "## Overview\n\n`createSeo` creates a configured SEO helper for public pages. Put site-wide values such as the origin, supported locales, site name, and organization profiles in the factory, then pass only page-specific metadata to each page. The lower-level `seo` function remains available for one-off configurations.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/seo\n```\n\nThe item installs `src/lib/seo.ts`. The same helper is available from the package export `@krak-stack/registry/seo`.\n\n## Configure Site Defaults\n\n```tsx\nimport { createSeo } from \"@/lib/seo\";\n\nconst siteSeo = createSeo({\n  origin: \"https://example.com\",\n  locales: [\"en\", \"fr\"],\n  siteName: \"Example\",\n  sameAs: [\"https://github.com/example/project\"],\n});\n```\n\n## Page Metadata\n\nUse the configured helper in a TanStack Start route. `path` defaults to `/`, and `defaultLocale` falls back to the first configured locale.\n\n```tsx\nexport const Route = createFileRoute(\"/\")({\n  head: () =>\n    siteSeo({\n      title: \"Example\",\n      description: \"Production-ready building blocks for TanStack apps.\",\n      locale: \"en\",\n      image: \"https://example.com/og.png\",\n    }),\n});\n```\n\nThe returned `meta`, `links`, and `scripts` can be spread into a route head configuration. Optional values are omitted instead of producing empty tags.\n\n## Documentation Pages\n\nPass `type: \"article\"` and a page path for documentation or other editorial pages. This changes the JSON-LD payload from `WebSite` to `Article`.\n\n```tsx\nsiteSeo({\n  title: \"Introduction\",\n  description: \"Learn the core concepts.\",\n  path: \"/docs/introduction\",\n  locale: \"en\",\n  type: \"article\",\n});\n```\n\n## Factory Options\n\n- `origin` - site origin used to derive canonical and localized URLs\n- `locales` - supported locales used for alternate links\n- `defaultLocale` - locale used for the `x-default` link\n- `siteName` - site and publisher name\n- `twitterCreator` and `twitterSite` - Twitter profile handles\n- `sameAs` - organization profile URLs included in JSON-LD\n\n## Page Options\n\n- `title` - required page title\n- `description` - description used by search and social metadata\n- `path` - page path, defaulting to `/`\n- `locale` - current page locale\n- `url` - explicit canonical URL when it cannot be derived\n- `image` - social preview image URL\n- `robots` - custom robots directive, defaulting to `index, follow`\n- `type` - `website` or `article`, defaulting to `website`",
+      "files": [
+        {
+          "path": "src/lib/seo.ts",
+          "type": "registry:file",
+          "target": "lib/seo.ts"
+        }
+      ],
+      "dependencies": []
     },
     {
       "name": "httpapi-ai",

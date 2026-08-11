@@ -42,7 +42,6 @@ export const Route = createFileRoute("/docs/{-$slug}")({
       throw redirect({ to: resolution.page.path, statusCode: 301 });
     }
     const item = getRegistryItem(resolution.page.slug);
-    if (!item) throw notFound();
     return { item, resolution };
   },
   head: ({ loaderData }) =>
@@ -66,10 +65,12 @@ function RegistryDocs() {
       <DocsPage docs={registryDocs} resolution={resolution}>
         <DocsHeader docs={registryDocs} resolution={resolution} />
         <DocsContent docs={registryDocs} resolution={resolution} />
-        <div className="mt-12 grid gap-8">
-          <Dependencies item={item} />
-          <RegistryPreview slug={item.name} />
-        </div>
+        {item ? (
+          <div className="mt-12 grid gap-8">
+            <Dependencies item={item} />
+            <RegistryPreview slug={item.name} />
+          </div>
+        ) : null}
         <DocsFooter docs={registryDocs} resolution={resolution} />
       </DocsPage>
     </RegistryDocsLayout>

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/collapsible";
 import { SearchMenu, type SearchMenuGroup } from "@/components/ui/search-menu";
 import { SidebarLayout, type NavGroup } from "@/components/ui/sidebar-layout";
+import { createSeo } from "@/lib/seo";
 
 addCollection(lucideIcons);
 
@@ -349,6 +350,7 @@ export type DocsConfig = {
     url: `https://${string}`;
     branch?: string;
   };
+  editable?: (page: DocsPage) => boolean;
 };
 
 export const makeDocs = (config: DocsConfig) => {
@@ -362,6 +364,12 @@ export const makeDocs = (config: DocsConfig) => {
     icon: "lucide:book-open",
     href: "/",
   };
+  const docsSeo = createSeo({
+    origin,
+    locales: source.locales,
+    ...(config.defaultLocale ? { defaultLocale: config.defaultLocale } : {}),
+    siteName: config.siteName,
+  });
   const getMessages = (locale: DocsLocale) =>
     getDocsMessages(locale, config.messages?.(locale));
   const normalizeSearchText = (value: string) =>
@@ -472,7 +480,7 @@ export const makeDocs = (config: DocsConfig) => {
   const url = (page: DocsPage, locale: DocsLocale) =>
     `${origin}/${locale}${page.path}`;
   const editUrl = (page: DocsPage) =>
-    githubUrl
+    githubUrl && (config.editable?.(page) ?? true)
       ? `${githubUrl}/edit/${config.github?.branch ?? "main"}/${page.sourceFile}`
       : undefined;
   const getHead = ({
@@ -486,33 +494,13 @@ export const makeDocs = (config: DocsConfig) => {
     const path = page?.path ?? basePath;
     const title = `${page?.title ?? resolvedMessages.title} | ${config.siteName}`;
     const description = page?.description ?? resolvedMessages.description;
-    const canonical = page ? url(page, locale) : `${origin}/${locale}${path}`;
-    const defaultLocale = config.defaultLocale ?? source.locales[0] ?? locale;
-
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "article" },
-        { property: "og:url", content: canonical },
-        { property: "og:site_name", content: config.siteName },
-      ],
-      links: [
-        { rel: "canonical", href: canonical },
-        ...source.locales.map((alternateLocale) => ({
-          rel: "alternate",
-          hrefLang: alternateLocale,
-          href: `${origin}/${alternateLocale}${path}`,
-        })),
-        {
-          rel: "alternate",
-          hrefLang: "x-default",
-          href: `${origin}/${defaultLocale}${path}`,
-        },
-      ],
-    };
+    return docsSeo({
+      title,
+      description,
+      path,
+      locale,
+      type: "article",
+    });
   };
 
   return {

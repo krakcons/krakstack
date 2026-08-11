@@ -32,7 +32,11 @@ const config = defineConfig({
           ],
         },
       ],
-      routeStrategies: [{ match: "/api/:path(.*)?", exclude: true }],
+      routeStrategies: [
+        { match: "/api/:path(.*)?", exclude: true },
+        { match: "/sitemap.xml", exclude: true },
+        { match: "/llms.txt", exclude: true },
+      ],
     }),
     tailwindcss(),
     tanstackStart(),
