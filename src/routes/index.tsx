@@ -1,6 +1,12 @@
 import { AppBrand } from "@/components/ui/app-brand";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
@@ -18,6 +24,7 @@ import {
   Code2,
   Database,
   Layers3,
+  Menu,
   PackagePlus,
   Terminal,
 } from "lucide-react";
@@ -154,6 +161,7 @@ function Home() {
               {m.home_view_github()}
             </a>
             <RegistryCommandMenu />
+            <MobileHeaderMenu />
             <ThemeSwitcher value={theme} onChange={setTheme} />
             <LocaleSwitcher />
           </div>
@@ -500,5 +508,42 @@ function Stat({
         <div className="text-muted-foreground mt-0.5 text-xs">{detail}</div>
       </div>
     </div>
+  );
+}
+
+function MobileHeaderMenu() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="outline" size="icon" className="md:hidden">
+            <Menu className="size-4" />
+            <span className="sr-only">{m.home_menu()}</span>
+          </Button>
+        }
+      />
+      <DropdownMenuContent
+        className="w-72 max-w-[calc(100vw-1rem)]"
+        align="end"
+        sideOffset={8}
+      >
+        <div className="p-1">
+          <DropdownMenuItem
+            render={<Link to="/docs">{m.home_nav_docs()}</Link>}
+          />
+          <DropdownMenuItem
+            render={
+              <a
+                href="https://github.com/krakcons/krakstack"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {m.home_view_github()}
+              </a>
+            }
+          />
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

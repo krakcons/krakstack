@@ -19,6 +19,7 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Home_TitleInputs */
 /** @typedef {{}} Home_DescriptionInputs */
 /** @typedef {{}} Home_Nav_DocsInputs */
+/** @typedef {{}} Home_MenuInputs */
 /** @typedef {{}} Home_Github_LabelInputs */
 /** @typedef {{}} Home_Browse_RegistryInputs */
 /** @typedef {{}} Home_View_GithubInputs */
@@ -330,7 +331,21 @@ export const home_nav_docs = /** @type {((inputs?: Home_Nav_DocsInputs, options?
 /**
 * | output |
 * | --- |
-* | "Open Krakstack on GitHub" |
+* | "Open menu" |
+*
+* @param {Home_MenuInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const home_menu = /** @type {((inputs?: Home_MenuInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Home_MenuInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.home_menu(inputs)
+	return __fr.home_menu(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Open Krakstack on Github" |
 *
 * @param {Home_Github_LabelInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
@@ -358,7 +373,7 @@ export const home_browse_registry = /** @type {((inputs?: Home_Browse_RegistryIn
 /**
 * | output |
 * | --- |
-* | "View on GitHub" |
+* | "Github" |
 *
 * @param {Home_View_GithubInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
