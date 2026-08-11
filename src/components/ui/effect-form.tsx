@@ -200,8 +200,9 @@ export const SubmitButton = <A, E>({
   const isDirty = useAtomValue(form.isDirty);
   const hasChangedSinceSubmit = useAtomValue(form.hasChangedSinceSubmit);
   const lastSubmittedValues = useAtomValue(form.lastSubmittedValues);
-  const hasPendingChanges =
-    isDirty && (Option.isNone(lastSubmittedValues) || hasChangedSinceSubmit);
+  const hasPendingChanges = Option.isNone(lastSubmittedValues)
+    ? isDirty
+    : hasChangedSinceSubmit;
 
   return (
     <Button
@@ -974,8 +975,7 @@ const FormBlockNavigation = <A, E>({ form }: { form: SubmitForm<A, E> }) => {
   const lastSubmittedValues = useAtomValue(form.lastSubmittedValues);
   const shouldBlock =
     !submitResult.waiting &&
-    isDirty &&
-    (Option.isNone(lastSubmittedValues) || hasChangedSinceSubmit);
+    (Option.isNone(lastSubmittedValues) ? isDirty : hasChangedSinceSubmit);
 
   return <NavigationBlock shouldBlock={shouldBlock} />;
 };
