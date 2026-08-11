@@ -9,27 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsChar123SlugChar125RouteImport } from './routes/docs.{-$slug}'
 import { Route as DocsDeveloperSetupRouteImport } from './routes/docs/developer-setup'
-import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as DocsSitesTemplateRouteImport } from './routes/docs/sites/template'
-import { Route as DocsSitesAuthRouteImport } from './routes/docs/sites/auth'
-import { Route as DocsPackagesAuthRouteImport } from './routes/docs/packages/auth'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
-const SignInRoute = SignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -45,137 +29,57 @@ const DocsDeveloperSetupRoute = DocsDeveloperSetupRouteImport.update({
   path: '/docs/developer-setup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSplatRoute = ApiSplatRouteImport.update({
-  id: '/api/$',
-  path: '/api/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DocsSitesTemplateRoute = DocsSitesTemplateRouteImport.update({
   id: '/docs/sites/template',
   path: '/docs/sites/template',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsSitesAuthRoute = DocsSitesAuthRouteImport.update({
-  id: '/docs/sites/auth',
-  path: '/docs/sites/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsPackagesAuthRoute = DocsPackagesAuthRouteImport.update({
-  id: '/docs/packages/auth',
-  path: '/docs/packages/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/sign-in': typeof SignInRoute
-  '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/docs/packages/auth': typeof DocsPackagesAuthRoute
-  '/docs/sites/auth': typeof DocsSitesAuthRoute
   '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/sign-in': typeof SignInRoute
-  '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/docs/packages/auth': typeof DocsPackagesAuthRoute
-  '/docs/sites/auth': typeof DocsSitesAuthRoute
   '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/sign-in': typeof SignInRoute
-  '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/docs/packages/auth': typeof DocsPackagesAuthRoute
-  '/docs/sites/auth': typeof DocsSitesAuthRoute
   '/docs/sites/template': typeof DocsSitesTemplateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/reset-password'
-    | '/sign-in'
-    | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
-    | '/api/auth/$'
-    | '/docs/packages/auth'
-    | '/docs/sites/auth'
     | '/docs/sites/template'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/reset-password'
-    | '/sign-in'
-    | '/api/$'
-    | '/docs/developer-setup'
-    | '/docs/{-$slug}'
-    | '/api/auth/$'
-    | '/docs/packages/auth'
-    | '/docs/sites/auth'
-    | '/docs/sites/template'
+  to: '/' | '/docs/developer-setup' | '/docs/{-$slug}' | '/docs/sites/template'
   id:
     | '__root__'
     | '/'
-    | '/reset-password'
-    | '/sign-in'
-    | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
-    | '/api/auth/$'
-    | '/docs/packages/auth'
-    | '/docs/sites/auth'
     | '/docs/sites/template'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ResetPasswordRoute: typeof ResetPasswordRoute
-  SignInRoute: typeof SignInRoute
-  ApiSplatRoute: typeof ApiSplatRoute
   DocsDeveloperSetupRoute: typeof DocsDeveloperSetupRoute
   DocsChar123SlugChar125Route: typeof DocsChar123SlugChar125Route
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  DocsPackagesAuthRoute: typeof DocsPackagesAuthRoute
-  DocsSitesAuthRoute: typeof DocsSitesAuthRoute
   DocsSitesTemplateRoute: typeof DocsSitesTemplateRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof SignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -197,13 +101,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsDeveloperSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/$': {
-      id: '/api/$'
-      path: '/api/$'
-      fullPath: '/api/$'
-      preLoaderRoute: typeof ApiSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/docs/sites/template': {
       id: '/docs/sites/template'
       path: '/docs/sites/template'
@@ -211,40 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsSitesTemplateRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs/sites/auth': {
-      id: '/docs/sites/auth'
-      path: '/docs/sites/auth'
-      fullPath: '/docs/sites/auth'
-      preLoaderRoute: typeof DocsSitesAuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs/packages/auth': {
-      id: '/docs/packages/auth'
-      path: '/docs/packages/auth'
-      fullPath: '/docs/packages/auth'
-      preLoaderRoute: typeof DocsPackagesAuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
-  SignInRoute: SignInRoute,
-  ApiSplatRoute: ApiSplatRoute,
   DocsDeveloperSetupRoute: DocsDeveloperSetupRoute,
   DocsChar123SlugChar125Route: DocsChar123SlugChar125Route,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
-  DocsPackagesAuthRoute: DocsPackagesAuthRoute,
-  DocsSitesAuthRoute: DocsSitesAuthRoute,
   DocsSitesTemplateRoute: DocsSitesTemplateRoute,
 }
 export const routeTree = rootRouteImport

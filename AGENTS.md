@@ -40,11 +40,10 @@ The application is divided into two areas: frontend and backend.
 - `src/components/ui/` contains shadcn-managed primitives. Do not edit directly.
 - `src/db/` contains Drizzle schema definitions.
 - `src/hooks/` contains shared React hooks.
-- `src/lib/` contains shared utilities and auth config.
+- `src/lib/` contains shared utilities.
 - `src/messages/` contains i18n source files.
 - `src/paraglide/` contains generated i18n runtime. Do not edit directly.
 - `src/routes/` contains TanStack Start file-based routes.
-- `src/routes/api/` contains the API catch-all route.
 - `src/routes/docs/` contains documentation pages.
 - `src/services/` contains Effect service definitions, API handlers, schemas, and client state.
 - `src/api.ts` defines the root Effect API.
@@ -98,7 +97,6 @@ Service methods should accept object inputs, scope by the current user or tenant
 
 ## Tooling
 
-- Use KrakStack Auth for user management, auth components, sessions, and organizations.
 - Use KrakStack Components where possible and keep installed registry components current.
 - Install KrakStack registry items with shadcn using the `@krak-stack` registry alias configured in `components.json`; do not copy registry item files manually unless explicitly requested.
 - Before creating a custom component, check the shadcn MCP server for a compatible component or registry item.

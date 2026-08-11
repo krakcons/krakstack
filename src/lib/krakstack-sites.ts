@@ -1,4 +1,4 @@
-import { FileCode2, Shield } from "lucide-react";
+import { FileCode2 } from "lucide-react";
 
 import { m } from "@/paraglide/messages";
 
@@ -33,37 +33,6 @@ export const krakstackSites = [
     ],
     keywords: ["template", "starter", "demo", "template.krakstack.net"],
     icon: FileCode2,
-  },
-  {
-    id: "auth",
-    title: () => m.krakstack_site_auth_title(),
-    url: "auth.krakstack.net",
-    siteHref: "https://auth.krakstack.net",
-    githubHref: "https://github.com/krakcons/krakstack-auth",
-    docsHref: "/docs/sites/auth",
-    description: () => m.krakstack_site_auth_description(),
-    badge: () => m.krakstack_site_auth_badge(),
-    overview: () => m.krakstack_site_auth_overview(),
-    features: [
-      {
-        title: () => m.krakstack_site_auth_feature_oauth_title(),
-        description: () => m.krakstack_site_auth_feature_oauth(),
-      },
-      {
-        title: () => m.krakstack_site_auth_feature_orgs_title(),
-        description: () => m.krakstack_site_auth_feature_orgs(),
-      },
-      {
-        title: () => m.krakstack_site_auth_feature_keys_title(),
-        description: () => m.krakstack_site_auth_feature_keys(),
-      },
-      {
-        title: () => m.krakstack_site_auth_feature_registry_title(),
-        description: () => m.krakstack_site_auth_feature_registry(),
-      },
-    ],
-    keywords: ["auth", "oauth", "api key", "auth.krakstack.net"],
-    icon: Shield,
   },
 ] as const;
 

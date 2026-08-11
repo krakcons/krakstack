@@ -10,57 +10,13 @@ import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { StatsCard } from "@/components/ui/stats-card";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
-import { krakstackPackages } from "@/lib/krakstack-packages";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { m } from "@/paraglide/messages";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import {
-  Activity,
-  BellRing,
-  Blocks,
-  Bot,
-  ChevronsUpDown,
-  Database,
-  GalleryHorizontalEnd,
-  Globe,
-  Languages,
-  ListFilter,
-  ListChecks,
-  Mail,
-  MonitorCog,
-  Orbit,
-  Search,
-  Shield,
-  Table2,
-  Wrench,
-} from "lucide-react";
+import { Activity, Blocks, Database } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
-
-const iconByName = {
-  "app-brand": Blocks,
-  "data-table": Table2,
-  form: ListChecks,
-  "locale-switcher": Globe,
-  "theme-switcher": MonitorCog,
-  auth: Shield,
-  "service-database": Database,
-  "service-opentelemetry": Activity,
-  "service-notification": BellRing,
-  "notification-channel-email-ses": Mail,
-  "embedding-layer": Orbit,
-  "query-helpers": ListFilter,
-  "sidebar-layout": Blocks,
-  "search-menu": Search,
-  "code-block": Blocks,
-  pagination: GalleryHorizontalEnd,
-  localization: Languages,
-  "virtualized-combobox": ChevronsUpDown,
-  "stats-card": Activity,
-  agents: Bot,
-  "lint-format": Wrench,
-} as const;
 
 const componentCount = registryItems.filter(
   (item) => getRegistryGroup(item) === "Components",
@@ -78,15 +34,12 @@ const groupedItems = registryItems.reduce(
       section = { title: group, items: [] };
       sections.push(section);
     }
-    section.items.push({
-      ...item,
-      icon: iconByName[item.name as keyof typeof iconByName] ?? Shield,
-    });
+    section.items.push(item);
     return sections;
   },
   [] as Array<{
     title: string;
-    items: Array<(typeof registryItems)[number] & { icon: typeof Table2 }>;
+    items: Array<(typeof registryItems)[number]>;
   }>,
 );
 
@@ -193,35 +146,6 @@ function Home() {
           </div>
         </section>
 
-        <section className="mb-12">
-          <h2 className="text-primary mb-6 text-xs font-bold tracking-[0.16em] uppercase">
-            {m.krakstack_packages_heading()}
-          </h2>
-          <div className="grid gap-5 md:grid-cols-2">
-            {krakstackPackages.map((pkg) => (
-              <Link key={pkg.id} to={pkg.docsHref} className="group">
-                <Card className="h-full cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md">
-                  <CardHeader>
-                    <div className="bg-primary/10 text-primary mb-2 flex size-9 items-center justify-center rounded-md">
-                      <pkg.icon className="size-4" />
-                    </div>
-                    <CardTitle>{pkg.name}</CardTitle>
-                    <p className="text-primary font-mono text-sm font-medium">
-                      {pkg.installCommand}
-                    </p>
-                    <CardDescription>{pkg.description()}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
-                      {m.view_docs()}
-                    </span>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </section>
-
         {groupedItems.map((section) => (
           <section key={section.title} className="mb-12">
             <h2 className="text-primary mb-6 text-xs font-bold tracking-[0.16em] uppercase">
@@ -237,9 +161,6 @@ function Home() {
                 >
                   <Card className="cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md">
                     <CardHeader>
-                      <div className="bg-primary/10 text-primary mb-2 flex size-9 items-center justify-center rounded-md">
-                        <item.icon className="size-4" />
-                      </div>
                       <CardTitle>{item.title ?? item.name}</CardTitle>
                       <CardDescription className="line-clamp-2">
                         {item.description}

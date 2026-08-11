@@ -406,6 +406,7 @@ const snapDragOverlayVerticalCenterToCursor: Modifier = ({
   transform,
 }) => {
   if (
+    typeof MouseEvent === "undefined" ||
     !(activatorEvent instanceof MouseEvent) ||
     !activeNodeRect ||
     !overlayNodeRect

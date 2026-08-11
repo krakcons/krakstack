@@ -4,8 +4,7 @@ import {
   HttpApiError,
   HttpApiGroup,
 } from "effect/unstable/httpapi";
-
-import { AuthMiddleware } from "@/services/auth/middleware";
+import { AuthMiddleware } from "@krak-stack/auth/server";
 
 import {
   CreateExample,

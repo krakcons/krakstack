@@ -2,11 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { SearchMenu, type SearchMenuGroup } from "@/components/ui/search-menu";
 import { krakstackSites } from "@/lib/krakstack-sites";
-import {
-  getRegistryGroup,
-  getRegistryIcon,
-  registryItems,
-} from "@/lib/registry";
+import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 
@@ -41,14 +37,11 @@ export function RegistryCommandMenu({ className }: { className?: string }) {
     ...Array.from(registryGroupsByHeading).map(([heading, items]) => ({
       heading,
       items: items.map((item) => {
-        const Icon = getRegistryIcon(item);
-
         return {
           id: item.name,
           label: item.title ?? item.name,
           description: item.description,
           keywords: [item.name],
-          icon: <Icon className="size-4" />,
           onSelect: () =>
             navigate({
               to: "/docs/{-$slug}",

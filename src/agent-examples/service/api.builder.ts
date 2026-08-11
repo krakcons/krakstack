@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
+import { AuthService } from "@krak-stack/auth/server";
 
-import { CurrentUser } from "@/services/auth/middleware";
 import { Api } from "./api-entry";
 import { Examples } from "./service";
 
@@ -15,19 +15,20 @@ export const examplesHandler = HttpApiBuilder.group(
       .handle("listExamples", () =>
         Effect.gen(function* () {
           const examples = yield* Examples;
-          const user = yield* CurrentUser;
-
+          const auth = yield* AuthService;
+          const session = yield* auth.requireUser();
           return yield* examples
-            .list({ userId: user.id })
+            .list({ userId: session.user.id })
             .pipe(Effect.mapError(internalServerError));
         }),
       )
       .handle("getExample", ({ params }) =>
         Effect.gen(function* () {
           const examples = yield* Examples;
-          const user = yield* CurrentUser;
+          const auth = yield* AuthService;
+          const session = yield* auth.requireUser();
           const example = yield* examples
-            .get({ userId: user.id, id: params.id })
+            .get({ userId: session.user.id, id: params.id })
             .pipe(Effect.mapError(internalServerError));
 
           if (!example) return yield* new HttpApiError.NotFound({});
@@ -38,20 +39,20 @@ export const examplesHandler = HttpApiBuilder.group(
       .handle("createExample", ({ payload }) =>
         Effect.gen(function* () {
           const examples = yield* Examples;
-          const user = yield* CurrentUser;
-
+          const auth = yield* AuthService;
+          const session = yield* auth.requireUser();
           return yield* examples
-            .create({ userId: user.id, payload })
+            .create({ userId: session.user.id, payload })
             .pipe(Effect.mapError(internalServerError));
         }),
       )
       .handle("updateExample", ({ params, payload }) =>
         Effect.gen(function* () {
           const examples = yield* Examples;
-          const user = yield* CurrentUser;
-
+          const auth = yield* AuthService;
+          const session = yield* auth.requireUser();
           const example = yield* examples
-            .update({ userId: user.id, id: params.id, payload })
+            .update({ userId: session.user.id, id: params.id, payload })
             .pipe(Effect.mapError(internalServerError));
 
           if (!example) return yield* new HttpApiError.NotFound({});
@@ -62,10 +63,10 @@ export const examplesHandler = HttpApiBuilder.group(
       .handle("deleteExample", ({ params }) =>
         Effect.gen(function* () {
           const examples = yield* Examples;
-          const user = yield* CurrentUser;
-
+          const auth = yield* AuthService;
+          const session = yield* auth.requireUser();
           const example = yield* examples
-            .delete({ userId: user.id, id: params.id })
+            .delete({ userId: session.user.id, id: params.id })
             .pipe(Effect.mapError(internalServerError));
 
           if (!example) return yield* new HttpApiError.NotFound({});

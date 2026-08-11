@@ -1,11 +1,9 @@
-import { KrakstackAuthProvider } from "@krak-stack/auth";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
 import { ThemeProvider } from "@/components/ui/theme-switcher";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
-import { authClient, centralAuthBaseUrl } from "@/services/auth/client";
 
 import appCss from "../styles.css?url";
 
@@ -64,14 +62,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ThemeProvider>
-          <KrakstackAuthProvider
-            authClient={authClient}
-            baseUrl={centralAuthBaseUrl}
-            locale={getLocale()}
-            projectId={import.meta.env.VITE_KRAKSTACK_AUTH_PROJECT_ID}
-          >
-            <TooltipProvider>{children}</TooltipProvider>
-          </KrakstackAuthProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
 
         <Scripts />

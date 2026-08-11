@@ -1,5 +1,4 @@
 import { createMdxDocsSource, makeDocs, type DocsSection } from "@/lib/docs";
-import { krakstackPackages } from "@/lib/krakstack-packages";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { getLocale } from "@/paraglide/runtime";
@@ -14,15 +13,6 @@ const sectionByGroup = {
   Registry: "registry",
   Services: "services",
 } satisfies Record<string, DocsSection>;
-
-const iconBySection: Record<DocsSection, string> = {
-  components: "lucide:blocks",
-  configuration: "lucide:wrench",
-  libraries: "lucide:library",
-  notifications: "lucide:bell-ring",
-  registry: "lucide:package",
-  services: "lucide:server-cog",
-};
 
 const withInstallSection = (source: string, name: string) => {
   if (/^## Install\s*$/m.test(source)) return source;
@@ -57,7 +47,6 @@ const files = Object.fromEntries(
         `path: ${JSON.stringify(index === 0 ? "/docs" : `/docs/${item.name}`)}`,
         `title: ${JSON.stringify(title)}`,
         `description: ${JSON.stringify(item.description)}`,
-        `icon: ${JSON.stringify(iconBySection[section])}`,
         `order: ${index + 1}`,
         `locale: ${locale}`,
         `section: ${section}`,
@@ -131,11 +120,6 @@ export const registryDocs = makeDocs({
         label: site.title,
         href: site.docsHref,
         icon: "lucide:globe",
-      })),
-      ...krakstackPackages.map((pkg) => ({
-        label: () => pkg.name,
-        href: pkg.docsHref,
-        icon: "lucide:package",
       })),
     ],
   },

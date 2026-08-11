@@ -49,7 +49,7 @@ export const DocsFrontmatter = Schema.Struct({
   path: Schema.String,
   title: Schema.String,
   description: Schema.String,
-  icon: Schema.String,
+  icon: Schema.optional(Schema.String),
   order: Schema.Number,
   locale: Schema.String,
   section: DocsSection,
@@ -188,7 +188,7 @@ const validateDocsPages = (
     const routeSlugs = new Set<string>();
 
     for (const page of localized) {
-      if (!/^[a-z0-9-]+:[a-z0-9-]+$/.test(page.icon)) {
+      if (page.icon && !/^[a-z0-9-]+:[a-z0-9-]+$/.test(page.icon)) {
         throw new Error(`${page.sourceFile} must use an Iconify icon name`);
       }
       if (
@@ -690,6 +690,7 @@ export type DocsResource = {
 export type DocsResolution = NonNullable<ReturnType<DocsCatalog["resolve"]>>;
 
 const iconComponents = new Map<string, LucideIcon>();
+const EmptyIcon = forwardRef<SVGSVGElement, LucideProps>(() => null);
 
 const iconFor = (name: string): LucideIcon => {
   const existing = iconComponents.get(name);
@@ -956,7 +957,11 @@ const DocsSearch = ({
               id: page.path,
               label: page.title,
               description: page.description,
-              icon: <Icon className="size-4" icon={page.icon} ssr />,
+              ...(page.icon
+                ? {
+                    icon: <Icon className="size-4" icon={page.icon} ssr />,
+                  }
+                : {}),
               onSelect: () => navigate({ to: page.path }),
             },
       ),
@@ -1000,7 +1005,7 @@ export const DocsLayout = ({
     items: section.pages.map((item) => ({
       label: () => item.title,
       href: item.path,
-      icon: iconFor(item.icon),
+      icon: item.icon ? iconFor(item.icon) : EmptyIcon,
     })),
   }));
 
