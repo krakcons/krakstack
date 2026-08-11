@@ -11,7 +11,15 @@ export function getRegistryItem(slug: string) {
 }
 
 export function getRegistryGroup(item: RegistryItem) {
-  if (item.name === "embedding-layer") return "Services";
+  if (
+    [
+      "service-database",
+      "service-opentelemetry",
+      "embedding-layer",
+    ].includes(item.name)
+  ) {
+    return "Layers";
+  }
   if (
     [
       "query-helpers",

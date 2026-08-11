@@ -164,10 +164,6 @@
       "types": "./dist/services/s3/schema.d.ts",
       "import": "./dist/services/s3/schema.js"
     },
-    "./service-opentelemetry": {
-      "types": "./dist/services/opentelemetry.d.ts",
-      "import": "./dist/services/opentelemetry.js"
-    },
     "./tailwind.css": "./tailwind.css",
     "./package.json": "./package.json"
   },
