@@ -168,10 +168,6 @@
       "types": "./dist/services/opentelemetry.d.ts",
       "import": "./dist/services/opentelemetry.js"
     },
-    "./embedding-layer": {
-      "types": "./dist/services/embedding.d.ts",
-      "import": "./dist/services/embedding.js"
-    },
     "./tailwind.css": "./tailwind.css",
     "./package.json": "./package.json"
   },
@@ -188,7 +184,6 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@effect/ai-openai-compat": "4.0.0-beta.85",
     "@effect/atom-react": "4.0.0-beta.85",
     "@effect/platform-browser": "4.0.0-beta.85",
     "@iconify-json/lucide": "^1.2.83",
@@ -224,9 +219,6 @@
       "optional": true
     },
     "@dnd-kit/utilities": {
-      "optional": true
-    },
-    "@effect/ai-openai-compat": {
       "optional": true
     },
     "@effect/atom-react": {
