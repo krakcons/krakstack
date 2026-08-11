@@ -114,12 +114,7 @@ export const AgentEvent = Schema.Union([
   Schema.Struct({ type: Schema.Literal("finish") }),
   Schema.Struct({
     type: Schema.Literal("error"),
-    code: Schema.Literals([
-      "unavailable",
-      "invalid-request",
-      "round-limit",
-      "stream-failed",
-    ]),
+    code: Schema.Literals(["unavailable", "invalid-request", "stream-failed"]),
   }),
 ]).annotate({
   identifier: "AgentEvent",

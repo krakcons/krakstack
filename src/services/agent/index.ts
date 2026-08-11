@@ -107,13 +107,11 @@ export class AgentService extends Context.Service<AgentService>()(
         conversation,
         messageId,
         prompt,
-        round,
         toolkit,
       }: {
         readonly conversation: Chat.Service;
         readonly messageId: string;
         readonly prompt: Prompt.RawInput;
-        readonly round: number;
         readonly toolkit: Toolkit.WithHandler<Tools>;
       }): Stream.Stream<
         AgentEvent,
@@ -167,18 +165,10 @@ export class AgentService extends Context.Service<AgentService>()(
                 code: "stream-failed",
               });
             }
-            if (round >= 5) {
-              return Stream.succeed<AgentEvent>({
-                type: "error",
-                code: "round-limit",
-              });
-            }
-
             return agentRounds({
               conversation,
               messageId,
               prompt: [],
-              round: round + 1,
               toolkit,
             });
           });
@@ -257,7 +247,6 @@ export class AgentService extends Context.Service<AgentService>()(
           conversation,
           messageId,
           prompt: action.type === "message" ? action.text : [],
-          round: 1,
           toolkit,
         });
         const complete = Stream.fromEffect(

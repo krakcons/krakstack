@@ -107,7 +107,6 @@ export type AgentWidgetMessages = {
   copy: string;
   description: string;
   errorInvalidRequest: string;
-  errorRoundLimit: string;
   errorStreamFailed: string;
   errorUnavailable: string;
   maximize: string;
@@ -146,8 +145,6 @@ const messages = {
     description: "Ask questions and use available tools to get things done.",
     errorInvalidRequest:
       "The request could not be processed. Start a new conversation and try again.",
-    errorRoundLimit:
-      "The assistant stopped after too many API steps. Try a more specific request.",
     errorStreamFailed: "The response was interrupted. Please try again.",
     errorUnavailable: "The assistant is currently unavailable.",
     maximize: "Maximize assistant",
@@ -186,8 +183,6 @@ const messages = {
       "Posez des questions et utilisez les outils disponibles pour accomplir vos tâches.",
     errorInvalidRequest:
       "La demande n'a pas pu être traitée. Commencez une nouvelle conversation et réessayez.",
-    errorRoundLimit:
-      "L'assistant s'est arrêté après trop d'étapes d'API. Essayez une demande plus précise.",
     errorStreamFailed: "La réponse a été interrompue. Veuillez réessayer.",
     errorUnavailable: "L'assistant est actuellement indisponible.",
     maximize: "Agrandir l'assistant",
@@ -225,8 +220,6 @@ const errorMessage = (code: AgentErrorCode, labels: AgentWidgetMessages) => {
   switch (code) {
     case "invalid-request":
       return labels.errorInvalidRequest;
-    case "round-limit":
-      return labels.errorRoundLimit;
     case "stream-failed":
       return labels.errorStreamFailed;
     case "unavailable":
@@ -269,7 +262,10 @@ const highlightedInput = (
   const mentionSet = new Set(mentions);
   return input.split(mentionPattern).map((part, index) =>
     mentionSet.has(part) ? (
-      <span key={`${part}:${index}`} className="text-primary">
+      <span
+        key={`${part}:${index}`}
+        className="bg-primary text-primary-foreground rounded-sm [box-shadow:2px_0_0_var(--primary),-2px_0_0_var(--primary)]"
+      >
         {part}
       </span>
     ) : (
@@ -671,6 +667,7 @@ export function AgentWidget<Resource = never>({
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
   const [activeReferenceKey, setActiveReferenceKey] = useState("");
   const [input, setInput] = useState("");
+  const inputOverlayRef = useRef<HTMLDivElement>(null);
   const [references, setReferences] = useState<
     ReadonlyArray<AgentWidgetReference<Resource>>
   >([]);
@@ -797,7 +794,7 @@ export function AgentWidget<Resource = never>({
         >
           <DialogHeader className="shrink-0 border-b p-4">
             <div className="flex items-center gap-1">
-              <DialogTitle className="min-w-0 flex-1 truncate">
+              <DialogTitle className="min-w-0 flex-1 truncate text-sm leading-none font-medium">
                 {labels.title}
               </DialogTitle>
               <Button
@@ -825,7 +822,7 @@ export function AgentWidget<Resource = never>({
             </div>
           </DialogHeader>
 
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 overflow-hidden">
             {state.messages.length === 0 && !state.error ? (
               <Empty className="h-full">
                 <EmptyHeader>
@@ -839,7 +836,10 @@ export function AgentWidget<Resource = never>({
             ) : (
               <MessageScrollerProvider autoScroll>
                 <MessageScroller>
-                  <MessageScrollerViewport aria-label={labels.title}>
+                  <MessageScrollerViewport
+                    aria-label={labels.title}
+                    className="[scrollbar-width:thin] [scrollbar-color:var(--border)_transparent]"
+                  >
                     <MessageScrollerContent
                       aria-busy={state.pending}
                       className="p-4"
@@ -913,8 +913,9 @@ export function AgentWidget<Resource = never>({
               ) : null}
               <div className="relative w-full min-w-0 self-stretch text-left">
                 <div
+                  ref={inputOverlayRef}
                   aria-hidden="true"
-                  className="text-foreground pointer-events-none absolute inset-0 overflow-hidden px-2.5 py-2 text-left font-[inherit] text-base break-words whitespace-pre-wrap md:text-sm"
+                  className="text-foreground pointer-events-none absolute inset-0 [scrollbar-width:thin] [scrollbar-gutter:stable] overflow-hidden px-2.5 py-2 text-left font-[inherit] text-base break-words whitespace-pre-wrap md:text-sm"
                 >
                   {highlightedInput(input, references)}
                 </div>
@@ -926,7 +927,7 @@ export function AgentWidget<Resource = never>({
                     id={referenceInputId}
                     render={
                       <InputGroupTextarea
-                        className="caret-foreground selection:bg-primary selection:text-primary-foreground relative w-full text-left text-transparent"
+                        className="caret-foreground selection:bg-primary selection:text-primary-foreground relative max-h-32 w-full [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain text-left text-transparent"
                         value={input}
                         placeholder={labels.placeholder}
                         aria-label={labels.placeholder}
@@ -941,6 +942,12 @@ export function AgentWidget<Resource = never>({
                         disabled={state.pending || hasPendingApproval}
                         role="combobox"
                         rows={2}
+                        onScroll={(event) => {
+                          if (inputOverlayRef.current) {
+                            inputOverlayRef.current.scrollTop =
+                              event.currentTarget.scrollTop;
+                          }
+                        }}
                         onChange={(event) => {
                           const value = event.target.value;
                           setInput(value);
