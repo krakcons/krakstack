@@ -140,6 +140,14 @@
       "types": "./dist/services/notification/index.d.ts",
       "import": "./dist/services/notification/index.js"
     },
+    "./service-notification/client": {
+      "types": "./dist/services/notification/client/index.d.ts",
+      "import": "./dist/services/notification/client/index.js"
+    },
+    "./notifications": {
+      "types": "./dist/services/notification/public.d.ts",
+      "import": "./dist/services/notification/public.js"
+    },
     "./service-notification/channels": {
       "types": "./dist/services/notification/channels/index.d.ts",
       "import": "./dist/services/notification/channels/index.js"

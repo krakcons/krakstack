@@ -1,11 +1,14 @@
 import introductionEn from "@/content/docs/en/introduction.mdx?raw";
+import notificationsEn from "@/content/docs/en/notifications.mdx?raw";
 import introductionFr from "@/content/docs/fr/introduction.mdx?raw";
+import notificationsFr from "@/content/docs/fr/notifications.mdx?raw";
 import { createMdxDocsSource, makeDocs, type DocsSection } from "@/lib/docs";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { getLocale } from "@/paraglide/runtime";
 
 const locales = ["en", "fr"] as const;
+const notificationGuideOrder = 17;
 
 const sectionByGroup = {
   Components: "components",
@@ -33,8 +36,14 @@ const introductionFiles = {
   fr: ["../content/docs/fr/introduction.mdx", introductionFr],
 } as const;
 
+const notificationFiles = {
+  en: ["../content/docs/en/notifications.mdx", notificationsEn],
+  fr: ["../content/docs/fr/notifications.mdx", notificationsFr],
+} as const;
+
 const files = Object.fromEntries([
   ...locales.map((locale) => introductionFiles[locale]),
+  ...locales.map((locale) => notificationFiles[locale]),
   ...locales.flatMap((locale) =>
     registryItems.map((item, index) => {
       const section = sectionByGroup[getRegistryGroup(item)];
@@ -56,7 +65,7 @@ const files = Object.fromEntries([
         `path: ${JSON.stringify(`/docs/${item.name}`)}`,
         `title: ${JSON.stringify(title)}`,
         `description: ${JSON.stringify(item.description)}`,
-        `order: ${index + 2}`,
+        `order: ${index + 3 >= notificationGuideOrder ? index + 4 : index + 3}`,
         `locale: ${locale}`,
         `section: ${section}`,
         "type: reference",
