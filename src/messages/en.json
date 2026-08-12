@@ -92,5 +92,15 @@
   "file_picker_preview_image_description": "Selected images use a managed local preview URL.",
   "file_picker_preview_selected_image_alt": "Selected image",
   "file_picker_preview_multiple_title": "Multiple files",
-  "file_picker_preview_multiple_description": "Choose several documents at once or add more files to the current selection."
+  "file_picker_preview_multiple_description": "Choose several documents at once or add more files to the current selection.",
+  "virtualized_combobox_preview_city": "City {number}",
+  "virtualized_combobox_preview_single_title": "Single selection",
+  "virtualized_combobox_preview_description": "Search 1,000 options while only rendering the visible rows.",
+  "virtualized_combobox_preview_single_label": "Select a city",
+  "virtualized_combobox_preview_single_placeholder": "Select a city",
+  "virtualized_combobox_preview_empty": "No cities found.",
+  "virtualized_combobox_preview_multiple_title": "Multiple selection",
+  "virtualized_combobox_preview_multiple_description": "Select several cities and clear the entire selection at once.",
+  "virtualized_combobox_preview_multiple_label": "Select cities",
+  "virtualized_combobox_preview_multiple_placeholder": "Select cities"
 }

@@ -2,9 +2,10 @@
 
 import { Combobox as ComboboxPrimitive } from "@base-ui/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   type ReactElement,
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
 
 export interface VirtualizedComboboxMessages {
+  clear: string;
   search: string;
   selected: (count: number) => string;
   selectMore: string;
@@ -28,11 +30,13 @@ export type VirtualizedComboboxMessageOverrides =
 
 const messages = {
   en: {
+    clear: "Clear selection",
     search: "Search...",
     selected: (count: number) => `${count} selected`,
     selectMore: "Select more",
   },
   fr: {
+    clear: "Effacer la sélection",
     search: "Rechercher...",
     selected: (count: number) => `${count} sélectionnés`,
     selectMore: "Sélectionner davantage",
@@ -101,6 +105,7 @@ const optionEquals = <TData,>(
 const VirtualizedComboboxList = <TData,>({
   emptyLabel,
   groupSelections,
+  itemIndexRef,
   messages: messageOverrides,
   renderItem,
   selectedValues,
@@ -108,6 +113,7 @@ const VirtualizedComboboxList = <TData,>({
 }: {
   emptyLabel: ReactNode;
   groupSelections: boolean;
+  itemIndexRef: RefObject<ReadonlyMap<number, number>>;
   messages?: VirtualizedComboboxMessageOverrides | undefined;
   renderItem?:
     | ((item: VirtualizedComboboxOption<TData>) => ReactNode)
@@ -118,27 +124,37 @@ const VirtualizedComboboxList = <TData,>({
   const filteredItems =
     ComboboxPrimitive.useFilteredItems<VirtualizedComboboxOption<TData>>();
   const labels = virtualizedComboboxMessages(messageOverrides);
-  const entries = filteredItems.flatMap((item, index) => {
-    if (!groupSelections) return [{ kind: "item" as const, item, index }];
-
-    const selected = selectedValues.has(item.value);
-    const previous = filteredItems[index - 1];
-    const startsGroup =
-      index === 0 || selectedValues.has(previous?.value ?? "") !== selected;
-    const itemEntry = { kind: "item" as const, item, index };
-    return startsGroup
-      ? [
-          {
-            kind: "group" as const,
-            key: selected ? "selected" : "available",
-            label: selected
-              ? labels.selected(selectedValues.size)
-              : labels.selectMore,
-          },
-          itemEntry,
-        ]
-      : [itemEntry];
-  });
+  const itemEntries = filteredItems.map((item, index) => ({
+    kind: "item" as const,
+    item,
+    index,
+  }));
+  const selectedEntries = itemEntries.filter(({ item }) =>
+    selectedValues.has(item.value),
+  );
+  const availableEntries = itemEntries.filter(
+    ({ item }) => !selectedValues.has(item.value),
+  );
+  const entries = groupSelections
+    ? [
+        ...(selectedEntries.length > 0
+          ? [
+              {
+                kind: "group" as const,
+                key: "selected",
+                label: labels.selected(selectedValues.size),
+              },
+              ...selectedEntries,
+            ]
+          : []),
+        {
+          kind: "group" as const,
+          key: "available",
+          label: labels.selectMore,
+        },
+        ...availableEntries,
+      ]
+    : itemEntries;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const virtualizer = useVirtualizer({
     count: entries.length,
@@ -151,6 +167,14 @@ const VirtualizedComboboxList = <TData,>({
     },
     estimateSize: () => 36,
     overscan: 8,
+  });
+
+  useEffect(() => {
+    itemIndexRef.current = new Map(
+      entries.flatMap((entry, index) =>
+        entry.kind === "item" ? [[entry.index, index]] : [],
+      ),
+    );
   });
 
   useImperativeHandle(virtualizerRef, () => virtualizer, [virtualizer]);
@@ -239,6 +263,7 @@ const VirtualizedComboboxContent = <TData,>({
   contentClassName,
   emptyLabel,
   groupSelections,
+  itemIndexRef,
   messages: messageOverrides,
   renderItem,
   selectedValues,
@@ -248,6 +273,7 @@ const VirtualizedComboboxContent = <TData,>({
   "contentClassName" | "emptyLabel" | "messages" | "renderItem"
 > & {
   groupSelections: boolean;
+  itemIndexRef: RefObject<ReadonlyMap<number, number>>;
   selectedValues: ReadonlySet<string>;
   virtualizerRef: RefObject<VirtualizedComboboxVirtualizer | null>;
 }) => {
@@ -278,6 +304,7 @@ const VirtualizedComboboxContent = <TData,>({
           <VirtualizedComboboxList
             emptyLabel={emptyLabel}
             groupSelections={groupSelections}
+            itemIndexRef={itemIndexRef}
             messages={messageOverrides}
             renderItem={renderItem}
             selectedValues={selectedValues}
@@ -305,9 +332,19 @@ const defaultTrigger = (
     type="button"
     variant="outline"
   >
-    <span className="min-w-0 truncate text-left">{label}</span>
+    <span className="min-w-0 flex-1 truncate pr-7 text-left">{label}</span>
     <ChevronsUpDown className="text-muted-foreground shrink-0 opacity-70" />
   </Button>
+);
+
+const defaultClear = (label: string) => (
+  <ComboboxPrimitive.Clear
+    aria-label={label}
+    className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute top-1/2 right-7 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm outline-none focus-visible:border focus-visible:ring-3"
+    type="button"
+  >
+    <X className="size-3.5" />
+  </ComboboxPrimitive.Clear>
 );
 
 const selectedLabel = <TData,>(
@@ -336,6 +373,8 @@ const VirtualizedComboboxSingle = <TData,>(
   props: VirtualizedComboboxSingleProps<TData>,
 ) => {
   const virtualizerRef = useComboboxVirtualizerRef(props.virtualizerRef);
+  const itemIndexRef = useRef<ReadonlyMap<number, number>>(new Map());
+  const labels = virtualizedComboboxMessages(props.messages);
   return (
     <ComboboxPrimitive.Root<VirtualizedComboboxOption<TData>>
       disabled={props.disabled}
@@ -346,7 +385,10 @@ const VirtualizedComboboxSingle = <TData,>(
       onInputValueChange={(value) => props.onSearchValueChange?.(value)}
       onItemHighlighted={(_, { index, reason }) => {
         if (reason === "keyboard" && index >= 0) {
-          virtualizerRef.current?.scrollToIndex(index, { align: "auto" });
+          virtualizerRef.current?.scrollToIndex(
+            itemIndexRef.current.get(index) ?? index,
+            { align: "auto" },
+          );
         }
       }}
       onOpenChange={(open) => props.onOpenChange?.(open)}
@@ -355,21 +397,25 @@ const VirtualizedComboboxSingle = <TData,>(
       value={props.value}
       virtualized
     >
-      <ComboboxPrimitive.Trigger
-        render={
-          props.trigger ??
-          defaultTrigger(
-            props.ariaLabel,
-            props.ariaInvalid,
-            props.disabled,
-            selectedLabel(props.value, props.placeholder),
-            props.triggerId,
-          )
-        }
-      />
+      <div className="relative">
+        <ComboboxPrimitive.Trigger
+          render={
+            props.trigger ??
+            defaultTrigger(
+              props.ariaLabel,
+              props.ariaInvalid,
+              props.disabled,
+              selectedLabel(props.value, props.placeholder),
+              props.triggerId,
+            )
+          }
+        />
+        {props.trigger ? null : defaultClear(labels.clear)}
+      </div>
       <VirtualizedComboboxContent
         {...props}
         groupSelections={false}
+        itemIndexRef={itemIndexRef}
         selectedValues={new Set(props.value ? [props.value.value] : [])}
         virtualizerRef={virtualizerRef}
       />
@@ -381,6 +427,8 @@ const VirtualizedComboboxMultiple = <TData,>(
   props: VirtualizedComboboxMultipleProps<TData>,
 ) => {
   const virtualizerRef = useComboboxVirtualizerRef(props.virtualizerRef);
+  const itemIndexRef = useRef<ReadonlyMap<number, number>>(new Map());
+  const labels = virtualizedComboboxMessages(props.messages);
   return (
     <ComboboxPrimitive.Root<VirtualizedComboboxOption<TData>, true>
       disabled={props.disabled}
@@ -392,7 +440,10 @@ const VirtualizedComboboxMultiple = <TData,>(
       onInputValueChange={(value) => props.onSearchValueChange?.(value)}
       onItemHighlighted={(_, { index, reason }) => {
         if (reason === "keyboard" && index >= 0) {
-          virtualizerRef.current?.scrollToIndex(index, { align: "auto" });
+          virtualizerRef.current?.scrollToIndex(
+            itemIndexRef.current.get(index) ?? index,
+            { align: "auto" },
+          );
         }
       }}
       onOpenChange={(open) => props.onOpenChange?.(open)}
@@ -401,21 +452,25 @@ const VirtualizedComboboxMultiple = <TData,>(
       value={[...props.value]}
       virtualized
     >
-      <ComboboxPrimitive.Trigger
-        render={
-          props.trigger ??
-          defaultTrigger(
-            props.ariaLabel,
-            props.ariaInvalid,
-            props.disabled,
-            selectedLabel(props.value, props.placeholder),
-            props.triggerId,
-          )
-        }
-      />
+      <div className="relative">
+        <ComboboxPrimitive.Trigger
+          render={
+            props.trigger ??
+            defaultTrigger(
+              props.ariaLabel,
+              props.ariaInvalid,
+              props.disabled,
+              selectedLabel(props.value, props.placeholder),
+              props.triggerId,
+            )
+          }
+        />
+        {props.trigger ? null : defaultClear(labels.clear)}
+      </div>
       <VirtualizedComboboxContent
         {...props}
         groupSelections
+        itemIndexRef={itemIndexRef}
         selectedValues={new Set(props.value.map(({ value }) => value))}
         virtualizerRef={virtualizerRef}
       />

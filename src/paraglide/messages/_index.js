@@ -95,6 +95,16 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} File_Picker_Preview_Selected_Image_AltInputs */
 /** @typedef {{}} File_Picker_Preview_Multiple_TitleInputs */
 /** @typedef {{}} File_Picker_Preview_Multiple_DescriptionInputs */
+/** @typedef {{ number: NonNullable<unknown> }} Virtualized_Combobox_Preview_CityInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_Single_TitleInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_DescriptionInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_Single_LabelInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_Single_PlaceholderInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_EmptyInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_Multiple_TitleInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_Multiple_DescriptionInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_Multiple_LabelInputs */
+/** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -1398,4 +1408,144 @@ export const file_picker_preview_multiple_description = /** @type {((inputs?: Fi
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.file_picker_preview_multiple_description(inputs)
 	return __fr.file_picker_preview_multiple_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "City {number}" |
+*
+* @param {Virtualized_Combobox_Preview_CityInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_city = /** @type {((inputs: Virtualized_Combobox_Preview_CityInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_CityInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_city(inputs)
+	return __fr.virtualized_combobox_preview_city(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Single selection" |
+*
+* @param {Virtualized_Combobox_Preview_Single_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_single_title = /** @type {((inputs?: Virtualized_Combobox_Preview_Single_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_Single_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_single_title(inputs)
+	return __fr.virtualized_combobox_preview_single_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Search 1,000 options while only rendering the visible rows." |
+*
+* @param {Virtualized_Combobox_Preview_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_description = /** @type {((inputs?: Virtualized_Combobox_Preview_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_description(inputs)
+	return __fr.virtualized_combobox_preview_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Select a city" |
+*
+* @param {Virtualized_Combobox_Preview_Single_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_single_label = /** @type {((inputs?: Virtualized_Combobox_Preview_Single_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_Single_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_single_label(inputs)
+	return __fr.virtualized_combobox_preview_single_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Select a city" |
+*
+* @param {Virtualized_Combobox_Preview_Single_PlaceholderInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_single_placeholder = /** @type {((inputs?: Virtualized_Combobox_Preview_Single_PlaceholderInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_Single_PlaceholderInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_single_placeholder(inputs)
+	return __fr.virtualized_combobox_preview_single_placeholder(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No cities found." |
+*
+* @param {Virtualized_Combobox_Preview_EmptyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_empty = /** @type {((inputs?: Virtualized_Combobox_Preview_EmptyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_EmptyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_empty(inputs)
+	return __fr.virtualized_combobox_preview_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Multiple selection" |
+*
+* @param {Virtualized_Combobox_Preview_Multiple_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_multiple_title = /** @type {((inputs?: Virtualized_Combobox_Preview_Multiple_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_Multiple_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_multiple_title(inputs)
+	return __fr.virtualized_combobox_preview_multiple_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Select several cities and clear the entire selection at once." |
+*
+* @param {Virtualized_Combobox_Preview_Multiple_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_multiple_description = /** @type {((inputs?: Virtualized_Combobox_Preview_Multiple_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_Multiple_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_multiple_description(inputs)
+	return __fr.virtualized_combobox_preview_multiple_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Select cities" |
+*
+* @param {Virtualized_Combobox_Preview_Multiple_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_multiple_label = /** @type {((inputs?: Virtualized_Combobox_Preview_Multiple_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_Multiple_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_multiple_label(inputs)
+	return __fr.virtualized_combobox_preview_multiple_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Select cities" |
+*
+* @param {Virtualized_Combobox_Preview_Multiple_PlaceholderInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const virtualized_combobox_preview_multiple_placeholder = /** @type {((inputs?: Virtualized_Combobox_Preview_Multiple_PlaceholderInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Virtualized_Combobox_Preview_Multiple_PlaceholderInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.virtualized_combobox_preview_multiple_placeholder(inputs)
+	return __fr.virtualized_combobox_preview_multiple_placeholder(inputs)
 });

@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
