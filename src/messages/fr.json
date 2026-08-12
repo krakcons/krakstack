@@ -85,5 +85,12 @@
   "pagination_preview_title": "Pagination",
   "pagination_preview_description": "Navigation contrôlée entre les pages avec sélection de la taille, résumé des résultats et mises en page adaptatives.",
   "pagination_preview_full": "Mise en page complète",
-  "pagination_preview_compact": "Mise en page compacte"
+  "pagination_preview_compact": "Mise en page compacte",
+  "file_picker_preview_document_title": "Document",
+  "file_picker_preview_document_description": "Déposez un fichier PDF ou texte, ou ouvrez le sélecteur de fichiers natif.",
+  "file_picker_preview_image_title": "Image",
+  "file_picker_preview_image_description": "Les images sélectionnées utilisent une URL d’aperçu locale gérée.",
+  "file_picker_preview_selected_image_alt": "Image sélectionnée",
+  "file_picker_preview_multiple_title": "Plusieurs fichiers",
+  "file_picker_preview_multiple_description": "Choisissez plusieurs documents à la fois ou ajoutez des fichiers à la sélection actuelle."
 }

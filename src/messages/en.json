@@ -85,5 +85,12 @@
   "pagination_preview_title": "Pagination",
   "pagination_preview_description": "Controlled page navigation with page-size selection, result summaries, and responsive layouts.",
   "pagination_preview_full": "Full layout",
-  "pagination_preview_compact": "Compact layout"
+  "pagination_preview_compact": "Compact layout",
+  "file_picker_preview_document_title": "Document",
+  "file_picker_preview_document_description": "Drop a PDF or text file, or open the native file dialog.",
+  "file_picker_preview_image_title": "Image",
+  "file_picker_preview_image_description": "Selected images use a managed local preview URL.",
+  "file_picker_preview_selected_image_alt": "Selected image",
+  "file_picker_preview_multiple_title": "Multiple files",
+  "file_picker_preview_multiple_description": "Choose several documents at once or add more files to the current selection."
 }

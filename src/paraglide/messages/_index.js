@@ -88,6 +88,13 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Pagination_Preview_DescriptionInputs */
 /** @typedef {{}} Pagination_Preview_FullInputs */
 /** @typedef {{}} Pagination_Preview_CompactInputs */
+/** @typedef {{}} File_Picker_Preview_Document_TitleInputs */
+/** @typedef {{}} File_Picker_Preview_Document_DescriptionInputs */
+/** @typedef {{}} File_Picker_Preview_Image_TitleInputs */
+/** @typedef {{}} File_Picker_Preview_Image_DescriptionInputs */
+/** @typedef {{}} File_Picker_Preview_Selected_Image_AltInputs */
+/** @typedef {{}} File_Picker_Preview_Multiple_TitleInputs */
+/** @typedef {{}} File_Picker_Preview_Multiple_DescriptionInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
 /**
@@ -1293,4 +1300,102 @@ export const pagination_preview_compact = /** @type {((inputs?: Pagination_Previ
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.pagination_preview_compact(inputs)
 	return __fr.pagination_preview_compact(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Document" |
+*
+* @param {File_Picker_Preview_Document_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const file_picker_preview_document_title = /** @type {((inputs?: File_Picker_Preview_Document_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<File_Picker_Preview_Document_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.file_picker_preview_document_title(inputs)
+	return __fr.file_picker_preview_document_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Drop a PDF or text file, or open the native file dialog." |
+*
+* @param {File_Picker_Preview_Document_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const file_picker_preview_document_description = /** @type {((inputs?: File_Picker_Preview_Document_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<File_Picker_Preview_Document_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.file_picker_preview_document_description(inputs)
+	return __fr.file_picker_preview_document_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Image" |
+*
+* @param {File_Picker_Preview_Image_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const file_picker_preview_image_title = /** @type {((inputs?: File_Picker_Preview_Image_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<File_Picker_Preview_Image_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.file_picker_preview_image_title(inputs)
+	return __fr.file_picker_preview_image_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Selected images use a managed local preview URL." |
+*
+* @param {File_Picker_Preview_Image_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const file_picker_preview_image_description = /** @type {((inputs?: File_Picker_Preview_Image_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<File_Picker_Preview_Image_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.file_picker_preview_image_description(inputs)
+	return __fr.file_picker_preview_image_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Selected image" |
+*
+* @param {File_Picker_Preview_Selected_Image_AltInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const file_picker_preview_selected_image_alt = /** @type {((inputs?: File_Picker_Preview_Selected_Image_AltInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<File_Picker_Preview_Selected_Image_AltInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.file_picker_preview_selected_image_alt(inputs)
+	return __fr.file_picker_preview_selected_image_alt(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Multiple files" |
+*
+* @param {File_Picker_Preview_Multiple_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const file_picker_preview_multiple_title = /** @type {((inputs?: File_Picker_Preview_Multiple_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<File_Picker_Preview_Multiple_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.file_picker_preview_multiple_title(inputs)
+	return __fr.file_picker_preview_multiple_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Choose several documents at once or add more files to the current selection." |
+*
+* @param {File_Picker_Preview_Multiple_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const file_picker_preview_multiple_description = /** @type {((inputs?: File_Picker_Preview_Multiple_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<File_Picker_Preview_Multiple_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.file_picker_preview_multiple_description(inputs)
+	return __fr.file_picker_preview_multiple_description(inputs)
 });
