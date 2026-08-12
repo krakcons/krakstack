@@ -16,6 +16,7 @@ export function getRegistryGroup(item: RegistryItem) {
       "service-database",
       "service-opentelemetry",
       "embedding-layer",
+      "workflow-layer",
     ].includes(item.name)
   ) {
     return "Layers";

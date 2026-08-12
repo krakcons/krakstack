@@ -35,14 +35,14 @@ const pgLayerFromConfig = (name: string) =>
 export class DB extends Context.Service<DB>()("DB", {
   make: PgDrizzle.makeWithDefaults({ relations }),
 }) {
+  static readonly clientLayer = pgLayerFromConfig("DATABASE_URL");
+  static readonly testClientLayer = pgLayerFromConfig("TEST_DATABASE_URL");
   static readonly baseLayer = Layer.effect(this, this.make);
 
-  static readonly layer = this.baseLayer.pipe(
-    Layer.provide(pgLayerFromConfig("DATABASE_URL")),
-  );
+  static readonly layer = this.baseLayer.pipe(Layer.provide(this.clientLayer));
 
   static readonly testLayer = this.baseLayer.pipe(
-    Layer.provide(pgLayerFromConfig("TEST_DATABASE_URL")),
+    Layer.provide(this.testClientLayer),
   );
 }
 

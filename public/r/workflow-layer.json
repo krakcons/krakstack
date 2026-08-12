@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "workflow-layer",
+  "title": "Workflow Engine",
+  "description": "A shared Effect durable workflow engine layer with a versioned service workflow example using idempotency and durable activities.",
+  "dependencies": [
+    "effect@beta"
+  ],
+  "registryDependencies": [
+    "@krak-stack/service-database"
+  ],
+  "files": [
+    {
+      "path": "src/services/workflow.ts",
+      "content": "import { Layer } from \"effect\";\nimport { ClusterWorkflowEngine, SingleRunner } from \"effect/unstable/cluster\";\n\nimport { DB } from \"@/services/database\";\n\nexport const workflowEngineLayer = ClusterWorkflowEngine.layer.pipe(\n  Layer.provide(SingleRunner.layer({ runnerStorage: \"memory\" })),\n  Layer.provide(DB.clientLayer),\n);\n",
+      "type": "registry:file",
+      "target": "services/workflow.ts"
+    }
+  ],
+  "docs": "## Overview\n\n`workflow-layer` installs the shared `ClusterWorkflowEngine` layer used to run durable Effect workflows. It uses PostgreSQL for durable workflow state and a single in-memory runner suitable for a single application process.\n\nOnly `services/workflow.ts` is installed. The example below is documentation for adapting to an application-owned service; it is not copied into the receiving project.\n\n## Durable Workflow Example\n\nDefine workflows beside the service they orchestrate, for example in `src/services/example/workflows.ts`. This versioned workflow uses a stable caller-provided idempotency key and wraps persistence in a durable activity.\n\n```ts\nimport { Effect, Schema } from \"effect\";\nimport { Activity, Workflow } from \"effect/unstable/workflow\";\n\nimport { ExampleSchema } from \"./schema\";\nimport { Examples } from \"./service\";\n\nexport const CreateExampleV1 = Workflow.make(\"CreateExampleV1\", {\n  payload: {\n    requestId: Schema.String,\n    userId: Schema.String,\n    name: Schema.NonEmptyString,\n    description: Schema.optional(Schema.String),\n  },\n  success: ExampleSchema,\n  idempotencyKey: ({ requestId }) => requestId,\n});\n\nexport const examplesWorkflowLayer = CreateExampleV1.toLayer(\n  ({ userId, name, description }) =>\n    Effect.gen(function* () {\n      const examples = yield* Examples;\n\n      return yield* Activity.make({\n        name: \"PersistExampleV1\",\n        success: ExampleSchema,\n        execute: examples.create({\n          userId,\n          payload: { name, description },\n        }),\n      });\n    }),\n);\n```\n\n`ExampleSchema` is the serializable result schema and `Examples` is the application-owned domain service. Keep HTTP and authentication concerns outside the workflow and pass validated actor identifiers in its payload.\n\n## Application Setup\n\nProvide each workflow implementation with its domain service, then provide the shared engine at the application composition root.\n\n```ts\nimport { Layer } from \"effect\";\n\nimport { examplesWorkflowLayer } from \"@/services/example/workflows\";\nimport { Examples } from \"@/services/example\";\nimport { workflowEngineLayer } from \"@/services/workflow\";\n\nexport const workflowsLayer = examplesWorkflowLayer.pipe(\n  Layer.provide(Examples.layer),\n  Layer.provide(workflowEngineLayer),\n);\n```\n\nStart `CreateExampleV1` through Effect's workflow APIs with a unique `requestId`. Reusing the same request ID preserves idempotency across retries.\n\n## Production Considerations\n\n`SingleRunner.layer({ runnerStorage: \"memory\" })` is intended for a single process. Replace the runner topology when deploying multiple workflow workers. Workflow and activity names are persisted compatibility boundaries, so version names rather than renaming an active workflow in place.",
+  "type": "registry:lib"
+}

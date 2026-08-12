@@ -30,6 +30,7 @@ The application is divided into two areas: frontend and backend.
 - Effect application services.
 - Effect Postgres and Drizzle ORM for database access.
 - Effect HttpApi, HttpServer, OpenAPI, and OpenTelemetry for API and runtime concerns.
+- Effect durable workflows for long-running, retryable, or resumable orchestration.
 
 ## Folder Structure
 
@@ -78,6 +79,7 @@ A typical service should use this structure:
 
 - `src/services/<name>/schema.ts` defines Effect schemas, payload schemas, route params, and standard schema exports.
 - `src/services/<name>/index.ts` implements the Effect `Context.Service` and exposes production and test layers where needed.
+- `src/services/<name>/workflows.ts` defines versioned durable workflows and their activity orchestration.
 - `src/services/<name>/api.group.ts` defines the HttpApiGroup contract.
 - `src/services/<name>/api.builder.ts` wires the service into the root API with auth and error mapping.
 - `src/services/<name>/client/atom.ts` defines query and mutation atoms.
@@ -85,6 +87,19 @@ A typical service should use this structure:
 - `src/services/<name>/client/table.tsx` defines data tables and row actions.
 
 Service methods should accept object inputs, scope by the current user or tenant where applicable, and avoid exposing cross-tenant data.
+
+## Workflows
+
+Use Effect durable workflows for operations that must survive interruption, retry individual steps, resume later, or coordinate multiple services over time.
+
+- Define the shared `ClusterWorkflowEngine` layer in `src/services/workflow.ts` and provide its database and runner dependencies at the application composition root.
+- Define service-owned workflows in `src/services/<name>/workflows.ts` with `Workflow.make(...)` and export their `toLayer(...)` implementation.
+- Version workflow and activity names, such as `CreateExampleV1` and `PersistExampleV1`. Treat persisted workflow names and payload schemas as compatibility boundaries.
+- Give every workflow a stable idempotency key derived from a caller-provided request or domain identifier.
+- Wrap side effects in `Activity.make(...)` and define serializable Effect schemas for workflow payloads, successes, and typed errors.
+- Keep HTTP, authentication, and request-specific concerns at the API boundary. Pass validated actor or tenant identifiers into the workflow payload.
+- Keep durable orchestration in `workflows.ts`; keep reusable domain and persistence operations in the service.
+- Compose each workflow layer with its service dependencies, then provide the shared workflow engine layer at the application root.
 
 ## API
 
@@ -152,6 +167,8 @@ Before implementing or substantially refactoring one of the areas below, read th
 | --------------------- | ------------------------------------------- |
 | Effect service        | `src/agent-examples/service/service.ts`     |
 | Effect schemas        | `src/agent-examples/service/schema.ts`      |
+| Durable workflows     | `src/agent-examples/service/workflows.ts`   |
+| Workflow engine layer | `src/services/workflow.ts`                  |
 | HttpApi contract      | `src/agent-examples/service/api.group.ts`   |
 | HttpApi handlers      | `src/agent-examples/service/api.builder.ts` |
 | Root API registration | `src/agent-examples/service/api-entry.ts`   |
