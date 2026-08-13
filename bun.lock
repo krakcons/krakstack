@@ -29,6 +29,7 @@
         "@tanstack/react-table": "^9.1.2",
         "@tanstack/react-virtual": "^3.14.5",
         "@types/pg": "^8.20.0",
+        "@xberg-io/xberg": "1.0.14",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -75,14 +76,13 @@
     },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "peerDependencies": {
         "@aws-sdk/client-sesv2": "^3.1068.0",
         "@base-ui/react": "^1.5.0",
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
-        "@effect/ai-openai-compat": "4.0.0-beta.85",
         "@effect/atom-react": "4.0.0-beta.85",
         "@effect/platform-browser": "4.0.0-beta.85",
         "@iconify-json/lucide": "^1.2.83",
@@ -112,7 +112,6 @@
         "@dnd-kit/core",
         "@dnd-kit/sortable",
         "@dnd-kit/utilities",
-        "@effect/ai-openai-compat",
         "@effect/atom-react",
         "@effect/platform-browser",
         "@iconify-json/lucide",
@@ -963,6 +962,20 @@
     "@vitest/spy": ["@vitest/spy@4.1.9", "", {}, "sha512-fHpsS6mIi+PiEW+vcRVOMkX1oSaPKne3VOclSFICPcGOmfKgXPU5iAah+wcNcj2xPrCCmfq99IDGf+EojhhvhA=="],
 
     "@vitest/utils": ["@vitest/utils@4.1.9", "", { "dependencies": { "@vitest/pretty-format": "4.1.9", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-A51o8ymO5PpqlWNnBP9ZHPXDIpuMtTLlGSjN7la4US+LJzoUMyhwjA5QXlm39JexgwHKW4Xjs8Z2d3dLCXOeuA=="],
+
+    "@xberg-io/xberg": ["@xberg-io/xberg@1.0.14", "", { "optionalDependencies": { "@xberg-io/xberg-darwin-arm64": "1.0.14", "@xberg-io/xberg-linux-arm64-gnu": "1.0.14", "@xberg-io/xberg-linux-arm64-musl": "1.0.14", "@xberg-io/xberg-linux-x64-gnu": "1.0.14", "@xberg-io/xberg-linux-x64-musl": "1.0.14", "@xberg-io/xberg-win32-x64-msvc": "1.0.14" } }, "sha512-Rb5tnUqTtUnwEn/Pb7x1G99Hn8zMqJdR8rtEAh7M+MokSxxe3E/y+KzpQED0Ygp9T4OOX9FoyJtaYizt6gnQHA=="],
+
+    "@xberg-io/xberg-darwin-arm64": ["@xberg-io/xberg-darwin-arm64@1.0.14", "", { "os": "darwin", "cpu": "arm64" }, "sha512-QgsQq/Q0pwdtYJeh4QhEty+93hlohsPdMF9yN9UY5YI5tXsUK0njqkG8v8wKoS3FHVtpYhI1KvJZNV+R86Pu2g=="],
+
+    "@xberg-io/xberg-linux-arm64-gnu": ["@xberg-io/xberg-linux-arm64-gnu@1.0.14", "", { "os": "linux", "cpu": "arm64" }, "sha512-l+RpJqIa35OsCVnzw5XRoewJ/eoqcW3ZOm4wFTaMopIpNQyk+CeqvcjOW+5asfpp8KTVXkNtOPMTVCxljPvBNw=="],
+
+    "@xberg-io/xberg-linux-arm64-musl": ["@xberg-io/xberg-linux-arm64-musl@1.0.14", "", { "os": "linux", "cpu": "arm64" }, "sha512-kh2zA+9CZqE1uzqr9eetppJxqlcuOzyg6XgG5JHecB6ItAa30k+l3uKntxAewxkBwxJqSiiYesc0zb+O05M/KQ=="],
+
+    "@xberg-io/xberg-linux-x64-gnu": ["@xberg-io/xberg-linux-x64-gnu@1.0.14", "", { "os": "linux", "cpu": "x64" }, "sha512-EsRBMiW0F0rAq5SzhdFzjWdskK61CNzV7YnAg/iHz+KDVL/56f5/wfSkLLmN/WXn4lMblmaC+qrb2iVoHV3BPg=="],
+
+    "@xberg-io/xberg-linux-x64-musl": ["@xberg-io/xberg-linux-x64-musl@1.0.14", "", { "os": "linux", "cpu": "x64" }, "sha512-dYeRNfKBYGv0SeXPy/CwGivYbDLr5+KbUJcB4P4+Ldhuyz9py/EbixW0qnMugVgyZTexLB00khTGWDOgU3Zz9Q=="],
+
+    "@xberg-io/xberg-win32-x64-msvc": ["@xberg-io/xberg-win32-x64-msvc@1.0.14", "", { "os": "win32", "cpu": "x64" }, "sha512-Jy3WZyZuD3NKxWks5NhytKDXgfDtRQRYGIApwzRxREFjWMOJf1s9+YP5JyKPvzE/XQdpfw4KJ2J0KJAriazIEQ=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
 

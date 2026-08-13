@@ -1,10 +1,41 @@
 import registry from "../../registry.json";
+import { Option, Schema } from "effect";
+
+const NEW_REGISTRY_ITEM_DAYS = 14;
+const RegistryItemDateSchema = Schema.DateFromString.pipe(
+  Schema.check(
+    Schema.makeFilter((date) =>
+      Number.isNaN(date.getTime()) ? "Expected a valid date" : undefined,
+    ),
+  ),
+);
+const RegistryItemMetaSchema = Schema.Struct({
+  createdAt: Schema.optional(RegistryItemDateSchema),
+  updatedAt: Schema.optional(RegistryItemDateSchema),
+}).annotate({ identifier: "RegistryItemMeta" });
+const decodeRegistryItemMeta = Schema.decodeUnknownOption(
+  RegistryItemMetaSchema,
+);
 
 export type RegistryItem = (typeof registry.items)[number] & {
   docs?: string;
 };
 
 export const registryItems = registry.items as RegistryItem[];
+
+export const isRegistryItemNew = (
+  item: { meta?: unknown },
+  now = new Date(),
+) => {
+  const meta = decodeRegistryItemMeta(item.meta);
+  if (Option.isNone(meta) || !meta.value.createdAt) return false;
+
+  const age = now.getTime() - meta.value.createdAt.getTime();
+  return age >= 0 && age < NEW_REGISTRY_ITEM_DAYS * 24 * 60 * 60 * 1000;
+};
+
+export const getRegistryItemMeta = (item: { meta?: unknown }) =>
+  Option.getOrUndefined(decodeRegistryItemMeta(item.meta));
 
 export function getRegistryItem(slug: string) {
   return registryItems.find((item) => item.name === slug);

@@ -11,7 +11,11 @@ import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackSites } from "@/lib/krakstack-sites";
-import { getRegistryGroup, registryItems } from "@/lib/registry";
+import {
+  getRegistryGroup,
+  isRegistryItemNew,
+  registryItems,
+} from "@/lib/registry";
 import { createSeo } from "@/lib/seo";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
@@ -339,9 +343,14 @@ function Home() {
                       to="/docs/{-$slug}"
                       className="group bg-background hover:bg-muted/50 flex min-h-44 flex-col rounded-xl border p-5 transition-colors"
                     >
-                      <h4 className="font-semibold">
-                        {item.title ?? item.name}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">
+                          {item.title ?? item.name}
+                        </h4>
+                        {isRegistryItemNew(item) ? (
+                          <Badge variant="secondary">{m.registry_new()}</Badge>
+                        ) : null}
+                      </div>
                       <p className="text-muted-foreground mt-2 line-clamp-2 text-sm leading-6">
                         {item.description}
                       </p>
