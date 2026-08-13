@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   DataTable,
   DataTableColumnHeader,
+  type DataTableColumnDef,
   type DataTableRowAction,
 } from "@/components/ui/data-table";
-import type { ColumnDef } from "@tanstack/react-table";
 
 import { allExamplesAtom, deleteExampleAtom, updateExampleAtom } from "./atom";
 import { ExampleDialog } from "./form";
@@ -37,7 +37,7 @@ export function ExampleTable() {
       Array.from(value),
   });
 
-  const columns: ColumnDef<Example>[] = [
+  const columns: DataTableColumnDef<Example>[] = [
     {
       accessorKey: "name",
       header: ({ column }) => (

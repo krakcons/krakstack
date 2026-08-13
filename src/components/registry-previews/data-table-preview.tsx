@@ -1,6 +1,7 @@
 import {
   DataTable,
   DataTableColumnHeader,
+  type DataTableColumnDef,
   TableSearchSchema,
   TableSearchSchemaStandard,
   type DataTableRowAction,
@@ -13,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
 
 export { TableSearchSchema, TableSearchSchemaStandard };
@@ -116,7 +116,7 @@ const projects: Project[] = [
   },
 ];
 
-const columns: ColumnDef<Project>[] = [
+const columns: DataTableColumnDef<Project>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (

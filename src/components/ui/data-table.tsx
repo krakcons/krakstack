@@ -1,5 +1,13 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -16,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Loading } from "@/components/ui/loading";
 import {
   Pagination,
   paginationMessages,
@@ -41,11 +50,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
 import { Query, SortParamsFromString } from "@/lib/query";
 import { cn } from "@/lib/utils";
+import { getLocale } from "@/paraglide/runtime";
+import { useAtom } from "@effect/atom-react";
+import { BrowserKeyValueStore } from "@effect/platform-browser";
 import {
   DndContext,
   DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
   type Modifier,
   PointerSensor,
   useDraggable,
@@ -54,40 +69,15 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
+  arrayMove,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  useNavigate,
-  useRouterState,
-  type ValidateFromPath,
-} from "@tanstack/react-router";
-import { useAtom } from "@effect/atom-react";
-import { BrowserKeyValueStore } from "@effect/platform-browser";
-import {
-  type Column,
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type Header,
-  type Row,
-  type RowData,
-  type SortingState,
-  type Table as TanstackTable,
-  type VisibilityState,
-  useReactTable,
-} from "@tanstack/react-table";
-
-declare module "@tanstack/react-table" {
-  interface ColumnMeta<TData extends RowData, TValue> {
-    truncate?: boolean;
-  }
-}
+import { Effect, Layer, Option, Schema } from "effect";
+import { KeyValueStore } from "effect/unstable/persistence";
+import { Atom } from "effect/unstable/reactivity";
 import {
   ArrowDown,
   ArrowUp,
@@ -108,29 +98,106 @@ import {
   X,
 } from "lucide-react";
 import {
+  isValidElement,
   useEffect,
   useMemo,
   useState,
-  createContext,
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { Effect, Layer, Schema } from "effect";
-import { KeyValueStore } from "effect/unstable/persistence";
-import { Atom } from "effect/unstable/reactivity";
-import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { getLocale } from "@/paraglide/runtime";
-import { Loading } from "@/components/ui/loading";
+  useNavigate,
+  useRouterState,
+  type ValidateFromPath,
+} from "@tanstack/react-router";
+import {
+  columnFilteringFeature,
+  columnResizingFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  createFilteredRowModel,
+  createPaginatedRowModel,
+  createSortedRowModel,
+  createTableHook,
+  globalFilteringFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  tableFeatures,
+  type Column,
+  type ColumnDef,
+  flexRender,
+  type Header,
+  type Row,
+  type RowData,
+  type SortingState,
+  type ColumnVisibilityState,
+  type AppReactTable,
+  type TableState,
+} from "@tanstack/react-table";
 
-const DataTableViewContext = createContext<DataTableView>("table");
+type DataTableColumnMeta = {
+  truncate?: boolean;
+};
+
+const dataTableFeatures = tableFeatures({
+  columnFilteringFeature,
+  columnResizingFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  globalFilteringFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  filteredRowModel: createFilteredRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  columnMeta: {} as DataTableColumnMeta,
+});
+
+export const {
+  createAppColumnHelper: createDataTableColumnHelper,
+  useAppTable: useDataTable,
+  useCellContext: useDataTableCellContext,
+  useHeaderContext: useDataTableHeaderContext,
+  useTableContext: useDataTableContext,
+} = createTableHook({
+  features: dataTableFeatures,
+  defaultColumn: {
+    minSize: 128,
+    size: 224,
+    maxSize: 640,
+  },
+  columnResizeMode: "onChange",
+  enableColumnResizing: true,
+  tableComponents: {},
+  cellComponents: {},
+  headerComponents: {},
+});
+
+export type DataTableColumnDef<
+  TData extends RowData,
+  TValue = unknown,
+> = ColumnDef<typeof dataTableFeatures, TData, TValue>;
+type DataTableColumn<TData extends RowData, TValue = unknown> = Column<
+  typeof dataTableFeatures,
+  TData,
+  TValue
+>;
+type DataTableHeader<TData extends RowData, TValue = unknown> = Header<
+  typeof dataTableFeatures,
+  TData,
+  TValue
+>;
+type DataTableRow<TData extends RowData> = Row<typeof dataTableFeatures, TData>;
+type DataTableInstance<TData extends RowData> = AppReactTable<
+  typeof dataTableFeatures,
+  TData,
+  TableState<typeof dataTableFeatures>,
+  Record<never, never>,
+  Record<never, never>,
+  Record<never, never>
+>;
 
 export const TableSearchSchema = Schema.Struct({
   page: Schema.optional(Query.fields.page),
@@ -138,7 +205,7 @@ export const TableSearchSchema = Schema.Struct({
   globalFilter: Query.fields.globalFilter,
   sort: Query.fields.sort,
   grouping: Schema.optional(Schema.Array(Schema.String)),
-});
+}).annotate({ identifier: "TableSearch" });
 
 export const TableSearchSchemaStandard: ReturnType<
   typeof Schema.toStandardSchemaV1<typeof TableSearchSchema>
@@ -170,11 +237,44 @@ const dataTableStorageRuntime = Atom.runtime(compactDataTableStorage);
 const DataTableViewSchema = Schema.Union([
   Schema.Literal("table"),
   Schema.Literal("gallery"),
-]);
+]).annotate({ identifier: "DataTableView" });
 type DataTableView = typeof DataTableViewSchema.Type;
 
-const ColumnVisibilitySchema = Schema.Record(Schema.String, Schema.Boolean);
-const ColumnSizingSchema = Schema.Record(Schema.String, Schema.Number);
+const ColumnVisibilitySchema = Schema.Record(
+  Schema.String,
+  Schema.Boolean,
+).annotate({ identifier: "DataTableColumnVisibility" });
+const ColumnSizingSchema = Schema.Record(Schema.String, Schema.Number).annotate(
+  {
+    identifier: "DataTableColumnSizing",
+  },
+);
+const RowDragDataSchema = Schema.Struct({
+  type: Schema.Literal("row"),
+  label: Schema.optional(Schema.String),
+  rowId: Schema.String,
+}).annotate({ identifier: "DataTableRowDragData" });
+const RowReorderDragDataSchema = Schema.Struct({
+  type: Schema.Literal("row-reorder"),
+}).annotate({ identifier: "DataTableRowReorderDragData" });
+const GroupDropDataSchema = Schema.Struct({
+  type: Schema.Literal("group-target"),
+  fieldId: Schema.String,
+  groupId: Schema.String,
+}).annotate({ identifier: "DataTableGroupDropData" });
+
+const decodeTableSearch = Schema.decodeUnknownOption(TableSearchSchema);
+const decodeDataTableView = Schema.decodeUnknownOption(DataTableViewSchema);
+const decodeRowDragData = Schema.decodeUnknownOption(RowDragDataSchema);
+const decodeRowReorderDragData = Schema.decodeUnknownOption(
+  RowReorderDragDataSchema,
+);
+const decodeGroupDropData = Schema.decodeUnknownOption(GroupDropDataSchema);
+
+const validateTableSearchUpdate = (search: Record<string, unknown>) => ({
+  ...search,
+  ...Schema.decodeUnknownSync(TableSearchSchema)(search),
+});
 
 export type DataTableMessages = PaginationMessages & {
   actions: string;
@@ -346,7 +446,7 @@ export interface DataTableRowActionsFeature<TData> {
 }
 
 export interface DataTableColumnVisibilityFeature {
-  default?: VisibilityState;
+  default?: ColumnVisibilityState;
 }
 
 export interface DataTableFeatures<TData> {
@@ -363,8 +463,8 @@ type LegacyDataTableRowAction<TData> = Omit<DataTableRowAction<TData>, "id"> & {
   id?: string;
 };
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData extends RowData> {
+  columns: DataTableColumnDef<TData>[];
   data: TData[];
   state?: DataTableState;
   search?: TableParams;
@@ -387,12 +487,12 @@ interface DataTableProps<TData, TValue> {
   serverPagination?: { rowCount: number };
 }
 
-type GroupSection<TData> = {
+type GroupSection<TData extends RowData> = {
   key: string;
   groupId: string;
   depth: number;
   field: DataTableGroupingField<TData>;
-  rows: Row<TData>[];
+  rows: DataTableRow<TData>[];
   children: GroupSection<TData>[];
 };
 
@@ -443,6 +543,16 @@ const getDefaultGrouping = <TData,>(grouping?: DataTableGrouping<TData>) => {
 const getGroupTargetDropId = (key: string) => `group-target:${key}`;
 const getRowDragId = (rowId: string) => `row:${rowId}`;
 const getSortableRowId = (rowId: string) => `sortable-row:${rowId}`;
+
+const getGroupLabels = <TData extends RowData>(
+  section: GroupSection<TData>,
+) => {
+  const rows = section.rows.map((row) => row.original);
+  const label =
+    section.field.getGroupLabel?.(section.groupId, rows) ?? section.groupId;
+
+  return section.field.renderGroupLabel?.(section.groupId, rows) ?? label;
+};
 
 export const DataTableRowActions = <TData,>({
   actions,
@@ -506,8 +616,8 @@ export const DataTableRowActions = <TData,>({
   );
 };
 
-const buildGroupedSections = <TData,>(
-  rows: Row<TData>[],
+const buildGroupedSections = <TData extends RowData>(
+  rows: DataTableRow<TData>[],
   fields: DataTableGroupingField<TData>[],
   depth = 0,
   parentKey = "",
@@ -517,7 +627,7 @@ const buildGroupedSections = <TData,>(
   }
 
   const [field, ...remainingFields] = fields;
-  const groups = new Map<string, Row<TData>[]>();
+  const groups = new Map<string, DataTableRow<TData>[]>();
 
   field.getGroupIds?.().forEach((groupId) => {
     groups.set(groupId, []);
@@ -553,7 +663,7 @@ const buildGroupedSections = <TData,>(
   });
 };
 
-const GroupHeaderRow = <TData,>({
+const GroupHeaderRow = <TData extends RowData>({
   collapsed,
   colSpan,
   onToggle,
@@ -564,17 +674,6 @@ const GroupHeaderRow = <TData,>({
   onToggle: () => void;
   section: GroupSection<TData>;
 }) => {
-  const label =
-    section.field.getGroupLabel?.(
-      section.groupId,
-      section.rows.map((row) => row.original),
-    ) ?? section.groupId;
-  const renderedLabel =
-    section.field.renderGroupLabel?.(
-      section.groupId,
-      section.rows.map((row) => row.original),
-    ) ?? label;
-
   return (
     <TableRow>
       <TableCell className="relative p-0" colSpan={colSpan} onClick={onToggle}>
@@ -589,7 +688,9 @@ const GroupHeaderRow = <TData,>({
           ) : (
             <ChevronDown className="size-4" />
           )}
-          <div className="min-w-0 flex-1 text-left">{renderedLabel}</div>
+          <div className="min-w-0 flex-1 text-left">
+            {getGroupLabels(section)}
+          </div>
           <Badge variant="secondary" className="ml-auto">
             {section.rows.length}
           </Badge>
@@ -604,7 +705,7 @@ const GroupHeaderRow = <TData,>({
   );
 };
 
-const GroupTableSection = <TData,>({
+const GroupTableSection = <TData extends RowData>({
   children,
   section,
 }: {
@@ -634,7 +735,7 @@ const GroupTableSection = <TData,>({
   );
 };
 
-const GroupHeaderCard = <TData,>({
+const GroupHeaderCard = <TData extends RowData>({
   collapsed,
   onToggle,
   section,
@@ -652,17 +753,6 @@ const GroupHeaderCard = <TData,>({
       groupId: section.groupId,
     },
   });
-
-  const label =
-    section.field.getGroupLabel?.(
-      section.groupId,
-      section.rows.map((row) => row.original),
-    ) ?? section.groupId;
-  const renderedLabel =
-    section.field.renderGroupLabel?.(
-      section.groupId,
-      section.rows.map((row) => row.original),
-    ) ?? label;
 
   return (
     <div
@@ -682,7 +772,7 @@ const GroupHeaderCard = <TData,>({
         ) : (
           <ChevronDown className="size-4" />
         )}
-        <div className="min-w-0 flex-1">{renderedLabel}</div>
+        <div className="min-w-0 flex-1">{getGroupLabels(section)}</div>
         <Badge variant="secondary" className="ml-auto">
           {section.rows.length}
         </Badge>
@@ -750,7 +840,7 @@ const DataTableGroupActions = ({
   );
 };
 
-const DataTableRow = <TData,>({
+const DataTableRow = <TData extends RowData>({
   canDrag,
   canReorder,
   dragLabel,
@@ -760,6 +850,7 @@ const DataTableRow = <TData,>({
   row,
   rowActions,
   rowActionsLabel,
+  table,
 }: {
   canDrag: boolean;
   canReorder: boolean;
@@ -767,9 +858,10 @@ const DataTableRow = <TData,>({
   indentDepth?: number | undefined;
   reorderHandleLabel?: string | undefined;
   onRowClick?: ((row: TData) => void) | undefined;
-  row: Row<TData>;
+  row: DataTableRow<TData>;
   rowActions?: readonly DataTableRowAction<TData>[] | undefined;
   rowActionsLabel?: string | undefined;
+  table: DataTableInstance<TData>;
 }) => {
   const sortable = useSortable({
     id: getSortableRowId(row.id),
@@ -785,7 +877,7 @@ const DataTableRow = <TData,>({
     disabled: !canDrag || canReorder,
     data: {
       type: "row",
-      row: row.original,
+      rowId: row.id,
       label: dragLabel,
     },
   });
@@ -858,37 +950,40 @@ const DataTableRow = <TData,>({
       {visibleCells.map((cell, index) => {
         const isLastCell = index === visibleCells.length - 1;
         return (
-          <TableCell
-            key={cell.id}
-            className={cn(
-              "align-center min-w-32 overflow-hidden [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0",
-              cell.column.columnDef.meta?.truncate
-                ? "whitespace-nowrap"
-                : "whitespace-normal",
-              rowActions &&
-                isLastCell &&
-                "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])>div]:mr-11",
+          <table.AppCell cell={cell} key={cell.id}>
+            {(appCell) => (
+              <TableCell
+                className={cn(
+                  "align-center min-w-32 overflow-hidden [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0",
+                  cell.column.columnDef.meta?.truncate
+                    ? "whitespace-nowrap"
+                    : "whitespace-normal",
+                  rowActions &&
+                    isLastCell &&
+                    "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])>div]:mr-11",
+                )}
+                style={
+                  index === 0 && firstCellIndent
+                    ? {
+                        paddingLeft: firstCellIndent,
+                        width: cell.column.getSize(),
+                      }
+                    : { width: cell.column.getSize() }
+                }
+              >
+                <div
+                  className={cn(
+                    "w-full max-w-full min-w-0 overflow-hidden break-words [&:has([data-slot=list-summary])]:line-clamp-none",
+                    cell.column.columnDef.meta?.truncate
+                      ? "truncate"
+                      : "line-clamp-3",
+                  )}
+                >
+                  <appCell.FlexRender />
+                </div>
+              </TableCell>
             )}
-            style={
-              index === 0 && firstCellIndent
-                ? {
-                    paddingLeft: firstCellIndent,
-                    width: cell.column.getSize(),
-                  }
-                : { width: cell.column.getSize() }
-            }
-          >
-            <div
-              className={cn(
-                "w-full max-w-full min-w-0 overflow-hidden break-words [&:has([data-slot=list-summary])]:line-clamp-none",
-                cell.column.columnDef.meta?.truncate
-                  ? "truncate"
-                  : "line-clamp-3",
-              )}
-            >
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </div>
-          </TableCell>
+          </table.AppCell>
         );
       })}
       {rowActions ? (
@@ -906,7 +1001,7 @@ const DataTableRow = <TData,>({
   );
 };
 
-const DataTableGalleryCard = <TData,>({
+const DataTableGalleryCard = <TData extends RowData>({
   canDrag,
   dragLabel,
   gallery,
@@ -920,17 +1015,17 @@ const DataTableGalleryCard = <TData,>({
   dragLabel?: string | undefined;
   gallery?: DataTableGalleryConfig | undefined;
   onRowClick?: ((row: TData) => void) | undefined;
-  row: Row<TData>;
+  row: DataTableRow<TData>;
   rowActions?: readonly DataTableRowAction<TData>[] | undefined;
   rowActionsLabel?: string | undefined;
-  table: TanstackTable<TData>;
+  table: DataTableInstance<TData>;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: getRowDragId(row.id),
     disabled: !canDrag,
     data: {
       type: "row",
-      row: row.original,
+      rowId: row.id,
       label: dragLabel,
     },
   });
@@ -1073,14 +1168,26 @@ const DataTableGalleryCard = <TData,>({
 const extractTextFromElement = (element: unknown): string | null => {
   if (typeof element === "string") return element;
   if (typeof element === "number") return String(element);
-  if (!element || typeof element !== "object") return null;
-  const props = (element as any).props;
-  if (!props) return null;
+  if (!isValidElement<{ children?: unknown; title?: unknown }>(element)) {
+    return null;
+  }
+  const { props } = element;
   if (typeof props.title === "string") return props.title;
   return extractTextFromElement(props.children);
 };
 
-const getHeaderName = (header: Header<any, unknown>): string => {
+const getColumnLabels = <TData extends RowData>(
+  table: DataTableInstance<TData>,
+) =>
+  new Map(
+    table
+      .getFlatHeaders()
+      .map((header) => [header.column.id, getHeaderName(header)]),
+  );
+
+const getHeaderName = <TData extends RowData>(
+  header: DataTableHeader<TData, unknown>,
+): string => {
   const columnDef = header.column.columnDef;
   if (typeof columnDef.header === "function") {
     const headerContext = columnDef.header(header.getContext());
@@ -1093,32 +1200,18 @@ const getHeaderName = (header: Header<any, unknown>): string => {
   return String(columnDef.header ?? header.id);
 };
 
-export const getHeaderNames = (headers: Header<any, unknown>[]): string[] =>
-  headers.map((header) => getHeaderName(header));
+export const getHeaderNames = <TData extends RowData>(
+  headers: DataTableHeader<TData, unknown>[],
+): string[] => headers.map((header) => getHeaderName(header));
 
-const getColumnDisplayName = <TData,>(
-  table: TanstackTable<TData>,
+const getColumnDisplayName = <TData extends RowData>(
+  table: DataTableInstance<TData>,
   columnId: string,
 ) => {
   const header = table
     .getFlatHeaders()
     .find((currentHeader) => currentHeader.column.id === columnId);
   return header ? getHeaderName(header) : columnId;
-};
-
-const renderHeader = <TData, TValue>(header: Header<TData, TValue>) => {
-  if (header.isPlaceholder) return null;
-
-  const content = flexRender(
-    header.column.columnDef.header,
-    header.getContext(),
-  );
-
-  return typeof content === "string" || typeof content === "number" ? (
-    <div className="flex h-12 items-center px-2 text-sm">{content}</div>
-  ) : (
-    content
-  );
 };
 
 export type CsvValue = string | number | boolean | null | undefined;
@@ -1181,9 +1274,9 @@ export const downloadJson = (data: unknown, fileName = "data.json") => {
   requestAnimationFrame(() => window.URL.revokeObjectURL(url));
 };
 
-const exportTableToCsv = <TData,>(
-  table: TanstackTable<TData>,
-  rows: Row<TData>[],
+const exportTableToCsv = <TData extends RowData>(
+  table: DataTableInstance<TData>,
+  rows: DataTableRow<TData>[],
   fileName = "data.csv",
 ): void => {
   const exportableColumns = table.getVisibleLeafColumns();
@@ -1200,9 +1293,9 @@ const exportTableToCsv = <TData,>(
   downloadCsv(headerNames, data, fileName);
 };
 
-const exportTableToJson = <TData,>(
-  table: TanstackTable<TData>,
-  rows: Row<TData>[],
+const exportTableToJson = <TData extends RowData>(
+  table: DataTableInstance<TData>,
+  rows: DataTableRow<TData>[],
   fileName = "data.json",
 ): void => {
   const exportableColumns = table.getVisibleLeafColumns();
@@ -1215,7 +1308,207 @@ const exportTableToJson = <TData,>(
   downloadJson(data, fileName);
 };
 
-export function DataTable<TData, TValue>({
+const DataTableToolbar = <TData extends RowData>({
+  activeGrouping,
+  exportBaseName,
+  exportRows,
+  grouping,
+  labels,
+  onRefresh,
+  onToggleGrouping,
+  onViewChange,
+  showColumnVisibility,
+  showExport,
+  showGallery,
+  showSearch,
+  showSorting,
+  table,
+  view,
+}: {
+  activeGrouping: readonly string[];
+  exportBaseName: string;
+  exportRows: DataTableRow<TData>[];
+  grouping?: DataTableGrouping<TData> | undefined;
+  labels: DataTableMessages;
+  onRefresh?: (() => void) | undefined;
+  onToggleGrouping: (fieldId: string, enabled: boolean) => void;
+  onViewChange: (view: DataTableView) => void;
+  showColumnVisibility: boolean;
+  showExport: boolean;
+  showGallery: boolean;
+  showSearch: boolean;
+  showSorting: boolean;
+  table: DataTableInstance<TData>;
+  view: DataTableView;
+}) => {
+  const [refreshSpinCount, setRefreshSpinCount] = useState(0);
+  const [searchInput, setSearchInput] = useState(table.state.globalFilter);
+  const hasToolbar = Boolean(
+    showSearch ||
+    grouping?.fields.length ||
+    showSorting ||
+    showGallery ||
+    showColumnVisibility ||
+    onRefresh ||
+    showExport,
+  );
+
+  useEffect(() => {
+    setSearchInput(table.state.globalFilter);
+  }, [table.state.globalFilter]);
+
+  if (!hasToolbar) return null;
+
+  return (
+    <div className="flex flex-col gap-3 pb-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        {showSearch ? (
+          <div className="relative w-full min-w-0 flex-1 sm:min-w-sm">
+            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              className="px-9"
+              onChange={(event) => {
+                setSearchInput(event.target.value);
+                table.setGlobalFilter(event.target.value);
+              }}
+              placeholder={labels.filter}
+              value={searchInput}
+            />
+            {searchInput ? (
+              <Button
+                aria-label={labels.filter}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2 active:!-translate-y-1/2"
+                onClick={() => {
+                  setSearchInput("");
+                  table.setGlobalFilter("");
+                }}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <div />
+        )}
+        <div className="-m-1 flex items-center gap-2 overflow-x-auto p-1">
+          {grouping?.fields.length ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    aria-label={labels.groupBy}
+                    className="h-9"
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Rows3 />
+                    <span className="hidden sm:inline">{labels.groupBy}</span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-[200px]">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>{labels.groupBy}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {grouping.fields.map((field) => (
+                    <DropdownMenuCheckboxItem
+                      checked={activeGrouping.includes(field.id)}
+                      key={field.id}
+                      onCheckedChange={(value) =>
+                        onToggleGrouping(field.id, !!value)
+                      }
+                    >
+                      {field.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+          {showSorting ? (
+            <DataTableSortDropdown messages={labels} table={table} />
+          ) : null}
+          {showGallery ? (
+            <DataTableDisplayModeSwitch
+              messages={labels}
+              onChange={onViewChange}
+              value={view}
+            />
+          ) : null}
+          {showColumnVisibility ? (
+            <DataTableViewOptions messages={labels} table={table} />
+          ) : null}
+          {onRefresh ? (
+            <Button
+              aria-label={labels.refresh}
+              className="h-9"
+              onClick={() => {
+                setRefreshSpinCount((count) => count + 1);
+                onRefresh();
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <RefreshCw
+                className={cn(
+                  refreshSpinCount > 0 && "animate-[spin_500ms_ease-in-out_1]",
+                )}
+                key={refreshSpinCount}
+              />
+              <span className="hidden sm:inline">{labels.refresh}</span>
+            </Button>
+          ) : null}
+          {showExport ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    aria-label={labels.export}
+                    className="h-9"
+                    disabled={exportRows.length === 0}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Download />
+                    <span className="hidden sm:inline">{labels.export}</span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-[180px]">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>{labels.export}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() =>
+                      exportTableToCsv(table, exportRows, exportBaseName)
+                    }
+                  >
+                    <FileText />
+                    {labels.exportCsv}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      exportTableToJson(table, exportRows, exportBaseName)
+                    }
+                  >
+                    <FileJson />
+                    {labels.exportJson}
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export function DataTable<TData extends RowData>({
   columns,
   data,
   state,
@@ -1236,7 +1529,7 @@ export function DataTable<TData, TValue>({
   reordering,
   serverPagination,
   features,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const labels = dataTableMessages(messages);
   const isLoading = state?.loading ?? legacyIsLoading ?? false;
   const emptyContent =
@@ -1288,7 +1581,7 @@ export function DataTable<TData, TValue>({
   const location = useRouterState({
     select: (state) => state.location,
   });
-  const search = location.search as TableParams | undefined;
+  const search = Option.getOrUndefined(decodeTableSearch(location.search));
   const pathname = location.pathname;
   const resolvedRouteFrom = routeFrom ?? from;
   const [storagePath] = useState(() => resolvedRouteFrom ?? pathname);
@@ -1366,23 +1659,12 @@ export function DataTable<TData, TValue>({
   const [storedView, setStoredView] = useAtom(viewAtom);
   const currentView: DataTableView = showGallery ? storedView : "table";
   const isGalleryView = currentView === "gallery";
-  const hasToolbar = Boolean(
-    showSearch ||
-    grouping?.fields.length ||
-    showSorting ||
-    showGallery ||
-    showColumnVisibility ||
-    onRefresh ||
-    showExport,
-  );
 
   const [rowSelection, setRowSelection] = useState({});
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<string, boolean>
   >({});
   const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
-  const [refreshSpinCount, setRefreshSpinCount] = useState(0);
-  const [searchInput, setSearchInput] = useState(globalFilter);
   const availableGroupFieldIds =
     grouping?.fields.map((field) => field.id) ?? [];
   const activeGrouping =
@@ -1398,16 +1680,13 @@ export function DataTable<TData, TValue>({
   );
 
   const updateTableSearch = (
-    updater: (
-      current: TableParams & Record<string, unknown>,
-    ) => Record<string, unknown>,
+    updater: (current: Record<string, unknown>) => Record<string, unknown>,
     options?: { replace?: boolean },
   ) => {
     if (controlledSearch || onSearchChange || searchState === "local") {
-      const nextSearch = updater(
-        (controlledSearch ?? localSearch ?? {}) as TableParams &
-          Record<string, unknown>,
-      ) as TableParams;
+      const nextSearch = Schema.decodeUnknownSync(TableSearchSchema)(
+        updater(controlledSearch ?? localSearch),
+      );
 
       if (onSearchChange) {
         onSearchChange(nextSearch);
@@ -1422,20 +1701,14 @@ export function DataTable<TData, TValue>({
       replace: options?.replace ?? false,
       resetScroll: false,
       search: (current: Record<string, unknown>) =>
-        updater((current ?? {}) as TableParams & Record<string, unknown>),
+        validateTableSearchUpdate(updater(current)),
     });
   };
 
-  const table = useReactTable({
+  const table = useDataTable({
+    key: tableStorageId,
     data,
     columns,
-    defaultColumn: {
-      minSize: 128,
-      size: 224,
-      maxSize: 640,
-    },
-    columnResizeMode: "onChange",
-    enableColumnResizing: true,
     onColumnSizingChange: (updater) => {
       const nextColumnSizing =
         typeof updater === "function" ? updater(columnSizing) : updater;
@@ -1460,9 +1733,7 @@ export function DataTable<TData, TValue>({
     },
     onSortingChange: (updater) => {
       const newSorting =
-        typeof updater === "function"
-          ? updater([...sorting] as SortingState)
-          : updater;
+        typeof updater === "function" ? updater([...sorting]) : updater;
       if (
         sorting.length === newSorting.length &&
         sorting.every(
@@ -1487,7 +1758,6 @@ export function DataTable<TData, TValue>({
         page: 0,
       }));
     },
-    getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: (updater) => {
       const newGlobalFilter =
         typeof updater === "function" ? updater(globalFilter) : updater;
@@ -1504,14 +1774,12 @@ export function DataTable<TData, TValue>({
       );
     },
     ...(isServerMode ? { manualSorting: true } : {}),
-    ...(!isServerMode ? { getSortedRowModel: getSortedRowModel() } : {}),
     ...(isServerMode ? { manualFiltering: true } : {}),
-    ...(!isServerMode ? { getFilteredRowModel: getFilteredRowModel() } : {}),
     ...(paginationFeature !== false && paginationFeature.mode === "server"
       ? { manualPagination: true, rowCount: paginationFeature.rowCount }
       : paginationFeature === false
-        ? {}
-        : { getPaginationRowModel: getPaginationRowModel() }),
+        ? { manualPagination: true }
+        : {}),
     autoResetPageIndex: false,
     onColumnVisibilityChange: (updater) => {
       const nextColumnVisibility =
@@ -1521,7 +1789,7 @@ export function DataTable<TData, TValue>({
     },
     onRowSelectionChange: setRowSelection,
     state: {
-      sorting: sorting as SortingState,
+      sorting,
       pagination,
       globalFilter,
       columnVisibility,
@@ -1529,10 +1797,6 @@ export function DataTable<TData, TValue>({
       rowSelection,
     },
   });
-
-  useEffect(() => {
-    setSearchInput(globalFilter);
-  }, [globalFilter]);
 
   const activeGroupingFields = useMemo(
     () =>
@@ -1544,7 +1808,7 @@ export function DataTable<TData, TValue>({
     [activeGrouping, grouping],
   );
   const hasActiveGrouping = activeGroupingFields.length > 0;
-  const filteredRows = table.getPrePaginationRowModel().rows;
+  const filteredRows = table.getPrePaginatedRowModel().rows;
   const exportRows =
     exportFeature && exportFeature.scope === "filteredRows"
       ? filteredRows
@@ -1563,8 +1827,6 @@ export function DataTable<TData, TValue>({
   const canDragRows = activeGroupingFields.some(
     (field) => !!field.onMoveToGroup,
   );
-  const hasExportableRows = exportRows.length > 0;
-
   const addGroupingField = (fieldId: string) => {
     if (activeGrouping.includes(fieldId)) return;
     updateTableSearch((current) => ({
@@ -1623,7 +1885,7 @@ export function DataTable<TData, TValue>({
     </div>
   );
 
-  const renderGalleryRows = (rows: Row<TData>[], canDrag: boolean) => (
+  const renderGalleryRows = (rows: DataTableRow<TData>[], canDrag: boolean) => (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {rows.map((row) => (
         <DataTableGalleryCard
@@ -1669,6 +1931,7 @@ export function DataTable<TData, TValue>({
                   row={row}
                   rowActions={rowActions}
                   rowActionsLabel={rowActionsLabel}
+                  table={table}
                 />
               ))
             ) : (
@@ -1724,233 +1987,81 @@ export function DataTable<TData, TValue>({
       );
     });
 
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveDragLabel(null);
+    if (!over) return;
+
+    const reorderData = decodeRowReorderDragData(active.data.current);
+    if (Option.isSome(reorderData) && reordering && canReorderRows) {
+      const sourceRowId = String(active.id).replace(/^sortable-row:/, "");
+      const targetRowId = String(over.id).replace(/^sortable-row:/, "");
+      const currentIndex = bodyRows.findIndex((row) => row.id === sourceRowId);
+      const nextIndex = bodyRows.findIndex((row) => row.id === targetRowId);
+
+      if (
+        currentIndex !== -1 &&
+        nextIndex !== -1 &&
+        currentIndex !== nextIndex
+      ) {
+        reordering.onReorder(
+          arrayMove(
+            bodyRows.map((row) => row.original),
+            currentIndex,
+            nextIndex,
+          ),
+        );
+      }
+      return;
+    }
+
+    const rowData = decodeRowDragData(active.data.current);
+    const groupData = decodeGroupDropData(over.data.current);
+    if (Option.isNone(rowData) || Option.isNone(groupData)) return;
+
+    const row = bodyRows.find(({ id }) => id === rowData.value.rowId)?.original;
+    const field = grouping?.fields.find(
+      (currentField) => currentField.id === groupData.value.fieldId,
+    );
+    const nextGroupId = groupData.value.groupId;
+
+    if (row && field?.onMoveToGroup && field.getGroupId(row) !== nextGroupId) {
+      field.onMoveToGroup(row, nextGroupId);
+    }
+  };
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    const rowData = decodeRowDragData(active.data.current);
+    setActiveDragLabel(
+      Option.isSome(rowData) ? (rowData.value.label ?? null) : null,
+    );
+  };
+
   return (
     <div className="w-full max-w-full min-w-0 rounded-md">
-      {hasToolbar ? (
-        <div className="flex flex-col gap-3 pb-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            {showSearch ? (
-              <div className="relative w-full min-w-0 flex-1 sm:min-w-sm">
-                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <Input
-                  className="px-9"
-                  onChange={(event) => {
-                    setSearchInput(event.target.value);
-                    table.setGlobalFilter(event.target.value);
-                  }}
-                  placeholder={labels.filter}
-                  value={searchInput}
-                />
-                {searchInput ? (
-                  <Button
-                    aria-label={labels.filter}
-                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2 active:!-translate-y-1/2"
-                    onClick={() => {
-                      setSearchInput("");
-                      table.setGlobalFilter("");
-                    }}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <X className="size-4" />
-                  </Button>
-                ) : null}
-              </div>
-            ) : (
-              <div />
-            )}
-            <div className="-m-1 flex items-center gap-2 overflow-x-auto p-1">
-              {grouping?.fields.length ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        aria-label={labels.groupBy}
-                        className="h-9"
-                        size="sm"
-                        variant="outline"
-                      >
-                        <Rows3 />
-                        <span className="hidden sm:inline">
-                          {labels.groupBy}
-                        </span>
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="w-[200px]">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>{labels.groupBy}</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {grouping.fields.map((field) => (
-                        <DropdownMenuCheckboxItem
-                          checked={activeGrouping.includes(field.id)}
-                          key={field.id}
-                          onCheckedChange={(value) =>
-                            toggleGroupingField(field.id, !!value)
-                          }
-                        >
-                          {field.label}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-              {showSorting ? (
-                <DataTableSortDropdown messages={labels} table={table} />
-              ) : null}
-              {showGallery ? (
-                <DataTableDisplayModeSwitch
-                  messages={labels}
-                  onChange={setView}
-                  value={currentView}
-                />
-              ) : null}
-              {showColumnVisibility ? (
-                <DataTableViewOptions messages={labels} table={table} />
-              ) : null}
-              {onRefresh ? (
-                <Button
-                  aria-label={labels.refresh}
-                  className="h-9"
-                  onClick={() => {
-                    setRefreshSpinCount((count) => count + 1);
-                    onRefresh();
-                  }}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <RefreshCw
-                    className={cn(
-                      refreshSpinCount > 0 &&
-                        "animate-[spin_500ms_ease-in-out_1]",
-                    )}
-                    key={refreshSpinCount}
-                  />
-                  <span className="hidden sm:inline">{labels.refresh}</span>
-                </Button>
-              ) : null}
-              {showExport ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        aria-label={labels.export}
-                        className="h-9"
-                        disabled={!hasExportableRows}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <Download />
-                        <span className="hidden sm:inline">
-                          {labels.export}
-                        </span>
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="w-[180px]">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>{labels.export}</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() =>
-                          exportTableToCsv(table, exportRows, exportBaseName)
-                        }
-                      >
-                        <FileText />
-                        {labels.exportCsv}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          exportTableToJson(table, exportRows, exportBaseName)
-                        }
-                      >
-                        <FileJson />
-                        {labels.exportJson}
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <DataTableToolbar
+        activeGrouping={activeGrouping}
+        exportBaseName={exportBaseName}
+        exportRows={exportRows}
+        grouping={grouping}
+        labels={labels}
+        onRefresh={onRefresh}
+        onToggleGrouping={toggleGroupingField}
+        onViewChange={setView}
+        showColumnVisibility={showColumnVisibility}
+        showExport={showExport}
+        showGallery={showGallery}
+        showSearch={showSearch}
+        showSorting={showSorting}
+        table={table}
+        view={currentView}
+      />
       <DndContext
         onDragCancel={() => setActiveDragLabel(null)}
-        onDragEnd={({ active, over }) => {
-          setActiveDragLabel(null);
-
-          if (!over) {
-            return;
-          }
-
-          const dragType = active.data.current?.type;
-
-          if (dragType === "row-reorder" && reordering && canReorderRows) {
-            const sourceRowId = String(active.id).replace(/^sortable-row:/, "");
-            const targetRowId = String(over.id).replace(/^sortable-row:/, "");
-
-            if (sourceRowId === targetRowId) {
-              return;
-            }
-
-            const currentIndex = bodyRows.findIndex(
-              (row) => row.id === sourceRowId,
-            );
-            const nextIndex = bodyRows.findIndex(
-              (row) => row.id === targetRowId,
-            );
-
-            if (currentIndex === -1 || nextIndex === -1) {
-              return;
-            }
-
-            const rows = bodyRows.map((row) => row.original);
-            const [rowToMove] = rows.splice(currentIndex, 1);
-            if (!rowToMove) return;
-
-            rows.splice(nextIndex, 0, rowToMove);
-            reordering.onReorder(rows);
-            return;
-          }
-
-          if (
-            dragType !== "row" ||
-            over.data.current?.type !== "group-target"
-          ) {
-            return;
-          }
-
-          const row = active.data.current?.row as TData | undefined;
-          const field = grouping?.fields.find(
-            (currentField) => currentField.id === over.data.current?.fieldId,
-          );
-          const nextGroupId = String(over.data.current?.groupId ?? "");
-
-          if (!row || !field?.onMoveToGroup) {
-            return;
-          }
-
-          const currentGroupId = field.getGroupId(row);
-          if (currentGroupId === nextGroupId) {
-            return;
-          }
-
-          field.onMoveToGroup(row, nextGroupId);
-        }}
-        onDragStart={({ active }) => {
-          const label = active.data.current?.label;
-          const dragType = active.data.current?.type;
-          setActiveDragLabel(
-            dragType === "row" && typeof label === "string" ? label : null,
-          );
-        }}
+        onDragEnd={handleDragEnd}
+        onDragStart={handleDragStart}
         sensors={sensors}
       >
-        <DataTableViewContext.Provider value={currentView}>
+        <table.AppTable>
           {isGalleryView ? (
             hasActiveGrouping ? (
               groupedSections.length > 0 ? (
@@ -1980,35 +2091,38 @@ export function DataTable<TData, TValue>({
                         {canReorderRows ? (
                           <TableHead className="w-10 min-w-10 p-0" />
                         ) : null}
-                        {headerGroup.headers.map((header) => {
-                          return (
-                            <TableHead
-                              key={header.id}
-                              className="relative h-12 min-w-32 p-0"
-                              style={{ width: header.getSize() }}
-                            >
-                              {renderHeader(header)}
-                              {header.column.getCanResize() ? (
-                                <button
-                                  aria-label={labels.resizeColumn(
-                                    getHeaderName(header),
-                                  )}
-                                  className={cn(
-                                    "hover:bg-primary/60 absolute inset-y-0 right-0 z-10 w-1 cursor-col-resize touch-none bg-transparent p-0 select-none",
-                                    header.column.getIsResizing() &&
-                                      "bg-primary",
-                                  )}
-                                  type="button"
-                                  onDoubleClick={() =>
-                                    header.column.resetSize()
-                                  }
-                                  onMouseDown={header.getResizeHandler()}
-                                  onTouchStart={header.getResizeHandler()}
-                                />
-                              ) : null}
-                            </TableHead>
-                          );
-                        })}
+                        {headerGroup.headers.map((header) => (
+                          <table.AppHeader header={header} key={header.id}>
+                            {(appHeader) => (
+                              <TableHead
+                                className="relative h-12 min-w-32 p-0"
+                                style={{ width: header.getSize() }}
+                              >
+                                {header.isPlaceholder ? null : (
+                                  <appHeader.FlexRender />
+                                )}
+                                {header.column.getCanResize() ? (
+                                  <button
+                                    aria-label={labels.resizeColumn(
+                                      getHeaderName(header),
+                                    )}
+                                    className={cn(
+                                      "hover:bg-primary/60 absolute inset-y-0 right-0 z-10 w-1 cursor-col-resize touch-none bg-transparent p-0 select-none",
+                                      header.column.getIsResizing() &&
+                                        "bg-primary",
+                                    )}
+                                    type="button"
+                                    onDoubleClick={() =>
+                                      header.column.resetSize()
+                                    }
+                                    onMouseDown={header.getResizeHandler()}
+                                    onTouchStart={header.getResizeHandler()}
+                                  />
+                                ) : null}
+                              </TableHead>
+                            )}
+                          </table.AppHeader>
+                        ))}
                         {rowActions ? (
                           <TableHead className="sticky right-0 z-20 w-0 min-w-0 p-0" />
                         ) : null}
@@ -2046,6 +2160,7 @@ export function DataTable<TData, TValue>({
                                 row={row}
                                 rowActions={rowActions}
                                 rowActionsLabel={rowActionsLabel}
+                                table={table}
                               />
                             ))}
                           </SortableContext>
@@ -2059,6 +2174,7 @@ export function DataTable<TData, TValue>({
                               row={row}
                               rowActions={rowActions}
                               rowActionsLabel={rowActionsLabel}
+                              table={table}
                             />
                           ))
                         )
@@ -2079,7 +2195,7 @@ export function DataTable<TData, TValue>({
               </div>
             ) : null}
           </DragOverlay>
-        </DataTableViewContext.Provider>
+        </table.AppTable>
       </DndContext>
       {showPagination && !hasActiveGrouping && (
         <div className="p-2">
@@ -2122,7 +2238,10 @@ function DataTableDisplayModeSwitch({
       <DropdownMenuContent align="end" className="w-[160px]">
         <DropdownMenuRadioGroup
           value={value}
-          onValueChange={(v) => onChange(v as DataTableView)}
+          onValueChange={(nextValue) => {
+            const view = decodeDataTableView(nextValue);
+            if (Option.isSome(view)) onChange(view.value);
+          }}
         >
           <DropdownMenuRadioItem value="table">
             <Rows3 />
@@ -2138,26 +2257,18 @@ function DataTableDisplayModeSwitch({
   );
 }
 
-function DataTableSortDropdown<TData>({
+function DataTableSortDropdown<TData extends RowData>({
   messages,
   table,
 }: {
   messages: DataTableMessages;
-  table: TanstackTable<TData>;
+  table: DataTableInstance<TData>;
 }) {
-  const sorting = table.getState().sorting;
+  const sorting = table.state.sorting;
   const sortableColumns = table
     .getAllColumns()
     .filter((column) => column.getCanSort());
-  const columnLabels = useMemo(
-    () =>
-      new Map(
-        table
-          .getFlatHeaders()
-          .map((header) => [header.column.id, getHeaderName(header)]),
-      ),
-    [table],
-  );
+  const columnLabels = getColumnLabels(table);
 
   if (sortableColumns.length === 0) {
     return null;
@@ -2233,22 +2344,14 @@ function DataTableSortDropdown<TData>({
   );
 }
 
-function DataTableViewOptions<TData>({
+function DataTableViewOptions<TData extends RowData>({
   messages,
   table,
 }: {
   messages: DataTableMessages;
-  table: TanstackTable<TData>;
+  table: DataTableInstance<TData>;
 }) {
-  const columnLabels = useMemo(
-    () =>
-      new Map(
-        table
-          .getFlatHeaders()
-          .map((header) => [header.column.id, getHeaderName(header)]),
-      ),
-    [table],
-  );
+  const columnLabels = getColumnLabels(table);
   const columns = table
     .getAllColumns()
     .filter(
@@ -2295,14 +2398,14 @@ function DataTableViewOptions<TData>({
   );
 }
 
-interface DataTablePaginationProps<TData> {
+interface DataTablePaginationProps<TData extends RowData> {
   messages?: DataTableMessageOverrides;
   pageSizes?: readonly number[] | undefined;
   rowCount?: number | undefined;
-  table: TanstackTable<TData>;
+  table: DataTableInstance<TData>;
 }
 
-export function DataTablePagination<TData>({
+export function DataTablePagination<TData extends RowData>({
   messages,
   pageSizes = [10, 20, 30, 40, 50],
   rowCount,
@@ -2327,9 +2430,9 @@ export function DataTablePagination<TData>({
       }}
       onPageChange={(page) => table.setPageIndex(page)}
       onPageSizeChange={(pageSize) => table.setPageSize(pageSize)}
-      page={table.getState().pagination.pageIndex}
+      page={table.state.pagination.pageIndex}
       pageCount={table.getPageCount()}
-      pageSize={table.getState().pagination.pageSize}
+      pageSize={table.state.pagination.pageSize}
       pageSizes={pageSizes}
       selectedRows={selectedRows}
       totalRows={totalRows}
@@ -2546,15 +2649,15 @@ export function DataTableListSummary({
 }
 
 interface DataTableColumnHeaderProps<
-  TData,
+  TData extends RowData,
   TValue,
 > extends HTMLAttributes<HTMLDivElement> {
-  column: Column<TData, TValue>;
+  column: DataTableColumn<TData, TValue>;
   messages?: DataTableMessageOverrides;
   title: string;
 }
 
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TData extends RowData, TValue>({
   column,
   messages,
   title,
