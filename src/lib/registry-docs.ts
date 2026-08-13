@@ -1,10 +1,17 @@
 import introductionEn from "@/content/docs/en/introduction.mdx?raw";
 import notificationsEn from "@/content/docs/en/notifications.mdx?raw";
+import technologiesEn from "@/content/docs/en/technologies.mdx?raw";
 import introductionFr from "@/content/docs/fr/introduction.mdx?raw";
 import notificationsFr from "@/content/docs/fr/notifications.mdx?raw";
+import technologiesFr from "@/content/docs/fr/technologies.mdx?raw";
 import { createMdxDocsSource, makeDocs, type DocsSection } from "@/lib/docs";
 import { krakstackSites } from "@/lib/krakstack-sites";
-import { getRegistryGroup, registryItems } from "@/lib/registry";
+import {
+  getRegistryGroup,
+  getRegistryItemMeta,
+  registryItems,
+} from "@/lib/registry";
+import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 
 const locales = ["en", "fr"] as const;
@@ -41,12 +48,19 @@ const notificationFiles = {
   fr: ["../content/docs/fr/notifications.mdx", notificationsFr],
 } as const;
 
+const technologyFiles = {
+  en: ["../content/docs/en/technologies.mdx", technologiesEn],
+  fr: ["../content/docs/fr/technologies.mdx", technologiesFr],
+} as const;
+
 const files = Object.fromEntries([
   ...locales.map((locale) => introductionFiles[locale]),
+  ...locales.map((locale) => technologyFiles[locale]),
   ...locales.map((locale) => notificationFiles[locale]),
   ...locales.flatMap((locale) =>
     registryItems.map((item, index) => {
       const section = sectionByGroup[getRegistryGroup(item)];
+      const meta = getRegistryItemMeta(item);
       const title = item.title ?? item.name;
       const content = withInstallSection(
         item.docs ?? `## Overview\n\n${item.description}`,
@@ -69,6 +83,12 @@ const files = Object.fromEntries([
         `locale: ${locale}`,
         `section: ${section}`,
         "type: reference",
+        ...(meta?.createdAt
+          ? [`createdAt: ${JSON.stringify(meta.createdAt.toISOString())}`]
+          : []),
+        ...(meta?.updatedAt
+          ? [`updatedAt: ${JSON.stringify(meta.updatedAt.toISOString())}`]
+          : []),
         "---",
         "",
         `# ${title}`,
@@ -157,6 +177,16 @@ export const registryDocs = makeDocs({
       locale === "fr"
         ? "Composants, bibliothèques et services prêts à installer."
         : "Installable components, libraries, and services.",
+    newLabel: m.registry_new({}, { locale: locale === "fr" ? "fr" : "en" }),
+    lastUpdated: (date) =>
+      m.registry_last_updated(
+        {
+          date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
+            date,
+          ),
+        },
+        { locale: locale === "fr" ? "fr" : "en" },
+      ),
     sectionLabel: (section) =>
       sectionLabels[locale === "fr" ? "fr" : "en"][
         section as keyof (typeof sectionLabels)["en"]

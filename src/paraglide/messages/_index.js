@@ -14,6 +14,8 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Registry_Search_DescriptionInputs */
 /** @typedef {{}} Registry_Search_Input_PlaceholderInputs */
 /** @typedef {{}} Registry_Search_EmptyInputs */
+/** @typedef {{}} Registry_NewInputs */
+/** @typedef {{ date: NonNullable<unknown> }} Registry_Last_UpdatedInputs */
 /** @typedef {{}} Table_Clear_SearchInputs */
 /** @typedef {{}} Home_EyebrowInputs */
 /** @typedef {{}} Home_TitleInputs */
@@ -274,6 +276,34 @@ export const registry_search_empty = /** @type {((inputs?: Registry_Search_Empty
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.registry_search_empty(inputs)
 	return __fr.registry_search_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "New" |
+*
+* @param {Registry_NewInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const registry_new = /** @type {((inputs?: Registry_NewInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Registry_NewInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.registry_new(inputs)
+	return __fr.registry_new(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Last updated {date}" |
+*
+* @param {Registry_Last_UpdatedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const registry_last_updated = /** @type {((inputs: Registry_Last_UpdatedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Registry_Last_UpdatedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.registry_last_updated(inputs)
+	return __fr.registry_last_updated(inputs)
 });
 /**
 * | output |

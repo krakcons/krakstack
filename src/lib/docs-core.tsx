@@ -45,6 +45,24 @@ export const DocsPageType = Schema.Literals([
 
 export type DocsPageType = typeof DocsPageType.Type;
 
+const DocsDate = Schema.String.pipe(
+  Schema.check(
+    Schema.makeFilter((date) =>
+      Number.isNaN(new Date(date).getTime())
+        ? "Expected a valid date"
+        : undefined,
+    ),
+  ),
+);
+const NEW_DOCS_PAGE_DAYS = 14;
+
+const isDocsPageNew = (createdAt: string | undefined, now = new Date()) => {
+  if (!createdAt) return false;
+
+  const age = now.getTime() - new Date(createdAt).getTime();
+  return age >= 0 && age < NEW_DOCS_PAGE_DAYS * 24 * 60 * 60 * 1000;
+};
+
 export const DocsFrontmatter = Schema.Struct({
   slug: Schema.String,
   path: Schema.String,
@@ -55,6 +73,8 @@ export const DocsFrontmatter = Schema.Struct({
   locale: Schema.String,
   section: DocsSection,
   type: DocsPageType,
+  createdAt: Schema.optional(DocsDate),
+  updatedAt: Schema.optional(DocsDate),
   legacySlugs: Schema.optional(Schema.Array(Schema.String)),
 }).annotate({ identifier: "DocsFrontmatter" });
 
@@ -243,6 +263,8 @@ const validateDocsPages = (
           page.section !== localized.section ||
           page.type !== localized.type ||
           page.icon !== localized.icon ||
+          page.createdAt !== localized.createdAt ||
+          page.updatedAt !== localized.updatedAt ||
           JSON.stringify(page.legacySlugs ?? []) !==
             JSON.stringify(localized.legacySlugs ?? [])
         ) {
@@ -548,6 +570,8 @@ export type DocsRouteMessages = {
   notFoundTitle: string;
   notFoundDescription: string;
   notFoundAction: string;
+  newLabel: string;
+  lastUpdated: (date: Date) => string;
   sectionLabel: (section: DocsSection) => string;
   pageTypeLabel: (type: DocsPageType) => string;
 };
@@ -627,6 +651,9 @@ const messages = {
     notFoundDescription:
       "The requested documentation page does not exist or has moved.",
     notFoundAction: "Return to documentation",
+    newLabel: "New",
+    lastUpdated: (date) =>
+      `Last updated ${new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(date)}`,
     sectionLabel: (section) => defaultSectionLabel("en", section),
     pageTypeLabel: (type) => docsPageTypeMessages.en[type],
   },
@@ -655,6 +682,9 @@ const messages = {
     notFoundDescription:
       "La page de documentation demandée n’existe pas ou a été déplacée.",
     notFoundAction: "Retourner à la documentation",
+    newLabel: "Nouveau",
+    lastUpdated: (date) =>
+      `Dernière mise à jour le ${new Intl.DateTimeFormat("fr", { dateStyle: "long" }).format(date)}`,
     sectionLabel: (section) => defaultSectionLabel("fr", section),
     pageTypeLabel: (type) => docsPageTypeMessages.fr[type],
   },
@@ -994,6 +1024,9 @@ export const DocsLayout = ({
       label: () => item.title,
       href: item.path,
       icon: item.icon ? iconFor(item.icon) : EmptyIcon,
+      ...(isDocsPageNew(item.createdAt)
+        ? { badge: () => resolvedMessages.newLabel }
+        : {}),
     })),
   }));
 
@@ -1080,6 +1113,11 @@ export const DocsHeader = ({ docs, resolution }: DocsPageSectionProps) => {
       <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-7">
         {page.description}
       </p>
+      {page.updatedAt ? (
+        <p className="text-muted-foreground mt-3 text-sm">
+          {resolvedMessages.lastUpdated(new Date(page.updatedAt))}
+        </p>
+      ) : null}
     </header>
   );
 };

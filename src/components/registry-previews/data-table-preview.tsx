@@ -1,6 +1,7 @@
 import {
   DataTable,
   DataTableColumnHeader,
+  type DataTableColumnDef,
   TableSearchSchema,
   TableSearchSchemaStandard,
   type DataTableRowAction,
@@ -13,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
 
 export { TableSearchSchema, TableSearchSchemaStandard };
@@ -116,7 +116,7 @@ const projects: Project[] = [
   },
 ];
 
-const columns: ColumnDef<Project>[] = [
+const columns: DataTableColumnDef<Project>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -214,7 +214,7 @@ export function DataTablePreview() {
           row actions.
         </CardDescription>
       </CardHeader>
-      <CardContent className="max-w-full min-w-0 overflow-hidden">
+      <CardContent className="max-w-full min-w-0">
         <DataTable
           columns={columns}
           data={projects}
@@ -222,6 +222,27 @@ export function DataTablePreview() {
             export: { baseName: "projects", scope: "filteredRows" },
             gallery: { name: "name", description: "summary", tag: "status" },
             rowActions: { items: rowActions },
+            selection: {
+              getRowId: (project) => project.id,
+              bulkActions: {
+                label: "Actions",
+                items: [
+                  {
+                    name: "Archive",
+                    icon: <Archive />,
+                    variant: "destructive",
+                    visible: (selectedProjects) =>
+                      selectedProjects.some(
+                        (project) => project.status !== "Shipped",
+                      ),
+                    onClick: (selectedProjects) =>
+                      window.alert(
+                        `Archive ${selectedProjects.length} projects`,
+                      ),
+                  },
+                ],
+              },
+            },
           }}
           grouping={{
             initial: ["status"],

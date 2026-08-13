@@ -39,6 +39,7 @@ type NavItem = {
   label: () => string;
   href: string;
   icon: LucideIcon;
+  badge?: () => string;
   external?: boolean;
 };
 
@@ -96,6 +97,11 @@ function AppSidebar({ footer, groups, header }: AppSidebarProps) {
                       >
                         <item.icon />
                         <span>{item.label()}</span>
+                        {item.badge ? (
+                          <Badge className="ml-auto" variant="secondary">
+                            {item.badge()}
+                          </Badge>
+                        ) : null}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );

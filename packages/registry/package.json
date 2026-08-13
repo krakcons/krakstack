@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -184,6 +184,14 @@
       "types": "./dist/services/s3/schema.d.ts",
       "import": "./dist/services/s3/schema.js"
     },
+    "./service-file-extraction": {
+      "types": "./dist/services/file-extraction/index.d.ts",
+      "import": "./dist/services/file-extraction/index.js"
+    },
+    "./service-file-extraction/schema": {
+      "types": "./dist/services/file-extraction/schema.d.ts",
+      "import": "./dist/services/file-extraction/schema.js"
+    },
     "./tailwind.css": "./tailwind.css",
     "./package.json": "./package.json"
   },
@@ -210,8 +218,9 @@
     "@streamdown/code": "^1.1.1",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",
-    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-table": "^9.1.2",
     "@tanstack/react-virtual": "^3.14.5",
+    "@xberg-io/xberg": "1.0.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -275,6 +284,9 @@
       "optional": true
     },
     "@tanstack/react-virtual": {
+      "optional": true
+    },
+    "@xberg-io/xberg": {
       "optional": true
     },
     "shiki": {

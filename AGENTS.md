@@ -2,6 +2,7 @@
 
 ## Core Rules
 
+- If `PROJECT_AGENTS.md` exists in the repository root, read it immediately and treat it as additional mandatory project instructions.
 - Prefer the smallest correct change that fits the existing architecture.
 - Keep frontend and backend concerns separated unless a feature explicitly spans both.
 - Use project conventions already present in nearby files before introducing new patterns.
