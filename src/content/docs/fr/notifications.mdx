@@ -2,7 +2,7 @@
 slug: notifications
 path: /docs/notifications
 title: Configuration des notifications et des courriels
-description: Ajoutez le menu de notifications, limitez les données de boîte de réception au projet et configurez l'envoi direct ou en file d'attente des courriels.
+description: Ajoutez le menu de notifications, persistez la boîte de réception et les livraisons, puis configurez l'envoi direct ou durable des courriels.
 order: 17
 locale: fr
 section: notifications
@@ -15,13 +15,13 @@ KrakStack sépare la présentation des notifications, la distribution par canal 
 
 ## Choisir les éléments nécessaires
 
-| Besoin                                    | Élément ou export KrakStack                          | Responsabilité du projet                                       |
-| ----------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------- |
-| Menu avec cloche et boîte de réception    | `notification-menu` ou `service-notification/client` | Charger les données autorisées, les modifier et naviguer       |
-| Distribution par canal                    | `service-notification`                               | Composer les canaux installés et décider quand envoyer         |
-| Courriel direct avec SES                  | `notification-channel-email-ses`                     | Configurer AWS, rendre le contenu et appeler le distributeur   |
-| Boîte de réception persistante            | Pas encore fourni                                    | Stocker les notifications et leur état lu/archivé              |
-| Courriels en file et nouvelles tentatives | Pas encore fourni                                    | Gérer l'outbox, le worker, la planification et l'observabilité |
+| Besoin                                    | Élément ou export KrakStack                          | Responsabilité du projet                                        |
+| ----------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
+| Menu avec cloche et boîte de réception    | `notification-menu` ou `service-notification/client` | Charger les données autorisées, les modifier et naviguer        |
+| Distribution par canal                    | `service-notification`                               | Composer les canaux installés et décider quand envoyer          |
+| Courriel direct avec SES                  | `notification-channel-email-ses`                     | Configurer AWS, rendre le contenu et appeler le distributeur    |
+| Persistance durable                       | `notification-persistence`                           | Générer les migrations, autoriser l'accès et gérer la rétention |
+| Courriels en file et nouvelles tentatives | Table de livraison fournie; worker non fourni        | Gérer le relais, le worker, la planification et l'observabilité |
 
 > Ne faites jamais confiance aux identifiants d'utilisateur, d'organisme ou d'espace de travail fournis par le navigateur. Résolvez l'acteur courant et autorisez chaque lecture ou mutation à la frontière serveur.
 
@@ -72,12 +72,9 @@ Si votre application rend les composants du package, ajoutez sa source Tailwind 
 `NotificationMenu` est contrôlé par des données et des callbacks. Il ne charge pas, ne met pas en cache et n'autorise pas les enregistrements.
 
 ```tsx
-import { useNavigate } from "@tanstack/react-router";
 import { NotificationMenu } from "@krak-stack/registry/service-notification/client";
 
 export function WorkspaceNotifications({ notifications }) {
-  const navigate = useNavigate();
-
   return (
     <NotificationMenu
       notifications={notifications}
@@ -88,7 +85,7 @@ export function WorkspaceNotifications({ notifications }) {
         notificationClient.archive({ notificationIds })
       }
       onNavigate={(notification) => {
-        if (notification.href) void navigate({ href: notification.href });
+        if (notification.href) window.location.assign(notification.href);
       }}
     />
   );
@@ -223,18 +220,42 @@ const program = Effect.gen(function* () {
 
 Le payload SES accepte aussi `from`, `cc`, `bcc` et `replyTo`. Au moins un des champs `text` ou `html` est obligatoire. Le champ `from` du payload remplace `NOTIFICATION_EMAIL_FROM`.
 
-L'envoi direct avec SES convient aux messages simples ou non critiques. Il s'exécute dans le processus de la requête et ne fournit ni outbox persistante, ni nouvelles tentatives planifiées, ni journal administratif de livraison.
+L'envoi direct avec SES convient aux messages simples ou non critiques. Il s'exécute directement dans le processus appelant et ne fournit ni outbox persistante, ni nouvelles tentatives applicatives planifiées, ni journal administratif de livraison.
 
-## Concevoir une persistance appartenant au projet
+## Installer la persistance durable des notifications
 
-Pour les notifications produit et les courriels fiables, gardez les données dans la base du projet. Une conception recommandée utilise quatre tables :
+Installez le code source modifiable depuis le registre shadcn :
 
-| Table                   | Rôle                                                                     |
-| ----------------------- | ------------------------------------------------------------------------ |
-| `notifications`         | Notifications propres au destinataire et timestamps de lecture/archivage |
-| `notification_settings` | Préférences de notification intégrée et de courriel par utilisateur      |
-| `emails`                | Outbox produit, contenu rendu, tentatives et résultat du fournisseur     |
-| `effect_queue`          | Baux, nouvelles tentatives et déduplication internes du worker           |
+```bash
+bunx shadcn@latest add @krak-stack/notification-persistence
+```
+
+Ou importez le module npm réservé au serveur :
+
+```ts
+import {
+  notificationDeliveries,
+  notificationSettings,
+  notifications,
+} from "@krak-stack/registry/service-notification/persistence/drizzle";
+import { decodeNotificationDeliveryPayload } from "@krak-stack/registry/service-notification/persistence/schema";
+```
+
+Le module fournit trois tables PostgreSQL :
+
+| Table                     | Rôle                                                                             |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| `notifications`           | Snapshots propres au destinataire avec timestamps de lecture et d'archivage      |
+| `notification_settings`   | Préférences par canal, destinataire, organisme, espace de travail et événement   |
+| `notification_deliveries` | Outbox multicanal, planification, baux, nouvelles tentatives et résultats finaux |
+
+Réexportez le code source installé depuis le point d'entrée du schéma Drizzle du projet :
+
+```ts
+export * from "@/services/notification/persistence/drizzle";
+```
+
+Générez ensuite une migration et validez-la dans le projet receveur. KrakStack distribue des définitions réutilisables plutôt qu'un historique de migrations partagé; chaque projet contrôle ainsi le déploiement et l'évolution du schéma.
 
 Stockez les identifiants externes d'identité et d'organisme comme texte, sauf si les tables d'identité se trouvent dans la même base. N'ajoutez pas de clés étrangères entre bases de données.
 
@@ -247,20 +268,22 @@ Conservez le périmètre suivant sur chaque notification :
 - snapshot du titre, de la description et de la destination
 - timestamps de création, lecture et archivage
 
-Pour les courriels, stockez le snapshot rendu du sujet, du texte et du HTML avec la clé et la version du template. Gardez les implémentations des templates dans le contrôle de source. Une nouvelle tentative doit envoyer le snapshot persisté sans rendre de nouveau un template qui aurait pu changer.
+Pour les livraisons, stockez un enregistrement par canal avec une clé d'idempotence stable et un snapshot de payload versionné. La version 1 du payload courriel stocke les destinataires, le sujet, le texte et le HTML compatibles avec SES. Gardez les templates dans le contrôle de source. Une nouvelle tentative doit envoyer le snapshot persisté sans rendre de nouveau un template qui aurait pu changer.
 
-> KrakStack n'exporte pas encore ces quatre tables Drizzle ni un worker de courriels en file d'attente. Les noms ci-dessus décrivent la frontière recommandée du projet, et non des API déjà installables.
+Le codec Effect rejette les combinaisons de canal et de version non prises en charge. Ajoutez une variante avant d'écrire une nouvelle version et conservez les anciennes variantes tant que des lignes historiques existent.
+
+> KrakStack fournit les définitions de tables et les codecs, mais pas les requêtes d'autorisation, les opérations CRUD, les migrations, le relais outbox, le worker ni l'interface d'administration. Les tables de workflow et de file persistante restent une infrastructure appartenant à Effect.
 
 ## Mettre les courriels en file de façon sûre
 
-Quand un courriel doit survivre à un arrêt du processus, utilisez un flux outbox :
+Le flux suivant appartient à l'application. Quand un courriel doit survivre à un arrêt du processus :
 
-1. Dans la même transaction que le changement de domaine, insérez la notification intégrée et un enregistrement `emails` en attente.
+1. Dans la même transaction que le changement de domaine, insérez la notification intégrée et un enregistrement `notification_deliveries` en file.
 2. Validez la transaction avant de proposer le travail à la file.
-3. Utilisez un relais outbox pour récupérer un courriel validé mais non proposé si le processus s'est arrêté.
-4. Placez dans la file une tâche versionnée contenant uniquement `{ emailId }`.
-5. Faites réclamer l'enregistrement par le worker, envoyez son snapshot persisté et stockez le résultat du fournisseur.
-6. Planifiez les nouvelles tentatives avec un timestamp `availableAt` sur `emails`; réservez les tentatives de la file aux pannes d'infrastructure.
+3. Utilisez un relais outbox pour récupérer une livraison validée mais non proposée si le processus s'est arrêté.
+4. Placez dans la file une tâche versionnée contenant uniquement `{ deliveryId }`.
+5. Faites acquérir un bail sur la livraison par le worker, décodez et envoyez son snapshot, puis stockez le résultat du fournisseur.
+6. Planifiez les nouvelles tentatives applicatives avec `scheduledFor`; réservez les tentatives de la file aux pannes d'infrastructure.
 
 Ne composez pas un canal SES direct et un canal de courriel en file sous la même clé `email` dans le processus Web. `NotificationService` appelle tous les canaux correspondants et enverrait donc des doublons. Le processus Web doit mettre en file; seul le worker doit appeler le transport SES.
 

@@ -45,6 +45,9 @@
     "../../src/services/notification/client/index.ts",
     "../../src/services/notification/public.ts",
     "../../src/services/notification/channels/ses/index.ts",
+    "../../src/services/notification/persistence/index.ts",
+    "../../src/services/notification/persistence/drizzle.ts",
+    "../../src/services/notification/persistence/schema.ts",
     "../../src/services/s3/index.ts"
   ],
   "include": []

@@ -53,6 +53,7 @@ export function getRegistryGroup(item: RegistryItem) {
       "notification-menu",
       "service-notification",
       "notification-channel-email-ses",
+      "notification-persistence",
     ].includes(item.name)
   ) {
     return "Notifications";

@@ -2,7 +2,7 @@
 slug: notifications
 path: /docs/notifications
 title: Notifications and email setup
-description: Add the notification menu, scope project-owned inbox data, and configure direct or queued email delivery.
+description: Add the notification menu, persist inbox and delivery records, and configure direct or durable email delivery.
 order: 17
 locale: en
 section: notifications
@@ -20,8 +20,8 @@ KrakStack separates notification presentation, channel dispatch, and delivery in
 | Bell menu and inbox UI   | `notification-menu` or `service-notification/client` | Fetch scoped records, mutate them, and navigate          |
 | Channel dispatch         | `service-notification`                               | Compose installed channels and decide when to send       |
 | Direct email through SES | `notification-channel-email-ses`                     | Configure AWS, render content, and invoke the dispatcher |
-| Durable in-app inbox     | Not shipped yet                                      | Store recipient records and read/archive state           |
-| Queued email and retries | Not shipped yet                                      | Own the outbox, worker, scheduling, and observability    |
+| Durable persistence      | `notification-persistence`                           | Generate migrations, authorize access, and own retention |
+| Queued email and retries | Delivery table shipped; worker not shipped           | Own the relay, worker, scheduling, and observability     |
 
 > Do not trust user, organization, or workspace IDs supplied by the browser. Resolve the current actor and authorize every read or mutation at the server boundary.
 
@@ -72,12 +72,9 @@ If package components are rendered in your application, include the package Tail
 `NotificationMenu` is controlled by data and callbacks. It does not fetch, cache, or authorize records.
 
 ```tsx
-import { useNavigate } from "@tanstack/react-router";
 import { NotificationMenu } from "@krak-stack/registry/service-notification/client";
 
 export function WorkspaceNotifications({ notifications }) {
-  const navigate = useNavigate();
-
   return (
     <NotificationMenu
       notifications={notifications}
@@ -88,7 +85,7 @@ export function WorkspaceNotifications({ notifications }) {
         notificationClient.archive({ notificationIds })
       }
       onNavigate={(notification) => {
-        if (notification.href) void navigate({ href: notification.href });
+        if (notification.href) window.location.assign(notification.href);
       }}
     />
   );
@@ -223,18 +220,42 @@ const program = Effect.gen(function* () {
 
 The SES payload also supports `from`, `cc`, `bcc`, and `replyTo`. At least one of `text` or `html` is required. A payload-level `from` overrides `NOTIFICATION_EMAIL_FROM`.
 
-Direct SES delivery is appropriate for simple or non-critical messages. It runs in the request process and does not provide a durable outbox, scheduled retries, or an administrative delivery log.
+Direct SES delivery is appropriate for simple or non-critical messages. It runs inline in the calling process and does not provide a durable outbox, application-level scheduled retries, or an administrative delivery log.
 
-## Design durable project-owned storage
+## Install durable notification persistence
 
-For product notifications and reliable email, keep data in the project database. A recommended design uses four tables:
+Install editable source from the shadcn registry:
 
-| Table                   | Purpose                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| `notifications`         | Recipient-specific inbox records and read/archive timestamps                  |
-| `notification_settings` | Per-user in-app and email preferences                                         |
-| `emails`                | Product-facing email outbox, rendered snapshot, attempts, and provider result |
-| `effect_queue`          | Internal worker leases, retries, and deduplication                            |
+```bash
+bunx shadcn@latest add @krak-stack/notification-persistence
+```
+
+Or import the server-only npm module:
+
+```ts
+import {
+  notificationDeliveries,
+  notificationSettings,
+  notifications,
+} from "@krak-stack/registry/service-notification/persistence/drizzle";
+import { decodeNotificationDeliveryPayload } from "@krak-stack/registry/service-notification/persistence/schema";
+```
+
+The module ships three PostgreSQL tables:
+
+| Table                     | Purpose                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| `notifications`           | Recipient-specific inbox snapshots with read and archive timestamps              |
+| `notification_settings`   | Channel preferences scoped by recipient, organization, workspace, and event      |
+| `notification_deliveries` | Channel-neutral outbox snapshots, scheduling, claims, retries, and final results |
+
+Re-export installed source from your project's Drizzle schema entry:
+
+```ts
+export * from "@/services/notification/persistence/drizzle";
+```
+
+Then generate and commit a migration in the receiving project. KrakStack distributes reusable definitions rather than shared migration history, so each project controls rollout and future schema changes.
 
 Store external identity and organization IDs as text unless the identity tables are in the same database. Do not add cross-database foreign keys.
 
@@ -247,20 +268,22 @@ Persist the following scope on each inbox record:
 - title, description, and destination snapshot
 - created, read, and archived timestamps
 
-For email records, store the rendered subject, text, and HTML snapshot plus template key and template version. Keep template implementations in source control. Retrying a delivery should send the persisted snapshot instead of rendering a potentially changed template.
+For delivery records, store one row per channel with a stable idempotency key and a versioned payload snapshot. Email payload version 1 stores SES-compatible recipients, subject, text, and HTML. Keep template implementations in source control. Retrying a delivery should send the persisted snapshot instead of rendering a potentially changed template.
 
-> KrakStack does not yet export these four Drizzle tables or a queued-email worker. The names above document the recommended project boundary, not currently installable APIs.
+The Effect codec rejects unsupported channel and payload-version combinations. Add a new codec variant before writing a new payload version, and retain old variants while historical rows remain.
+
+> KrakStack ships table definitions and codecs, not authorization queries, CRUD operations, migrations, an outbox relay, a worker, or an administrative delivery UI. Effect workflow and persisted-queue tables remain Effect-owned infrastructure.
 
 ## Queue email safely
 
-When email must survive process crashes, use an outbox flow:
+The following flow is application-owned. When email must survive process crashes:
 
-1. In the same database transaction as the domain change, insert the in-app notification and a pending `emails` record.
+1. In the same database transaction as the domain change, insert the in-app notification and a queued `notification_deliveries` record.
 2. Commit the transaction before offering work to the queue.
-3. Let an outbox relay recover committed pending email that was not offered because the process crashed.
-4. Queue a versioned job containing only `{ emailId }`.
-5. Have the worker claim the email record, send its persisted snapshot, and store the provider result.
-6. Schedule delivery retries through an `availableAt` timestamp on `emails`; reserve queue retries for infrastructure failures.
+3. Let an outbox relay recover committed deliveries that were not offered because the process crashed.
+4. Queue a versioned job containing only `{ deliveryId }`.
+5. Have the worker lease the delivery record, decode and send its persisted snapshot, and store the provider result.
+6. Schedule application retries through `scheduledFor`; reserve queue retries for infrastructure failures.
 
 Do not compose both a direct SES channel and a queued email channel under the same `email` key in the web process. `NotificationService` invokes every matching channel, so that composition would send duplicates. The web process should enqueue; only the worker should invoke the SES transport.
 

@@ -164,6 +164,18 @@
       "types": "./dist/services/notification/channels/ses/schema.d.ts",
       "import": "./dist/services/notification/channels/ses/schema.js"
     },
+    "./service-notification/persistence": {
+      "types": "./dist/services/notification/persistence/index.d.ts",
+      "import": "./dist/services/notification/persistence/index.js"
+    },
+    "./service-notification/persistence/drizzle": {
+      "types": "./dist/services/notification/persistence/drizzle.d.ts",
+      "import": "./dist/services/notification/persistence/drizzle.js"
+    },
+    "./service-notification/persistence/schema": {
+      "types": "./dist/services/notification/persistence/schema.d.ts",
+      "import": "./dist/services/notification/persistence/schema.js"
+    },
     "./service-s3": {
       "types": "./dist/services/s3/index.d.ts",
       "import": "./dist/services/s3/index.js"
@@ -203,6 +215,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "drizzle-orm": "^1.0.0-rc.4-5d5b77c",
     "effect": "4.0.0-beta.99",
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
@@ -238,6 +251,9 @@
       "optional": true
     },
     "cmdk": {
+      "optional": true
+    },
+    "drizzle-orm": {
       "optional": true
     },
     "@lucas-barake/effect-form": {
