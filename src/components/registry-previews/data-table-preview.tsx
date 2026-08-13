@@ -222,7 +222,27 @@ export function DataTablePreview() {
             export: { baseName: "projects", scope: "filteredRows" },
             gallery: { name: "name", description: "summary", tag: "status" },
             rowActions: { items: rowActions },
-            selection: { getRowId: (project) => project.id },
+            selection: {
+              getRowId: (project) => project.id,
+              bulkActions: {
+                label: "Actions",
+                items: [
+                  {
+                    name: "Archive",
+                    icon: <Archive />,
+                    variant: "destructive",
+                    visible: (selectedProjects) =>
+                      selectedProjects.some(
+                        (project) => project.status !== "Shipped",
+                      ),
+                    onClick: (selectedProjects) =>
+                      window.alert(
+                        `Archive ${selectedProjects.length} projects`,
+                      ),
+                  },
+                ],
+              },
+            },
           }}
           grouping={{
             initial: ["status"],

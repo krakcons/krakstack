@@ -307,6 +307,7 @@ export type DataTableMessages = PaginationMessages & {
   listOthers: (count: number) => string;
   selectAllRows: string;
   selectRow: string;
+  selected: string;
 };
 
 const messages = {
@@ -336,6 +337,7 @@ const messages = {
       count === 1 ? "and 1 other" : `and ${count} others`,
     selectAllRows: "Select all rows on this page",
     selectRow: "Select row",
+    selected: "Selected",
   },
   fr: {
     ...paginationMessages("fr"),
@@ -363,6 +365,7 @@ const messages = {
       count === 1 ? "et 1 autre" : `et ${count} autres`,
     selectAllRows: "Sélectionner toutes les lignes de cette page",
     selectRow: "Sélectionner la ligne",
+    selected: "Sélectionnés",
   },
 } as const satisfies Record<"en" | "fr", DataTableMessages>;
 
@@ -422,6 +425,15 @@ export type DataTableRowAction<TData> = {
   visible?: (data: TData) => boolean;
 };
 
+export type DataTableBulkAction<TData> = {
+  id?: string;
+  name: string;
+  icon?: ReactNode;
+  variant?: "default" | "destructive" | undefined;
+  onClick: (rows: TData[]) => void;
+  visible?: (rows: TData[]) => boolean;
+};
+
 export type DataTableGroupAction = {
   name: string;
   icon?: ReactNode;
@@ -463,6 +475,12 @@ export interface DataTableColumnVisibilityFeature {
 }
 
 export interface DataTableSelectionFeature<TData> {
+  bulkActions?:
+    | false
+    | {
+        label?: string;
+        items: readonly DataTableBulkAction<TData>[];
+      };
   getRowId: (row: TData) => string;
   isRowSelectable?: (row: TData) => boolean;
   onSelectionChange?: (rows: TData[]) => void;
@@ -624,6 +642,60 @@ export const DataTableRowActions = <TData,>({
                 event.stopPropagation();
                 action.onClick(row);
               }}
+              {...(action.variant ? { variant: action.variant } : {})}
+            >
+              {action.icon}
+              {action.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const DataTableBulkActions = <TData,>({
+  actions,
+  label,
+  selectedLabel,
+  rows,
+}: {
+  actions: readonly DataTableBulkAction<TData>[];
+  label: string;
+  selectedLabel: string;
+  rows: TData[];
+}) => {
+  const visibleActions = actions.filter(
+    (action) => !action.visible || action.visible(rows),
+  );
+
+  if (visibleActions.length === 0) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button className="h-9" size="sm" variant="default">
+            {selectedLabel}
+            <Badge
+              className="bg-primary-foreground/15 text-primary-foreground min-w-5 justify-center rounded-full border-0 px-1.5 tabular-nums"
+              variant="secondary"
+            >
+              {rows.length}
+            </Badge>
+            <ChevronRight className="rotate-90" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="start" className="w-max max-w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{label}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {visibleActions.map((action) => (
+            <DropdownMenuItem
+              key={action.id ?? action.name}
+              className="whitespace-nowrap"
+              onClick={() => action.onClick(rows)}
               {...(action.variant ? { variant: action.variant } : {})}
             >
               {action.icon}
@@ -1394,6 +1466,7 @@ const exportTableToJson = <TData extends RowData>(
 
 const DataTableToolbar = <TData extends RowData>({
   activeGrouping,
+  bulkActions,
   exportBaseName,
   exportRows,
   grouping,
@@ -1401,6 +1474,7 @@ const DataTableToolbar = <TData extends RowData>({
   onRefresh,
   onToggleGrouping,
   onViewChange,
+  selectedRows,
   showColumnVisibility,
   showExport,
   showGallery,
@@ -1410,6 +1484,12 @@ const DataTableToolbar = <TData extends RowData>({
   view,
 }: {
   activeGrouping: readonly string[];
+  bulkActions?:
+    | {
+        label?: string;
+        items: readonly DataTableBulkAction<TData>[];
+      }
+    | undefined;
   exportBaseName: string;
   exportRows: DataTableRow<TData>[];
   grouping?: DataTableGrouping<TData> | undefined;
@@ -1417,6 +1497,7 @@ const DataTableToolbar = <TData extends RowData>({
   onRefresh?: (() => void) | undefined;
   onToggleGrouping: (fieldId: string, enabled: boolean) => void;
   onViewChange: (view: DataTableView) => void;
+  selectedRows: TData[];
   showColumnVisibility: boolean;
   showExport: boolean;
   showGallery: boolean;
@@ -1434,7 +1515,8 @@ const DataTableToolbar = <TData extends RowData>({
     showGallery ||
     showColumnVisibility ||
     onRefresh ||
-    showExport,
+    showExport ||
+    (selectedRows.length > 0 && bulkActions?.items.length),
   );
 
   useEffect(() => {
@@ -1478,6 +1560,14 @@ const DataTableToolbar = <TData extends RowData>({
           <div />
         )}
         <div className="-m-1 flex items-center gap-2 overflow-x-auto p-1">
+          {bulkActions && selectedRows.length > 0 ? (
+            <DataTableBulkActions
+              actions={bulkActions.items}
+              label={bulkActions.label ?? labels.actions}
+              rows={selectedRows}
+              selectedLabel={labels.selected}
+            />
+          ) : null}
           {grouping?.fields.length ? (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -1662,6 +1752,10 @@ export function DataTable<TData extends RowData>({
   const selectionFeature =
     features?.selection === false ? undefined : features?.selection;
   const selectable = !!selectionFeature;
+  const bulkActions =
+    selectionFeature?.bulkActions === false
+      ? undefined
+      : selectionFeature?.bulkActions;
   const isServerMode =
     paginationFeature !== false && paginationFeature.mode === "server";
   const serverRowCount = isServerMode ? paginationFeature.rowCount : undefined;
@@ -1912,6 +2006,9 @@ export function DataTable<TData extends RowData>({
   );
   const hasActiveGrouping = activeGroupingFields.length > 0;
   const filteredRows = table.getPrePaginatedRowModel().rows;
+  const selectedRows = selectionFeature
+    ? data.filter((row) => rowSelection[selectionFeature.getRowId(row)])
+    : [];
   const exportRows =
     exportFeature && exportFeature.scope === "filteredRows"
       ? filteredRows
@@ -2148,6 +2245,7 @@ export function DataTable<TData extends RowData>({
     <div className="w-full max-w-full min-w-0 rounded-md">
       <DataTableToolbar
         activeGrouping={activeGrouping}
+        bulkActions={bulkActions}
         exportBaseName={exportBaseName}
         exportRows={exportRows}
         grouping={grouping}
@@ -2155,6 +2253,7 @@ export function DataTable<TData extends RowData>({
         onRefresh={onRefresh}
         onToggleGrouping={toggleGroupingField}
         onViewChange={setView}
+        selectedRows={selectedRows}
         showColumnVisibility={showColumnVisibility}
         showExport={showExport}
         showGallery={showGallery}
