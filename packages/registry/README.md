@@ -21,6 +21,8 @@ import { createMdxDocsSource, makeDocs } from "@krak-stack/registry/docs";
 import { makeChatDocumentation } from "@krak-stack/registry/docs-ai";
 import { Query } from "@krak-stack/registry/query";
 import { createSeo } from "@krak-stack/registry/seo";
+import { FileExtractionService } from "@krak-stack/registry/service-file-extraction";
+import { FileExtractedTextSchema } from "@krak-stack/registry/service-file-extraction/schema";
 import { NotificationService } from "@krak-stack/registry/service-notification";
 ```
 
