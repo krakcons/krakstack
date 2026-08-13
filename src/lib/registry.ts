@@ -61,6 +61,7 @@ export function getRegistryGroup(item: RegistryItem) {
       "httpapi-cli",
       "httpapi-client",
       "httpapi-mcp",
+      "localization",
       "seo",
     ].includes(item.name)
   ) {

@@ -1,0 +1,100 @@
+---
+slug: technologies
+path: /docs/technologies
+title: Technologies
+description: Comprenez les technologies derrière KrakStack et le rôle de chacune dans une architecture full-stack cohérente.
+order: 2
+locale: fr
+section: getting-started
+type: concept
+---
+
+# Technologies
+
+KrakStack repose sur un ensemble limité de technologies aux responsabilités claires. L'objectif n'est pas d'accumuler des outils populaires, mais de combiner des fondations explicites, composables et capables d'accompagner la croissance d'une application sans remplacer son architecture à chaque couche.
+
+## Pourquoi cette stack
+
+Chaque pilier est choisi selon trois principes :
+
+- **Prêt pour la production.** La technologie doit résoudre de vrais problèmes opérationnels, prendre en charge les tests et l'observabilité, et rester fiable pendant la croissance de l'application.
+- **Compatible avec le développement assisté par IA.** Les API, schémas, dépendances, erreurs et le code source doivent être assez explicites pour que les agents de code puissent les comprendre, les modifier et les vérifier en toute sécurité. Des conventions fortes comptent davantage que des abstractions astucieuses.
+- **Open source.** Les fondations de l'application doivent rester inspectables, portables et utilisables sans enfermer l'architecture du produit dans une plateforme propriétaire.
+
+Le résultat est une stack composée d'outils ciblés plutôt que d'un framework unique qui possède chaque décision. Chaque technologie a une frontière claire, et KrakStack documente les patterns qui relient ces frontières.
+
+## React : Composition de l'interface
+
+[React](https://react.dev) fournit le modèle de rendu et de composition de l'interface utilisateur. Son modèle de composants crée une frontière stable entre les contrôles réutilisables, les vues propres au produit et les layouts de l'application.
+
+KrakStack utilise React pour son vaste écosystème, sa compatibilité avec le rendu serveur et sa capacité à séparer la composition UI du routage, du chargement des données et du comportement backend. Les composants restent du code React ordinaire, inspectable, adaptable et testable sans abstraction spécifique à un framework.
+
+## TanStack : Mécanique applicative
+
+[TanStack](https://tanstack.com) est la fondation du frontend. Il compose des outils ciblés et headless qui simplifient les mécanismes applicatifs difficiles sans les transformer en framework fermé :
+
+- TanStack Start fournit le runtime de l'application, le rendu serveur et les fonctions serveur.
+- TanStack Router fournit des routes, paramètres, recherches, loaders et navigations type-safe.
+- TanStack Form gère l'état validé des formulaires sans imposer leur présentation.
+- TanStack Table et Virtual fournissent des primitives composables pour les grilles de données et la virtualisation.
+
+Chaque outil résout efficacement un problème complexe, et tous partagent une philosophie composable. Ils exposent l'état et le comportement sans imposer de système visuel. KrakStack peut ainsi relier le routage, les formulaires et les tables au même modèle métier tout en laissant à l'application la maîtrise de son UI. Les équipes adoptent les éléments nécessaires sans abandonner l'architecture du frontend.
+
+## Effect : Comportement applicatif typé
+
+[Effect](https://effect.website) est la fondation des services, de la validation, des erreurs, de la concurrence, de la configuration, de l'observabilité et des workflows durables. Il remplace les combinaisons incohérentes d'exceptions, d'état global et d'utilitaires ad hoc par un modèle composable unique pour le comportement applicatif.
+
+KrakStack utilise Effect pour définir des capacités et dépendances explicites. Les services se composent avec des layers, les entrées se décodent avec Effect Schema, et les erreurs restent typées et visibles dans les signatures des fonctions. Les mêmes programmes s'exécutent avec des implémentations de production ou de test contrôlées. Effect HttpApi étend cette cohérence aux contrats et handlers d'API, tandis que les workflows Effect prennent en charge les opérations qui doivent être relancées ou survivre à une interruption.
+
+Effect prend également bien en charge les intégrations fondées sur des standards. KrakStack utilise [OpenTelemetry](https://opentelemetry.io) pour les traces, métriques et logs, et dérive des interfaces comme OpenAPI à partir de contrats typés plutôt que de maintenir des descriptions parallèles à la main. Ces frontières standard gardent les systèmes interopérables et observables sans les coupler à un seul fournisseur.
+
+Cette cohérence est particulièrement utile pour le développement agentique. Un agent peut inspecter un schéma, une interface de service, un layer de dépendances et un canal d'erreurs typé pour comprendre ce qu'un programme accepte, exige et peut produire comme erreur. Les patterns architecturaux répétés donnent aux agents des moyens plus sûrs d'étendre le système et des vérifications concrètes pour valider leur travail.
+
+Cela ne signifie pas que chaque interaction React doit devenir un programme Effect. Effect prend en charge le domaine et les opérations ; React et TanStack prennent en charge l'état de l'interface et les interactions. Cette frontière claire évite une complexité inutile.
+
+## shadcn : UI possédée par le projet
+
+[shadcn](https://ui.shadcn.com) est un modèle de distribution plutôt qu'une dépendance fermée de composants. Il copie les composants et éléments de registre dans l'application, où ils deviennent du code du projet.
+
+Ce modèle correspond aux objectifs de KrakStack :
+
+- Les équipes peuvent inspecter et modifier chaque implémentation installée.
+- Les composants suivent le langage visuel du produit plutôt que le thème d'un fournisseur.
+- Les éléments du registre peuvent distribuer des services, des configurations et des patterns applicatifs complets, en plus de l'UI.
+- Les mises à jour arrivent sous forme de modifications de code source révisables plutôt que de comportements runtime cachés.
+
+KrakStack publie aussi des exports de package lorsque la réutilisation gérée par dépendance convient mieux. Le registre et le package sont deux voies de distribution pour les mêmes patterns architecturaux.
+
+## Tailwind CSS : Styles
+
+[Tailwind CSS](https://tailwindcss.com) garde les styles proches de la structure des composants et rend les contraintes de design visibles dans le code source. Il s'accorde naturellement avec le modèle de shadcn : les composants installés peuvent être restylés directement, sans surcharger une feuille de style empaquetée ni apprendre une API de thème distincte.
+
+KrakStack utilise des tokens partagés et les primitives shadcn pour assurer la cohérence, puis laisse les décisions visuelles propres au produit à l'application qui reçoit le code.
+
+## Drizzle et PostgreSQL : Persistance
+
+[PostgreSQL](https://www.postgresql.org) fournit une fondation relationnelle durable et largement prise en charge, avec un écosystème exceptionnel d'extensions. Il peut dépasser les charges relationnelles classiques grâce à des extensions comme [PostGIS](https://postgis.net) pour les données géospatiales et [pgvector](https://github.com/pgvector/pgvector) pour la recherche de similarité vectorielle, tout en gardant ces capacités dans la même base de données mature sur le plan opérationnel.
+
+[Drizzle](https://orm.drizzle.team) garde les schémas et requêtes visibles en TypeScript tout en restant proche de SQL et des capacités réelles de PostgreSQL. Ensemble, ils offrent des migrations prévisibles, des relations explicites et des requêtes type-safe sans remplacer le modèle de données par une abstraction objet séparée. Les services Effect possèdent l'accès à la base de données et les frontières entre tenants afin que les détails de persistance ne se diffusent pas dans l'UI ou les handlers HTTP.
+
+## Paraglide : Localisation
+
+[Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) compile les traductions en fonctions de messages type-safe et tree-shakable. Les messages anglais et français restent versionnés avec le code source, et les utilisations absentes ou invalides sont détectées pendant le développement plutôt que lors d'une recherche runtime non typée.
+
+Le routage localisé et la résolution de la locale par requête s'intègrent à TanStack et Effect, tandis que le contenu traduit reste séparé de la logique des composants.
+
+## Pourquoi ces technologies fonctionnent ensemble
+
+Chaque pilier possède une préoccupation distincte :
+
+| Préoccupation               | Technologie           | Responsabilité                                                       |
+| --------------------------- | --------------------- | -------------------------------------------------------------------- |
+| Composition de l'interface  | React                 | Composants, rendu et interactions                                    |
+| Mécanique applicative       | TanStack              | Routage, runtime serveur, formulaires, tables et virtualisation      |
+| Domaine et opérations       | Effect                | Services, schémas, erreurs, API, workflows et observabilité          |
+| Distribution du code source | shadcn                | Code installable, inspectable et personnalisable dans le projet      |
+| Styles                      | Tailwind CSS          | Styles guidés par des tokens, proches de la structure des composants |
+| Persistance                 | Drizzle et PostgreSQL | Schémas relationnels, requêtes et migrations explicites              |
+| Localisation                | Paraglide             | Messages traduits compilés et type-safe, avec gestion de la locale   |
+
+KrakStack fournit les patterns qui relient ces frontières : comment un formulaire validé appelle un service typé, comment une API expose ce service, comment une table représente l'état serveur et comment la fonctionnalité obtenue reste observable, localisée et installable. La stack demeure modulaire, mais ses éléments sont conçus pour fonctionner comme un seul système.
