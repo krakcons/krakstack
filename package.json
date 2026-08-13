@@ -40,6 +40,8 @@
     "@lucas-barake/effect-form": "0.25.0-beta.6",
     "@lucas-barake/effect-form-react": "0.26.0-beta.5",
     "@shadcn/react": "^0.2.1",
+    "@shikijs/langs": "^4.2.0",
+    "@shikijs/themes": "^4.2.0",
     "@streamdown/code": "^1.1.1",
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-form": "^1.33.0",
