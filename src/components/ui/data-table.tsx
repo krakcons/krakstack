@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardAction,
@@ -130,6 +131,7 @@ import {
   type Header,
   type Row,
   type RowData,
+  type RowSelectionState,
   type SortingState,
   type ColumnVisibilityState,
   type AppReactTable,
@@ -139,6 +141,11 @@ import {
 type DataTableColumnMeta = {
   truncate?: boolean;
 };
+
+const DEFAULT_COLUMN_MIN_SIZE = 128;
+const DEFAULT_COLUMN_SIZE = 224;
+const DEFAULT_COLUMN_MAX_SIZE = 640;
+const COLUMN_RESIZE_STEP = 8;
 
 const dataTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -164,9 +171,9 @@ export const {
 } = createTableHook({
   features: dataTableFeatures,
   defaultColumn: {
-    minSize: 128,
-    size: 224,
-    maxSize: 640,
+    minSize: DEFAULT_COLUMN_MIN_SIZE,
+    size: DEFAULT_COLUMN_SIZE,
+    maxSize: DEFAULT_COLUMN_MAX_SIZE,
   },
   columnResizeMode: "onChange",
   enableColumnResizing: true,
@@ -298,6 +305,8 @@ export type DataTableMessages = PaginationMessages & {
   reorder: string;
   resizeColumn: (column: string) => string;
   listOthers: (count: number) => string;
+  selectAllRows: string;
+  selectRow: string;
 };
 
 const messages = {
@@ -325,6 +334,8 @@ const messages = {
     resizeColumn: (column: string) => `Resize ${column} column`,
     listOthers: (count: number) =>
       count === 1 ? "and 1 other" : `and ${count} others`,
+    selectAllRows: "Select all rows on this page",
+    selectRow: "Select row",
   },
   fr: {
     ...paginationMessages("fr"),
@@ -350,6 +361,8 @@ const messages = {
     resizeColumn: (column: string) => `Redimensionner la colonne ${column}`,
     listOthers: (count: number) =>
       count === 1 ? "et 1 autre" : `et ${count} autres`,
+    selectAllRows: "Sélectionner toutes les lignes de cette page",
+    selectRow: "Sélectionner la ligne",
   },
 } as const satisfies Record<"en" | "fr", DataTableMessages>;
 
@@ -449,6 +462,12 @@ export interface DataTableColumnVisibilityFeature {
   default?: ColumnVisibilityState;
 }
 
+export interface DataTableSelectionFeature<TData> {
+  getRowId: (row: TData) => string;
+  isRowSelectable?: (row: TData) => boolean;
+  onSelectionChange?: (rows: TData[]) => void;
+}
+
 export interface DataTableFeatures<TData> {
   pagination?: DataTablePaginationFeature;
   search?: boolean;
@@ -457,6 +476,7 @@ export interface DataTableFeatures<TData> {
   gallery?: false | DataTableGalleryConfig;
   sorting?: boolean;
   rowActions?: false | DataTableRowActionsFeature<TData>;
+  selection?: false | DataTableSelectionFeature<TData>;
 }
 
 type LegacyDataTableRowAction<TData> = Omit<DataTableRowAction<TData>, "id"> & {
@@ -580,7 +600,7 @@ export const DataTableRowActions = <TData,>({
         onClick={(event) => event.stopPropagation()}
         render={
           <Button
-            className="size-7 shadow-md [&_svg:not([class*='size-'])]:size-3.5"
+            className="size-8 focus-visible:ring-inset [&_svg:not([class*='size-'])]:size-4"
             variant="ghost"
             size="icon"
           >
@@ -850,6 +870,8 @@ const DataTableRow = <TData extends RowData>({
   row,
   rowActions,
   rowActionsLabel,
+  selectRowLabel,
+  selectable,
   table,
 }: {
   canDrag: boolean;
@@ -861,6 +883,8 @@ const DataTableRow = <TData extends RowData>({
   row: DataTableRow<TData>;
   rowActions?: readonly DataTableRowAction<TData>[] | undefined;
   rowActionsLabel?: string | undefined;
+  selectRowLabel: string;
+  selectable: boolean;
   table: DataTableInstance<TData>;
 }) => {
   const sortable = useSortable({
@@ -904,7 +928,7 @@ const DataTableRow = <TData extends RowData>({
   return (
     <TableRow
       className={cn(
-        "h-16 focus-visible:outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid",
+        "group/row h-16 focus-visible:outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid",
         onRowClick && "cursor-pointer",
         isDragging && "opacity-50",
       )}
@@ -931,6 +955,25 @@ const DataTableRow = <TData extends RowData>({
       {...rowAttributes}
       {...(!canReorder ? listeners : {})}
     >
+      {selectable ? (
+        <TableCell
+          className="w-10 min-w-10 cursor-default pr-0"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Checkbox
+            aria-label={selectRowLabel}
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onCheckedChange={(checked, eventDetails) =>
+              row.getToggleSelectedHandler()({
+                nativeEvent: eventDetails.event,
+                target: { checked },
+              })
+            }
+            onClick={(event) => event.stopPropagation()}
+          />
+        </TableCell>
+      ) : null}
       {canReorder ? (
         <TableCell className="w-10 min-w-10 pr-0">
           <Button
@@ -948,7 +991,6 @@ const DataTableRow = <TData extends RowData>({
         </TableCell>
       ) : null}
       {visibleCells.map((cell, index) => {
-        const isLastCell = index === visibleCells.length - 1;
         return (
           <table.AppCell cell={cell} key={cell.id}>
             {(appCell) => (
@@ -958,9 +1000,6 @@ const DataTableRow = <TData extends RowData>({
                   cell.column.columnDef.meta?.truncate
                     ? "whitespace-nowrap"
                     : "whitespace-normal",
-                  rowActions &&
-                    isLastCell &&
-                    "min-w-40 pr-12 [&:has([data-slot=relationship-cell])]:pr-0 [&:has([data-slot=relationship-cell])>div]:mr-11",
                 )}
                 style={
                   index === 0 && firstCellIndent
@@ -987,8 +1026,11 @@ const DataTableRow = <TData extends RowData>({
         );
       })}
       {rowActions ? (
-        <TableCell className="sticky right-0 z-20 w-0 min-w-0 overflow-visible p-0">
-          <div className="bg-background/95 absolute top-1/2 right-2 -translate-y-1/2 rounded-md shadow-sm backdrop-blur">
+        <TableCell
+          className="bg-background group-data-[state=selected]/row:bg-muted sticky right-0 z-20 w-10 min-w-10 cursor-default p-0 transition-colors group-hover/row:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))]"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex h-16 items-center justify-center">
             <DataTableRowActions
               actions={rowActions}
               row={row.original}
@@ -1009,6 +1051,8 @@ const DataTableGalleryCard = <TData extends RowData>({
   row,
   rowActions,
   rowActionsLabel,
+  selectRowLabel,
+  selectable,
   table,
 }: {
   canDrag: boolean;
@@ -1018,6 +1062,8 @@ const DataTableGalleryCard = <TData extends RowData>({
   row: DataTableRow<TData>;
   rowActions?: readonly DataTableRowAction<TData>[] | undefined;
   rowActionsLabel?: string | undefined;
+  selectRowLabel: string;
+  selectable: boolean;
   table: DataTableInstance<TData>;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -1064,6 +1110,24 @@ const DataTableGalleryCard = <TData extends RowData>({
         {...attributes}
         {...listeners}
       >
+        {selectable ? (
+          <div
+            className="absolute top-4 left-4 z-10"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Checkbox
+              aria-label={selectRowLabel}
+              checked={row.getIsSelected()}
+              disabled={!row.getCanSelect()}
+              onCheckedChange={(checked, eventDetails) =>
+                row.getToggleSelectedHandler()({
+                  nativeEvent: eventDetails.event,
+                  target: { checked },
+                })
+              }
+            />
+          </div>
+        ) : null}
         {rowActions ? (
           <div
             className="absolute top-4 right-4 z-10"
@@ -1076,7 +1140,9 @@ const DataTableGalleryCard = <TData extends RowData>({
             />
           </div>
         ) : null}
-        <CardHeader className={cn(rowActions && "pr-14")}>
+        <CardHeader
+          className={cn(rowActions && "pr-14", selectable && "pl-12")}
+        >
           {tagCell && tagLabel ? (
             <Badge variant="secondary" className="mb-1 w-fit gap-1">
               {gallery.tagIcon}
@@ -1109,7 +1175,7 @@ const DataTableGalleryCard = <TData extends RowData>({
   return (
     <Card
       className={cn(
-        "gap-3 transition-colors",
+        "relative gap-3 transition-colors",
         onRowClick && "cursor-pointer hover:bg-accent/20",
         isDragging && "opacity-50",
       )}
@@ -1123,6 +1189,24 @@ const DataTableGalleryCard = <TData extends RowData>({
       {...attributes}
       {...listeners}
     >
+      {selectable ? (
+        <div
+          className="absolute top-4 left-4 z-10"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Checkbox
+            aria-label={selectRowLabel}
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onCheckedChange={(checked, eventDetails) =>
+              row.getToggleSelectedHandler()({
+                nativeEvent: eventDetails.event,
+                target: { checked },
+              })
+            }
+          />
+        </div>
+      ) : null}
       <CardHeader>
         {rowActions ? (
           <CardAction onClick={(event) => event.stopPropagation()}>
@@ -1575,6 +1659,9 @@ export function DataTable<TData extends RowData>({
       : undefined;
   const showGallery = !!galleryConfig;
   const showSorting = features?.sorting ?? true;
+  const selectionFeature =
+    features?.selection === false ? undefined : features?.selection;
+  const selectable = !!selectionFeature;
   const isServerMode =
     paginationFeature !== false && paginationFeature.mode === "server";
   const serverRowCount = isServerMode ? paginationFeature.rowCount : undefined;
@@ -1660,7 +1747,7 @@ export function DataTable<TData extends RowData>({
   const currentView: DataTableView = showGallery ? storedView : "table";
   const isGalleryView = currentView === "gallery";
 
-  const [rowSelection, setRowSelection] = useState({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<string, boolean>
   >({});
@@ -1715,7 +1802,15 @@ export function DataTable<TData extends RowData>({
 
       setColumnSizing(nextColumnSizing);
     },
-    ...(reordering ? { getRowId: reordering.getRowId } : {}),
+    ...(selectionFeature
+      ? { getRowId: selectionFeature.getRowId }
+      : reordering
+        ? { getRowId: reordering.getRowId }
+        : {}),
+    enableRowSelection: selectionFeature?.isRowSelectable
+      ? (row) => selectionFeature.isRowSelectable?.(row.original) ?? true
+      : selectable,
+    enableMultiRowSelection: selectable,
     onPaginationChange: (updater) => {
       const newPagination =
         typeof updater === "function" ? updater(pagination) : updater;
@@ -1787,7 +1882,15 @@ export function DataTable<TData extends RowData>({
 
       setColumnVisibility(nextColumnVisibility);
     },
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: (updater) => {
+      setRowSelection((current) => {
+        const next = typeof updater === "function" ? updater(current) : updater;
+        selectionFeature?.onSelectionChange?.(
+          data.filter((row) => next[selectionFeature.getRowId(row)]),
+        );
+        return next;
+      });
+    },
     state: {
       sorting,
       pagination,
@@ -1823,6 +1926,7 @@ export function DataTable<TData extends RowData>({
   const colSpan =
     Math.max(table.getVisibleLeafColumns().length, 1) +
     (rowActions ? 1 : 0) +
+    (selectable ? 1 : 0) +
     (canReorderRows ? 1 : 0);
   const canDragRows = activeGroupingFields.some(
     (field) => !!field.onMoveToGroup,
@@ -1897,6 +2001,8 @@ export function DataTable<TData extends RowData>({
           row={row}
           rowActions={rowActions}
           rowActionsLabel={rowActionsLabel}
+          selectRowLabel={labels.selectRow}
+          selectable={selectable}
           table={table}
         />
       ))}
@@ -1931,6 +2037,8 @@ export function DataTable<TData extends RowData>({
                   row={row}
                   rowActions={rowActions}
                   rowActionsLabel={rowActionsLabel}
+                  selectRowLabel={labels.selectRow}
+                  selectable={selectable}
                   table={table}
                 />
               ))
@@ -2082,12 +2190,27 @@ export function DataTable<TData extends RowData>({
                 <Table
                   className="table-fixed"
                   style={{
-                    width: `max(100%, ${table.getTotalSize() + (canReorderRows ? 40 : 0)}px)`,
+                    width: `max(100%, ${table.getTotalSize() + (canReorderRows ? 40 : 0) + (selectable ? 40 : 0) + (rowActions ? 40 : 0)}px)`,
                   }}
                 >
                   <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id} className="p-4">
+                        {selectable ? (
+                          <TableHead className="w-10 min-w-10 pr-0">
+                            <Checkbox
+                              aria-label={labels.selectAllRows}
+                              checked={table.getIsAllPageRowsSelected()}
+                              indeterminate={
+                                table.getIsSomePageRowsSelected() &&
+                                !table.getIsAllPageRowsSelected()
+                              }
+                              onCheckedChange={(checked) =>
+                                table.toggleAllPageRowsSelected(checked)
+                              }
+                            />
+                          </TableHead>
+                        ) : null}
                         {canReorderRows ? (
                           <TableHead className="w-10 min-w-10 p-0" />
                         ) : null}
@@ -2106,11 +2229,52 @@ export function DataTable<TData extends RowData>({
                                     aria-label={labels.resizeColumn(
                                       getHeaderName(header),
                                     )}
+                                    aria-orientation="vertical"
+                                    aria-valuemax={
+                                      header.column.columnDef.maxSize ??
+                                      DEFAULT_COLUMN_MAX_SIZE
+                                    }
+                                    aria-valuemin={
+                                      header.column.columnDef.minSize ??
+                                      DEFAULT_COLUMN_MIN_SIZE
+                                    }
+                                    aria-valuenow={header.column.getSize()}
                                     className={cn(
                                       "hover:bg-primary/60 absolute inset-y-0 right-0 z-10 w-1 cursor-col-resize touch-none bg-transparent p-0 select-none",
                                       header.column.getIsResizing() &&
                                         "bg-primary",
                                     )}
+                                    onKeyDown={(event) => {
+                                      const minSize =
+                                        header.column.columnDef.minSize ??
+                                        DEFAULT_COLUMN_MIN_SIZE;
+                                      const maxSize =
+                                        header.column.columnDef.maxSize ??
+                                        DEFAULT_COLUMN_MAX_SIZE;
+                                      const currentSize =
+                                        header.column.getSize();
+                                      const nextSize =
+                                        event.key === "ArrowLeft"
+                                          ? currentSize - COLUMN_RESIZE_STEP
+                                          : event.key === "ArrowRight"
+                                            ? currentSize + COLUMN_RESIZE_STEP
+                                            : event.key === "Home"
+                                              ? minSize
+                                              : event.key === "End"
+                                                ? maxSize
+                                                : undefined;
+
+                                      if (nextSize === undefined) return;
+                                      event.preventDefault();
+                                      table.setColumnSizing((current) => ({
+                                        ...current,
+                                        [header.column.id]: Math.min(
+                                          maxSize,
+                                          Math.max(minSize, nextSize),
+                                        ),
+                                      }));
+                                    }}
+                                    role="separator"
                                     type="button"
                                     onDoubleClick={() =>
                                       header.column.resetSize()
@@ -2124,7 +2288,7 @@ export function DataTable<TData extends RowData>({
                           </table.AppHeader>
                         ))}
                         {rowActions ? (
-                          <TableHead className="sticky right-0 z-20 w-0 min-w-0 p-0" />
+                          <TableHead className="w-10 min-w-10 p-0" />
                         ) : null}
                       </TableRow>
                     ))}
@@ -2160,6 +2324,8 @@ export function DataTable<TData extends RowData>({
                                 row={row}
                                 rowActions={rowActions}
                                 rowActionsLabel={rowActionsLabel}
+                                selectRowLabel={labels.selectRow}
+                                selectable={selectable}
                                 table={table}
                               />
                             ))}
@@ -2174,6 +2340,8 @@ export function DataTable<TData extends RowData>({
                               row={row}
                               rowActions={rowActions}
                               rowActionsLabel={rowActionsLabel}
+                              selectRowLabel={labels.selectRow}
+                              selectable={selectable}
                               table={table}
                             />
                           ))
@@ -2687,7 +2855,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
             <Button
               variant="ghost"
               size="sm"
-              className="data-[state=open]:bg-accent h-12 w-full justify-start rounded-none px-2"
+              className="data-[state=open]:bg-accent h-8 max-w-full justify-start px-2"
             >
               <span className="min-w-0 truncate text-sm">{title}</span>
               {sortDirection === "desc" ? (
@@ -2700,7 +2868,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
             </Button>
           }
         />
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" className="max-w-56">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
               <ArrowUp className="text-muted-foreground/70 h-3.5 w-3.5" />

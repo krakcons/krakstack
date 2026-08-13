@@ -214,7 +214,7 @@ export function DataTablePreview() {
           row actions.
         </CardDescription>
       </CardHeader>
-      <CardContent className="max-w-full min-w-0 overflow-hidden">
+      <CardContent className="max-w-full min-w-0">
         <DataTable
           columns={columns}
           data={projects}
@@ -222,6 +222,7 @@ export function DataTablePreview() {
             export: { baseName: "projects", scope: "filteredRows" },
             gallery: { name: "name", description: "summary", tag: "status" },
             rowActions: { items: rowActions },
+            selection: { getRowId: (project) => project.id },
           }}
           grouping={{
             initial: ["status"],
