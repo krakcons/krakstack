@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -139,6 +139,14 @@
     "./service-notification": {
       "types": "./dist/services/notification/index.d.ts",
       "import": "./dist/services/notification/index.js"
+    },
+    "./service-notification/client": {
+      "types": "./dist/services/notification/client/index.d.ts",
+      "import": "./dist/services/notification/client/index.js"
+    },
+    "./notifications": {
+      "types": "./dist/services/notification/public.d.ts",
+      "import": "./dist/services/notification/public.js"
     },
     "./service-notification/channels": {
       "types": "./dist/services/notification/channels/index.d.ts",

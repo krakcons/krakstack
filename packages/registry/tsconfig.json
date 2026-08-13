@@ -42,6 +42,8 @@
     "../../src/components/ui/stats-card.tsx",
     "../../src/components/ui/virtualized-combobox.tsx",
     "../../src/services/notification/index.ts",
+    "../../src/services/notification/client/index.ts",
+    "../../src/services/notification/public.ts",
     "../../src/services/notification/channels/ses/index.ts",
     "../../src/services/s3/index.ts"
   ],

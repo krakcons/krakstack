@@ -1,0 +1,294 @@
+---
+slug: notifications
+path: /docs/notifications
+title: Notifications and email setup
+description: Add the notification menu, scope project-owned inbox data, and configure direct or queued email delivery.
+order: 17
+locale: en
+section: notifications
+type: how-to
+---
+
+# Notifications and email setup
+
+KrakStack separates notification presentation, channel dispatch, and delivery infrastructure. The registry supplies a controlled notification menu, an Effect dispatcher, and a direct Amazon SES channel. Your application owns recipients, authorization, persistence, templates, and delivery policy.
+
+## Choose the parts you need
+
+| Need                     | KrakStack item or export                             | Project responsibility                                   |
+| ------------------------ | ---------------------------------------------------- | -------------------------------------------------------- |
+| Bell menu and inbox UI   | `notification-menu` or `service-notification/client` | Fetch scoped records, mutate them, and navigate          |
+| Channel dispatch         | `service-notification`                               | Compose installed channels and decide when to send       |
+| Direct email through SES | `notification-channel-email-ses`                     | Configure AWS, render content, and invoke the dispatcher |
+| Durable in-app inbox     | Not shipped yet                                      | Store recipient records and read/archive state           |
+| Queued email and retries | Not shipped yet                                      | Own the outbox, worker, scheduling, and observability    |
+
+> Do not trust user, organization, or workspace IDs supplied by the browser. Resolve the current actor and authorize every read or mutation at the server boundary.
+
+## Install the notification components
+
+Choose one installation model for the UI.
+
+Install source through the shadcn registry when the component should live in your project:
+
+```bash
+bunx shadcn@latest add @krak-stack/notification-menu
+```
+
+The item installs `NotificationMenu` under `services/notification/client` and adds its standard shadcn dependencies.
+
+Alternatively, install the package:
+
+```bash
+bun add @krak-stack/registry
+```
+
+Use the client-only subpath in browser code:
+
+```tsx
+import {
+  NotificationMenu,
+  type NotificationItem,
+} from "@krak-stack/registry/service-notification/client";
+```
+
+The umbrella export is also available when a module needs the UI and dispatcher together:
+
+```ts
+import {
+  NotificationMenu,
+  NotificationService,
+} from "@krak-stack/registry/notifications";
+```
+
+If package components are rendered in your application, include the package Tailwind source:
+
+```css
+@import "@krak-stack/registry/tailwind.css";
+```
+
+## Connect the menu to project data
+
+`NotificationMenu` is controlled by data and callbacks. It does not fetch, cache, or authorize records.
+
+```tsx
+import { useNavigate } from "@tanstack/react-router";
+import { NotificationMenu } from "@krak-stack/registry/service-notification/client";
+
+export function WorkspaceNotifications({ notifications }) {
+  const navigate = useNavigate();
+
+  return (
+    <NotificationMenu
+      notifications={notifications}
+      onMarkRead={(notificationIds) =>
+        notificationClient.markRead({ notificationIds })
+      }
+      onArchive={(notificationIds) =>
+        notificationClient.archive({ notificationIds })
+      }
+      onNavigate={(notification) => {
+        if (notification.href) void navigate({ href: notification.href });
+      }}
+    />
+  );
+}
+```
+
+Each item supports:
+
+- `id` and `title`
+- optional `description`, `href`, `createdAt`, and `timestampLabel`
+- `readAt` for unread presentation
+- `archivedAt` for inbox/archive placement
+
+Opening the menu reports all unread inbox IDs to `onMarkRead`. Set `markReadOnOpen={false}` if your product uses item-level read behavior. `onArchive` receives either one item ID or every current inbox ID.
+
+Use `renderItem` or `renderTrigger` to change presentation without coupling the registry component to your router or domain. Pass `locale` or `messages` to override the built-in English and French menu chrome.
+
+## Define the trusted server contract
+
+The browser should submit only record IDs and intent. The server derives actor and scope from the authenticated request.
+
+```ts
+type NotificationClient = {
+  list: (input: {
+    state: "inbox" | "archive";
+  }) => Promise<readonly NotificationItem[]>;
+  markRead: (input: { notificationIds: readonly string[] }) => Promise<void>;
+  archive: (input: { notificationIds: readonly string[] }) => Promise<void>;
+};
+```
+
+For every operation, the server should:
+
+1. Resolve the authenticated actor.
+2. Resolve the active organization and workspace from trusted session context.
+3. Verify that every requested notification belongs to that recipient and scope.
+4. Apply the mutation and return only authorized records.
+5. Invalidate or refresh the matching client query.
+
+## Add the notification dispatcher
+
+Install the Effect service through source:
+
+```bash
+bunx shadcn@latest add @krak-stack/service-notification
+```
+
+Or import it from the package:
+
+```ts
+import { NotificationService } from "@krak-stack/registry/service-notification";
+import { NotificationChannelRegistry } from "@krak-stack/registry/service-notification/channels";
+```
+
+`NotificationService` dispatches each top-level message key to every installed channel with the same key. This keeps event policy separate from providers.
+
+```ts
+import { Effect, Layer } from "effect";
+import { NotificationService } from "@krak-stack/registry/service-notification";
+import { NotificationChannelRegistry } from "@krak-stack/registry/service-notification/channels";
+
+const channels = NotificationChannelRegistry.layer([
+  {
+    key: "inApp",
+    send: (payload) => persistInboxNotification(payload),
+  },
+]);
+
+const notificationLayer = NotificationService.layer.pipe(
+  Layer.provide(channels),
+);
+```
+
+Project channels can augment `NotificationChannels` so `send` remains typed. Keep event definitions in project source, because event names and payloads are domain policy rather than registry policy.
+
+## Configure direct SES email
+
+Install both registry items:
+
+```bash
+bunx shadcn@latest add \
+  @krak-stack/service-notification \
+  @krak-stack/notification-channel-email-ses
+```
+
+Set the required server environment variables:
+
+```dotenv
+SES_REGION=ca-central-1
+SES_ACCESS_KEY_ID=...
+SES_SECRET_ACCESS_KEY=...
+NOTIFICATION_EMAIL_FROM=Example <no-reply@example.com>
+```
+
+Compose the SES channel into the dispatcher:
+
+```ts
+import { Effect, Layer } from "effect";
+import { NotificationService } from "@krak-stack/registry/service-notification";
+import { NotificationChannelRegistry } from "@krak-stack/registry/service-notification/channels";
+import { SesNotificationChannel } from "@krak-stack/registry/notification-channel-email-ses";
+
+const channels = Layer.effect(
+  NotificationChannelRegistry,
+  Effect.gen(function* () {
+    const email = yield* SesNotificationChannel;
+    return NotificationChannelRegistry.make(email);
+  }),
+).pipe(Layer.provide(SesNotificationChannel.layer));
+
+export const notificationLayer = NotificationService.layer.pipe(
+  Layer.provide(channels),
+);
+```
+
+Send rendered text or HTML:
+
+```ts
+const program = Effect.gen(function* () {
+  const notifications = yield* NotificationService;
+
+  yield* notifications.send({
+    email: {
+      to: "volunteer@example.com",
+      subject: "Application approved",
+      text: "Your volunteer application was approved.",
+      html: "<p>Your volunteer application was approved.</p>",
+    },
+  });
+});
+```
+
+The SES payload also supports `from`, `cc`, `bcc`, and `replyTo`. At least one of `text` or `html` is required. A payload-level `from` overrides `NOTIFICATION_EMAIL_FROM`.
+
+Direct SES delivery is appropriate for simple or non-critical messages. It runs in the request process and does not provide a durable outbox, scheduled retries, or an administrative delivery log.
+
+## Design durable project-owned storage
+
+For product notifications and reliable email, keep data in the project database. A recommended design uses four tables:
+
+| Table                   | Purpose                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `notifications`         | Recipient-specific inbox records and read/archive timestamps                  |
+| `notification_settings` | Per-user in-app and email preferences                                         |
+| `emails`                | Product-facing email outbox, rendered snapshot, attempts, and provider result |
+| `effect_queue`          | Internal worker leases, retries, and deduplication                            |
+
+Store external identity and organization IDs as text unless the identity tables are in the same database. Do not add cross-database foreign keys.
+
+Persist the following scope on each inbox record:
+
+- recipient user ID
+- organization ID when applicable
+- workspace or audience
+- event key and version
+- title, description, and destination snapshot
+- created, read, and archived timestamps
+
+For email records, store the rendered subject, text, and HTML snapshot plus template key and template version. Keep template implementations in source control. Retrying a delivery should send the persisted snapshot instead of rendering a potentially changed template.
+
+> KrakStack does not yet export these four Drizzle tables or a queued-email worker. The names above document the recommended project boundary, not currently installable APIs.
+
+## Queue email safely
+
+When email must survive process crashes, use an outbox flow:
+
+1. In the same database transaction as the domain change, insert the in-app notification and a pending `emails` record.
+2. Commit the transaction before offering work to the queue.
+3. Let an outbox relay recover committed pending email that was not offered because the process crashed.
+4. Queue a versioned job containing only `{ emailId }`.
+5. Have the worker claim the email record, send its persisted snapshot, and store the provider result.
+6. Schedule delivery retries through an `availableAt` timestamp on `emails`; reserve queue retries for infrastructure failures.
+
+Do not compose both a direct SES channel and a queued email channel under the same `email` key in the web process. `NotificationService` invokes every matching channel, so that composition would send duplicates. The web process should enqueue; only the worker should invoke the SES transport.
+
+## Apply preferences and localization
+
+Decide preferences before creating optional channel work:
+
+- Persist in-app notifications only when the in-app channel is enabled.
+- Enqueue optional email only when the email channel is enabled.
+- Do not allow preferences to suppress transactional or legally required messages unless product policy explicitly permits it.
+
+Resolve the recipient locale at publication time. Render source-defined email templates in that locale, then persist the rendered snapshot. Notification menu chrome is localized independently through the component's `locale` and `messages` props.
+
+## Production checklist
+
+- Authorize list, read, and archive operations on the server.
+- Include recipient, organization, and workspace scope in every query and mutation.
+- Keep browser exports separate from database, AWS, and worker modules.
+- Verify SES identities, sandbox status, sending limits, and least-privilege credentials.
+- Make event keys and queue payloads versioned.
+- Make worker claims concurrency-safe and idempotent.
+- Record attempts, provider IDs, failures, and final delivery status.
+- Test English and French menu copy and email snapshots.
+- Test process crashes between database commit, queue offer, and provider response.
+- Never log credentials or sensitive message bodies.
+
+## Related references
+
+- [Notification menu](/docs/notification-menu)
+- [Notification service](/docs/service-notification)
+- [Amazon SES notification channel](/docs/notification-channel-email-ses)

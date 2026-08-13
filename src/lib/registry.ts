@@ -49,9 +49,11 @@ export function getRegistryGroup(item: RegistryItem) {
     return "Components";
   }
   if (
-    ["service-notification", "notification-channel-email-ses"].includes(
-      item.name,
-    )
+    [
+      "notification-menu",
+      "service-notification",
+      "notification-channel-email-ses",
+    ].includes(item.name)
   ) {
     return "Notifications";
   }
