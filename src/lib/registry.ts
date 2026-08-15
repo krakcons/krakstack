@@ -56,13 +56,14 @@ export function getRegistryGroup(item: RegistryItem) {
     [
       "query-helpers",
       "docs",
-      "docs-ai",
-      "httpapi-ai",
+      "documentation-toolkit",
+      "httpapi-toolkit",
       "httpapi-cli",
       "httpapi-client",
       "httpapi-mcp",
       "localization",
       "seo",
+      "webfetch-toolkit",
     ].includes(item.name)
   ) {
     return "Libraries";

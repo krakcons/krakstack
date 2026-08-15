@@ -14,11 +14,21 @@ import { Pagination } from "@krak-stack/registry/pagination";
 import { AgentService } from "@krak-stack/registry/agent";
 import { AgentWidget, makeAgentAtoms } from "@krak-stack/registry/agent/client";
 import { makeAgentApiGroup } from "@krak-stack/registry/agent/schema";
-import { makeHttpApiAiToolkit } from "@krak-stack/registry/httpapi/ai";
+import {
+  HttpApiToolkit,
+  HttpApiToolkitLayer,
+} from "@krak-stack/registry/httpapi-toolkit";
 import { ApiClient } from "@krak-stack/registry/httpapi/client";
 import { HttpApiSpec } from "@krak-stack/registry/httpapi/helpers";
 import { createMdxDocsSource, makeDocs } from "@krak-stack/registry/docs";
-import { makeChatDocumentation } from "@krak-stack/registry/docs-ai";
+import {
+  DocumentationToolkit,
+  DocumentationToolkitLayer,
+} from "@krak-stack/registry/documentation-toolkit";
+import {
+  WebFetchToolkit,
+  WebFetchToolkitLayer,
+} from "@krak-stack/registry/webfetch-toolkit";
 import { Query } from "@krak-stack/registry/query";
 import { createSeo } from "@krak-stack/registry/seo";
 import { FileExtractionService } from "@krak-stack/registry/service-file-extraction";

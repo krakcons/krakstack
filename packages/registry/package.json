@@ -28,9 +28,9 @@
       "types": "./dist/services/agent/schema.d.ts",
       "import": "./dist/services/agent/schema.js"
     },
-    "./httpapi/ai": {
-      "types": "./dist/lib/httpapi-ai.d.ts",
-      "import": "./dist/lib/httpapi-ai.js"
+    "./httpapi-toolkit": {
+      "types": "./dist/lib/httpapi-toolkit.d.ts",
+      "import": "./dist/lib/httpapi-toolkit.js"
     },
     "./httpapi/cli": {
       "types": "./dist/lib/httpapi-cli.d.ts",
@@ -52,9 +52,13 @@
       "types": "./dist/lib/docs-core.d.ts",
       "import": "./dist/lib/docs-core.js"
     },
-    "./docs-ai": {
-      "types": "./dist/lib/docs-ai.d.ts",
-      "import": "./dist/lib/docs-ai.js"
+    "./documentation-toolkit": {
+      "types": "./dist/lib/documentation-toolkit.d.ts",
+      "import": "./dist/lib/documentation-toolkit.js"
+    },
+    "./webfetch-toolkit": {
+      "types": "./dist/lib/webfetch-toolkit.d.ts",
+      "import": "./dist/lib/webfetch-toolkit.js"
     },
     "./query": {
       "types": "./dist/lib/query.d.ts",
