@@ -88,7 +88,7 @@ function Dependencies({ item }: { item: RegistryItem }) {
     {
       title: "Registry Dependencies",
       items: item.registryDependencies,
-      getHref: getShadcnHref,
+      getHref: getRegistryDependencyHref,
     },
   ].filter((section) => section.items?.length);
 
@@ -115,18 +115,23 @@ function Dependencies({ item }: { item: RegistryItem }) {
               {section.title}
             </h2>
             <ul className="flex flex-wrap gap-1.5">
-              {section.items?.map((dependency) => (
-                <li key={dependency}>
-                  <a
-                    className="bg-background text-foreground hover:border-primary hover:text-primary inline-flex rounded-md border px-2 py-1 font-mono text-xs transition-colors"
-                    href={section.getHref(dependency)}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {dependency}
-                  </a>
-                </li>
-              ))}
+              {section.items?.map((dependency) => {
+                const href = section.getHref(dependency);
+                const external = !href.startsWith("/");
+
+                return (
+                  <li key={dependency}>
+                    <a
+                      className="bg-background text-foreground hover:border-primary hover:text-primary inline-flex rounded-md border px-2 py-1 font-mono text-xs transition-colors"
+                      href={href}
+                      rel={external ? "noreferrer" : undefined}
+                      target={external ? "_blank" : undefined}
+                    >
+                      {dependency}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ))}
@@ -149,7 +154,12 @@ function getPackageName(dependency: string) {
     : dependency.slice(0, versionSeparator);
 }
 
-function getShadcnHref(dependency: string) {
+function getRegistryDependencyHref(dependency: string) {
+  const registryPrefix = "@krak-stack/";
+  if (dependency.startsWith(registryPrefix)) {
+    return `/docs/${encodeURIComponent(dependency.slice(registryPrefix.length))}`;
+  }
+
   return `https://ui.shadcn.com/docs/components/${dependency}`;
 }
 
