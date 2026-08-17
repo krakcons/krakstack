@@ -3,9 +3,7 @@
   "name": "httpapi-client",
   "title": "HttpApi Client",
   "description": "A generated Effect HttpApi client service with shared OpenAPI operation discovery, input decoding, and tool schema helpers.",
-  "dependencies": [
-    "effect@beta"
-  ],
+  "dependencies": ["effect@beta"],
   "files": [
     {
       "path": "src/lib/httpapi-client.ts",

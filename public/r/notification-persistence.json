@@ -3,10 +3,7 @@
   "name": "notification-persistence",
   "title": "Notification Persistence",
   "description": "Reusable PostgreSQL tables and Effect codecs for notification inbox records, channel settings, and durable delivery snapshots.",
-  "dependencies": [
-    "drizzle-orm@rc",
-    "effect@beta"
-  ],
+  "dependencies": ["drizzle-orm@rc", "effect@beta"],
   "registryDependencies": [],
   "files": [
     {

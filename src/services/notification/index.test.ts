@@ -2,7 +2,11 @@ import { Effect } from "effect";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { NotificationChannelRegistry } from "./channels";
-import { NotificationService, type NotificationServiceContract } from "./index";
+import {
+  NotificationService,
+  type NotificationServiceContract,
+  type NotificationPersistenceStoreContract,
+} from "./index";
 import { type SesEmailNotification } from "./channels/ses/schema";
 
 describe("NotificationService", () => {
@@ -25,7 +29,7 @@ describe("NotificationService", () => {
       Effect.gen(function* () {
         const notifications = yield* NotificationService;
 
-        yield* notifications.send({
+        const result = yield* notifications.send({
           email: {
             to: "user@example.com",
             subject: "Deploy succeeded",
@@ -33,6 +37,7 @@ describe("NotificationService", () => {
           },
         });
 
+        expect(result).toBeUndefined();
         expect(sent).toEqual([
           {
             channel: "email-a",
@@ -74,6 +79,110 @@ describe("NotificationService", () => {
     );
   });
 
+  it("persists structured send envelopes before dispatching channels", async () => {
+    const persisted: Array<unknown> = [];
+    const sent: Array<unknown> = [];
+    const store: NotificationPersistenceStoreContract = {
+      persist: (input) =>
+        Effect.sync(() => {
+          persisted.push(input);
+          return {
+            deliveryIds: ["delivery-1"],
+            notificationId: "notification-1",
+          };
+        }),
+    };
+    const layer = NotificationService.makePersistentLayer({
+      channels: [
+        {
+          key: "email",
+          send: (payload) => Effect.sync(() => sent.push(payload)),
+        },
+      ],
+      store,
+    });
+
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const notifications = yield* NotificationService;
+
+        const result = yield* notifications.send({
+          persist: {
+            idempotencyKey: "event:user-1",
+            eventKey: "user.created",
+            recipientUserId: "user-1",
+            inbox: { title: "Welcome" },
+            deliveries: [
+              {
+                channel: "email",
+                purpose: "transactional",
+                recipientAddress: "user@example.com",
+                payload: {
+                  to: "user@example.com",
+                  subject: "Welcome",
+                  text: "Thanks for joining.",
+                },
+              },
+            ],
+          },
+          message: {
+            email: {
+              to: "user@example.com",
+              subject: "Welcome",
+              text: "Thanks for joining.",
+            },
+          },
+        });
+
+        expect(result).toEqual({
+          deliveryIds: ["delivery-1"],
+          notificationId: "notification-1",
+        });
+        expect(persisted).toHaveLength(1);
+        expect(sent).toEqual([
+          {
+            to: "user@example.com",
+            subject: "Welcome",
+            text: "Thanks for joining.",
+          },
+        ]);
+      }).pipe(Effect.provide(layer)),
+    );
+  });
+
+  it("persists structured send envelopes without requiring a channel message", async () => {
+    const persisted: Array<unknown> = [];
+    const store: NotificationPersistenceStoreContract = {
+      persist: (input) =>
+        Effect.sync(() => {
+          persisted.push(input);
+          return { deliveryIds: [], notificationId: "notification-1" };
+        }),
+    };
+    const layer = NotificationService.makePersistentLayer({
+      channels: [],
+      store,
+    });
+
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const notifications = yield* NotificationService;
+
+        const result = yield* notifications.send({
+          persist: {
+            idempotencyKey: "event:user-1",
+            eventKey: "user.created",
+            recipientUserId: "user-1",
+            inbox: { title: "Welcome" },
+          },
+        });
+
+        expect(result?.notificationId).toBe("notification-1");
+        expect(persisted).toHaveLength(1);
+      }).pipe(Effect.provide(layer)),
+    );
+  });
+
   it("creates registries from multiple channel instances", () => {
     const email = { key: "email", send: () => Effect.void };
     const push = { key: "push", send: () => Effect.void };
@@ -84,10 +193,16 @@ describe("NotificationService", () => {
   });
 
   it("types installed notification channel payloads", () => {
-    type Message = Parameters<NotificationServiceContract["send"]>[0];
+    type SendInput = Parameters<NotificationServiceContract["send"]>[0];
 
-    expectTypeOf<Message>().toEqualTypeOf<{
-      readonly email?: SesEmailNotification;
-    }>();
+    const message = {
+      email: {
+        to: "user@example.com",
+        subject: "Deploy succeeded",
+        text: "All checks passed.",
+      },
+    } satisfies SendInput;
+
+    expectTypeOf(message.email).toMatchTypeOf<SesEmailNotification>();
   });
 });

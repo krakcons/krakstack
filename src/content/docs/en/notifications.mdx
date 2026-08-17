@@ -276,16 +276,16 @@ The Effect codec rejects unsupported channel and payload-version combinations. A
 
 ## Queue email safely
 
-The following flow is application-owned. When email must survive process crashes:
+The persistence store implementation is application-owned, but `NotificationService.send` can orchestrate the persist step. When email must survive process crashes:
 
-1. In the same database transaction as the domain change, insert the in-app notification and a queued `notification_deliveries` record.
+1. In the same database transaction as the domain change, call `NotificationService.send({ persist })` with a store that inserts the in-app notification and queued `notification_deliveries` record.
 2. Commit the transaction before offering work to the queue.
 3. Let an outbox relay recover committed deliveries that were not offered because the process crashed.
 4. Queue a versioned job containing only `{ deliveryId }`.
 5. Have the worker lease the delivery record, decode and send its persisted snapshot, and store the provider result.
 6. Schedule application retries through `scheduledFor`; reserve queue retries for infrastructure failures.
 
-Do not compose both a direct SES channel and a queued email channel under the same `email` key in the web process. `NotificationService` invokes every matching channel, so that composition would send duplicates. The web process should enqueue; only the worker should invoke the SES transport.
+Do not compose both a direct SES channel and a queued email channel under the same `email` key in the web process. `NotificationService` invokes every matching channel when `message` is present, so that composition would send duplicates. The web process should persist/queue; only the worker should invoke the SES transport.
 
 ## Apply preferences and localization
 

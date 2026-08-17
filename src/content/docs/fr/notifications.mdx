@@ -276,16 +276,16 @@ Le codec Effect rejette les combinaisons de canal et de version non prises en ch
 
 ## Mettre les courriels en file de façon sûre
 
-Le flux suivant appartient à l'application. Quand un courriel doit survivre à un arrêt du processus :
+L'implémentation du store de persistance appartient à l'application, mais `NotificationService.send` peut orchestrer l'étape de persistance. Quand un courriel doit survivre à un arrêt du processus :
 
-1. Dans la même transaction que le changement de domaine, insérez la notification intégrée et un enregistrement `notification_deliveries` en file.
+1. Dans la même transaction que le changement de domaine, appelez `NotificationService.send({ persist })` avec un store qui insère la notification intégrée et l'enregistrement `notification_deliveries` en file.
 2. Validez la transaction avant de proposer le travail à la file.
 3. Utilisez un relais outbox pour récupérer une livraison validée mais non proposée si le processus s'est arrêté.
 4. Placez dans la file une tâche versionnée contenant uniquement `{ deliveryId }`.
 5. Faites acquérir un bail sur la livraison par le worker, décodez et envoyez son snapshot, puis stockez le résultat du fournisseur.
 6. Planifiez les nouvelles tentatives applicatives avec `scheduledFor`; réservez les tentatives de la file aux pannes d'infrastructure.
 
-Ne composez pas un canal SES direct et un canal de courriel en file sous la même clé `email` dans le processus Web. `NotificationService` appelle tous les canaux correspondants et enverrait donc des doublons. Le processus Web doit mettre en file; seul le worker doit appeler le transport SES.
+Ne composez pas un canal SES direct et un canal de courriel en file sous la même clé `email` dans le processus Web. `NotificationService` appelle tous les canaux correspondants quand `message` est présent et enverrait donc des doublons. Le processus Web doit persister/mettre en file; seul le worker doit appeler le transport SES.
 
 ## Appliquer les préférences et la langue
 

@@ -31,4 +31,4 @@ export class NotificationSendError extends Schema.TaggedErrorClass<NotificationS
   },
 ) {}
 
-export type { NotificationMessage } from "./channels";
+export type { NotificationMessage, NotificationSendInput } from "./channels";
