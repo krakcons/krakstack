@@ -4,7 +4,11 @@
   "title": "Lint & Format Config",
   "description": "Production-ready Oxfmt and Oxlint configuration for KrakStack projects, including vendored anti-slop rules, Tailwind class sorting, and React/TypeScript correctness checks.",
   "dependencies": [],
-  "devDependencies": ["@oxlint/plugins", "oxfmt", "oxlint"],
+  "devDependencies": [
+    "@oxlint/plugins",
+    "oxfmt",
+    "oxlint"
+  ],
   "files": [
     {
       "path": ".oxfmtrc.json",

@@ -3,8 +3,12 @@
   "name": "workflow-layer",
   "title": "Workflow Engine",
   "description": "A shared Effect durable workflow engine layer with a versioned service workflow example using idempotency and durable activities.",
-  "dependencies": ["effect@beta"],
-  "registryDependencies": ["@krak-stack/service-database"],
+  "dependencies": [
+    "effect@beta"
+  ],
+  "registryDependencies": [
+    "@krak-stack/service-database"
+  ],
   "files": [
     {
       "path": "src/services/workflow.ts",

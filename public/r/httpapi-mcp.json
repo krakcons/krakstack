@@ -3,8 +3,12 @@
   "name": "httpapi-mcp",
   "title": "HttpApi MCP",
   "description": "An Effect MCP registrar and HTTP server driven by OpenAPI metadata, exposing selected HttpApi operations through the generated API client.",
-  "dependencies": ["effect@beta"],
-  "registryDependencies": ["@krak-stack/httpapi-client"],
+  "dependencies": [
+    "effect@beta"
+  ],
+  "registryDependencies": [
+    "@krak-stack/httpapi-client"
+  ],
   "files": [
     {
       "path": "src/lib/httpapi-mcp.ts",

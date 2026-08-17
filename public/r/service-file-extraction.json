@@ -3,7 +3,10 @@
   "name": "service-file-extraction",
   "title": "File Extraction Service",
   "description": "A configurable Effect service that safely extracts bounded Markdown text from in-memory documents using Xberg.",
-  "dependencies": ["effect@beta", "@xberg-io/xberg@1.0.14"],
+  "dependencies": [
+    "effect@beta",
+    "@xberg-io/xberg@1.0.14"
+  ],
   "files": [
     {
       "path": "src/services/file-extraction/index.ts",

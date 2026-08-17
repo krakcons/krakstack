@@ -3,8 +3,12 @@
   "name": "documentation-toolkit",
   "title": "Documentation Toolkit",
   "description": "An Effect AI toolkit contribution for searching and reading the same documentation catalog used by the application UI.",
-  "dependencies": ["effect@beta"],
-  "registryDependencies": ["@krak-stack/docs"],
+  "dependencies": [
+    "effect@beta"
+  ],
+  "registryDependencies": [
+    "@krak-stack/docs"
+  ],
   "files": [
     {
       "path": "src/lib/documentation-toolkit.ts",
