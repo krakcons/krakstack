@@ -4,13 +4,40 @@ import { describe, expect, it } from "@effect/vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
-import { GoogleMap } from "./google-map";
+import {
+  GoogleMap,
+  type GoogleMapPoint,
+  type GoogleMapsApi,
+} from "./google-map";
 
-vi.mock("@/paraglide/runtime", () => ({ getLocale: () => "en" }));
+type MockMapOptions = {
+  center: GoogleMapPoint;
+  zoom: number;
+};
+type MockMapReference = {
+  getZoom: () => number | undefined;
+  setCenter: (center: GoogleMapPoint) => void;
+  setOptions: (options: Partial<MockMapOptions>) => void;
+  setZoom: (zoom: number) => void;
+};
+type MockMarkerOptions = {
+  map: MockMapReference;
+  position: GoogleMapPoint;
+  icon?: string;
+};
+type MockCircleOptions = {
+  center: GoogleMapPoint;
+  clickable: boolean;
+  map: MockMapReference;
+  radius: number;
+};
+type MockAddListener = GoogleMapsApi["maps"]["event"]["addListener"];
+
+const browserWindow: Window & { google?: GoogleMapsApi | undefined } = window;
 
 afterEach(() => {
   cleanup();
-  window.google = undefined;
+  browserWindow.google = undefined;
   document.getElementById("krak-stack-google-maps-script")?.remove();
   vi.clearAllMocks();
 });
@@ -32,46 +59,53 @@ describe("GoogleMap", () => {
     class MockMap {
       zoom = 8;
       getZoom = vi.fn(() => this.zoom);
-      setCenter = vi.fn((_center: unknown) => undefined);
-      setOptions = vi.fn((_options: unknown) => undefined);
+      setCenter = vi.fn((_center: GoogleMapPoint) => undefined);
+      setOptions = vi.fn((_options: Partial<MockMapOptions>) => undefined);
       setZoom = vi.fn((zoom: number) => {
         this.zoom = zoom;
       });
 
-      constructor(_element: HTMLElement, _options: unknown) {
+      constructor(_element: HTMLElement, _options: MockMapOptions) {
         maps.push(this);
       }
     }
 
     class MockMarker {
       setIcon = vi.fn((_icon?: string) => undefined);
-      setMap = vi.fn((_map: object | null) => undefined);
-      setPosition = vi.fn((_position: unknown) => undefined);
+      setMap = vi.fn((_map: MockMapReference | null) => undefined);
+      setPosition = vi.fn((_position: GoogleMapPoint) => undefined);
 
-      constructor(_options: unknown) {
+      constructor(_options: MockMarkerOptions) {
         markers.push(this);
       }
     }
 
     class MockCircle {
-      setCenter = vi.fn((_center: unknown) => undefined);
-      setMap = vi.fn((_map: object | null) => undefined);
-      setOptions = vi.fn((_options: unknown) => undefined);
+      setCenter = vi.fn((_center: GoogleMapPoint) => undefined);
+      setMap = vi.fn((_map: MockMapReference | null) => undefined);
+      setOptions = vi.fn(
+        (
+          _options: Omit<
+            MockCircleOptions,
+            "center" | "clickable" | "map" | "radius"
+          >,
+        ) => undefined,
+      );
       setRadius = vi.fn((_radius: number) => undefined);
 
-      constructor(_options: unknown) {
+      constructor(_options: MockCircleOptions) {
         circles.push(this);
       }
     }
 
-    window.google = {
+    browserWindow.google = {
       maps: {
         Map: MockMap,
         Marker: MockMarker,
         Circle: MockCircle,
         event: {
           addListener: vi.fn(
-            (_instance: object, _eventName: string, handler: () => void) => {
+            (...[, , handler]: Parameters<MockAddListener>) => {
               onZoomChanged = handler;
               return { remove: vi.fn() };
             },
@@ -89,6 +123,7 @@ describe("GoogleMap", () => {
         marker={{ icon: "/marker.svg" }}
         radius={{ radiusMeters: 1_000 }}
         zoom={8}
+        locale="en"
       />,
     );
 
@@ -116,6 +151,7 @@ describe("GoogleMap", () => {
         marker={{ icon: "/updated-marker.svg" }}
         radius={{ radiusMeters: 2_000, fillColor: "#ffffff" }}
         zoom={10}
+        locale="en"
       />,
     );
 

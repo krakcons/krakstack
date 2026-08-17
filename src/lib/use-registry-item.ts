@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
+import { Schema } from "effect";
 
 type RegistryItemMetadata = {
   name: string;
   title?: string;
   description?: string;
 };
+
+const RegistryItemMetadata = Schema.Struct({
+  name: Schema.String,
+  title: Schema.optional(Schema.String),
+  description: Schema.optional(Schema.String),
+}).annotate({ identifier: "RegistryItemMetadata" });
 
 export function useRegistryItem(slug: string, fallback: RegistryItemMetadata) {
   const [item, setItem] = useState(fallback);
@@ -15,10 +22,12 @@ export function useRegistryItem(slug: string, fallback: RegistryItemMetadata) {
     fetch(`/r/${slug}.json`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) return fallback;
-        return response.json() as Promise<RegistryItemMetadata>;
+        return response
+          .json()
+          .then(Schema.decodeUnknownSync(RegistryItemMetadata));
       })
       .then((metadata) => setItem(metadata))
-      .catch((error: unknown) => {
+      .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError")
           return;
         setItem(fallback);

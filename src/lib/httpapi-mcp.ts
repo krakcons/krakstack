@@ -1,4 +1,5 @@
 import { Context, Effect, Layer, Option, Schema } from "effect";
+import type { Json } from "effect/Schema";
 import { McpSchema, McpServer } from "effect/unstable/ai";
 
 import { ApiClient, type ApiClientService } from "@/lib/httpapi-client";
@@ -33,19 +34,19 @@ export class HttpApiMcp extends Context.Service<HttpApiMcp>()("HttpApiMcp", {
 
 const decodeStructuredContent = Schema.decodeUnknownOption(JsonObjectSchema);
 
-const structuredContent = (value: unknown): JsonObject =>
+const structuredContent = (value: Json): JsonObject =>
   decodeStructuredContent(value).pipe(
     Option.getOrElse(() => ({ result: value ?? null })),
   );
 
-const toolResult = (value: unknown) =>
+const toolResult = (value: Json) =>
   new McpSchema.CallToolResult({
     isError: false,
     structuredContent: structuredContent(value),
     content: [{ type: "text", text: JSON.stringify(value, null, 2) ?? "null" }],
   });
 
-const toolError = (error: unknown) =>
+const toolError = (error: Error) =>
   new McpSchema.CallToolResult({
     isError: true,
     content: [
@@ -60,13 +61,13 @@ const executeOperation = Effect.fn("HttpApiMcp.executeOperation")(function* (
   method: HttpApiMethod,
   path: string,
   operation: HttpApiOperation,
-  input: unknown,
+  input: JsonObject,
   spec: HttpApiSpecService,
   client: ApiClientService,
 ) {
   const payload = yield* spec.decodeOperationInput(input, operation);
 
-  return yield* client.execute({
+  const result = yield* client.execute({
     operation: { method, path, operation },
     input: {
       body: payload.body,
@@ -75,6 +76,7 @@ const executeOperation = Effect.fn("HttpApiMcp.executeOperation")(function* (
       query: payload.query,
     },
   });
+  return yield* client.encodeResult(result, { method, path, operation });
 });
 
 const registerOperation = (

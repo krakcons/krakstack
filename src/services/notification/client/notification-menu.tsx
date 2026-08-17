@@ -7,6 +7,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { type ReactElement, type ReactNode, useState } from "react";
+import { Schema } from "effect";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -112,11 +113,11 @@ export type NotificationMenuState = {
   unreadCount: number;
 };
 
-type NotificationAction = (
+type NotificationAction<Result = ErrorOptions["cause"]> = (
   notificationIds: readonly string[],
-) => Promise<unknown> | unknown;
+) => Promise<Result> | Result | void;
 
-export type NotificationMenuProps = {
+export type NotificationMenuProps<ActionResult = ErrorOptions["cause"]> = {
   className?: string | undefined;
   defaultOpen?: boolean | undefined;
   error?: boolean | undefined;
@@ -125,8 +126,8 @@ export type NotificationMenuProps = {
   markReadOnOpen?: boolean | undefined;
   messages?: Partial<NotificationMenuMessages> | undefined;
   notifications: readonly NotificationItem[];
-  onArchive?: NotificationAction | undefined;
-  onMarkRead?: NotificationAction | undefined;
+  onArchive?: NotificationAction<ActionResult> | undefined;
+  onMarkRead?: NotificationAction<ActionResult> | undefined;
   onNavigate?: ((notification: NotificationItem) => void) | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
   open?: boolean | undefined;
@@ -134,7 +135,7 @@ export type NotificationMenuProps = {
   renderTrigger?: ((state: NotificationMenuState) => ReactElement) | undefined;
 };
 
-export function NotificationMenu({
+export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
   className,
   defaultOpen = false,
   error = false,
@@ -150,7 +151,7 @@ export function NotificationMenu({
   open: controlledOpen,
   renderItem,
   renderTrigger,
-}: NotificationMenuProps) {
+}: NotificationMenuProps<ActionResult>) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
   const [tab, setTab] = useState<NotificationMenuTab>("inbox");
   const open = controlledOpen ?? uncontrolledOpen;
@@ -279,7 +280,7 @@ export function NotificationMenuTrigger({
   );
 }
 
-export function NotificationList({
+export function NotificationList<ActionResult>({
   error,
   isLoading,
   labels,
@@ -295,7 +296,7 @@ export function NotificationList({
   labels: NotificationMenuMessages;
   locale: string;
   notifications: readonly NotificationItem[];
-  onArchive?: NotificationAction | undefined;
+  onArchive?: NotificationAction<ActionResult> | undefined;
   onNavigate?: ((notification: NotificationItem) => void) | undefined;
   renderItem?: ((notification: NotificationItem) => ReactNode) | undefined;
   tab: NotificationMenuTab;
@@ -347,7 +348,7 @@ export function NotificationList({
   );
 }
 
-export function NotificationListItem({
+export function NotificationListItem<ActionResult>({
   labels,
   locale,
   notification,
@@ -358,7 +359,7 @@ export function NotificationListItem({
   labels: NotificationMenuMessages;
   locale: string;
   notification: NotificationItem;
-  onArchive?: NotificationAction | undefined;
+  onArchive?: NotificationAction<ActionResult> | undefined;
   onNavigate?: ((notification: NotificationItem) => void) | undefined;
   renderItem?: ((notification: NotificationItem) => ReactNode) | undefined;
 }) {
@@ -369,7 +370,7 @@ export function NotificationListItem({
       return;
     }
 
-    if (notification.href && typeof window !== "undefined") {
+    if (notification.href && globalThis.window) {
       window.location.assign(notification.href);
     }
   };
@@ -448,7 +449,7 @@ export function NotificationEmpty({
   );
 }
 
-function ArchiveButton({
+function ArchiveButton<ActionResult>({
   className,
   label,
   notificationIds,
@@ -457,7 +458,7 @@ function ArchiveButton({
   className?: string | undefined;
   label: string;
   notificationIds: readonly string[];
-  onArchive: NotificationAction;
+  onArchive: NotificationAction<ActionResult>;
 }) {
   const [pending, setPending] = useState(false);
   const archiveNotifications = async () => {
@@ -516,6 +517,6 @@ const formatNotificationDate = (
 };
 
 const notificationTitle = (notification: NotificationItem) =>
-  typeof notification.title === "string"
+  Schema.is(Schema.String)(notification.title)
     ? notification.title
     : defaultMessages.en.notifications;

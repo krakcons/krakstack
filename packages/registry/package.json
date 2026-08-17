@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -67,6 +67,9 @@
     "./seo": {
       "types": "./dist/lib/seo.d.ts",
       "import": "./dist/lib/seo.js"
+    },
+    "./oxlint/anti-slop": {
+      "import": "./dist/oxlint/anti-slop/index.js"
     },
     "./app-brand": {
       "types": "./dist/components/ui/app-brand.d.ts",
@@ -205,6 +208,9 @@
   "scripts": {
     "build": "NODE_ENV=production bun run build.ts",
     "prepack": "bun run build"
+  },
+  "dependencies": {
+    "@oxlint/plugins": "1.78.0"
   },
   "peerDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",

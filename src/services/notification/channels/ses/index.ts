@@ -7,7 +7,9 @@ import {
 } from "@aws-sdk/client-sesv2";
 import { Config, Context, Effect, Layer, Redacted, Schema } from "effect";
 
-import { type NotificationChannelShape, type NotificationMessage } from "..";
+import type { Json } from "effect/Schema";
+
+import { type NotificationChannel, type NotificationMessage } from "..";
 import { NotificationSendError } from "../../schema";
 
 import { SesEmailNotification } from "./schema";
@@ -28,14 +30,14 @@ interface SesIdentity {
   readonly from: string | undefined;
 }
 
-interface SesNotificationConfigShape {
+interface SesNotificationConfigService {
   readonly identity: SesIdentity;
   readonly accessKey: SesAccessKey;
 }
 
 export class SesNotificationConfig extends Context.Service<
   SesNotificationConfig,
-  SesNotificationConfigShape
+  SesNotificationConfigService
 >()("SesNotificationConfig", {
   make: Effect.gen(function* () {
     const region = yield* Config.string("SES_REGION");
@@ -56,7 +58,7 @@ export class SesNotificationConfig extends Context.Service<
 
 export class SesNotificationChannel extends Context.Service<
   SesNotificationChannel,
-  NotificationChannelShape<"email", SesEmailNotification>
+  NotificationChannel<"email", SesEmailNotification>
 >()("SesNotificationChannel", {
   make: Effect.gen(function* () {
     const { accessKey, identity } = yield* SesNotificationConfig;
@@ -69,7 +71,7 @@ export class SesNotificationChannel extends Context.Service<
     });
 
     const send = Effect.fn("SesNotificationChannel.send")(function* (
-      payload: unknown,
+      payload: Json,
       _message: NotificationMessage,
     ) {
       const email = yield* decodeEmail(payload);
@@ -94,9 +96,9 @@ export class SesNotificationChannel extends Context.Service<
               FromEmailAddress: from,
               Destination: buildDestination(email),
               Content: { Simple: emailMessage },
-              ...(email.replyTo?.length
-                ? { ReplyToAddresses: Array.from(email.replyTo) }
-                : {}),
+              ReplyToAddresses: email.replyTo?.length
+                ? Array.from(email.replyTo)
+                : undefined,
             }),
           ),
         catch: (error) =>
@@ -104,7 +106,7 @@ export class SesNotificationChannel extends Context.Service<
       });
     });
 
-    return { key: "email", send } satisfies NotificationChannelShape<
+    return { key: "email", send } satisfies NotificationChannel<
       "email",
       SesEmailNotification
     >;
@@ -117,15 +119,15 @@ export class SesNotificationChannel extends Context.Service<
 
 const notificationSendError = (
   message: string,
-  error?: unknown,
+  error?: NotificationSendError["error"],
 ): NotificationSendError =>
   new NotificationSendError({
     channel: "email",
     message,
-    ...(error === undefined ? {} : { error }),
+    error,
   });
 
-const decodeEmail = (payload: unknown) =>
+const decodeEmail = (payload: Json) =>
   Schema.decodeUnknownEffect(SesEmailNotification)(payload).pipe(
     Effect.mapError((error) =>
       notificationSendError("Invalid SES email notification payload", error),
@@ -141,10 +143,9 @@ const requireBody = (email: SesEmailNotification) => {
     );
   }
 
-  const body = {
-    ...(text ? { Text: { Data: text, Charset: "UTF-8" } } : {}),
-    ...(html ? { Html: { Data: html, Charset: "UTF-8" } } : {}),
-  } satisfies Body;
+  const body: Body = {};
+  if (text) body.Text = { Data: text, Charset: "UTF-8" };
+  if (html) body.Html = { Data: html, Charset: "UTF-8" };
 
   return Effect.succeed(body);
 };
@@ -152,9 +153,9 @@ const requireBody = (email: SesEmailNotification) => {
 const recipients = (to: SesEmailNotification["to"]) =>
   Array.isArray(to) ? Array.from(to) : [to];
 
-const buildDestination = (email: SesEmailNotification) =>
-  ({
-    ToAddresses: recipients(email.to),
-    ...(email.cc?.length ? { CcAddresses: Array.from(email.cc) } : {}),
-    ...(email.bcc?.length ? { BccAddresses: Array.from(email.bcc) } : {}),
-  }) satisfies Destination;
+const buildDestination = (email: SesEmailNotification) => {
+  const destination: Destination = { ToAddresses: recipients(email.to) };
+  if (email.cc?.length) destination.CcAddresses = Array.from(email.cc);
+  if (email.bcc?.length) destination.BccAddresses = Array.from(email.bcc);
+  return destination;
+};

@@ -187,9 +187,11 @@ export const registryDocs = makeDocs({
         },
         { locale: locale === "fr" ? "fr" : "en" },
       ),
-    sectionLabel: (section) =>
-      sectionLabels[locale === "fr" ? "fr" : "en"][
-        section as keyof (typeof sectionLabels)["en"]
-      ] ?? section,
+    sectionLabel: (section) => {
+      const labels = sectionLabels[locale === "fr" ? "fr" : "en"];
+      return (
+        Object.entries(labels).find(([key]) => key === section)?.[1] ?? section
+      );
+    },
   }),
 });

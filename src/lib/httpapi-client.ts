@@ -1,4 +1,4 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Schema } from "effect";
 import { HttpClient } from "effect/unstable/http";
 import {
   HttpApi,
@@ -9,6 +9,7 @@ import type {
   HttpApiOperationEntry,
   HttpApiOperationInput,
 } from "@/lib/httpapi-helpers";
+import type { Json } from "effect/Schema";
 
 export type ApiClientConfig<
   Id extends string,
@@ -16,12 +17,51 @@ export type ApiClientConfig<
 > = {
   readonly api: HttpApi.HttpApi<Id, Groups>;
   readonly baseUrl: string;
+  readonly encodeResult?: (
+    result: ErrorOptions["cause"],
+    operation: HttpApiOperationEntry,
+  ) => Effect.Effect<Json, Error>;
 };
 
 export type ApiClientExecuteOptions = {
   readonly operation: HttpApiOperationEntry;
   readonly input: HttpApiOperationInput;
 };
+
+export const HttpApiOperationResult = Schema.Union([
+  Schema.Json,
+  Schema.DateFromString,
+  Schema.Uint8ArrayFromBase64,
+  Schema.Undefined,
+]).annotate({ identifier: "HttpApiOperationResult" });
+export type HttpApiOperationResult = typeof HttpApiOperationResult.Type;
+
+export const encodeHttpApiOperationResult = Effect.fn(
+  "HttpApiClient.encodeOperationResult",
+)((result: ErrorOptions["cause"]) =>
+  Schema.encodeUnknownEffect(HttpApiOperationResult)(result).pipe(
+    Effect.map((encoded) => encoded ?? null),
+    Effect.mapError(
+      (cause) => new Error("HTTP API result is not serializable", { cause }),
+    ),
+  ),
+);
+
+type GeneratedOperation = (input: {
+  readonly headers: HttpApiOperationInput["headers"];
+  readonly params: HttpApiOperationInput["params"];
+  readonly payload: HttpApiOperationInput["body"];
+  readonly query: HttpApiOperationInput["query"];
+}) => Effect.Effect<ErrorOptions["cause"], Error>;
+
+const GeneratedOperation = Schema.declare(
+  (value): value is GeneratedOperation => value instanceof Function,
+).annotate({ identifier: "GeneratedOperation" });
+
+const GeneratedOperationEffect = Schema.declare(
+  (value): value is Effect.Effect<ErrorOptions["cause"], Error> =>
+    Effect.isEffect(value),
+).annotate({ identifier: "GeneratedOperationEffect" });
 
 const makeGeneratedClient = <
   Id extends string,
@@ -36,14 +76,10 @@ const makeGeneratedClient = <
     httpClient: http,
   });
 
-const isClientEffect = (
-  value: unknown,
-): value is Effect.Effect<unknown, unknown> => Effect.isEffect(value);
-
 const executeGeneratedOperation = Effect.fn(
   "HttpApiClient.executeGeneratedOperation",
-)(function* (
-  client: unknown,
+)(function* <Client>(
+  client: Client,
   { input, operation: entry }: ApiClientExecuteOptions,
 ) {
   const operationId = entry.operation.operationId;
@@ -59,38 +95,52 @@ const executeGeneratedOperation = Effect.fn(
   const groupName = Object.keys(target)
     .filter((name) => operationId.startsWith(`${name}.`))
     .sort((a, b) => b.length - a.length)[0];
-  const group: unknown = groupName ? Reflect.get(target, groupName) : target;
+  const group = groupName
+    ? Object.entries(target).find(([name]) => name === groupName)?.[1]
+    : target;
   const endpointName = groupName
     ? operationId.slice(groupName.length + 1)
     : operationId;
 
-  const endpoint: unknown = Reflect.get(Object(group), endpointName);
-  if (typeof endpoint !== "function") {
+  const endpointCandidate =
+    group instanceof Function
+      ? undefined
+      : Object.entries(Object(group)).find(
+          ([name]) => name === endpointName,
+        )?.[1];
+  const endpoint =
+    Schema.decodeUnknownOption(GeneratedOperation)(endpointCandidate);
+  if (endpoint._tag === "None") {
     return yield* Effect.fail(
       new Error(`No generated API client operation for ${operationId}`),
     );
   }
 
-  const result: unknown = endpoint({
-    headers: input.headers,
-    params: input.params,
-    query: input.query,
-    payload: input.body,
-  });
-
-  if (!isClientEffect(result)) {
+  const result = Schema.decodeUnknownOption(GeneratedOperationEffect)(
+    endpoint.value({
+      headers: input.headers,
+      params: input.params,
+      query: input.query,
+      payload: input.body,
+    }),
+  );
+  if (result._tag === "None") {
     return yield* Effect.fail(
       new Error(`Generated API client operation ${operationId} is invalid`),
     );
   }
 
-  return yield* result;
+  return yield* result.value;
 });
 
 export type ApiClientService = {
+  readonly encodeResult: (
+    result: ErrorOptions["cause"],
+    operation: HttpApiOperationEntry,
+  ) => Effect.Effect<Json, Error>;
   readonly execute: (
     options: ApiClientExecuteOptions,
-  ) => Effect.Effect<unknown, unknown>;
+  ) => Effect.Effect<ErrorOptions["cause"], Error>;
 };
 
 export class ApiClient extends Context.Service<ApiClient, ApiClientService>()(
@@ -113,6 +163,9 @@ export class ApiClient extends Context.Service<ApiClient, ApiClientService>()(
         );
 
         return {
+          encodeResult:
+            config.encodeResult ??
+            ((result) => encodeHttpApiOperationResult(result)),
           execute: Effect.fn("ApiClient.execute")(function* (
             options: ApiClientExecuteOptions,
           ) {

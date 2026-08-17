@@ -10,13 +10,13 @@ export const Route = createFileRoute("/docs/")({
     if (!resolution) throw notFound();
     return { resolution };
   },
-  head: ({ loaderData }) =>
-    registryDocs.getHead({
+  head: ({ loaderData }) => {
+    const options: Parameters<typeof registryDocs.getHead>[0] = {
       locale: loaderData?.resolution.page.locale ?? getLocale(),
-      ...(loaderData?.resolution.page
-        ? { page: loaderData.resolution.page }
-        : {}),
-    }),
+    };
+    if (loaderData?.resolution.page) options.page = loaderData.resolution.page;
+    return registryDocs.getHead(options);
+  },
   component: IntroductionDocs,
 });
 

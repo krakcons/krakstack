@@ -21,7 +21,7 @@ export type RegistryItem = (typeof registry.items)[number] & {
   docs?: string;
 };
 
-export const registryItems = registry.items as RegistryItem[];
+export const registryItems: readonly RegistryItem[] = registry.items;
 
 export const isRegistryItemNew = (
   item: { meta?: unknown },

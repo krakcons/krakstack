@@ -18,7 +18,7 @@ type CopyButtonProps = Omit<
   copyVariant?: "default" | "sm" | "large";
   messages?: CopyButtonMessages;
   onCopied?: () => void;
-  onCopyError?: (error: unknown) => void;
+  onCopyError?: (error: Error) => void;
   resetDelay?: number;
 };
 
@@ -73,7 +73,11 @@ export function CopyButton({
       onCopied?.();
     } catch (error) {
       setCopyState("failed");
-      onCopyError?.(error);
+      onCopyError?.(
+        error instanceof Error
+          ? error
+          : new Error("Copy failed", { cause: error }),
+      );
     }
 
     resetCopyState();

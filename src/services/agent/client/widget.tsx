@@ -14,6 +14,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import type { AgentEvent } from "../schema";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -227,7 +228,9 @@ const errorMessage = (code: AgentErrorCode, labels: AgentWidgetMessages) => {
   }
 };
 
-const inputCodeBlock = (input: unknown) => {
+type AgentToolInput = Extract<AgentEvent, { type: "tool-call" }>["input"];
+
+const inputCodeBlock = (input: AgentToolInput) => {
   const value = JSON.stringify(input, null, 2) ?? String(input);
   const longestFence = Math.max(
     0,
@@ -717,18 +720,16 @@ export function AgentWidget<Resource = never>({
     setInput("");
     setReferences([]);
     setReferencePickerOpen(false);
-    onSubmit({
+    const messageReferences =
+      references.length > 0
+        ? references.map(({ label, resource }) => ({ label, resource }))
+        : undefined;
+    const action: AgentSubmitAction<Resource> = {
       type: "message",
       text,
-      ...(references.length > 0
-        ? {
-            references: references.map(({ label, resource }) => ({
-              label,
-              resource,
-            })),
-          }
-        : {}),
-    });
+      references: messageReferences,
+    };
+    onSubmit(action);
   };
 
   const respondToApproval = (tool: AgentToolActivity, approved: boolean) => {

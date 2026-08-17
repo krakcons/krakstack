@@ -19,18 +19,17 @@ export class S3ServiceConfig extends Context.Service<S3ServiceConfig>()(
         Config.orElse(() => Config.succeed(Redacted.make(""))),
       );
 
-      return {
-        options: {
-          accessKeyId: Redacted.value(accessKeyId),
-          secretAccessKey: Redacted.value(secretAccessKey),
-          bucket,
-          ...(region ? { region } : {}),
-          ...(endpoint ? { endpoint } : {}),
-          ...(Redacted.value(sessionToken)
-            ? { sessionToken: Redacted.value(sessionToken) }
-            : {}),
-        } satisfies Bun.S3Options,
+      const options: Bun.S3Options = {
+        accessKeyId: Redacted.value(accessKeyId),
+        secretAccessKey: Redacted.value(secretAccessKey),
+        bucket,
       };
+      if (region) options.region = region;
+      if (endpoint) options.endpoint = endpoint;
+      if (Redacted.value(sessionToken)) {
+        options.sessionToken = Redacted.value(sessionToken);
+      }
+      return { options };
     }),
   },
 ) {

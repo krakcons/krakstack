@@ -6,7 +6,7 @@ import {
   HttpApiGroup,
 } from "effect/unstable/httpapi";
 
-import { ApiClient } from "@/lib/httpapi-client";
+import { ApiClient, encodeHttpApiOperationResult } from "@/lib/httpapi-client";
 import { HttpApiSpec } from "@/lib/httpapi-helpers";
 
 import { HttpApiToolkit, HttpApiToolkitLayer } from "./httpapi-toolkit";
@@ -23,6 +23,7 @@ describe("HttpApi toolkit", () => {
     () => {
       const specLayer = HttpApiSpec.layer({ api: TestApi });
       const clientLayer = Layer.succeed(ApiClient, {
+        encodeResult: (result) => encodeHttpApiOperationResult(result),
         execute: () => Effect.succeed("available"),
       });
       const handlersLayer = HttpApiToolkitLayer({}).pipe(

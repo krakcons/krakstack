@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/collapsible";
 import { SearchMenu, type SearchMenuGroup } from "@/components/ui/search-menu";
 import { SidebarLayout, type NavGroup } from "@/components/ui/sidebar-layout";
-import { createSeo } from "@/lib/seo";
+import { createSeo, type SeoDefaults } from "@/lib/seo";
 
 addCollection(lucideIcons);
 
@@ -386,12 +386,13 @@ export const makeDocs = (config: DocsConfig) => {
     icon: "lucide:book-open",
     href: "/",
   };
-  const docsSeo = createSeo({
+  const seoDefaults: SeoDefaults = {
     origin,
     locales: source.locales,
-    ...(config.defaultLocale ? { defaultLocale: config.defaultLocale } : {}),
     siteName: config.siteName,
-  });
+  };
+  if (config.defaultLocale) seoDefaults.defaultLocale = config.defaultLocale;
+  const docsSeo = createSeo(seoDefaults);
   const getMessages = (locale: DocsLocale) =>
     getDocsMessages(locale, config.messages?.(locale));
   const normalizeSearchText = (value: string) =>
@@ -494,10 +495,11 @@ export const makeDocs = (config: DocsConfig) => {
           left.entry.page.order - right.entry.page.order,
       )
       .slice(0, limit)
-      .map(({ entry }) => ({
-        page: entry.page,
-        ...("heading" in entry ? { heading: entry.heading } : {}),
-      }));
+      .map(({ entry }) => {
+        const result: DocsSearchResult = { page: entry.page };
+        if ("heading" in entry) result.heading = entry.heading;
+        return result;
+      });
   };
   const url = (page: DocsPage, locale: DocsLocale) =>
     `${origin}/${locale}${page.path}`;
@@ -622,9 +624,9 @@ const docsPageTypeMessages = {
 } as const;
 
 const defaultSectionLabel = (locale: "en" | "fr", section: DocsSection) =>
-  docsSectionMessages[locale][
-    section as keyof (typeof docsSectionMessages)["en"]
-  ] ?? humanizeDocsValue(section);
+  Object.entries(docsSectionMessages[locale]).find(
+    ([key]) => key === section,
+  )?.[1] ?? humanizeDocsValue(section);
 
 const messages = {
   en: {
@@ -720,9 +722,10 @@ const iconFor = (name: string): LucideIcon => {
         icon={name}
         ref={ref}
         ssr
-        {...(className ? { className } : {})}
-        {...(color ? { color } : {})}
-        {...(size === undefined ? {} : { height: size, width: size })}
+        className={className}
+        color={color}
+        height={size}
+        width={size}
       />
     ),
   );
@@ -734,7 +737,7 @@ const iconFor = (name: string): LucideIcon => {
 const headingText = (children: ReactNode) =>
   Children.toArray(children)
     .filter((child): child is string | number =>
-      ["string", "number"].includes(typeof child),
+      Schema.is(Schema.Union([Schema.String, Schema.Number]))(child),
     )
     .join("");
 
@@ -971,17 +974,18 @@ const DocsSearch = ({
               icon: <Icon className="size-4" icon="lucide:hash" ssr />,
               onSelect: () => navigate({ to: page.path, hash: heading.id }),
             }
-          : {
-              id: page.path,
-              label: page.title,
-              description: page.description,
-              ...(page.icon
-                ? {
-                    icon: <Icon className="size-4" icon={page.icon} ssr />,
-                  }
-                : {}),
-              onSelect: () => navigate({ to: page.path }),
-            },
+          : (() => {
+              const item: SearchMenuGroup["items"][number] = {
+                id: page.path,
+                label: page.title,
+                description: page.description,
+                onSelect: () => navigate({ to: page.path }),
+              };
+              if (page.icon) {
+                item.icon = <Icon className="size-4" icon={page.icon} ssr />;
+              }
+              return item;
+            })(),
       ),
     };
   });
@@ -1020,14 +1024,17 @@ export const DocsLayout = ({
   const resolvedMessages = docs.getMessages(locale);
   const groups: NavGroup[] = docs.sections(locale).map((section) => ({
     label: () => resolvedMessages.sectionLabel(section.id),
-    items: section.pages.map((item) => ({
-      label: () => item.title,
-      href: item.path,
-      icon: item.icon ? iconFor(item.icon) : EmptyIcon,
-      ...(isDocsPageNew(item.createdAt)
-        ? { badge: () => resolvedMessages.newLabel }
-        : {}),
-    })),
+    items: section.pages.map((item) => {
+      const navItem: NavGroup["items"][number] = {
+        label: () => item.title,
+        href: item.path,
+        icon: item.icon ? iconFor(item.icon) : EmptyIcon,
+      };
+      if (isDocsPageNew(item.createdAt)) {
+        navItem.badge = () => resolvedMessages.newLabel;
+      }
+      return navItem;
+    }),
   }));
 
   if (resources) {
@@ -1038,7 +1045,7 @@ export const DocsLayout = ({
           label: item.label,
           href: item.href,
           icon: iconFor(item.icon),
-          ...(item.external === undefined ? {} : { external: item.external }),
+          external: item.external,
         })),
         ...(docs.githubUrl
           ? [

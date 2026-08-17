@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import {
   boolean,
   check,
@@ -22,7 +22,7 @@ import {
 const timestampWithTimezone = (name: string) =>
   timestamp(name, { withTimezone: true });
 
-const nonEmpty = (column: { getSQL(): unknown }) =>
+const nonEmpty = (column: { getSQL(): SQL }) =>
   sql`length(btrim(${column})) > 0`;
 
 export const notifications = pgTable(

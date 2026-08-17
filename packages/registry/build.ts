@@ -7,6 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, extname, relative, resolve } from "node:path";
+import { Schema } from "effect";
 
 const packageRoot = import.meta.dir;
 const sourceRoot = resolve(packageRoot, "../../src");
@@ -23,7 +24,19 @@ const compile = Bun.spawnSync({
 
 if (!compile.success) process.exit(compile.exitCode);
 
-const packageJson = await Bun.file(resolve(packageRoot, "package.json")).json();
+const RegistryPackageExport = Schema.Struct({
+  import: Schema.String,
+  types: Schema.optional(Schema.String),
+}).annotate({ identifier: "RegistryPackageExport" });
+const RegistryPackage = Schema.Struct({
+  exports: Schema.Record(
+    Schema.String,
+    Schema.Union([RegistryPackageExport, Schema.String]),
+  ),
+}).annotate({ identifier: "RegistryPackage" });
+const packageJson = Schema.decodeUnknownSync(RegistryPackage)(
+  await Bun.file(resolve(packageRoot, "package.json")).json(),
+);
 const sourcePath = (path: string) =>
   [
     path,
@@ -44,16 +57,13 @@ const sourceAliasPlugin: Bun.BunPlugin = {
   },
 };
 const entries = Object.values(packageJson.exports)
-  .filter(
-    (value): value is { import: string; types: string } =>
-      typeof value === "object" && value !== null && "import" in value,
-  )
+  .filter(Schema.is(RegistryPackageExport))
   .map(({ import: output }) => {
     const relativeOutput = output.replace(/^\.\/dist\//, "");
-    const sourceWithoutExtension = resolve(
-      sourceRoot,
-      relativeOutput.replace(/\.js$/, ""),
-    );
+    const sourceWithoutExtension =
+      relativeOutput === "oxlint/anti-slop/index.js"
+        ? resolve(packageRoot, "../../tools/oxlint/anti-slop/index")
+        : resolve(sourceRoot, relativeOutput.replace(/\.js$/, ""));
     const source = [
       `${sourceWithoutExtension}.tsx`,
       `${sourceWithoutExtension}.ts`,
@@ -71,7 +81,7 @@ for (const entry of entries) {
     outdir: dirname(entry.output),
     packages: "external",
     plugins: [sourceAliasPlugin],
-    target: "browser",
+    target: entry.output.includes("/oxlint/") ? "node" : "browser",
   });
 
   if (!result.success) {

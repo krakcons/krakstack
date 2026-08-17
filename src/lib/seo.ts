@@ -29,6 +29,30 @@ export type SeoDefaults = {
 
 export type SeoPageOptions = Omit<SeoOptions, keyof SeoDefaults>;
 
+type SeoPublisher = {
+  "@type": string;
+  name: string;
+  url?: string;
+  sameAs?: readonly string[];
+};
+
+type SeoArticle = {
+  "@type": string;
+  headline: string;
+  description?: string;
+  url?: string;
+  inLanguage?: string;
+  image?: string;
+  publisher: SeoPublisher;
+};
+
+type SeoWebsite = {
+  "@type": string;
+  name: string;
+  url?: string;
+  publisher: SeoPublisher;
+};
+
 const localizedUrl = (origin: string, locale: string, path: string) =>
   `${origin.replace(/\/$/, "")}/${locale}${path === "/" ? "/" : path}`;
 
@@ -109,29 +133,35 @@ export const seo = ({
     : [];
 
   const siteUrl = origin?.replace(/\/$/, "") ?? canonical;
-  const publisher = {
+  const publisher: SeoPublisher = {
     "@type": "Organization",
     name: siteName,
-    ...(siteUrl ? { url: siteUrl } : {}),
-    ...(sameAs?.length ? { sameAs } : {}),
   };
+  if (siteUrl) publisher.url = siteUrl;
+  if (sameAs?.length) publisher.sameAs = sameAs;
   const structuredData =
     type === "article"
-      ? {
-          "@type": "Article",
-          headline: title,
-          description,
-          ...(canonical ? { url: canonical } : {}),
-          ...(locale ? { inLanguage: locale } : {}),
-          ...(image ? { image } : {}),
-          publisher,
-        }
-      : {
-          "@type": "WebSite",
-          name: siteName,
-          ...(siteUrl ? { url: siteUrl } : {}),
-          publisher,
-        };
+      ? (() => {
+          const article: SeoArticle = {
+            "@type": "Article",
+            headline: title,
+            description,
+            publisher,
+          };
+          if (canonical) article.url = canonical;
+          if (locale) article.inLanguage = locale;
+          if (image) article.image = image;
+          return article;
+        })()
+      : (() => {
+          const website: SeoWebsite = {
+            "@type": "WebSite",
+            name: siteName,
+            publisher,
+          };
+          if (siteUrl) website.url = siteUrl;
+          return website;
+        })();
   const scripts = [
     {
       type: "application/ld+json",

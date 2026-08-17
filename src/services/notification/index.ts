@@ -3,19 +3,22 @@ import { Context, Effect, Layer } from "effect";
 import {
   NotificationChannelRegistry,
   type NotificationMessage,
-  type NotificationChannelShape,
+  type NotificationChannel,
 } from "./channels";
 import { NotificationSendError } from "./schema";
 
-export interface NotificationServiceShape {
+export interface NotificationServiceContract {
   readonly send: (
     message: NotificationMessage,
   ) => Effect.Effect<void, NotificationSendError>;
 }
 
+/** @deprecated Use NotificationServiceContract. */
+export { type NotificationServiceContract as NotificationServiceShape };
+
 export class NotificationService extends Context.Service<
   NotificationService,
-  NotificationServiceShape
+  NotificationServiceContract
 >()("NotificationService", {
   make: Effect.gen(function* () {
     const registry = yield* NotificationChannelRegistry;
@@ -47,9 +50,7 @@ export class NotificationService extends Context.Service<
 }) {
   static readonly layer = Layer.effect(this, this.make);
 
-  static readonly makeLayer = (
-    channels: ReadonlyArray<NotificationChannelShape>,
-  ) =>
+  static readonly makeLayer = (channels: ReadonlyArray<NotificationChannel>) =>
     this.layer.pipe(Layer.provide(NotificationChannelRegistry.layer(channels)));
 
   static readonly noopLayer = Layer.succeed(this, {

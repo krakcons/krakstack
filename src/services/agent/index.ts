@@ -1,4 +1,13 @@
-import { Context, Data, Effect, Layer, Option, Ref, Stream } from "effect";
+import {
+  Context,
+  Data,
+  Effect,
+  Layer,
+  Option,
+  Ref,
+  Schema,
+  Stream,
+} from "effect";
 import {
   Chat,
   LanguageModel,
@@ -19,26 +28,40 @@ export type AgentStreamOptions<Tools extends Record<string, Tool.Any>> = {
 
 class AgentHistoryError extends Data.TaggedError("AgentHistoryError") {}
 
+const AgentStreamErrorDetails = Schema.Struct({
+  message: Schema.optional(Schema.String),
+  reason: Schema.optional(Schema.String),
+  status: Schema.optional(Schema.Number),
+  _tag: Schema.optional(Schema.String),
+}).annotate({ identifier: "AgentStreamErrorDetails" });
+
+const decodeAgentStreamErrorDetails = Schema.decodeUnknownOption(
+  AgentStreamErrorDetails,
+);
+
+type AgentStreamLogDetails = {
+  message?: string;
+  reason?: string;
+  status?: number;
+  tag?: string;
+};
+
 export class AgentService extends Context.Service<AgentService>()(
   "AgentService",
   {
     make: Effect.gen(function* () {
-      const streamErrorDetails = (error: unknown) => {
-        if (!error || typeof error !== "object") {
-          return { error: String(error) };
-        }
+      const streamErrorDetails = (error: Response.ErrorPart["error"]) => {
+        const details = Option.getOrUndefined(
+          decodeAgentStreamErrorDetails(error),
+        );
+        if (!details) return { error: String(error) };
 
-        const message = Reflect.get(error, "message");
-        const reason = Reflect.get(error, "reason");
-        const status = Reflect.get(error, "status");
-        const tag = Reflect.get(error, "_tag");
-
-        return {
-          ...(typeof message === "string" ? { message } : {}),
-          ...(typeof reason === "string" ? { reason } : {}),
-          ...(typeof status === "number" ? { status } : {}),
-          ...(typeof tag === "string" ? { tag } : {}),
-        };
+        const result: AgentStreamLogDetails = {};
+        if (details.message) result.message = details.message;
+        if (details.reason) result.reason = details.reason;
+        if (details.status !== undefined) result.status = details.status;
+        if (details._tag) result.tag = details._tag;
+        return result;
       };
 
       const eventsForPart = ({
@@ -67,15 +90,16 @@ export class AgentService extends Context.Service<AgentService>()(
                 toolCallId: part.id,
                 name: part.name,
                 input: part.params,
-                metadata: {
-                  ...(title ? { title } : {}),
-                  ...(tool?.description
-                    ? { description: tool.description }
-                    : {}),
-                  destructive: tool
-                    ? Context.get(tool.annotations, Tool.Destructive)
-                    : false,
-                },
+                metadata: (() => {
+                  const metadata = {
+                    destructive: tool
+                      ? Context.get(tool.annotations, Tool.Destructive)
+                      : false,
+                    title,
+                    description: tool?.description,
+                  };
+                  return metadata;
+                })(),
               },
             ];
           }
@@ -188,7 +212,7 @@ export class AgentService extends Context.Service<AgentService>()(
 
           for (const message of history.content) {
             for (const part of message.content) {
-              if (typeof part === "string") continue;
+              if (Schema.is(Schema.String)(part)) continue;
               if (
                 part.type === "tool-approval-request" &&
                 part.approvalId === action.approvalId

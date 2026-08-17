@@ -44,13 +44,13 @@ export const Route = createFileRoute("/docs/{-$slug}")({
     const item = getRegistryItem(resolution.page.slug);
     return { item, resolution };
   },
-  head: ({ loaderData }) =>
-    registryDocs.getHead({
+  head: ({ loaderData }) => {
+    const options: Parameters<typeof registryDocs.getHead>[0] = {
       locale: loaderData?.resolution.page.locale ?? getLocale(),
-      ...(loaderData?.resolution.page
-        ? { page: loaderData.resolution.page }
-        : {}),
-    }),
+    };
+    if (loaderData?.resolution.page) options.page = loaderData.resolution.page;
+    return registryDocs.getHead(options);
+  },
   component: RegistryDocs,
   notFoundComponent: () => (
     <DocsNotFound docs={registryDocs} locale={getLocale()} />

@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { NotificationChannelRegistry } from "./channels";
-import { NotificationService, type NotificationServiceShape } from "./index";
+import { NotificationService, type NotificationServiceContract } from "./index";
 import { type SesEmailNotification } from "./channels/ses/schema";
 
 describe("NotificationService", () => {
@@ -74,7 +74,7 @@ describe("NotificationService", () => {
     );
   });
 
-  it("creates registry shapes from multiple channel instances", () => {
+  it("creates registries from multiple channel instances", () => {
     const email = { key: "email", send: () => Effect.void };
     const push = { key: "push", send: () => Effect.void };
 
@@ -84,7 +84,7 @@ describe("NotificationService", () => {
   });
 
   it("types installed notification channel payloads", () => {
-    type Message = Parameters<NotificationServiceShape["send"]>[0];
+    type Message = Parameters<NotificationServiceContract["send"]>[0];
 
     expectTypeOf<Message>().toEqualTypeOf<{
       readonly email?: SesEmailNotification;

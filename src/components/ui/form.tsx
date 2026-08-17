@@ -12,6 +12,7 @@ import {
   useStore,
 } from "@tanstack/react-form";
 import { Block } from "@tanstack/react-router";
+import { Option, Schema } from "effect";
 import { Loader2, Plus, Trash, Languages } from "lucide-react";
 import type { InputHTMLAttributes, JSX } from "react";
 import {
@@ -566,7 +567,7 @@ const SearchableSelectField = <TData,>({
   const field = useFieldContext<unknown>();
   const labels = virtualizedComboboxMessages(props.messages);
   const invalid = !field.state.meta.isValid;
-  const ariaLabel = typeof label === "string" ? label : labels.search;
+  const ariaLabel = Schema.is(Schema.String)(label) ? label : labels.search;
   const controlProps = {
     ...props,
     ariaLabel,
@@ -608,7 +609,7 @@ const FileField = ({
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
       <FilePicker
-        accept={accept as string}
+        accept={accept}
         canClear={field.state.value instanceof File}
         {...(field.state.value instanceof File
           ? { file: field.state.value }
@@ -654,8 +655,15 @@ const ImageField = ({
   const field = useFieldContext<File | string | null>();
   const invalid = !field.state.meta.isValid;
 
-  const imageUrl =
-    typeof field.state.value === "string" ? field.state.value : undefined;
+  const imageUrl = Schema.is(Schema.String)(field.state.value)
+    ? field.state.value
+    : undefined;
+  const image = {
+    alt: label,
+    height: size.height,
+    width: size.width,
+    src: imageUrl,
+  };
 
   return (
     <Field data-invalid={invalid}>
@@ -667,12 +675,7 @@ const ImageField = ({
           ? { file: field.state.value }
           : {})}
         id={field.name}
-        image={{
-          alt: label,
-          height: size.height,
-          ...(imageUrl ? { src: imageUrl } : {}),
-          width: size.width,
-        }}
+        image={image}
         invalid={invalid}
         messages={{ accepts: labels.accepts, deleteFile: labels.delete }}
         name={field.name}
@@ -760,15 +763,16 @@ const SubmitButton = ({
   );
 };
 
-const getFormErrorText = (error: unknown) => {
-  if (!error) return undefined;
-
-  if (typeof error === "object" && "form" in error) {
-    const formError = error.form;
-    return formError ? String(formError) : undefined;
-  }
-
-  return String(error);
+const FormErrorValue = Schema.Struct({
+  form: Schema.optional(Schema.Unknown),
+}).annotate({ identifier: "FormErrorValue" });
+const getFormErrorText = <ErrorValue,>(error: ErrorValue) => {
+  if (error == null) return undefined;
+  return Schema.decodeUnknownOption(FormErrorValue)(error).pipe(
+    Option.flatMap((value) => Option.fromNullishOr(value.form)),
+    Option.map(String),
+    Option.getOrElse(() => String(error)),
+  );
 };
 
 const FormError = () => {

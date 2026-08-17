@@ -7,11 +7,12 @@ import {
   Schema,
   SchemaRepresentation,
 } from "effect";
+import type { Json } from "effect/Schema";
 import { HttpApi, OpenApi } from "effect/unstable/httpapi";
 
 export const JsonObjectSchema = Schema.Record(
   Schema.String,
-  Schema.Unknown,
+  Schema.Json,
 ).annotate({
   identifier: "HttpJsonObject",
   title: "HTTP JSON object",
@@ -19,18 +20,18 @@ export const JsonObjectSchema = Schema.Record(
   examples: [{ id: "example-id" }],
 });
 const JsonObjectFromString = Schema.fromJsonString(JsonObjectSchema);
-const JsonValueFromString = Schema.fromJsonString(Schema.Unknown);
+const JsonValueFromString = Schema.fromJsonString(Schema.Json);
 const JsonSchemaAnnotations = Schema.Struct({
   title: Schema.optional(Schema.String),
   description: Schema.optional(Schema.String),
-  examples: Schema.optional(Schema.Array(Schema.Unknown)),
+  examples: Schema.optional(Schema.Array(Schema.Json)),
 }).annotate({
   identifier: "HttpJsonSchemaAnnotations",
   title: "HTTP JSON Schema annotations",
   description: "JSON Schema annotations surfaced on generated tool inputs.",
 });
 const HttpApiToolInputSchema = Schema.Struct({
-  body: Schema.optional(Schema.Unknown),
+  body: Schema.optional(Schema.Json),
 }).annotate({
   identifier: "HttpApiToolInput",
   title: "HTTP API tool input",
@@ -39,6 +40,8 @@ const HttpApiToolInputSchema = Schema.Struct({
 });
 
 export type JsonObject = typeof JsonObjectSchema.Type;
+type HttpBoundaryError = ErrorOptions["cause"];
+type UnparsedHttpApiInput = Json;
 export type HttpApiDocument = ReturnType<typeof OpenApi.fromApi>;
 export type HttpApiMethod = "get" | "post" | "put" | "patch" | "delete";
 export const HttpApiMethods: ReadonlyArray<HttpApiMethod> = [
@@ -69,13 +72,19 @@ export type HttpApiOperation = {
   };
   readonly tags?: ReadonlyArray<string>;
 };
+const HttpApiOperationSchema = Schema.declare(
+  (value): value is HttpApiOperation => Schema.is(JsonObjectSchema)(value),
+).annotate({ identifier: "HttpApiOperation" });
+const decodeHttpApiOperation = Schema.decodeUnknownOption(
+  HttpApiOperationSchema,
+);
 export type HttpApiOperationEntry = {
   readonly method: HttpApiMethod;
   readonly path: string;
   readonly operation: HttpApiOperation;
 };
 export type HttpApiOperationInput = {
-  readonly body?: unknown;
+  readonly body?: Json;
   readonly headers: JsonObject;
   readonly params: JsonObject;
   readonly query: JsonObject;
@@ -86,7 +95,7 @@ export type HttpApiSpecConfig = {
   readonly include?: (operation: HttpApiOperationEntry) => boolean;
 };
 
-export const toHttpError = (message: string, error: unknown) =>
+export const toHttpError = (message: string, error: HttpBoundaryError) =>
   new Error(message, { cause: error });
 
 export const sanitizeHttpName = (name: string) =>
@@ -119,8 +128,10 @@ export const httpApiOperations = ({
 
   for (const [path, pathItem] of Object.entries(spec.paths)) {
     for (const method of methods) {
-      const operation = pathItem[method] as HttpApiOperation | undefined;
-      if (operation) operations.push({ method, path, operation });
+      const operation = decodeHttpApiOperation(pathItem[method]);
+      if (Option.isSome(operation)) {
+        operations.push({ method, path, operation: operation.value });
+      }
     }
   }
 
@@ -166,18 +177,17 @@ const schemaWithVisibleAnnotations = (
     directAnnotations,
   );
 
-  return {
-    ...schema,
-    ...("title" in annotations && !("title" in schema)
-      ? { title: annotations.title }
-      : {}),
-    ...("description" in annotations && !("description" in schema)
-      ? { description: annotations.description }
-      : {}),
-    ...("examples" in annotations && !("examples" in schema)
-      ? { examples: annotations.examples }
-      : {}),
-  };
+  const visible = { ...schema };
+  if ("title" in annotations && !("title" in schema)) {
+    visible.title = annotations.title;
+  }
+  if ("description" in annotations && !("description" in schema)) {
+    visible.description = annotations.description;
+  }
+  if ("examples" in annotations && !("examples" in schema)) {
+    visible.examples = annotations.examples;
+  }
+  return visible;
 };
 
 const referencedDefinitions = (
@@ -185,24 +195,30 @@ const referencedDefinitions = (
   definitions: Record<string, JsonSchema.JsonSchema>,
 ) => {
   const names = new Set<string>();
-  const pending: Array<unknown> = [schema];
+  const pending: Array<Json> = [Schema.decodeUnknownSync(Schema.Json)(schema)];
 
   while (pending.length > 0) {
     const current = pending.pop();
-    if (!current || typeof current !== "object") continue;
     if (Array.isArray(current)) {
       pending.push(...current);
       continue;
     }
 
-    for (const [key, value] of Object.entries(current)) {
-      if (key === "$ref" && typeof value === "string") {
+    const record = Schema.decodeUnknownOption(
+      Schema.Record(Schema.String, Schema.Json),
+    )(current);
+    if (Option.isNone(record)) continue;
+
+    for (const [key, value] of Object.entries(record.value)) {
+      if (key === "$ref" && Schema.is(Schema.String)(value)) {
         const name = value.match(
           /^#\/(?:\$defs|components\/schemas)\/(.+)$/,
         )?.[1];
         if (name && !names.has(name) && definitions[name]) {
           names.add(name);
-          pending.push(definitions[name]);
+          pending.push(
+            Schema.decodeUnknownSync(Schema.Json)(definitions[name]),
+          );
         }
       } else if (key !== "$defs") {
         pending.push(value);
@@ -227,7 +243,7 @@ export const httpApiOperationInputSchema = (
   const pathParameters = operationParameters(parameters, "path");
   const queryParameters = operationParameters(parameters, "query");
   const headerParameters = operationParameters(parameters, "header");
-  const properties: Record<string, unknown> = {};
+  const properties: Record<string, JsonSchema.JsonSchema> = {};
   const required: Array<string> = [];
   const body = operation.requestBody?.content?.["application/json"]?.schema;
 
@@ -236,12 +252,13 @@ export const httpApiOperationInputSchema = (
     ...queryParameters,
     ...headerParameters,
   ]) {
-    properties[parameter.name] = {
+    const property = {
       ...(parameter.schema
         ? schemaWithVisibleAnnotations(parameter.schema)
         : { type: "string" }),
-      ...(parameter.description ? { description: parameter.description } : {}),
     };
+    if (parameter.description) property.description = parameter.description;
+    properties[parameter.name] = property;
     if (parameter.required) required.push(parameter.name);
   }
   if (body) {
@@ -261,7 +278,7 @@ const decodeJsonObject = Schema.decodeUnknownOption(JsonObjectSchema);
 
 export const decodeHttpApiOperationInput = Effect.fn(
   "Http.decodeApiOperationInput",
-)(function* (input: unknown, operation: HttpApiOperation) {
+)(function* (input: UnparsedHttpApiInput, operation: HttpApiOperation) {
   const payload = yield* Schema.decodeUnknownEffect(JsonObjectSchema)(
     input ?? {},
   ).pipe(Effect.mapError(() => new Error("Tool input must be a JSON object")));
@@ -340,12 +357,11 @@ export class HttpApiSpec extends Context.Service<HttpApiSpec>()("HttpApiSpec", {
             definitions,
           );
 
-          return {
-            ...document.schema,
-            ...(Object.keys(usedDefinitions).length > 0
-              ? { $defs: usedDefinitions }
-              : {}),
-          } satisfies JsonSchema.JsonSchema;
+          const result: JsonSchema.JsonSchema = { ...document.schema };
+          if (Object.keys(usedDefinitions).length > 0) {
+            result.$defs = usedDefinitions;
+          }
+          return result;
         };
 
         return {

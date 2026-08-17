@@ -97,20 +97,22 @@ export const LocaleMiddlewareLive = Layer.effect(
   }),
 );
 
-export const localize = <
+export function localize<
   TBase extends { name?: unknown; translations: Array<{ locale: string }> },
-  TTranslation = TBase["translations"][number],
-  TResult = Omit<TBase, "translations"> & TTranslation,
   TVariables extends LocalizedInputType = LocalizedInputType,
 >(
   context: TVariables,
   obj: TBase,
   customLocale?: Locale,
-): TResult => {
+): Omit<TBase, "translations"> & TBase["translations"][number];
+export function localize<
+  TBase extends { name?: unknown; translations: Array<{ locale: string }> },
+  TVariables extends LocalizedInputType = LocalizedInputType,
+>(context: TVariables, obj: TBase, customLocale?: Locale) {
   const locale = customLocale ?? context.locale;
   const fallbackLocale = context.fallbackLocale;
 
-  let translation = undefined;
+  let translation: TBase["translations"][number] | undefined;
   if (fallbackLocale === "none") {
     translation = obj.translations.find((item) => item.locale === locale);
   } else {
@@ -128,5 +130,5 @@ export const localize = <
   return {
     ...rest,
     ...(translation ?? { locale }),
-  } as TResult;
-};
+  };
+}

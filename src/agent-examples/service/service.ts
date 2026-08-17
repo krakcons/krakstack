@@ -6,7 +6,7 @@ import type {
   UpdateExamplePayload,
 } from "./schema";
 
-export interface ExamplesShape {
+export interface ExamplesService {
   readonly list: (input: {
     userId: string;
   }) => Effect.Effect<ReadonlyArray<Example>>;
@@ -29,7 +29,7 @@ export interface ExamplesShape {
   }) => Effect.Effect<Example | undefined>;
 }
 
-export class Examples extends Context.Service<Examples, ExamplesShape>()(
+export class Examples extends Context.Service<Examples, ExamplesService>()(
   "agent-examples/Examples",
   {
     make: Effect.gen(function* () {

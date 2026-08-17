@@ -79,3 +79,22 @@ bunx shadcn@latest add @krak-stack/data-table
 ```
 
 Project-specific configuration and scaffolding remain available through shadcn.
+
+## Oxlint Plugin
+
+Projects that prefer centrally versioned rules can load the compiled anti-slop
+plugin directly from the package:
+
+```json
+{
+  "jsPlugins": [
+    {
+      "name": "anti-slop",
+      "specifier": "@krak-stack/registry/oxlint/anti-slop"
+    }
+  ]
+}
+```
+
+Use `@krak-stack/lint-format` instead when the project should receive editable,
+vendored rule source under `tools/oxlint/anti-slop`.

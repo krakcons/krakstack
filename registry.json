@@ -24,6 +24,7 @@
       "type": "registry:block",
       "title": "App Brand",
       "description": "A compact TanStack Router brand link with a semantic icon, app name, and subtitle.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`app-brand` provides a small reusable brand link for app shells, home page headers, and navigation chrome. It keeps the icon container, label, and subtitle visually consistent across pages. Use `to` for TanStack Router links, `href` for standard anchors, and `to={null}` for static branding. Internal links accept the same typed route props as TanStack Router's `Link`, including `params` and `search`.\n\n## Usage\n\n```tsx\nimport { AppBrand } from \"@/components/ui/app-brand\";\nimport { Blocks } from \"lucide-react\";\n\n<AppBrand label=\"Krakstack\" subtitle=\"Documentation\" icon={Blocks} />\n```\n\n## Route Params\n\n```tsx\n<AppBrand\n  to=\"/organizations/$organizationId\"\n  params={{ organizationId }}\n  label=\"Acme\"\n  subtitle=\"Organization\"\n  icon={Blocks}\n/>\n```",
       "files": [
         {
@@ -39,6 +40,7 @@
       "type": "registry:component",
       "title": "Copy Button",
       "description": "An accessible clipboard copy button with success and failure announcements for screen readers.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`CopyButton` copies a string to the clipboard and announces copy results with an `aria-live` status region. It keeps the accessible name stable while the icon changes after a successful copy. Pass `valueDescription` for concise context, such as `install command` or `tsx code`; avoid passing the full copied value when it may be long or sensitive.\n\n## Variants\n\n- Omit `copyVariant` for the default icon-only size.\n- `copyVariant=\"sm\"` renders a smaller compact icon-only button.\n- `copyVariant=\"large\"` renders the copy label next to the icon.\n\n## Usage\n\n```tsx\nimport { CopyButton } from \"@/components/ui/copy-button\";\n\n<CopyButton\n  value=\"bun run dev\"\n  valueDescription=\"install command\"\n  copyVariant=\"large\"\n  variant=\"secondary\"\n  messages={{ copy: \"Copy\", copied: \"Copied\" }}\n/>\n```",
       "files": [
         {
@@ -70,6 +72,7 @@
       "type": "registry:component",
       "title": "Google Map",
       "description": "A reusable Google Maps renderer with centered markers, radius circles, interaction controls, shared script loading, and localized states.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`GoogleMap` is a product-neutral renderer for the Google Maps JavaScript API. The caller owns the browser API key and controlled map values; the component owns safe shared script loading, map initialization, centered overlays, status presentation, and cleanup. English and French status and accessibility labels are built in through `getLocale` and can be overridden with `messages`.\n\n## Features\n\n- Shared Google Maps script loading across component instances\n- SSR-safe loading, missing-key, script failure, and initialization failure states\n- Controlled center and zoom updates without recreating the map\n- Optional centered marker with a custom icon URL\n- Optional centered radius circle with fill and stroke customization\n- Configurable interaction, zoom controls, and minimum and maximum zoom\n- Semantic shadcn/Tailwind styling and localized accessibility labels\n\n## API Key Requirement\n\nPass a browser key with the Google Maps JavaScript API enabled. Restrict the key to the consumer application's allowed HTTP referrers and do not pass a server key or secret. The component does not read environment variables or runtime configuration.\n\n## Usage\n\n```tsx\nimport { GoogleMap } from \"@/components/ui/google-map\";\n\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={{ lat: 45.5019, lng: -73.5674 }}\n  zoom={11}\n  className=\"h-96\"\n  marker\n/>\n```\n\n`center` is a `{ lat, lng }` literal and `zoom` is clamped to `minZoom` and `maxZoom`. Provide a height through `className`; the default minimum height is `16rem`.\n\n## Marker And Radius Customization\n\nA boolean `marker` uses Google's default marker. Pass an object to supply an icon URL. `radiusMeters` is expressed in meters, and the circle always follows `center`.\n\n```tsx\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={position}\n  zoom={9}\n  marker={{ icon: \"/map-marker.svg\" }}\n  radius={{\n    radiusMeters: 25_000,\n    fillColor: \"#2563eb\",\n    fillOpacity: 0.12,\n    strokeColor: \"#1d4ed8\",\n    strokeOpacity: 0.8,\n    strokeWeight: 2,\n  }}\n/>\n```\n\n## Interaction Constraints\n\nSet `interactive={false}` for a static preview. This disables dragging, gestures, scrolling, keyboard shortcuts, and clickable map icons while leaving the optional custom zoom controls available. Set `zoomControls={false}` to hide the component's plus/minus controls independently of direct map interaction. `minZoom` and `maxZoom` constrain both prop updates and custom controls. All map instances on a page share one Google Maps script and should receive the same API key. Remount the component to retry after a script-load failure. Google Maps usage remains subject to Google's API availability, billing, and terms.",
       "files": [
         {
@@ -123,7 +126,7 @@
       "type": "registry:block",
       "title": "Data Table",
       "description": "A configurable data table with URL or local state, filtering, sorting, pagination, multi-row selection and bulk actions, exports, gallery view, grouping, row actions, and drag-and-drop row moves.",
-      "meta": { "updatedAt": "2026-08-13" },
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`data-table` provides a production-oriented table shell around TanStack Table v9's composable table API. It keeps search, pagination, sorting, grouping, and view mode in the URL so table state can be linked, refreshed, and shared.\n\n## Features\n\n- Shared v9 features and row models through `createTableHook`\n- Composable table, header, and cell rendering contexts\n- URL-backed state through `TableSearchSchema`\n- Search, sorting, client or server pagination, and column visibility\n- Optional multi-row and Shift-range selection with bulk actions\n- CSV export for the current table data\n- Table and gallery display modes\n- Optional grouping with row movement callbacks\n- Optional sortable row reordering callbacks\n- Reusable action column helper\n\n## Usage\n\n```tsx\nimport { DataTable, DataTableColumnHeader } from \"@/components/ui/data-table\";\n\n<DataTable\n  columns={columns}\n  data={rows}\n  exportFileName=\"rows.csv\"\n  from=\"/your-route\"\n/>\n```\n\n## Row Selection\n\nEnable `features.selection` with a stable row ID and receive the selected loaded rows. The header checkbox selects the current page, and Shift-click selects a visible range. Add `bulkActions` to show an action menu when rows are selected; each action receives the selected row array.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={assets}\n  features={{\n    selection: {\n      getRowId: (asset) => asset.id,\n      onSelectionChange: setSelectedAssets,\n      bulkActions: {\n        label: \"Selected assets\",\n        items: [\n          {\n            name: \"Delete\",\n            variant: \"destructive\",\n            onClick: (selectedAssets) => deleteAssets(selectedAssets),\n          },\n        ],\n      },\n    },\n  }}\n/>\n```\n\n## Row Reordering\n\nPass `reordering` to enable drag handles and receive the newly ordered visible rows. Update your data optimistically in `onReorder` so the dropped row stays in place immediately.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={rows}\n  from=\"/your-route\"\n  reordering={{\n    getRowId: (row) => row.id,\n    getRowLabel: (row) => row.name,\n    onReorder: setRows,\n  }}\n/>\n```\n\n## Server Pagination\n\nPass the current page of rows and `serverPagination.rowCount` when data is already paginated by an API. The table keeps TanStack pagination state in the URL and uses `rowCount` to calculate page controls without slicing the current page again.\n\n```tsx\n<DataTable\n  columns={columns}\n  data={page.data}\n  from=\"/your-route\"\n  serverPagination={{ rowCount: page.meta.total }}\n/>\n```",
       "files": [
         {
@@ -161,6 +164,7 @@
       "type": "registry:component",
       "title": "File Picker",
       "description": "An accessible controlled file picker with drag-and-drop, attachment metadata, image previews, and replace and delete actions.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`FilePicker` is a form-library-independent controlled file input. It combines a visually hidden native input with an accessible choose button, drag-and-drop selection, shadcn Attachment presentation, file metadata, image previews, and replace/delete actions. English and French labels are built in and can be overridden through `messages`.\n\n## Usage\n\n```tsx\nconst [file, setFile] = useState<File>();\n\n<FilePicker\n  accept=\"application/pdf\"\n  canClear={Boolean(file)}\n  file={file}\n  id=\"document\"\n  name=\"document\"\n  onChange={setFile}\n  onClear={() => setFile(undefined)}\n  title={file?.name ?? \"Document\"}\n/>\n```\n\nPass `image={{ alt, width, height, src }}` to enable image previews. `src` can represent a persisted image while a newly selected `file` is previewed through a managed object URL.",
       "files": [
         {
@@ -177,6 +181,7 @@
       "type": "registry:block",
       "title": "Form",
       "description": "A TanStack Form setup with reusable field wrappers, compact and searchable selects, file inputs, submit state, and dirty-navigation blocking.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection. Built-in labels are stored in the component file and can be overridden with message props on the relevant field or form component.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- In-file English and French defaults with override props\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n  <form.SubmitButton messages={{ submit: \"Save\" }} />\n</form.AppForm>\n```\n\n## File Selection Side Effects\n\n`FileField` accepts `onFileChange` when selecting a file needs to update adjacent UI, upload metadata, or derived form state before submit.\n\n```tsx\n<form.AppField name=\"attachment\">\n  {(field) => (\n    <field.FileField\n      accept=\".pdf,.txt\"\n      label=\"Attachment\"\n      onFileChange={(file) => setSelectedFile(file || null)}\n    />\n  )}\n</form.AppField>\n```",
       "files": [
         {
@@ -209,6 +214,7 @@
       "type": "registry:block",
       "title": "Effect Form",
       "description": "Reusable Effect Form fields, submission state, errors, grouping, file inputs, and dirty-navigation blocking.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`effect-form` provides reusable field components for `@lucas-barake/effect-form-react`. It includes schema-backed fields, submission errors and state, grouped fields, revert actions, and form-owned dirty-navigation blocking. Built-in English and French labels can be read or overridden with `effectFormMessages`.\n\n## Available Fields\n\n- `TextField` and `NameField` — string inputs, with a standard localized name variant\n- `TextAreaField`, `DescriptionField`, and `NullableTextAreaField` — required and nullable multiline values\n- `CheckboxField` — boolean values\n- `SelectField` and `FolderField` — single string selection\n- `MultiSelectField` and `NullableMultiSelectField` — array and nullable array selection\n- `SearchableSelectField` and `SingleSearchableSelectField` — virtualized searchable multiple and single selection\n- `KeyValueField` and `NullableKeyValueField` — record editors\n- `FileField` — clearable native `File` values through the shared `FilePicker`\n- `ImageField` — local file and persisted URL image values with previews\n- `RevertButton` — restores a string field to its original value\n\n## Form Helpers\n\n- `FieldWrapper` groups related fields with a legend and optional locale badge\n- `SubmitButton` observes dirty, changed-since-submit, and waiting state\n- `SubmitError` and `ErrorMessage` present typed failures\n- `BlockNavigation` observes the form and guards unsaved navigation\n\n## Usage\n\n```tsx\nconst builder = FormBuilder.empty.addField(\"name\", Schema.String);\n\nconst form = FormReact.make(builder, {\n  fields: { name: TextField },\n  onSubmit: (_, { decoded }) => save(decoded),\n});\n\n<form.Initialize defaultValues={{ name: \"\" }}>\n  <form.name label=\"Name\" />\n  <SubmitError result={submitResult} />\n  <SubmitButton form={form} />\n  <BlockNavigation form={form} />\n</form.Initialize>\n```",
       "files": [
         {
@@ -244,6 +250,7 @@
       "type": "registry:block",
       "title": "Locale Switcher",
       "description": "A Paraglide-powered dropdown for switching between configured locales with localized language labels.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`locale-switcher` provides a compact language switcher for Paraglide projects. It reads the current locale from Paraglide, lists the configured locales, and updates the active locale from a dropdown menu.\n\n## Features\n\n- Uses Paraglide `getLocale`, `setLocale`, and `locales`\n- In-file English and French labels\n- Optional message overrides\n- Icon-only trigger with accessible screen-reader text\n\n## Usage\n\n```tsx\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\n\n<LocaleSwitcher />\n\n<LocaleSwitcher messages={{ title: \"Language\", en: \"EN\", fr: \"FR\" }} />\n```",
       "files": [
         {
@@ -260,6 +267,7 @@
       "type": "registry:block",
       "title": "Theme Switcher",
       "description": "A localStorage-persisted light, dark, and system theme switcher with a ScriptOnce startup script to avoid theme flash.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`theme-switcher` provides a compact dropdown for switching between light, dark, and system themes. It persists the selected theme in `localStorage`, applies the resolved theme class to the document element, and renders a `ScriptOnce` startup script from `ThemeProvider` to avoid theme flash. Labels are stored in the component file and can be overridden with the `messages` prop.\n\n## Usage\n\nWrap your app in `ThemeProvider`.\n\n```tsx\nimport { ThemeProvider } from \"@/components/ui/theme-switcher\";\n\n<ThemeProvider>{children}</ThemeProvider>\n```\n\nRender the switcher from a component inside the provider.\n\n```tsx\nimport { ThemeSwitcher, useTheme } from \"@/components/ui/theme-switcher\";\n\nconst { theme, setTheme } = useTheme();\n\n<ThemeSwitcher value={theme} onChange={setTheme} />\n\n<ThemeSwitcher\n  value={theme}\n  onChange={setTheme}\n  messages={{ title: \"Theme\", light: \"Day\", dark: \"Night\" }}\n/>\n```",
       "files": [
         {
@@ -291,6 +299,7 @@
       "name": "notification-menu",
       "title": "Notification Menu",
       "description": "A controlled, bilingual notification popover with unread state, inbox and archive views, loading and error states, and composable item rendering.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:block",
       "docs": "## Overview\n\n`notification-menu` provides router-neutral notification presentation and interactions. The consumer owns fetching, trusted user and organization scope, mutations, invalidation, and navigation. The component receives already-scoped notifications and reports notification IDs to `onMarkRead` and `onArchive`.\n\nEnglish and French menu chrome is built in and can be overridden with `messages`. Notification content remains consumer-owned.\n\n## Usage\n\n```tsx\nimport { NotificationMenu } from \"@/services/notification/client\";\n\n<NotificationMenu\n  notifications={notifications}\n  onMarkRead={(notificationIds) => client.markRead({ notificationIds })}\n  onArchive={(notificationIds) => client.archive({ notificationIds })}\n  onNavigate={(notification) => navigate({ href: notification.href })}\n/>\n```\n\nEach notification accepts `id`, `title`, optional `description`, `createdAt`, `timestampLabel`, `href`, `readAt`, and `archivedAt`. Opening the menu marks unread inbox IDs as read by default; set `markReadOnOpen={false}` to disable this behavior.\n\nUse `renderItem` for custom item content and `renderTrigger` for custom trigger presentation. The component never accepts a user ID, organization ID, or workspace as trusted authorization input; enforce scope in the consumer's server capability.",
       "files": [
@@ -320,6 +329,7 @@
       "name": "service-notification",
       "title": "Notification Service",
       "description": "An Effect notification dispatcher that sends dynamic channel payloads through the installed notification channels matching each top-level message key.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-notification` provides the core Effect notification dispatcher. Messages are dynamic objects where each top-level key is a channel capability, such as `email`, `discord`, `sns`, or `push`. Installed channels declare the key they handle, contribute their payload type through `NotificationChannels`, and validate their own payloads.\n\nThe core package intentionally does not include provider-specific dependencies. Install separate channel registry entries, such as `notification-channel-email-ses`, to add transports.\n\n## Included Files\n\n- `services/notification/index.ts` - Main `NotificationService` interface and layer helpers\n- `services/notification/channels/index.ts` - Channel contract and channel registry layer\n- `services/notification/schema.ts` - Dynamic message envelope and shared send error\n\n## Usage\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { NotificationService } from \"@/services/notification\";\nimport { NotificationChannelRegistry } from \"@/services/notification/channels\";\nimport { SesNotificationChannel } from \"@/services/notification/channels/ses\";\n\nconst notificationChannelsLayer = Layer.effect(\n  NotificationChannelRegistry,\n  Effect.gen(function* () {\n    const email = yield* SesNotificationChannel;\n    return NotificationChannelRegistry.make(email);\n  }),\n).pipe(Layer.provide(SesNotificationChannel.layer));\n\nconst notificationServiceLayer = NotificationService.layer.pipe(\n  Layer.provide(notificationChannelsLayer),\n);\n\nconst program = Effect.gen(function* () {\n  const notifications = yield* NotificationService;\n\n  yield* notifications.send({\n    email: {\n      to: \"user@example.com\",\n      subject: \"Deploy succeeded\",\n      html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n    },\n  });\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(notificationServiceLayer)),\n);\n```\n\n## Typed Messages\n\n`NotificationService.send` is typed from the installed channel declarations. Channel packages extend the core `NotificationChannels` interface with their key and payload type. For example, the SES channel contributes `email: SesEmailNotification`, so `send({ email: ... })` is checked against the SES payload schema at compile time.\n\nUnknown keys are rejected by TypeScript once at least one channel augments `NotificationChannels`; missing runtime wiring still fails with `NotificationSendError`.\n\n## Channel Behavior\n\nFor each key in the message, the dispatcher sends the payload to every installed channel with the same key. This allows multiple providers to share a capability, such as primary and audit email transports. If a message includes a key with no installed channel, the send fails with `NotificationSendError` so notification wiring problems are not silently ignored.\n\nInstall additional channel entries to enable more keys without changing the core service.\n\n## Merging Channels\n\nUse `NotificationChannelRegistry.make(...)` when you need one `NotificationService` layer with several channel implementations. Each channel package should expose its channel service layer, then the app-level registry can collect the installed channel instances.\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { NotificationChannelRegistry } from \"@/services/notification/channels\";\nimport { NotificationService } from \"@/services/notification\";\nimport { SesNotificationChannel } from \"@/services/notification/channels/ses\";\nimport { DiscordNotificationChannel } from \"@/services/notification/channels/discord\";\n\nconst notificationChannelsLayer = Layer.effect(\n  NotificationChannelRegistry,\n  Effect.gen(function* () {\n    const email = yield* SesNotificationChannel;\n    const discord = yield* DiscordNotificationChannel;\n\n    return NotificationChannelRegistry.make(email, discord);\n  }),\n).pipe(\n  Layer.provideMerge(SesNotificationChannel.layer),\n  Layer.provideMerge(DiscordNotificationChannel.layer),\n);\n\nexport const notificationServiceLayer = NotificationService.layer.pipe(\n  Layer.provide(notificationChannelsLayer),\n);\n```\n\nA message can now include every merged capability in one send.\n\n```ts\nyield* notifications.send({\n  email: {\n    to: \"user@example.com\",\n    subject: \"Deploy succeeded\",\n    text: \"All checks passed.\",\n  },\n  discord: {\n    content: \"Deploy succeeded.\",\n  },\n});\n```",
       "dependencies": ["effect@beta"],
@@ -346,6 +356,7 @@
       "name": "notification-channel-email-ses",
       "title": "SES Channel",
       "description": "An AWS SES email channel for the notification service. It handles the `email` message key and validates its own email payload schema.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`notification-channel-email-ses` adds AWS SES email delivery to `service-notification`. It handles the `email` top-level key in notification messages, contributes the `email` payload type to `NotificationChannels`, and keeps the SES-specific payload schema beside the channel implementation.\n\n## Included Files\n\n- `services/notification/channels/ses/index.ts` - SES channel, config service, and channel layer\n- `services/notification/channels/ses/schema.ts` - SES email payload schema\n\n## Usage\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { NotificationService } from \"@/services/notification\";\nimport { NotificationChannelRegistry } from \"@/services/notification/channels\";\nimport { SesNotificationChannel } from \"@/services/notification/channels/ses\";\n\nconst notificationChannelsLayer = Layer.effect(\n  NotificationChannelRegistry,\n  Effect.gen(function* () {\n    const email = yield* SesNotificationChannel;\n    return NotificationChannelRegistry.make(email);\n  }),\n).pipe(Layer.provide(SesNotificationChannel.layer));\n\nconst notificationServiceLayer = NotificationService.layer.pipe(\n  Layer.provide(notificationChannelsLayer),\n);\n\nconst program = Effect.gen(function* () {\n  const notifications = yield* NotificationService;\n\n  yield* notifications.send({\n    email: {\n      to: \"alice@example.com\",\n      subject: \"Deploy succeeded\",\n      html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n    },\n  });\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(notificationServiceLayer)),\n);\n```\n\nThe payload can include `from`, or the channel can read `NOTIFICATION_EMAIL_FROM` from the environment.\n\n## Merging With Other Channels\n\nUse `SesNotificationChannel.layer` when building a multi-channel registry. Pull `SesNotificationChannel` and any other channel services into one `NotificationChannelRegistry.make(...)`, then provide that registry to `NotificationService.layer`. See the `service-notification` docs for a complete merge example.\n\n## Environment Variables\n\n- `SES_REGION` - AWS SES region\n- `SES_ACCESS_KEY_ID` - AWS access key ID\n- `SES_SECRET_ACCESS_KEY` - AWS secret access key\n- `NOTIFICATION_EMAIL_FROM` - Optional default sender address when the payload omits `from`",
       "dependencies": ["@aws-sdk/client-sesv2", "effect@beta"],
@@ -367,6 +378,7 @@
       "name": "notification-persistence",
       "title": "Notification Persistence",
       "description": "Reusable PostgreSQL tables and Effect codecs for notification inbox records, channel settings, and durable delivery snapshots.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`notification-persistence` provides three project-owned PostgreSQL tables: `notifications`, `notification_settings`, and `notification_deliveries`. It also provides Effect schemas for records and versioned channel payloads. The module intentionally does not provide authorization queries, CRUD operations, migrations, a relay, or a worker.\n\n## Included Files\n\n- `services/notification/persistence/drizzle.ts` - Drizzle PostgreSQL tables, indexes, constraints, and inferred row types\n- `services/notification/persistence/schema.ts` - Effect record schemas, delivery lifecycle values, and versioned payload codecs\n- `services/notification/persistence/index.ts` - Server-only persistence exports\n\n## Schema Setup\n\nRe-export the tables from your project's Drizzle schema entry:\n\n```ts\nexport * from \"@/services/notification/persistence/drizzle\";\n```\n\nThen generate and commit a migration in the receiving project. KrakStack ships definitions rather than shared migration history, so existing projects remain in control of schema evolution.\n\n## Durable Inserts\n\nImport `notificationDeliveries` in a caller-owned database transaction and insert one row per channel. Store a fully rendered, versioned payload snapshot so retries do not render changed templates. Use a stable idempotency key from the originating domain operation.\n\n```ts\nyield* transaction.insert(notificationDeliveries).values({\n  idempotencyKey: `application-approved:${applicationId}:email`,\n  eventKey: \"application.approved\",\n  channel: \"email\",\n  purpose: \"transactional\",\n  recipientAddress: recipient.email,\n  payloadVersion: 1,\n  payload: {\n    to: recipient.email,\n    subject: rendered.subject,\n    text: rendered.text,\n  },\n});\n```\n\n## Ownership\n\nThe application must derive trusted recipient and tenant scope, authorize inbox operations, resolve preferences, generate migrations, and operate any relay or worker. Effect's workflow and persisted-queue tables remain Effect-owned and are not defined by this item.",
       "dependencies": ["drizzle-orm@rc", "effect@beta"],
@@ -393,6 +405,7 @@
       "name": "service-s3",
       "title": "S3 Service",
       "description": "An Effect service wrapping Bun's S3 client for object reads, writes, metadata, presigned URLs, listing, and deletion with typed service errors.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-s3` provides an Effect service around Bun's built-in S3 client. It reads S3 configuration from environment variables, exposes a reusable `S3Service.layer`, and maps client failures into `S3ServiceError` values.\n\n## Included Files\n\n- `services/s3/index.ts` - S3 config service, S3 client service, production layer, and test layer helper\n- `services/s3/schema.ts` - Typed `S3ServiceError` schema\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { S3Service } from \"@/services/s3\";\n\nconst program = Effect.gen(function* () {\n  const s3 = yield* S3Service;\n\n  yield* s3.write(\"uploads/hello.txt\", \"Hello world\", {\n    type: \"text/plain\",\n  });\n\n  const text = yield* s3.text(\"uploads/hello.txt\");\n  const url = yield* s3.presign(\"uploads/hello.txt\", { expiresIn: 60 });\n\n  return { text, url };\n});\n\nconst result = await Effect.runPromise(\n  program.pipe(Effect.provide(S3Service.layer)),\n);\n```\n\n## Available Operations\n\n- `file(path, options?)` - Create a Bun `S3File` reference\n- `write(path, data, options?)` - Write object data\n- `text(path)`, `json(path)`, `bytes(path)`, `arrayBuffer(path)`, `stream(path)` - Read object data\n- `exists(path)`, `stat(path)`, `size(path)` - Read object metadata\n- `delete(path)` - Delete an object\n- `presign(path, options?)` - Create a presigned object URL\n- `list(options?)` - List bucket objects\n\n## Environment Variables\n\n- `S3_ACCESS_KEY_ID` - S3 access key ID\n- `S3_SECRET_ACCESS_KEY` - S3 secret access key\n- `S3_BUCKET` - S3 bucket name\n- `S3_REGION` - Optional S3 region\n- `S3_ENDPOINT` - Optional custom S3-compatible endpoint\n- `S3_SESSION_TOKEN` - Optional session token\n\nThis service uses Bun's `S3Client`, so it is intended for Bun runtimes or compatible S3-compatible deployments.",
       "dependencies": ["effect@beta"],
@@ -474,7 +487,7 @@
       "title": "Localization",
       "description": "Request-scoped locale resolution and Effect HttpApi middleware for Paraglide applications.",
       "type": "registry:lib",
-      "meta": { "updatedAt": "2026-08-13" },
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`localization` provides request-scoped locale context for Effect HttpApi applications using Paraglide. It resolves the locale from the `locale` URL query parameter, the `locale` request header, the `locale` cookie, or `Accept-Language`, in that order, then provides that context to downstream handlers through `LocaleMiddleware`. All explicit locale values are validated with Effect Schema and cookies are parsed with Effect's HTTP cookie utilities. The `localize` helper selects a record translation using the current locale and fallback settings.\n\n## Included Files\n\n- `lib/localization.ts` - `LocaleContext`, `LocaleMiddleware`, `LocaleMiddlewareLive`, `LocalizedInputType`, and `localize`\n\n## Requirements\n\nThe receiving project must use Paraglide and expose its generated runtime at `@/paraglide/runtime`. Supported locales are derived from the receiving project's Paraglide configuration.\n\n## API Setup\n\nRegister the live middleware layer in the application HTTP API layer:\n\n```ts\nimport { Layer } from \"effect\";\nimport { LocaleMiddlewareLive } from \"@/lib/localization\";\n\nconst apiLayer = Layer.mergeAll(/* application layers */).pipe(\n  Layer.provide(LocaleMiddlewareLive),\n);\n```\n\nApply `LocaleMiddleware` to an API group and read `LocaleContext` in endpoint handlers:\n\n```ts\nimport { Effect } from \"effect\";\nimport { HttpApiGroup } from \"effect/unstable/httpapi\";\nimport { LocaleContext, LocaleMiddleware } from \"@/lib/localization\";\n\nconst RecordsGroup = HttpApiGroup.make(\"records\").middleware(LocaleMiddleware);\n\nconst program = Effect.gen(function* () {\n  const { locale, fallbackLocale } = yield* LocaleContext;\n  // Use locale and fallbackLocale to resolve localized data.\n});\n```\n\n## Translation Resolution\n\n`localize` expects a record with a `translations` array whose items have a `locale` field. It returns the matching translation merged with the base record, falls back to `fallbackLocale` or the first translation, and respects `fallbackLocale: \"none\"` when a translation must exactly match.\n\n```ts\nimport { localize, type LocalizedInputType } from \"@/lib/localization\";\n\nconst context: LocalizedInputType = { locale: \"fr\", fallbackLocale: \"en\" };\nconst record = localize(context, {\n  id: \"welcome\",\n  translations: [\n    { locale: \"en\", name: \"Welcome\" },\n    { locale: \"fr\", name: \"Bienvenue\" },\n  ],\n});\n```",
       "dependencies": ["@inlang/paraglide-js", "effect@beta"],
       "files": [
@@ -504,6 +517,7 @@
       "name": "httpapi-client",
       "title": "HttpApi Client",
       "description": "A generated Effect HttpApi client service with shared OpenAPI operation discovery, input decoding, and tool schema helpers.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`httpapi-client` provides the shared foundation for generated HTTP API adapters. `HttpApiSpec` discovers operations from an Effect `HttpApi`, builds self-contained input schemas, and decodes tool or CLI input. `ApiClient` executes those operations through Effect's generated `HttpApiClient`, preserving the API's typed transport and response decoding.\n\n## Included Files\n\n- `lib/httpapi-client.ts` - `ApiClient`, its configuration, and generated operation execution\n- `lib/httpapi-helpers.tsx` - shared OpenAPI operation types, input schemas, decoders, naming, and `HttpApiSpec`\n\n## Usage\n\n```ts\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\nimport { AppApi } from \"@/api\";\n\nexport const apiClientLayer = ApiClient.layer({\n  api: AppApi,\n  baseUrl: \"https://example.com\",\n}).pipe(Layer.provide(FetchHttpClient.layer));\n\nexport const apiSpecLayer = HttpApiSpec.layer({\n  api: AppApi,\n  methods: [\"get\", \"post\"],\n});\n```",
       "dependencies": ["effect@beta"],
@@ -524,6 +538,7 @@
       "name": "agent",
       "title": "Agent",
       "description": "A generic Effect AI agent service, typed streaming API, client atoms, and localized assistant widget with tools, approvals, context, and references.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:block",
       "docs": "## Overview\n\n`agent` installs a complete generic agent foundation: Effect request and event schemas, a streaming AI service, scoped client atoms, and a controlled React widget. It supports serializable history, multi-round tool execution, approval responses, contextual resources, `@` references, streamed Markdown, tool activity, and English and French labels. Authentication, model selection, toolkit composition, and application-specific resources remain application-owned.\n\n## Included Files\n\n- `services/agent/schema.ts` - generic resource schemas and the `/agent` SSE HttpApi group\n- `services/agent/index.ts` - `AgentService` streaming implementation\n- `services/agent/client/atom.ts` - scoped state, event reduction, submit, reset, and interruption-ready effects\n- `services/agent/client/widget.tsx` - controlled localized assistant widget\n\n## API Setup\n\nCreate the group with your application's resource schema and add it to the root API.\n\n```ts\nexport const AgentApiGroup = makeAgentApiGroup(Resource);\nexport class AppApi extends HttpApi.make(\"app\").add(AgentApiGroup) {}\n```\n\nIn the handler, authenticate the request, build a request-scoped toolkit and system prompt, then return `AgentService.stream`. Provide the selected `LanguageModel` and `AgentService.layer` where the API layers are assembled.\n\n## Client Setup\n\nAdapt your generated SSE client to the atom factory, then bind a scope to the widget.\n\n```tsx\nconst agent = makeAgentAtoms({\n  stream: (get, request) => apiClient.agent.stream({ payload: request }),\n});\n\nconst state = useAtomValue(agent.state(scope));\nconst submit = useAtomSet(agent.submit, { mode: \"promiseExit\" });\n\n<AgentWidget\n  state={state}\n  onSubmit={(action) => submit({ action, scope })}\n  onInterrupt={() => interrupt()}\n  onReset={() => reset(scope)}\n/>\n```\n\nPass `context` for the resource currently being viewed and `availableReferences` to enable searchable `@reference` mentions. Resource values are generic and validated by the schema supplied to `makeAgentApiGroup`.\n\n## Localization\n\nThe widget selects English or French through Paraglide's `getLocale`. Override any label through the `messages` prop when an application needs different copy.",
       "registryDependencies": [
@@ -579,7 +594,7 @@
       "title": "Documentation",
       "description": "A provider-neutral localized documentation source, catalog, search index, and complete responsive documentation UI.",
       "type": "registry:lib",
-      "meta": { "updatedAt": "2026-08-13" },
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`docs` provides a Fumadocs-style source and catalog API for localized technical documentation. It validates page records with Effect Schema, parses raw MDX, builds navigation and a shared search index, renders the documentation layout and pages, and leaves route ownership with the application.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/docs\n```\n\nThe item creates `src/lib/docs.tsx`. It includes built-in English and French UI messages and accepts message overrides through `makeDocs`.\n\n## Content Sources\n\nUse `createMdxDocsSource` with any raw-file provider. The included `docsSource` uses an eager Vite glob for `src/content/docs/**/*.mdx` with English and French locales. A CMS or generated manifest can bypass MDX parsing with `createDocsSource({ pages, locales })` and records matching `DocsPageSchema`.\n\n```text\nsrc/content/docs/\n├── en/\n│   ├── introduction.mdx\n│   └── operations.mdx\n└── fr/\n    ├── introduction.mdx\n    └── operations.mdx\n```\n\nEvery MDX file requires matching frontmatter and body titles. Localized versions share routing metadata while translating `title`, `description`, headings, and body content.\n\n```mdx\n---\nslug: introduction\npath: /docs\ntitle: Introduction\ndescription: Learn how to use the application.\nicon: lucide:book-open\norder: 1\nlocale: en\nsection: start\ntype: concept\nlegacySlugs: [overview]\n---\n\n# Introduction\n\nWelcome to the documentation.\n\n## First steps\n\nStart here.\n```\n\n`section` is an arbitrary stable navigation group. `type` is one of `concept`, `tutorial`, `how-to`, `reference`, or `runbook`. `legacySlugs` is optional and redirects old public URLs to the canonical page.\n\n## Configure The Catalog\n\n`makeDocs` applies project-level routing, metadata, navigation, branding, resources, messages, and repository settings to a source.\n\n```tsx\nconst docs = makeDocs({\n  source: docsSource,\n  basePath: \"/docs\",\n  defaultSlug: \"introduction\",\n  origin: \"https://example.com\",\n  siteName: \"Example Docs\",\n  sectionOrder: [\"start\", \"guides\", \"operations\", \"reference\"],\n  brand: {\n    label: \"Example\",\n    subtitle: () => \"Documentation\",\n    icon: \"lucide:book-open\",\n    href: \"/\",\n  },\n  github: {\n    url: \"https://github.com/example/project\",\n    branch: \"main\",\n  },\n});\n```\n\nThe returned catalog exposes `pages`, `sections`, `resolve`, `search`, `getMessages`, `getHead`, `url`, and `editUrl`.\n\n## Set Up The Optional Slug Route\n\nCreate `src/routes/docs.{-$slug}.tsx`. The application owns this route because locale resolution, canonical origin, redirects, not-found behavior, and header actions are project decisions.\n\n```tsx\nimport { createFileRoute, notFound, redirect } from \"@tanstack/react-router\";\n\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\nimport { ThemeToggle } from \"@/components/theme-toggle\";\nimport {\n  DocsLayout,\n  DocsNotFound,\n  DocsPage,\n  docsSource,\n  makeDocs,\n  type DocsLocale,\n} from \"@/lib/docs\";\nimport { getLocale } from \"@/paraglide/runtime\";\n\nconst docsLocale = (): DocsLocale =>\n  getLocale() === \"fr\" ? \"fr\" : \"en\";\n\nconst docs = makeDocs({\n  source: docsSource,\n  basePath: \"/docs\",\n  defaultSlug: \"introduction\",\n  origin: \"https://example.com\",\n  siteName: \"Example Docs\",\n  sectionOrder: [\"start\", \"guides\", \"operations\", \"reference\"],\n  github: { url: \"https://github.com/example/project\" },\n});\n\nexport const Route = createFileRoute(\"/docs/{-$slug}\")({\n  loader: ({ params }) => {\n    const resolution = docs.resolve(params.slug, docsLocale());\n    if (!resolution) throw notFound();\n\n    if (!resolution.canonical) {\n      throw redirect({\n        to: resolution.page.path,\n        statusCode: 301,\n      });\n    }\n\n    return resolution;\n  },\n  head: ({ loaderData }) => {\n    const locale = loaderData?.page.locale ?? docsLocale();\n    return docs.getHead({\n      locale,\n      ...(loaderData?.page ? { page: loaderData.page } : {}),\n    });\n  },\n  component: DocsRoutePage,\n  notFoundComponent: () => (\n    <DocsNotFound docs={docs} locale={docsLocale()} />\n  ),\n});\n\nfunction DocsRoutePage() {\n  const resolution = Route.useLoaderData();\n\n  return (\n    <DocsLayout\n      docs={docs}\n      locale={resolution.page.locale}\n      headerActions={\n        <>\n          <ThemeToggle />\n          <LocaleSwitcher />\n        </>\n      }\n    >\n      <DocsPage docs={docs} resolution={resolution} />\n    </DocsLayout>\n  );\n}\n```\n\nThe optional segment makes `/docs` resolve `defaultSlug` and `/docs/operations` resolve the matching page. `docs.resolve` also identifies legacy aliases; redirect every non-canonical resolution permanently so only one URL is indexed.\n\n## Search And Rendering\n\n`DocsLayout` renders ordered navigation, GitHub, documentation search, branding, and app-provided header actions. `DocsPage` renders Streamdown content, heading anchors, desktop and mobile tables of contents, edit links, and previous/next navigation. Browser search and `documentation-toolkit` share `docs.search`, so page text is indexed once and result ranking stays consistent.\n\nFor additional locales, provide message overrides through `makeDocs({ messages })`. Keep public application-specific labels in the receiving project's localization system.",
       "registryDependencies": [
         "@krak-stack/app-brand",
@@ -627,7 +642,7 @@
           "target": "lib/documentation-toolkit.ts"
         }
       ],
-      "meta": { "updatedAt": "2026-08-15" }
+      "meta": { "updatedAt": "2026-08-17" }
     },
     {
       "name": "webfetch-toolkit",
@@ -649,7 +664,7 @@
     {
       "name": "seo",
       "title": "SEO Metadata",
-      "meta": { "createdAt": "2026-08-11", "updatedAt": "2026-08-11" },
+      "meta": { "createdAt": "2026-08-11", "updatedAt": "2026-08-17" },
       "description": "A framework-neutral SEO helper for TanStack Start head metadata, localized canonical links, Open Graph and Twitter tags, and derived JSON-LD.",
       "type": "registry:lib",
       "docs": "## Overview\n\n`createSeo` creates a configured SEO helper for public pages. Put site-wide values such as the origin, supported locales, site name, and organization profiles in the factory, then pass only page-specific metadata to each page. The lower-level `seo` function remains available for one-off configurations.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/seo\n```\n\nThe item installs `src/lib/seo.ts`. The same helper is available from the package export `@krak-stack/registry/seo`.\n\n## Configure Site Defaults\n\n```tsx\nimport { createSeo } from \"@/lib/seo\";\n\nconst siteSeo = createSeo({\n  origin: \"https://example.com\",\n  locales: [\"en\", \"fr\"],\n  siteName: \"Example\",\n  sameAs: [\"https://github.com/example/project\"],\n});\n```\n\n## Page Metadata\n\nUse the configured helper in a TanStack Start route. `path` defaults to `/`, and `defaultLocale` falls back to the first configured locale.\n\n```tsx\nexport const Route = createFileRoute(\"/\")({\n  head: () =>\n    siteSeo({\n      title: \"Example\",\n      description: \"Production-ready building blocks for TanStack apps.\",\n      locale: \"en\",\n      image: \"https://example.com/og.png\",\n    }),\n});\n```\n\nThe returned `meta`, `links`, and `scripts` can be spread into a route head configuration. Optional values are omitted instead of producing empty tags.\n\n## Documentation Pages\n\nPass `type: \"article\"` and a page path for documentation or other editorial pages. This changes the JSON-LD payload from `WebSite` to `Article`.\n\n```tsx\nsiteSeo({\n  title: \"Introduction\",\n  description: \"Learn the core concepts.\",\n  path: \"/docs/introduction\",\n  locale: \"en\",\n  type: \"article\",\n});\n```\n\n## Factory Options\n\n- `origin` - site origin used to derive canonical and localized URLs\n- `locales` - supported locales used for alternate links\n- `defaultLocale` - locale used for the `x-default` link\n- `siteName` - site and publisher name\n- `twitterCreator` and `twitterSite` - Twitter profile handles\n- `sameAs` - organization profile URLs included in JSON-LD\n\n## Page Options\n\n- `title` - required page title\n- `description` - description used by search and social metadata\n- `path` - page path, defaulting to `/`\n- `locale` - current page locale\n- `url` - explicit canonical URL when it cannot be derived\n- `image` - social preview image URL\n- `robots` - custom robots directive, defaulting to `index, follow`\n- `type` - `website` or `article`, defaulting to `website`",
@@ -677,12 +692,13 @@
           "target": "lib/httpapi-toolkit.ts"
         }
       ],
-      "meta": { "updatedAt": "2026-08-15" }
+      "meta": { "updatedAt": "2026-08-17" }
     },
     {
       "name": "httpapi-cli",
       "title": "HttpApi CLI",
       "description": "An Effect CLI generator driven by OpenAPI metadata that groups selected HttpApi operations and executes them through the generated API client.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:lib",
       "registryDependencies": ["@krak-stack/httpapi-client"],
       "docs": "## Overview\n\n`httpapi-cli` turns operations selected by `HttpApiSpec` into grouped Effect CLI commands. Its command name, version, and description come from the API OpenAPI `info` metadata. Calls are delegated to `ApiClient`, so request encoding, transport customization, authentication, and response decoding stay aligned with the generated Effect `HttpApiClient`.\n\n## Configure OpenAPI Metadata\n\nAnnotate the API once; the CLI and MCP server use the same metadata:\n\n```ts\nexport const AppApi = HttpApi.make(\"AppApi\")\n  .annotateMerge(\n    OpenApi.annotations({\n      title: \"App API\",\n      version: \"1.0.0\",\n      description: \"API for the App application\",\n    }),\n  )\n  .add(/* groups */);\n```\n\n## Create A CLI Handler\n\nCreate an app-owned handler such as `src/lib/cli-handler.ts`. This is where the application selects exposed methods, its API origin, and any authenticated `HttpClient` layer:\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nimport { AppApi } from \"@/api\";\nimport { env } from \"@/env\";\nimport { HttpApiCli, runHttpApiCli } from \"@/lib/httpapi-cli\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\n\nconst httpApiLayer = Layer.mergeAll(\n  HttpApiSpec.layer({\n    api: AppApi,\n    methods: [\"get\", \"post\", \"put\", \"patch\", \"delete\"],\n  }),\n  ApiClient.layer({\n    api: AppApi,\n    baseUrl: env.VITE_SITE_URL,\n  }).pipe(Layer.provide(FetchHttpClient.layer)),\n);\n\nconst cliLayer = HttpApiCli.layer.pipe(Layer.provide(httpApiLayer));\n\nexport const runCli = (args = process.argv.slice(2)) =>\n  runHttpApiCli(cliLayer, args);\n\nif (import.meta.main) {\n  runCli();\n}\n```\n\nFor API keys or session forwarding, replace `FetchHttpClient.layer` with an app-owned layer that transforms requests before providing it to `ApiClient.layer`.\n\n## Create A Binary Entrypoint\n\n```ts\n#!/usr/bin/env node\n\nimport { runCli } from \"@/lib/cli-handler\";\n\nrunCli();\n```\n\nUse `--body`, `--headers`, `--params`, and `--query` to pass JSON input to an operation.",
@@ -699,6 +715,7 @@
       "name": "httpapi-mcp",
       "title": "HttpApi MCP",
       "description": "An Effect MCP registrar and HTTP server driven by OpenAPI metadata, exposing selected HttpApi operations through the generated API client.",
+      "meta": { "updatedAt": "2026-08-17" },
       "type": "registry:lib",
       "registryDependencies": ["@krak-stack/httpapi-client"],
       "docs": "## Overview\n\n`httpapi-mcp` turns operations selected by `HttpApiSpec` into MCP tools. Tool calls are delegated to `ApiClient`, keeping request encoding, authentication, transport overrides, and response decoding in the generated Effect HTTP API client. `httpApiMcpServerLayer` derives the MCP server name and version from the API OpenAPI `info` metadata.\n\n## Configure OpenAPI Metadata\n\nAnnotate the API with `OpenApi.annotations({ title, version, description })`. The same metadata drives API documentation, CLI identity, and MCP server identity.\n\n## Create An MCP Handler\n\nCreate an app-owned handler such as `src/lib/mcp-handler.ts`:\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nimport { AppApi } from \"@/api\";\nimport { env } from \"@/env\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport {\n  HttpApiMcp,\n  httpApiMcpServerLayer,\n  httpApiMcpToolsLayer,\n} from \"@/lib/httpapi-mcp\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\n\nconst httpApiLayer = Layer.mergeAll(\n  HttpApiSpec.layer({ api: AppApi, methods: [\"get\"] }),\n  ApiClient.layer({\n    api: AppApi,\n    baseUrl: env.VITE_SITE_URL,\n  }).pipe(Layer.provide(FetchHttpClient.layer)),\n);\n\nconst mcpToolsLayer = httpApiMcpToolsLayer.pipe(\n  Layer.provide(\n    HttpApiMcp.layer({\n      toolMetaKey: \"app/httpapi\",\n    }),\n  ),\n);\n\nconst mcpHttpLayer = httpApiMcpServerLayer(\"/api/mcp\");\n\nexport const mcpLayer = Layer.mergeAll(mcpToolsLayer).pipe(\n  Layer.provideMerge(mcpHttpLayer),\n  Layer.provide(httpApiLayer),\n);\n```\n\nProvide `mcpLayer` from the application HTTP runtime alongside its API layers. Keep request-scoped authentication, telemetry, error mapping, and deployment-specific routing in this app-owned handler. For authentication, provide an app-owned `HttpClient` layer to `ApiClient.layer`; do not expose credentials as MCP tool inputs.\n\n## Exposed Operations\n\n`HttpApiSpec.layer` controls which methods and operations become tools. Restrict MCP to `get` by default unless write operations and their approval policy are intentionally exposed.",
@@ -761,8 +778,9 @@
       "name": "lint-format",
       "type": "registry:lib",
       "title": "Lint & Format Config",
-      "description": "Production-ready Oxfmt and Oxlint configuration for KrakStack projects, including Tailwind class sorting, React/TypeScript linting, and Effect-friendly rules.",
-      "docs": "## Overview\n\n`lint-format` installs root-level Oxfmt and Oxlint configuration for KrakStack projects. It keeps formatting boring and consistent while enabling useful correctness checks for React, TypeScript, and Effect code.\n\n## Included Files\n\n- `.oxfmtrc.json` — Oxfmt config with 80-column formatting and Tailwind CSS class sorting\n- `.oxlintrc.json` — Oxlint config for React, TypeScript, browser, and Node code\n\n## Choices\n\n- Uses JSON config files so CLI tooling can load them reliably across Node and Bun runtimes\n- Enables `sortTailwindcss` for shadcn/Tailwind projects\n- Disables `eslint/require-yield` because Effect uses generator functions as a DSL\n- Enables Vitest globals only in test files\n\n## Usage\n\nInstall the registry item:\n\n```bash\nnpx shadcn@latest add https://krakstack.net/r/lint-format.json\n```\n\nRecommended package scripts:\n\n```json\n{\n  \"scripts\": {\n    \"lint\": \"oxlint\",\n    \"fmt\": \"oxfmt\",\n    \"fmt:check\": \"oxfmt --check .\"\n  }\n}\n```\n\nRun checks locally or in CI:\n\n```bash\nbun run fmt:check\nbun run lint\n```",
+      "description": "Production-ready Oxfmt and Oxlint configuration for KrakStack projects, including vendored anti-slop rules, Tailwind class sorting, and React/TypeScript correctness checks.",
+      "meta": { "updatedAt": "2026-08-17" },
+      "docs": "## Overview\n\n`lint-format` installs root-level Oxfmt and Oxlint configuration for KrakStack projects. It includes editable source for KrakStack's Oxlint plugin, initially based on anti-slop's opinionated rules for rejecting low-evidence TypeScript and JavaScript patterns. The plugin is vendored so each project can inspect, customize, and extend its rules.\n\n## Included Files\n\n- `.oxfmtrc.json` — Oxfmt config with 80-column formatting and Tailwind CSS class sorting\n- `.oxlintrc.json` — Oxlint config for React, TypeScript, browser, Node, and the vendored plugin\n- `tools/oxlint/anti-slop/` — editable Oxlint plugin source and shared rule utilities\n\n## Choices\n\n- Vendors plugin source instead of coupling projects to a fixed lint package release\n- Enables all anti-slop rules as errors\n- Ignores installed agent tooling and the plugin source itself\n- Uses JSON config files so CLI tooling can load them reliably across Node and Bun runtimes\n- Enables `sortTailwindcss` for shadcn/Tailwind projects\n- Disables `eslint/require-yield` because Effect uses generator functions as a DSL\n- Enables Vitest globals only in test files\n\n## Usage\n\nInstall the registry item:\n\n```bash\nbunx shadcn@latest add @krak-stack/lint-format\n```\n\nRecommended package scripts:\n\n```json\n{\n  \"scripts\": {\n    \"lint\": \"oxlint\",\n    \"fmt\": \"oxfmt\",\n    \"fmt:check\": \"oxfmt --check .\"\n  }\n}\n```\n\nRun checks locally or in CI:\n\n```bash\nbun run fmt:check\nbun run lint\n```",
       "files": [
         {
           "path": ".oxfmtrc.json",
@@ -773,9 +791,104 @@
           "path": ".oxlintrc.json",
           "type": "registry:file",
           "target": "~/.oxlintrc.json"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/index.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/index.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-chained-type-assertions.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-chained-type-assertions.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-conditional-empty-object-spread.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-conditional-empty-object-spread.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-known-value-widening.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-known-value-widening.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-module-mocking.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-module-mocking.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-object-parameters.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-object-parameters.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-reflect-apply.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-reflect-apply.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-reflect-get.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-reflect-get.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-runtime-typeof.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-runtime-typeof.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-shape-in-symbol-names.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-shape-in-symbol-names.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-unknown-parameters.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-unknown-parameters.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-unknown-returns.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-unknown-returns.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-unknown-type-aliases.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-unknown-type-aliases.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-unsafe-dictionary-type.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-unsafe-dictionary-type.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/no-widen-then-assert.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/no-widen-then-assert.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/rules/require-safety-comment-for-type-assertion.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/rules/require-safety-comment-for-type-assertion.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/shared/dictionary-types.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/shared/dictionary-types.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/shared/lexical-type-parameters.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/shared/lexical-type-parameters.ts"
+        },
+        {
+          "path": "tools/oxlint/anti-slop/shared/reflect-method.ts",
+          "type": "registry:file",
+          "target": "~/tools/oxlint/anti-slop/shared/reflect-method.ts"
         }
       ],
-      "devDependencies": ["oxfmt", "oxlint"],
+      "devDependencies": ["@oxlint/plugins", "oxfmt", "oxlint"],
       "dependencies": []
     },
     {
@@ -800,6 +913,7 @@
       "type": "registry:block",
       "title": "Code Block",
       "description": "A syntax-highlighted code block with Shiki highlighting, language label, copy action, and plain-text fallback.",
+      "meta": { "updatedAt": "2026-08-17" },
       "docs": "## Overview\n\n`CodeBlock` renders syntax-highlighted code with Shiki using a highlighter supplied by your app. The component stays synchronous and prop-driven so your project can create one shared highlighter and reuse it across every code block. It falls back to plain text if highlighting fails and includes a copy-to-clipboard button.\n\n## Highlighter Setup\n\nCreate a project-managed highlighter, for example in `src/lib/shiki.ts`. This file is intentionally not included by the registry item so each app can choose its bundled themes and languages. Load both `vitesse-light` and `vitesse-dark` unless you also change the themes in `CodeBlock`.\n\n```ts\nimport bash from \"@shikijs/langs/bash\";\nimport javascript from \"@shikijs/langs/javascript\";\nimport json from \"@shikijs/langs/json\";\nimport tsx from \"@shikijs/langs/tsx\";\nimport typescript from \"@shikijs/langs/typescript\";\nimport vitesseDark from \"@shikijs/themes/vitesse-dark\";\nimport vitesseLight from \"@shikijs/themes/vitesse-light\";\nimport { createHighlighterCore } from \"shiki/core\";\nimport { createOnigurumaEngine } from \"shiki/engine/oniguruma\";\n\nexport const shikiHighlighter = createHighlighterCore({\n  themes: [vitesseLight, vitesseDark],\n  langs: [bash, javascript, json, tsx, typescript],\n  langAlias: { js: \"javascript\", ts: \"typescript\", sh: \"bash\" },\n  engine: createOnigurumaEngine(import(\"shiki/wasm\")),\n});\n```\n\n## Usage\n\nResolve the highlighter outside `CodeBlock` and pass it in.\n\n```tsx\nimport { CodeBlock } from \"@/components/ui/code-block\";\nimport { shikiHighlighter } from \"@/lib/shiki\";\nimport { use } from \"react\";\n\nfunction Example({ source }: { source: string }) {\n  const highlighter = use(shikiHighlighter);\n\n  return (\n    <CodeBlock\n      code={source}\n      highlighter={highlighter}\n      language=\"tsx\"\n      messages={{ copy: \"Copy code\", copied: \"Copied\" }}\n    />\n  );\n}\n```",
       "files": [
         {

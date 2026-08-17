@@ -622,8 +622,9 @@ export const SearchableSelectField = <TData,>({
   );
   const invalid = Option.isSome(field.error);
   const labels = virtualizedComboboxMessages(props.messages);
-  const ariaLabel =
-    typeof props.label === "string" ? props.label : labels.search;
+  const ariaLabel = Schema.is(Schema.String)(props.label)
+    ? props.label
+    : labels.search;
 
   return (
     <Field className="min-w-0" data-invalid={invalid}>
@@ -671,8 +672,9 @@ export const SingleSearchableSelectField = <TData,>({
   );
   const invalid = Option.isSome(field.error);
   const labels = virtualizedComboboxMessages(props.messages);
-  const ariaLabel =
-    typeof props.label === "string" ? props.label : labels.search;
+  const ariaLabel = Schema.is(Schema.String)(props.label)
+    ? props.label
+    : labels.search;
 
   return (
     <Field className="min-w-0" data-invalid={invalid}>
@@ -896,7 +898,9 @@ export const ImageField: FormReact.FieldComponent<
   File | string | null | undefined,
   ImageFieldOptions
 > = ({ field, props }) => {
-  const imageUrl = typeof field.value === "string" ? field.value : undefined;
+  const imageUrl = Schema.is(Schema.String)(field.value)
+    ? field.value
+    : undefined;
   const invalid = Option.isSome(field.error);
 
   return (

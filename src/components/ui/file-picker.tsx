@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { CloudUpload, FileIcon, FileUp, RefreshCw, Trash2 } from "lucide-react";
+import { Schema } from "effect";
 
 import {
   Attachment,
@@ -356,7 +357,7 @@ export const FilePicker = ({
           {canClear ? (
             <AttachmentAction
               type="button"
-              aria-label={`${labels.deleteFile} ${typeof title === "string" ? title : ""}`}
+              aria-label={`${labels.deleteFile} ${Schema.is(Schema.String)(title) ? title : ""}`}
               onClick={clear}
             >
               <Trash2 />

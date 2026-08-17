@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { LocaleContext } from "./localization";
+import { LocaleContext, localize } from "./localization";
 
 describe("LocaleContext", () => {
   it("resolves locale from query, header, then cookie", () => {
@@ -44,5 +44,18 @@ describe("LocaleContext", () => {
         }),
       ),
     ).toEqual({ fallbackLocale: "en", locale: "fr" });
+  });
+
+  it("returns the base record when exact localization has no match", () => {
+    expect(
+      localize(
+        { fallbackLocale: "none", locale: "fr" },
+        {
+          id: "record-id",
+          name: "Base name",
+          translations: [{ locale: "en", name: "English name" }],
+        },
+      ),
+    ).toEqual({ id: "record-id", locale: "fr" });
   });
 });

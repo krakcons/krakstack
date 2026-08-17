@@ -111,7 +111,7 @@ const applyDocumentTheme = ({ theme, systemTheme }: ThemePayload) => {
 };
 
 const getInitialTheme = (initialTheme?: ThemePayload): ThemePayload => {
-  if (typeof window === "undefined") {
+  if (!globalThis.window) {
     return (
       initialTheme ?? {
         theme: DEFAULT_THEME,

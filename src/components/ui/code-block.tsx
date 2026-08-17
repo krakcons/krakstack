@@ -68,6 +68,13 @@ export function CodeBlock({
     };
   }, [code, highlighter, language]);
 
+  const copyMessages: CodeBlockMessages = {};
+  if (messages?.copy !== undefined) copyMessages.copy = messages.copy;
+  if (messages?.copied !== undefined) copyMessages.copied = messages.copied;
+  if (messages?.copyFailed !== undefined) {
+    copyMessages.copyFailed = messages.copyFailed;
+  }
+
   return (
     <div className="overflow-hidden rounded-md border">
       <div className="border-border/60 flex items-center justify-between border-b px-3 py-2">
@@ -78,15 +85,7 @@ export function CodeBlock({
           value={code}
           valueDescription={`${language.toLowerCase()} code`}
           variant="secondary"
-          messages={{
-            ...(messages?.copy === undefined ? {} : { copy: messages.copy }),
-            ...(messages?.copied === undefined
-              ? {}
-              : { copied: messages.copied }),
-            ...(messages?.copyFailed === undefined
-              ? {}
-              : { copyFailed: messages.copyFailed }),
-          }}
+          messages={copyMessages}
         />
       </div>
       <div className="bg-muted max-h-full overflow-auto p-3">

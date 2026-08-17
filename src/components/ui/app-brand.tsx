@@ -2,34 +2,58 @@ import { Link, type LinkProps } from "@tanstack/react-router";
 import type { ComponentProps } from "react";
 import type { LucideIcon } from "lucide-react";
 
-type AppBrandBaseProps = {
+type AppBrandContentProps = {
   label: string;
   subtitle: string;
   className?: string;
   variant?: "default" | "sidebar";
-} & (
-  | (Omit<LinkProps, "className" | "children"> & { to?: LinkProps["to"] })
-  | (ComponentProps<"a"> & { href: string; to?: never })
-  | (ComponentProps<"div"> & { to: null; href?: never })
-);
+};
 
-type AppBrandProps = AppBrandBaseProps &
-  (
-    | { icon: LucideIcon; imageSrc?: string }
-    | { imageSrc: string; icon?: LucideIcon }
-  );
+type AppBrandVisualProps =
+  | { icon: LucideIcon; imageSrc?: string }
+  | { imageSrc: string; icon?: LucideIcon };
 
-export function AppBrand({
-  className,
-  label,
-  subtitle,
-  icon: Icon,
-  imageSrc,
-  href,
-  to,
-  variant = "default",
-  ...props
-}: AppBrandProps) {
+type AppBrandLinkProps = AppBrandContentProps &
+  AppBrandVisualProps &
+  Omit<LinkProps, "children" | "className" | "href" | "to"> & {
+    href?: never;
+    to?: Exclude<LinkProps["to"], null>;
+  };
+
+type AppBrandAnchorProps = AppBrandContentProps &
+  AppBrandVisualProps &
+  Omit<ComponentProps<"a">, "children" | "className"> & {
+    href: string;
+    to?: never;
+  };
+
+type AppBrandStaticProps = AppBrandContentProps &
+  AppBrandVisualProps &
+  Omit<ComponentProps<"div">, "children" | "className"> & {
+    href?: never;
+    to: null;
+  };
+
+type AppBrandProps =
+  | AppBrandLinkProps
+  | AppBrandAnchorProps
+  | AppBrandStaticProps;
+
+const isStaticBrand = (props: AppBrandProps): props is AppBrandStaticProps =>
+  props.to === null;
+
+const isAnchorBrand = (props: AppBrandProps): props is AppBrandAnchorProps =>
+  props.href !== undefined;
+
+export function AppBrand(brandProps: AppBrandProps) {
+  const {
+    className,
+    label,
+    subtitle,
+    icon: Icon,
+    imageSrc,
+    variant = "default",
+  } = brandProps;
   const iconClassName =
     variant === "sidebar" ? "bg-sidebar-primary" : "bg-primary";
   const iconColor =
@@ -77,32 +101,57 @@ export function AppBrand({
     .filter(Boolean)
     .join(" ");
 
-  if (to === null) {
+  if (isStaticBrand(brandProps)) {
+    const {
+      className: _className,
+      label: _label,
+      subtitle: _subtitle,
+      icon: _icon,
+      imageSrc: _imageSrc,
+      variant: _variant,
+      to: _to,
+      href: _href,
+      ...props
+    } = brandProps;
     return (
-      <div className={brandClassName} {...(props as ComponentProps<"div">)}>
+      <div className={brandClassName} {...props}>
         {content}
       </div>
     );
   }
 
-  if (href) {
+  if (isAnchorBrand(brandProps)) {
+    const {
+      className: _className,
+      label: _label,
+      subtitle: _subtitle,
+      icon: _icon,
+      imageSrc: _imageSrc,
+      variant: _variant,
+      to: _to,
+      href,
+      ...props
+    } = brandProps;
     return (
-      <a
-        className={brandClassName}
-        href={href}
-        {...(props as ComponentProps<"a">)}
-      >
+      <a className={brandClassName} href={href} {...props}>
         {content}
       </a>
     );
   }
 
+  const {
+    className: _className,
+    label: _label,
+    subtitle: _subtitle,
+    icon: _icon,
+    imageSrc: _imageSrc,
+    variant: _variant,
+    href: _href,
+    to,
+    ...props
+  } = brandProps;
   return (
-    <Link
-      to={to ?? "/"}
-      className={brandClassName}
-      {...(props as Omit<LinkProps, "className" | "children" | "to">)}
-    >
+    <Link to={to ?? "/"} className={brandClassName} {...props}>
       {content}
     </Link>
   );

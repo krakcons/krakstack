@@ -15,6 +15,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Languages } from "lucide-react";
+import { Option, Schema } from "effect";
+
+const LocaleSchema = Schema.Literals(locales).annotate({
+  identifier: "Locale",
+});
 
 const messages = {
   en: {
@@ -60,7 +65,11 @@ export const LocaleSwitcher = ({ messages }: LocaleSwitcherProps) => {
           <DropdownMenuRadioGroup
             aria-label={labels.title}
             value={locale}
-            onValueChange={(v) => setLocale(v as Locale)}
+            onValueChange={(value) =>
+              Schema.decodeUnknownOption(LocaleSchema)(value).pipe(
+                Option.match({ onNone: () => undefined, onSome: setLocale }),
+              )
+            }
           >
             {locales.map((l) => (
               <DropdownMenuRadioItem key={l} value={l}>

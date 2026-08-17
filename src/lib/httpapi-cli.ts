@@ -162,7 +162,12 @@ const callOperation = (
       },
       input: { body, headers, params, query },
     });
-    const formatted = JSON.stringify(response, null, 2) ?? "null";
+    const encoded = yield* client.encodeResult(response, {
+      method: operation.method,
+      path: operation.path,
+      operation: operation.operation,
+    });
+    const formatted = JSON.stringify(encoded, null, 2) ?? "null";
 
     return yield* print(formatted);
   });

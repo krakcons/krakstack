@@ -69,7 +69,7 @@ export const searchDocumentation = Effect.fn("ChatDocumentation.search")(
         path: page.path,
         title: heading?.title ?? page.title,
         description: heading ? page.title : page.description,
-        ...(heading ? { heading: heading.id } : {}),
+        heading: heading?.id,
       }));
   },
 );

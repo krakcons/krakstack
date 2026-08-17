@@ -63,7 +63,12 @@ const serviceCount = registryItems.filter(
   (item) => getRegistryGroup(item) === "Services",
 ).length;
 
-const groupedItems = registryItems.reduce(
+type RegistryItemGroup = Array<{
+  title: string;
+  items: Array<(typeof registryItems)[number]>;
+}>;
+
+const groupedItems = registryItems.reduce<RegistryItemGroup>(
   (sections, item) => {
     const group = getRegistryGroup(item);
     let section = sections.find((candidate) => candidate.title === group);
@@ -74,10 +79,7 @@ const groupedItems = registryItems.reduce(
     section.items.push(item);
     return sections;
   },
-  [] as Array<{
-    title: string;
-    items: Array<(typeof registryItems)[number]>;
-  }>,
+  [],
 );
 
 const installCommand = "bunx --bun shadcn@latest add @krak-stack/app-brand";

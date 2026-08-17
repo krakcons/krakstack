@@ -37,24 +37,29 @@ type FormValues = {
   heroImage: File | null;
 };
 
+type SubmittedValues = Omit<FormValues, "attachment" | "heroImage"> & {
+  attachment: string;
+  heroImage: string;
+};
+
+const defaultValues: FormValues = {
+  name: "Ada Lovelace",
+  email: "ada@example.com",
+  plan: "growth",
+  interests: ["forms", "tables"],
+  searchableInterest: "registry",
+  notes: "Show me a workflow with reusable fields and guarded navigation.",
+  metadata: { source: "docs", priority: "high" },
+  acceptedTerms: true,
+  attachment: "",
+  heroImage: null,
+};
+
 export function FormPreview() {
   const highlighter = use(shikiHighlighter);
-  const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(
-    null,
-  );
+  const [submitted, setSubmitted] = useState<SubmittedValues | null>(null);
   const form = useAppForm({
-    defaultValues: {
-      name: "Ada Lovelace",
-      email: "ada@example.com",
-      plan: "growth",
-      interests: ["forms", "tables"],
-      searchableInterest: "registry",
-      notes: "Show me a workflow with reusable fields and guarded navigation.",
-      metadata: { source: "docs", priority: "high" },
-      acceptedTerms: true,
-      attachment: "",
-      heroImage: null,
-    } as FormValues,
+    defaultValues,
     onSubmit: async ({ value }) => {
       setSubmitted({
         ...value,

@@ -1,5 +1,6 @@
 import { Minus, Plus } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { Schema } from "effect";
 
 import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
@@ -45,6 +46,7 @@ export type GoogleMapProps = {
   maxZoom?: number | undefined;
   className?: string | undefined;
   messages?: Partial<GoogleMapMessages> | undefined;
+  locale?: string | undefined;
 };
 
 type GoogleMapOptions = {
@@ -90,7 +92,12 @@ type GoogleMapsEventListener = {
   remove: () => void;
 };
 
-type GoogleMapsApi = {
+type GoogleMapsEventTarget =
+  | GoogleMapInstance
+  | GoogleMarkerInstance
+  | GoogleCircleInstance;
+
+export type GoogleMapsApi = {
   maps: {
     Map: new (
       element: HTMLElement,
@@ -111,21 +118,19 @@ type GoogleMapsApi = {
     ) => GoogleCircleInstance;
     event: {
       addListener: (
-        instance: object,
+        instance: GoogleMapsEventTarget,
         eventName: string,
         handler: () => void,
       ) => GoogleMapsEventListener;
-      clearInstanceListeners: (instance: object) => void;
+      clearInstanceListeners: (instance: GoogleMapsEventTarget) => void;
     };
   };
 };
 
-declare global {
-  interface Window {
-    google?: GoogleMapsApi | undefined;
-    __krakStackGoogleMapsInit?: (() => void) | undefined;
-  }
-}
+type GoogleMapsWindow = Window & {
+  google?: GoogleMapsApi | undefined;
+  __krakStackGoogleMapsInit?: (() => void) | undefined;
+};
 
 type LoadState = "loading" | "ready" | "missing-key" | "error";
 
@@ -157,8 +162,11 @@ const defaultMessages = {
   },
 } as const satisfies Record<"en" | "fr", GoogleMapMessages>;
 
-const googleMapMessages = (overrides?: Partial<GoogleMapMessages>) => ({
-  ...(getLocale().startsWith("fr") ? defaultMessages.fr : defaultMessages.en),
+const googleMapMessages = (
+  locale: string,
+  overrides?: Partial<GoogleMapMessages>,
+) => ({
+  ...(locale.startsWith("fr") ? defaultMessages.fr : defaultMessages.en),
   ...overrides,
 });
 
@@ -170,20 +178,24 @@ const isGoogleMapsReady = (
   );
 
 const loadGoogleMaps = (apiKey: string) => {
-  if (typeof window === "undefined" || typeof document === "undefined") {
+  if (!globalThis.window || !globalThis.document) {
     return Promise.reject(new Error("Google Maps requires a browser."));
   }
-  if (isGoogleMapsReady(window.google)) return Promise.resolve(window.google);
+  const browserWindow: GoogleMapsWindow = window;
+  if (isGoogleMapsReady(browserWindow.google)) {
+    return Promise.resolve(browserWindow.google);
+  }
   if (googleMapsPromise) return googleMapsPromise;
 
   googleMapsPromise = new Promise<GoogleMapsApi>((resolve, reject) => {
     const resolveApi = () => {
-      if (isGoogleMapsReady(window.google)) resolve(window.google);
-      else reject(new Error("Google Maps failed to initialize."));
+      if (isGoogleMapsReady(browserWindow.google)) {
+        resolve(browserWindow.google);
+      } else reject(new Error("Google Maps failed to initialize."));
     };
     const rejectLoad = () => reject(new Error("Google Maps failed to load."));
 
-    window[googleMapsCallbackName] = resolveApi;
+    browserWindow.__krakStackGoogleMapsInit = resolveApi;
 
     const existingScript = document.getElementById(googleMapsScriptId);
     if (existingScript) {
@@ -198,9 +210,9 @@ const loadGoogleMaps = (apiKey: string) => {
     script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async&callback=${googleMapsCallbackName}`;
     script.addEventListener("error", rejectLoad, { once: true });
     document.head.append(script);
-  }).catch((error: unknown) => {
+  }).catch((error) => {
     googleMapsPromise = undefined;
-    window[googleMapsCallbackName] = undefined;
+    browserWindow.__krakStackGoogleMapsInit = undefined;
     document.getElementById(googleMapsScriptId)?.remove();
     throw error;
   });
@@ -246,6 +258,7 @@ export function GoogleMap({
   maxZoom = 20,
   className,
   messages: messageOverrides,
+  locale = getLocale(),
 }: GoogleMapProps) {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<GoogleMapsApi | null>(null);
@@ -261,9 +274,14 @@ export function GoogleMap({
     normalizedApiKey ? "loading" : "missing-key",
   );
   const [currentZoom, setCurrentZoom] = useState(initialZoom);
-  const labels = googleMapMessages(messageOverrides);
-  const markerEnabled = marker === true || typeof marker === "object";
-  const markerIcon = typeof marker === "object" ? marker.icon : undefined;
+  const labels = googleMapMessages(locale, messageOverrides);
+  const markerOptions = Schema.is(
+    Schema.Struct({ icon: Schema.optional(Schema.String) }),
+  )(marker)
+    ? marker
+    : undefined;
+  const markerEnabled = marker === true || markerOptions !== undefined;
+  const markerIcon = markerOptions?.icon;
   const centerLat = center.lat;
   const centerLng = center.lng;
   const radiusMeters = radius?.radiusMeters;

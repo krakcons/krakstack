@@ -1,4 +1,4 @@
-import { Effect, Layer, Stream } from "effect";
+import { Effect, Layer, Option, Schema, Stream } from "effect";
 import { Atom, Reactivity } from "effect/unstable/reactivity";
 
 import type {
@@ -151,23 +151,26 @@ export const reduceAgentEvent = <Resource>(
   }
 };
 
-const defaultErrorCode = (error: unknown): AgentErrorCode => {
-  if (error && typeof error === "object") {
-    const code = Reflect.get(error, "code");
-    if (code === "stream-failed" || code === "unavailable") return code;
-  }
+const AgentError = Schema.Struct({
+  code: Schema.Literals(["stream-failed", "unavailable"]),
+}).annotate({ identifier: "AgentError" });
+
+const defaultErrorCode = <Failure>(error: Failure): AgentErrorCode => {
+  const failure = Schema.decodeUnknownOption(AgentError)(error);
+  if (Option.isNone(failure)) return "unavailable";
+  if (failure.value.code === "stream-failed") return "stream-failed";
   return "unavailable";
 };
 
-export type AgentAtomsConfig<Resource> = {
+export type AgentAtomsConfig<Resource, Failure = ErrorOptions["cause"]> = {
   readonly stream: (
     get: Atom.FnContext,
     request: AgentRequest<Resource>,
   ) => Effect.Effect<
-    Stream.Stream<AgentEvent, unknown, Reactivity.Reactivity>,
-    unknown
+    Stream.Stream<AgentEvent, Failure, Reactivity.Reactivity>,
+    Failure
   >;
-  readonly errorCode?: (error: unknown) => AgentErrorCode;
+  readonly errorCode?: (error: Failure) => AgentErrorCode;
   readonly reactivityKeys?: ReadonlyArray<unknown>;
   readonly runtime?: Atom.AtomRuntime<never>;
 };
@@ -178,12 +181,12 @@ export type AgentSubmitInput<Resource> = {
   readonly scope: string;
 };
 
-export const makeAgentAtoms = <Resource>({
+export const makeAgentAtoms = <Resource, Failure = ErrorOptions["cause"]>({
   errorCode = defaultErrorCode,
   reactivityKeys,
   runtime = Atom.runtime(Layer.empty),
   stream,
-}: AgentAtomsConfig<Resource>) => {
+}: AgentAtomsConfig<Resource, Failure>) => {
   const state = Atom.family((_scope: string) =>
     Atom.make<AgentState<Resource>>(initialAgentState),
   );

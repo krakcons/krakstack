@@ -146,6 +146,7 @@ const DEFAULT_COLUMN_MIN_SIZE = 128;
 const DEFAULT_COLUMN_SIZE = 224;
 const DEFAULT_COLUMN_MAX_SIZE = 640;
 const COLUMN_RESIZE_STEP = 8;
+const dataTableColumnMeta: DataTableColumnMeta = {};
 
 const dataTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -159,7 +160,7 @@ const dataTableFeatures = tableFeatures({
   filteredRowModel: createFilteredRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
   sortedRowModel: createSortedRowModel(),
-  columnMeta: {} as DataTableColumnMeta,
+  columnMeta: dataTableColumnMeta,
 });
 
 export const {
@@ -278,7 +279,10 @@ const decodeRowReorderDragData = Schema.decodeUnknownOption(
 );
 const decodeGroupDropData = Schema.decodeUnknownOption(GroupDropDataSchema);
 
-const validateTableSearchUpdate = (search: Record<string, unknown>) => ({
+type TableSearchValue = string | number | readonly string[] | undefined;
+type TableSearchRecord = Record<string, TableSearchValue>;
+
+const validateTableSearchUpdate = (search: TableSearchRecord) => ({
   ...search,
   ...Schema.decodeUnknownSync(TableSearchSchema)(search),
 });
@@ -544,8 +548,8 @@ const snapDragOverlayVerticalCenterToCursor: Modifier = ({
   transform,
 }) => {
   if (
-    typeof MouseEvent === "undefined" ||
-    !(activatorEvent instanceof MouseEvent) ||
+    !globalThis.window ||
+    !(activatorEvent instanceof globalThis.window.MouseEvent) ||
     !activeNodeRect ||
     !overlayNodeRect
   ) {
@@ -1321,14 +1325,14 @@ const DataTableGalleryCard = <TData extends RowData>({
   );
 };
 
-const extractTextFromElement = (element: unknown): string | null => {
-  if (typeof element === "string") return element;
-  if (typeof element === "number") return String(element);
-  if (!isValidElement<{ children?: unknown; title?: unknown }>(element)) {
+const extractTextFromElement = (element: ReactNode): string | null => {
+  if (Schema.is(Schema.String)(element)) return element;
+  if (Schema.is(Schema.Number)(element)) return String(element);
+  if (!isValidElement<{ children?: ReactNode; title?: ReactNode }>(element)) {
     return null;
   }
   const { props } = element;
-  if (typeof props.title === "string") return props.title;
+  if (Schema.is(Schema.String)(props.title)) return props.title;
   return extractTextFromElement(props.children);
 };
 
@@ -1345,9 +1349,9 @@ const getHeaderName = <TData extends RowData>(
   header: DataTableHeader<TData, unknown>,
 ): string => {
   const columnDef = header.column.columnDef;
-  if (typeof columnDef.header === "function") {
+  if (columnDef.header instanceof Function) {
     const headerContext = columnDef.header(header.getContext());
-    if (typeof headerContext === "string") {
+    if (Schema.is(Schema.String)(headerContext)) {
       return headerContext;
     }
     return extractTextFromElement(headerContext) ?? header.id;
@@ -1414,7 +1418,7 @@ export const downloadCsv = (
   requestAnimationFrame(() => window.URL.revokeObjectURL(url));
 };
 
-export const downloadJson = (data: unknown, fileName = "data.json") => {
+export const downloadJson = <Data,>(data: Data, fileName = "data.json") => {
   const jsonContent = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonContent], {
     type: "application/json;charset=utf-8;",
@@ -1743,10 +1747,11 @@ export function DataTable<TData extends RowData>({
   const showExport = exportFeature !== false;
   const columnVisibilityFeature = features?.columnVisibility ?? true;
   const showColumnVisibility = columnVisibilityFeature !== false;
-  const defaultColumnVisibility =
-    typeof columnVisibilityFeature === "object"
-      ? columnVisibilityFeature.default
-      : undefined;
+  const defaultColumnVisibility = Schema.is(
+    Schema.Struct({ default: ColumnVisibilitySchema }),
+  )(columnVisibilityFeature)
+    ? columnVisibilityFeature.default
+    : undefined;
   const showGallery = !!galleryConfig;
   const showSorting = features?.sorting ?? true;
   const selectionFeature =
@@ -1791,11 +1796,14 @@ export function DataTable<TData extends RowData>({
   const tableStorageId = useMemo(() => {
     const columnIds = columns
       .map((column, index) => {
-        if ("id" in column && typeof column.id === "string") {
+        if ("id" in column && Schema.is(Schema.String)(column.id)) {
           return column.id;
         }
 
-        if ("accessorKey" in column && typeof column.accessorKey === "string") {
+        if (
+          "accessorKey" in column &&
+          Schema.is(Schema.String)(column.accessorKey)
+        ) {
           return column.accessorKey;
         }
 
@@ -1861,7 +1869,7 @@ export function DataTable<TData extends RowData>({
   );
 
   const updateTableSearch = (
-    updater: (current: Record<string, unknown>) => Record<string, unknown>,
+    updater: (current: TableSearchRecord) => TableSearchRecord,
     options?: { replace?: boolean },
   ) => {
     if (controlledSearch || onSearchChange || searchState === "local") {
@@ -1881,7 +1889,7 @@ export function DataTable<TData extends RowData>({
       to: ".",
       replace: options?.replace ?? false,
       resetScroll: false,
-      search: (current: Record<string, unknown>) =>
+      search: (current: TableSearchRecord) =>
         validateTableSearchUpdate(updater(current)),
     });
   };
@@ -1892,7 +1900,7 @@ export function DataTable<TData extends RowData>({
     columns,
     onColumnSizingChange: (updater) => {
       const nextColumnSizing =
-        typeof updater === "function" ? updater(columnSizing) : updater;
+        updater instanceof Function ? updater(columnSizing) : updater;
 
       setColumnSizing(nextColumnSizing);
     },
@@ -1907,7 +1915,7 @@ export function DataTable<TData extends RowData>({
     enableMultiRowSelection: selectable,
     onPaginationChange: (updater) => {
       const newPagination =
-        typeof updater === "function" ? updater(pagination) : updater;
+        updater instanceof Function ? updater(pagination) : updater;
       if (
         pagination.pageIndex === newPagination.pageIndex &&
         pagination.pageSize === newPagination.pageSize
@@ -1922,7 +1930,7 @@ export function DataTable<TData extends RowData>({
     },
     onSortingChange: (updater) => {
       const newSorting =
-        typeof updater === "function" ? updater([...sorting]) : updater;
+        updater instanceof Function ? updater([...sorting]) : updater;
       if (
         sorting.length === newSorting.length &&
         sorting.every(
@@ -1949,7 +1957,7 @@ export function DataTable<TData extends RowData>({
     },
     onGlobalFilterChange: (updater) => {
       const newGlobalFilter =
-        typeof updater === "function" ? updater(globalFilter) : updater;
+        updater instanceof Function ? updater(globalFilter) : updater;
       if (globalFilter === newGlobalFilter) {
         return;
       }
@@ -1962,8 +1970,8 @@ export function DataTable<TData extends RowData>({
         { replace: true },
       );
     },
-    ...(isServerMode ? { manualSorting: true } : {}),
-    ...(isServerMode ? { manualFiltering: true } : {}),
+    manualSorting: isServerMode || undefined,
+    manualFiltering: isServerMode || undefined,
     ...(paginationFeature !== false && paginationFeature.mode === "server"
       ? { manualPagination: true, rowCount: paginationFeature.rowCount }
       : paginationFeature === false
@@ -1972,13 +1980,13 @@ export function DataTable<TData extends RowData>({
     autoResetPageIndex: false,
     onColumnVisibilityChange: (updater) => {
       const nextColumnVisibility =
-        typeof updater === "function" ? updater(columnVisibility) : updater;
+        updater instanceof Function ? updater(columnVisibility) : updater;
 
       setColumnVisibility(nextColumnVisibility);
     },
     onRowSelectionChange: (updater) => {
       setRowSelection((current) => {
-        const next = typeof updater === "function" ? updater(current) : updater;
+        const next = updater instanceof Function ? updater(current) : updater;
         selectionFeature?.onSelectionChange?.(
           data.filter((row) => next[selectionFeature.getRowId(row)]),
         );
@@ -2621,10 +2629,7 @@ function DataTableViewOptions<TData extends RowData>({
   const columnLabels = getColumnLabels(table);
   const columns = table
     .getAllColumns()
-    .filter(
-      (column) =>
-        typeof column.accessorFn !== "undefined" && column.getCanHide(),
-    );
+    .filter((column) => column.accessorFn !== undefined && column.getCanHide());
 
   if (columns.length === 0) {
     return null;
@@ -2796,7 +2801,7 @@ export function DataTableListSummary({
 }) {
   const labels = dataTableMessages();
   const normalizedItems = items.map((item) =>
-    typeof item === "string" ? { label: item } : item,
+    Schema.is(Schema.String)(item) ? { label: item } : item,
   );
   const visibleItems = normalizedItems.slice(0, visibleCount);
   const visibleLabels = visibleItems.map(({ label }) => label).join(", ");

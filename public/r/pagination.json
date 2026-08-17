@@ -3,15 +3,8 @@
   "name": "pagination",
   "title": "Pagination",
   "description": "Controlled pagination controls with page-size selection, result summaries, compact layouts, and localized labels.",
-  "dependencies": [
-    "lucide-react",
-    "react"
-  ],
-  "registryDependencies": [
-    "button",
-    "label",
-    "select"
-  ],
+  "dependencies": ["lucide-react", "react"],
+  "registryDependencies": ["button", "label", "select"],
   "files": [
     {
       "path": "src/components/ui/pagination.tsx",
