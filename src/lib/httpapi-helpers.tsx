@@ -310,6 +310,57 @@ export const decodeHttpApiOperationInput = Effect.fn(
   };
 });
 
+const reflectedSchema = (schema: Schema.Top) =>
+  Schema.make<Schema.Codec<unknown, unknown>>(schema.ast);
+
+const reflectedOperationInputSchemas = (api: HttpApi.Top) => {
+  const schemas = new Map<string, Schema.Top>();
+
+  HttpApi.reflect(api, {
+    onGroup: () => undefined,
+    onEndpoint: ({ endpoint, group }) => {
+      const operationId = Context.getOrElse(
+        endpoint.annotations,
+        OpenApi.Identifier,
+        () =>
+          group.topLevel
+            ? endpoint.identifier
+            : `${group.identifier}.${endpoint.identifier}`,
+      );
+      const fields: Record<string, Schema.Codec<unknown, unknown>> = {};
+      if (endpoint.params) fields.params = reflectedSchema(endpoint.params);
+      if (endpoint.query) {
+        fields.query = Schema.optionalKey(reflectedSchema(endpoint.query));
+      }
+      if (endpoint.headers) {
+        fields.headers = Schema.optionalKey(reflectedSchema(endpoint.headers));
+      }
+
+      const payloadSchemas = Array.from(endpoint.payload.values()).flatMap(
+        ({ schemas }) => schemas.map(reflectedSchema),
+      );
+      if (payloadSchemas.length === 1 && payloadSchemas[0]) {
+        fields.body = payloadSchemas[0];
+      } else if (payloadSchemas.length > 1) {
+        fields.body = Schema.Union(payloadSchemas);
+      }
+
+      const inputSchema =
+        Object.keys(fields).length === 0
+          ? Schema.Record(Schema.String, Schema.Never)
+          : Schema.Struct(fields);
+      schemas.set(
+        operationId,
+        inputSchema.annotate({
+          identifier: `${sanitizeHttpName(operationId)}ToolInput`,
+        }),
+      );
+    },
+  });
+
+  return schemas;
+};
+
 export const parseJsonObject = Effect.fn("Http.parseJsonObject")(function* (
   value: string | undefined,
   label: string,
@@ -336,11 +387,13 @@ export class HttpApiSpec extends Context.Service<HttpApiSpec>()("HttpApiSpec", {
   make: (config: HttpApiSpecConfig) =>
     Effect.try({
       try: () => {
-        if (!HttpApi.isHttpApi(config.api)) {
+        const api = config.api;
+        if (!HttpApi.isHttpApi(api)) {
           throw new Error("HttpApiSpec requires a valid HttpApi");
         }
 
-        const spec = OpenApi.fromApi(config.api);
+        const spec = OpenApi.fromApi(api);
+        const reflectedSchemas = reflectedOperationInputSchemas(api);
         const operations = httpApiOperations({
           spec,
           methods: config.methods,
@@ -370,6 +423,11 @@ export class HttpApiSpec extends Context.Service<HttpApiSpec>()("HttpApiSpec", {
           decodeOperationInput: decodeHttpApiOperationInput,
           operationJsonSchema,
           operationSchema: (operation: HttpApiOperation) => {
+            const reflected = operation.operationId
+              ? reflectedSchemas.get(operation.operationId)
+              : undefined;
+            if (reflected) return reflected;
+
             const document = JsonSchema.fromSchemaOpenApi3_1(
               operationJsonSchema(operation),
             );
