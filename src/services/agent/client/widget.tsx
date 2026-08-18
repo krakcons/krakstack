@@ -277,8 +277,50 @@ const highlightedInput = (
   );
 };
 
-const referenceSearchQuery = (input: string) =>
-  input.match(/(?:^|\s)@([^@\n]*)$/)?.[1].trimEnd();
+type ReferenceSearch = {
+  readonly end: number;
+  readonly query: string;
+  readonly start: number;
+};
+
+const referenceSearchAtCursor = (
+  input: string,
+  cursor: number,
+): ReferenceSearch | undefined => {
+  const beforeCursor = input.slice(0, cursor);
+  const match = beforeCursor.match(/(?:^|\s)@([^@\n]*)$/);
+  if (!match) return undefined;
+
+  return {
+    start: beforeCursor.lastIndexOf("@"),
+    end: cursor,
+    query: match[1].trimEnd(),
+  };
+};
+
+const insertReferenceMention = (
+  input: string,
+  search: ReferenceSearch,
+  label: string,
+) => {
+  const suffix = input.slice(search.end);
+  const mention = `@${label}`;
+  const separator = /^[ \t]/.test(suffix) ? "" : " ";
+
+  return {
+    input: `${input.slice(0, search.start)}${mention}${separator}${suffix}`,
+    cursor: search.start + mention.length + 1,
+  };
+};
+
+const completesSelectedReference = (
+  input: string,
+  search: ReferenceSearch,
+  references: ReadonlyArray<AgentWidgetReference<unknown>>,
+) => {
+  const searchText = input.slice(search.start + 1, search.end);
+  return references.some(({ label }) => searchText.startsWith(`${label} `));
+};
 
 const ToolLabel = ({
   description,
@@ -669,7 +711,10 @@ export function AgentWidget<Resource = never>({
   const [maximized, setMaximized] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
   const [activeReferenceKey, setActiveReferenceKey] = useState("");
+  const [activeReferenceSearch, setActiveReferenceSearch] =
+    useState<ReferenceSearch>();
   const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputOverlayRef = useRef<HTMLDivElement>(null);
   const [references, setReferences] = useState<
     ReadonlyArray<AgentWidgetReference<Resource>>
@@ -685,7 +730,7 @@ export function AgentWidget<Resource = never>({
           }
         : undefined
       : context;
-  const referenceQuery = referenceSearchQuery(input);
+  const referenceQuery = activeReferenceSearch?.query;
   const selectedKeys = new Set(references.map(({ key }) => key));
   const selectedLabels = new Set(references.map(({ label }) => label));
   const selectableReferences = availableReferences.filter(
@@ -719,6 +764,7 @@ export function AgentWidget<Resource = never>({
 
     setInput("");
     setReferences([]);
+    setActiveReferenceSearch(undefined);
     setReferencePickerOpen(false);
     const messageReferences =
       references.length > 0
@@ -744,9 +790,24 @@ export function AgentWidget<Resource = never>({
   };
 
   const selectReference = (reference: AgentWidgetReference<Resource>) => {
+    if (!activeReferenceSearch) return;
+
+    const replacement = insertReferenceMention(
+      input,
+      activeReferenceSearch,
+      reference.label,
+    );
     setReferences((current) => [...current, reference]);
-    setInput((current) => current.replace(/@[^@\n]*$/, `@${reference.label}`));
+    setInput(replacement.input);
+    setActiveReferenceSearch(undefined);
     setReferencePickerOpen(false);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(
+        replacement.cursor,
+        replacement.cursor,
+      );
+    });
   };
 
   const clearConversation = () => {
@@ -754,6 +815,7 @@ export function AgentWidget<Resource = never>({
     onReset();
     setInput("");
     setReferences([]);
+    setActiveReferenceSearch(undefined);
     setReferencePickerOpen(false);
   };
 
@@ -928,6 +990,7 @@ export function AgentWidget<Resource = never>({
                     id={referenceInputId}
                     render={
                       <InputGroupTextarea
+                        ref={inputRef}
                         className="caret-foreground selection:bg-primary selection:text-primary-foreground relative max-h-32 w-full [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain text-left text-transparent"
                         value={input}
                         placeholder={labels.placeholder}
@@ -951,21 +1014,29 @@ export function AgentWidget<Resource = never>({
                         }}
                         onChange={(event) => {
                           const value = event.target.value;
+                          const candidate = referenceSearchAtCursor(
+                            value,
+                            event.currentTarget.selectionStart,
+                          );
+                          const search =
+                            candidate &&
+                            !completesSelectedReference(
+                              value,
+                              candidate,
+                              references,
+                            )
+                              ? candidate
+                              : undefined;
                           setInput(value);
+                          setActiveReferenceSearch(search);
                           setReferences((current) =>
                             current.filter(({ label }) =>
                               hasReferenceMention(value, label),
                             ),
                           );
-                          const query = referenceSearchQuery(value);
-                          const startsReferenceQuery =
-                            query !== undefined &&
-                            value.lastIndexOf("@") > input.lastIndexOf("@");
                           setReferencePickerOpen(
-                            (current) =>
-                              current ||
-                              (startsReferenceQuery &&
-                                selectableReferences.length > 0),
+                            search !== undefined &&
+                              selectableReferences.length > 0,
                           );
                         }}
                         onKeyDown={(event) => {
@@ -1022,21 +1093,23 @@ export function AgentWidget<Resource = never>({
                     >
                       <CommandList id={referenceListId}>
                         <CommandEmpty>{labels.noReferences}</CommandEmpty>
-                        <CommandGroup heading={labels.references}>
-                          {matchingReferences.map((reference, index) => (
-                            <CommandItem
-                              key={reference.key}
-                              id={`${referenceInputId}-reference-${index}`}
-                              value={reference.key}
-                              onSelect={() => selectReference(reference)}
-                            >
-                              {reference.icon}
-                              <span className="truncate">
-                                {reference.label}
-                              </span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
+                        {matchingReferences.length > 0 ? (
+                          <CommandGroup heading={labels.references}>
+                            {matchingReferences.map((reference, index) => (
+                              <CommandItem
+                                key={reference.key}
+                                id={`${referenceInputId}-reference-${index}`}
+                                value={reference.key}
+                                onSelect={() => selectReference(reference)}
+                              >
+                                {reference.icon}
+                                <span className="truncate">
+                                  {reference.label}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ) : null}
                       </CommandList>
                     </Command>
                   </PopoverContent>

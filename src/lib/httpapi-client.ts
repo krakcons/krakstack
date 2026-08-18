@@ -28,10 +28,34 @@ export type ApiClientExecuteOptions = {
   readonly input: HttpApiOperationInput;
 };
 
+export type HttpApiOperationResultValue =
+  | null
+  | string
+  | number
+  | boolean
+  | Date
+  | Uint8Array
+  | ReadonlyArray<HttpApiOperationResultValue>
+  | { readonly [key: string]: HttpApiOperationResultValue };
+
+const HttpApiOperationResultValue: Schema.Codec<
+  HttpApiOperationResultValue,
+  Json
+> = Schema.suspend(() =>
+  Schema.Union([
+    Schema.Null,
+    Schema.String,
+    Schema.Number,
+    Schema.Boolean,
+    Schema.DateFromString,
+    Schema.Uint8ArrayFromBase64,
+    Schema.Array(HttpApiOperationResultValue),
+    Schema.Record(Schema.String, HttpApiOperationResultValue),
+  ]),
+);
+
 export const HttpApiOperationResult = Schema.Union([
-  Schema.Json,
-  Schema.DateFromString,
-  Schema.Uint8ArrayFromBase64,
+  HttpApiOperationResultValue,
   Schema.Undefined,
 ]).annotate({ identifier: "HttpApiOperationResult" });
 export type HttpApiOperationResult = typeof HttpApiOperationResult.Type;

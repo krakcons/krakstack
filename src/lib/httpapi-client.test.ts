@@ -22,4 +22,20 @@ describe("encodeHttpApiOperationResult", () => {
       ).toBe("S1M=");
     }),
   );
+
+  it.effect("encodes decoded values nested in objects and arrays", () =>
+    Effect.gen(function* () {
+      expect(
+        yield* encodeHttpApiOperationResult({
+          createdAt: new Date("2026-08-17T00:00:00.000Z"),
+          attachments: [new Uint8Array([75, 83])],
+          sections: [{ updatedAt: new Date("2026-08-18T00:00:00.000Z") }],
+        }),
+      ).toEqual({
+        createdAt: "2026-08-17T00:00:00.000Z",
+        attachments: ["S1M="],
+        sections: [{ updatedAt: "2026-08-18T00:00:00.000Z" }],
+      });
+    }),
+  );
 });

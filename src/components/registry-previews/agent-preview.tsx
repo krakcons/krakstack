@@ -1,16 +1,43 @@
 import { useState } from "react";
+import { BookOpenIcon, FileTextIcon } from "lucide-react";
 
-import { AgentWidget } from "@/services/agent/client/widget";
+import * as m from "@/paraglide/messages";
 import {
   initialAgentState,
   type AgentState,
   type AgentSubmitAction,
 } from "@/services/agent/client/atom";
+import {
+  AgentWidget,
+  type AgentWidgetReference,
+} from "@/services/agent/client/widget";
+
+type PreviewResource = {
+  readonly id: string;
+  readonly type: "course" | "document";
+};
 
 export function AgentPreview() {
-  const [state, setState] = useState<AgentState>(initialAgentState);
+  const [state, setState] =
+    useState<AgentState<PreviewResource>>(initialAgentState);
+  const availableReferences: ReadonlyArray<
+    AgentWidgetReference<PreviewResource>
+  > = [
+    {
+      key: "course:customer-onboarding",
+      label: m.home_preview_template(),
+      icon: <BookOpenIcon />,
+      resource: { type: "course", id: "customer-onboarding" },
+    },
+    {
+      key: "document:product-requirements",
+      label: m.home_nav_docs(),
+      icon: <FileTextIcon />,
+      resource: { type: "document", id: "product-requirements" },
+    },
+  ];
 
-  const submit = (action: AgentSubmitAction) => {
+  const submit = (action: AgentSubmitAction<PreviewResource>) => {
     if (action.type !== "message") return;
 
     setState((current) => ({
@@ -36,6 +63,7 @@ export function AgentPreview() {
   return (
     <div className="min-h-72">
       <AgentWidget
+        availableReferences={availableReferences}
         state={state}
         onInterrupt={() => undefined}
         onReset={() => setState(initialAgentState)}
