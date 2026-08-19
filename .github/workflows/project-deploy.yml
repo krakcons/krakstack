@@ -55,6 +55,11 @@ on:
         description: "Krak project slug"
         required: true
         type: string
+      krak_admin_url:
+        description: "Public Krak Admin API URL"
+        required: false
+        type: string
+        default: https://admin.krakconsultants.net
       krak_group:
         description: "Krak project task group name"
         required: false
@@ -71,13 +76,7 @@ on:
         type: string
         default: production
     secrets:
-      KRAK_ADMIN_URL:
-        required: true
       KRAK_RELEASE_TOKEN:
-        required: true
-      TS_OAUTH_CLIENT_ID:
-        required: true
-      TS_OAUTH_SECRET:
         required: true
 
 env:
@@ -132,29 +131,21 @@ jobs:
     concurrency: deploy-${{ inputs.project_slug }}
     permissions:
       contents: read
-      id-token: write
 
     env:
       RELEASE_SHA: ${{ inputs.image_sha || github.sha }}
 
     steps:
-      - name: Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
       - name: Release
         run: |
-          curl -fsS \
+          curl --connect-timeout 10 -fsS \
             -H "x-api-key: $KRAK_RELEASE_TOKEN" \
             -H "Content-Type: application/json" \
             -X POST \
             "$KRAK_ADMIN_URL/api/projects/$KRAK_PROJECT_SLUG/releases?group=$KRAK_GROUP&task=$KRAK_TASK" \
             -d "{\"image\":\"docker://ghcr.io/${IMAGE_NAME}${IMAGE_SUFFIX}:${RELEASE_SHA}\",\"gitSha\":\"${RELEASE_SHA}\"}"
         env:
-          KRAK_ADMIN_URL: ${{ secrets.KRAK_ADMIN_URL }}
+          KRAK_ADMIN_URL: ${{ inputs.krak_admin_url }}
           KRAK_RELEASE_TOKEN: ${{ secrets.KRAK_RELEASE_TOKEN }}
           KRAK_PROJECT_SLUG: ${{ inputs.project_slug }}
           KRAK_GROUP: ${{ inputs.krak_group }}

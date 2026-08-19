@@ -9,7 +9,6 @@ jobs:
     uses: ./.github/workflows/project-deploy.yml
     permissions:
       contents: read
-      id-token: write
       packages: write
     with:
       build_image: true
@@ -23,7 +22,4 @@ jobs:
       vite_krakstack_auth_project_id: project_fHA93PMCyPwnEZTcTVQmQKjchwhZd74z
       vite_analytics_website_id: 43310932-a80f-4f4c-b1af-2ff937706574
     secrets:
-      KRAK_ADMIN_URL: ${{ secrets.KRAK_ADMIN_URL }}
       KRAK_RELEASE_TOKEN: ${{ secrets.KRAK_RELEASE_TOKEN }}
-      TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-      TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
