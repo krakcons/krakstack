@@ -517,7 +517,7 @@
       "name": "httpapi-client",
       "title": "HttpApi Client",
       "description": "A generated Effect HttpApi client service with shared OpenAPI operation discovery, input decoding, and tool schema helpers.",
-      "meta": { "updatedAt": "2026-08-18" },
+      "meta": { "updatedAt": "2026-08-19" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`httpapi-client` provides the shared foundation for generated HTTP API adapters. `HttpApiSpec` discovers operations from an Effect `HttpApi`, builds self-contained input schemas, and decodes tool or CLI input. `ApiClient` executes those operations through Effect's generated `HttpApiClient`, preserving the API's typed transport and response decoding.\n\n## Included Files\n\n- `lib/httpapi-client.ts` - `ApiClient`, its configuration, and generated operation execution\n- `lib/httpapi-helpers.tsx` - shared OpenAPI operation types, input schemas, decoders, naming, and `HttpApiSpec`\n\n## Usage\n\n```ts\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\nimport { AppApi } from \"@/api\";\n\nexport const apiClientLayer = ApiClient.layer({\n  api: AppApi,\n  baseUrl: \"https://example.com\",\n}).pipe(Layer.provide(FetchHttpClient.layer));\n\nexport const apiSpecLayer = HttpApiSpec.layer({\n  api: AppApi,\n  methods: [\"get\", \"post\"],\n});\n```",
       "dependencies": ["effect@beta"],

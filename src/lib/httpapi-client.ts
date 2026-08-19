@@ -1,9 +1,10 @@
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Schema, SchemaTransformation } from "effect";
 import { HttpClient } from "effect/unstable/http";
 import {
   HttpApi,
   HttpApiClient as EffectHttpApiClient,
   HttpApiGroup,
+  OpenApi,
 } from "effect/unstable/httpapi";
 import type {
   HttpApiOperationEntry,
@@ -30,6 +31,7 @@ export type ApiClientExecuteOptions = {
 
 export type HttpApiOperationResultValue =
   | null
+  | undefined
   | string
   | number
   | boolean
@@ -38,12 +40,23 @@ export type HttpApiOperationResultValue =
   | ReadonlyArray<HttpApiOperationResultValue>
   | { readonly [key: string]: HttpApiOperationResultValue };
 
+const UndefinedFromNull = Schema.Null.pipe(
+  Schema.decodeTo(
+    Schema.Undefined,
+    SchemaTransformation.transform({
+      decode: () => undefined,
+      encode: () => null,
+    }),
+  ),
+);
+
 const HttpApiOperationResultValue: Schema.Codec<
   HttpApiOperationResultValue,
   Json
 > = Schema.suspend(() =>
   Schema.Union([
     Schema.Null,
+    UndefinedFromNull,
     Schema.String,
     Schema.Number,
     Schema.Boolean,
@@ -70,6 +83,69 @@ export const encodeHttpApiOperationResult = Effect.fn(
     ),
   ),
 );
+
+const reflectedSchema = (schema: Schema.Top) =>
+  Schema.make<Schema.Codec<unknown, unknown>>(schema.ast);
+
+const operationResultSchemas = <
+  Id extends string,
+  Groups extends HttpApiGroup.Constraint,
+>(
+  api: HttpApi.HttpApi<Id, Groups>,
+) => {
+  const schemas = new Map<string, Schema.Codec<unknown, unknown>>();
+
+  HttpApi.reflect(api, {
+    onGroup: () => undefined,
+    onEndpoint: ({ endpoint, group, successes }) => {
+      const operationId = Context.getOrElse(
+        endpoint.annotations,
+        OpenApi.Identifier,
+        () =>
+          group.topLevel
+            ? endpoint.identifier
+            : `${group.identifier}.${endpoint.identifier}`,
+      );
+      const operationSchemas = Array.from(successes.values())
+        .flat()
+        .map(reflectedSchema);
+      if (operationSchemas.length === 1 && operationSchemas[0]) {
+        schemas.set(operationId, operationSchemas[0]);
+      } else if (operationSchemas.length > 1) {
+        schemas.set(operationId, Schema.Union(operationSchemas));
+      }
+    },
+  });
+
+  return schemas;
+};
+
+export const makeHttpApiOperationResultEncoder = <
+  Id extends string,
+  Groups extends HttpApiGroup.Constraint,
+>(
+  api: HttpApi.HttpApi<Id, Groups>,
+) => {
+  const schemas = operationResultSchemas(api);
+
+  return Effect.fn("HttpApiClient.encodeOperationResultWithSchema")(
+    (result: ErrorOptions["cause"], operation: HttpApiOperationEntry) => {
+      const operationId = operation.operation.operationId;
+      const schema = operationId ? schemas.get(operationId) : undefined;
+      if (!schema) return encodeHttpApiOperationResult(result);
+
+      return Schema.encodeUnknownEffect(schema)(result).pipe(
+        Effect.flatMap(encodeHttpApiOperationResult),
+        Effect.mapError(
+          (cause) =>
+            new Error("HTTP API result does not match its success schema", {
+              cause,
+            }),
+        ),
+      );
+    },
+  );
+};
 
 type GeneratedOperation = (input: {
   readonly headers: HttpApiOperationInput["headers"];
@@ -180,6 +256,7 @@ export class ApiClient extends Context.Service<ApiClient, ApiClientService>()(
       this,
       Effect.gen(function* () {
         const http = yield* HttpClient.HttpClient;
+        const encodeResult = makeHttpApiOperationResultEncoder(config.api);
         const client = yield* makeGeneratedClient(
           config.api,
           http,
@@ -189,7 +266,7 @@ export class ApiClient extends Context.Service<ApiClient, ApiClientService>()(
         return {
           encodeResult:
             config.encodeResult ??
-            ((result) => encodeHttpApiOperationResult(result)),
+            ((result, operation) => encodeResult(result, operation)),
           execute: Effect.fn("ApiClient.execute")(function* (
             options: ApiClientExecuteOptions,
           ) {
