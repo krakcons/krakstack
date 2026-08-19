@@ -148,7 +148,7 @@ jobs:
       - name: Release
         run: |
           curl -fsS \
-            -H "Authorization: Bearer $KRAK_RELEASE_TOKEN" \
+            -H "x-api-key: $KRAK_RELEASE_TOKEN" \
             -H "Content-Type: application/json" \
             -X POST \
             "$KRAK_ADMIN_URL/api/projects/$KRAK_PROJECT_SLUG/releases?group=$KRAK_GROUP&task=$KRAK_TASK" \

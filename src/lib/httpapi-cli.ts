@@ -1,10 +1,13 @@
 import {
+  Cause,
   Console,
   Context,
   Effect,
+  Exit,
   FileSystem,
   Layer,
   Path,
+  Schema,
   Stdio,
   Stream,
   Terminal,
@@ -144,6 +147,31 @@ const formatOperations = (operations: ReadonlyArray<CliOperation>) =>
 const listOperations = (operations: ReadonlyArray<CliOperation>) =>
   print(formatOperations(operations));
 
+type HttpApiCliResultStream = Stream.Stream<unknown, unknown>;
+
+const HttpApiCliResultStream = Schema.declare(
+  (value): value is HttpApiCliResultStream => Stream.isStream(value),
+).annotate({ identifier: "HttpApiCliResultStream" });
+
+export const printHttpApiCliResult = Effect.fn("HttpApiCli.printResult")(
+  function* (
+    response: ErrorOptions["cause"],
+    operation: HttpApiOperationEntry,
+    client: ApiClientService,
+  ) {
+    const stream = Schema.decodeUnknownOption(HttpApiCliResultStream)(response);
+    if (stream._tag === "Some") {
+      return yield* stream.value.pipe(
+        Stream.mapEffect((event) => client.encodeResult(event, operation)),
+        Stream.runForEach((event) => print(JSON.stringify(event))),
+      );
+    }
+
+    const encoded = yield* client.encodeResult(response, operation);
+    return yield* print(JSON.stringify(encoded, null, 2) ?? "null");
+  },
+);
+
 const callOperation = (
   operation: CliOperation,
   callConfig: CallOperationConfig,
@@ -162,14 +190,15 @@ const callOperation = (
       },
       input: { body, headers, params, query },
     });
-    const encoded = yield* client.encodeResult(response, {
-      method: operation.method,
-      path: operation.path,
-      operation: operation.operation,
-    });
-    const formatted = JSON.stringify(encoded, null, 2) ?? "null";
-
-    return yield* print(formatted);
+    return yield* printHttpApiCliResult(
+      response,
+      {
+        method: operation.method,
+        path: operation.path,
+        operation: operation.operation,
+      },
+      client,
+    );
   });
 
 const listCommand = (groups: ReadonlyArray<CliOperationGroup>) =>
@@ -285,17 +314,24 @@ export const httpApiCli = (args = process.argv.slice(2)) =>
     return yield* cli.run(args);
   });
 
+export const formatHttpApiCliCause = Cause.pretty;
+
 export const runHttpApiCli = <E>(
   layer: Layer.Layer<HttpApiCli, E>,
   args = process.argv.slice(2),
 ) => {
-  Effect.runPromise(
+  Effect.runPromiseExit(
     httpApiCli(args).pipe(
       Effect.provide(layer),
       Effect.provide(httpApiCliEnvironmentLayer(args)),
     ),
-  ).catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exit(1);
-  });
+  ).then(
+    Exit.match({
+      onSuccess: () => undefined,
+      onFailure: (cause) => {
+        console.error(formatHttpApiCliCause(cause));
+        process.exitCode = 1;
+      },
+    }),
+  );
 };
