@@ -143,14 +143,14 @@ function Home() {
   return (
     <div className="min-h-screen overflow-hidden">
       <header className="bg-background/90 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-30 border-b backdrop-blur-xl">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
+        <nav className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:gap-3 sm:px-6">
           <AppBrand
             label="Krakstack"
             subtitle={m.app_name()}
             icon={Blocks}
             className="min-w-0"
           />
-          <div className="ml-auto flex shrink-0 items-center gap-2 text-sm">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 text-sm sm:gap-2">
             <Link
               className="text-muted-foreground hover:text-foreground hidden px-2 transition-colors md:inline-flex"
               to="/docs"
@@ -166,7 +166,7 @@ function Home() {
               <GitHubIcon className="size-4" />
               {m.home_view_github()}
             </a>
-            <RegistryCommandMenu />
+            <RegistryCommandMenu className="sm:!size-9 sm:!justify-center sm:!px-0 lg:!h-9 lg:!w-64 lg:!justify-start lg:!gap-2.5 lg:!px-2.5 sm:[&>kbd]:!hidden lg:[&>kbd]:!inline-flex sm:[&>span]:!hidden lg:[&>span]:!block" />
             <MobileHeaderMenu />
             <ThemeSwitcher value={theme} onChange={setTheme} />
             <LocaleSwitcher />
@@ -178,25 +178,28 @@ function Home() {
         <section className="relative border-b">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_76%_38%,color-mix(in_oklab,var(--secondary)_32%,transparent),transparent_32%)]" />
           <div className="pointer-events-none absolute inset-0 [background-image:linear-gradient(var(--foreground)_1px,transparent_1px),linear-gradient(90deg,var(--foreground)_1px,transparent_1px)] [background-size:48px_48px] opacity-[0.035]" />
-          <div className="relative mx-auto grid max-w-7xl gap-14 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-32">
+          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:gap-14 sm:px-6 sm:py-28 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-32">
             <div>
-              <div className="text-primary mb-6 flex items-center gap-3 font-mono text-xs font-semibold tracking-[0.18em] uppercase">
-                <span className="bg-primary h-px w-8" />
+              <div className="text-primary mb-5 flex items-center gap-2 font-mono text-[11px] font-semibold tracking-[0.14em] uppercase sm:mb-6 sm:gap-3 sm:text-xs sm:tracking-[0.18em]">
+                <span className="bg-primary h-px w-6 shrink-0 sm:w-8" />
                 {m.home_eyebrow()}
               </div>
-              <h1 className="max-w-4xl text-5xl leading-[1.02] font-semibold tracking-[-0.045em] sm:text-6xl lg:text-7xl">
+              <h1 className="max-w-4xl text-4xl leading-[1.04] font-semibold tracking-[-0.04em] sm:text-6xl sm:leading-[1.02] sm:tracking-[-0.045em] lg:text-7xl">
                 {m.home_title()}
               </h1>
-              <p className="text-muted-foreground mt-7 max-w-2xl text-lg leading-8 sm:text-xl">
+              <p className="text-muted-foreground mt-5 max-w-2xl text-base leading-7 sm:mt-7 sm:text-xl sm:leading-8">
                 {m.home_description()}
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Link className={buttonVariants({ size: "lg" })} to="/docs">
+              <div className="mt-7 flex flex-col gap-3 sm:mt-9 sm:flex-row">
+                <Link
+                  className={`${buttonVariants({ size: "lg" })} w-full sm:w-auto`}
+                  to="/docs"
+                >
                   {m.home_browse_registry()}
                   <ArrowRight className="size-4" />
                 </Link>
                 <a
-                  className={buttonVariants({ size: "lg", variant: "outline" })}
+                  className={`${buttonVariants({ size: "lg", variant: "outline" })} w-full sm:w-auto`}
                   href="https://github.com/krakcons/krakstack"
                   target="_blank"
                   rel="noreferrer"
@@ -204,8 +207,8 @@ function Home() {
                   {m.home_view_github()}
                 </a>
               </div>
-              <p className="text-muted-foreground mt-5 flex items-center gap-2 text-sm">
-                <Check className="text-primary size-4" />
+              <p className="text-muted-foreground mt-5 flex items-start gap-2 text-sm leading-6">
+                <Check className="text-primary mt-1 size-4 shrink-0" />
                 {m.home_open_source_note()}
               </p>
             </div>
@@ -234,17 +237,17 @@ function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-28">
           <SectionHeading
             kicker={m.home_capabilities_eyebrow()}
             title={m.home_capabilities_title()}
             description={m.home_capabilities_description()}
           />
-          <div className="bg-border mt-12 grid gap-px overflow-hidden rounded-xl border md:grid-cols-3">
+          <div className="bg-border mt-9 grid gap-px overflow-hidden rounded-xl border sm:mt-12 md:grid-cols-3">
             {capabilities.map(({ description, icon: Icon, marker, title }) => (
               <article
                 key={marker}
-                className="bg-background relative flex min-h-72 flex-col p-7"
+                className="bg-background relative flex min-h-64 flex-col p-5 sm:min-h-72 sm:p-7"
               >
                 <div className="flex items-start justify-between">
                   <div className="bg-secondary text-secondary-foreground flex size-11 items-center justify-center rounded-lg">
@@ -266,7 +269,7 @@ function Home() {
         </section>
 
         <section className="bg-foreground text-background">
-          <div className="mx-auto grid max-w-7xl gap-14 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[0.75fr_1.25fr]">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:gap-14 sm:px-6 sm:py-28 lg:grid-cols-[0.75fr_1.25fr]">
             <div>
               <p className="text-background/60 font-mono text-xs font-semibold tracking-[0.18em] uppercase">
                 {m.home_platform_eyebrow()}
@@ -289,24 +292,24 @@ function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-28">
           <SectionHeading
             kicker={m.krakstack_sites_heading()}
             title={m.home_sites_title()}
             description={m.home_sites_description()}
           />
-          <div className="mt-12 grid gap-4 md:grid-cols-2">
+          <div className="mt-9 grid gap-4 sm:mt-12 md:grid-cols-2">
             {krakstackSites.map((site) => (
               <Link
                 key={site.id}
                 to={site.docsHref}
-                className="group bg-background hover:bg-muted/50 relative flex min-h-64 flex-col rounded-xl border p-7 transition-colors"
+                className="group bg-background hover:bg-muted/50 relative flex min-h-60 flex-col rounded-xl border p-5 transition-colors sm:min-h-64 sm:p-7"
               >
                 <div className="flex items-start justify-between">
                   <div className="bg-secondary text-secondary-foreground flex size-11 items-center justify-center rounded-lg">
                     <site.icon className="size-5" />
                   </div>
-                  <span className="text-muted-foreground font-mono text-xs">
+                  <span className="text-muted-foreground max-w-[65%] text-right font-mono text-[11px] break-all sm:text-xs">
                     {site.url}
                   </span>
                 </div>
@@ -325,13 +328,13 @@ function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28">
+        <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-28">
           <SectionHeading
             kicker={m.home_catalogue_eyebrow()}
             title={m.home_catalogue_title()}
             description={m.home_catalogue_description()}
           />
-          <div className="mt-12">
+          <div className="mt-9 sm:mt-12">
             {groupedItems.map((section) => (
               <div key={section.title} className="mb-12 last:mb-0">
                 <h3 className="mb-5 font-mono text-xs font-semibold tracking-[0.18em] uppercase">
@@ -343,10 +346,10 @@ function Home() {
                       key={item.name}
                       params={{ slug: item.name }}
                       to="/docs/{-$slug}"
-                      className="group bg-background hover:bg-muted/50 flex min-h-44 flex-col rounded-xl border p-5 transition-colors"
+                      className="group bg-background hover:bg-muted/50 flex min-h-44 min-w-0 flex-col rounded-xl border p-5 transition-colors"
                     >
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <h4 className="min-w-0 font-semibold break-words">
                           {item.title ?? item.name}
                         </h4>
                         {isRegistryItemNew(item) ? (
@@ -368,8 +371,8 @@ function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28">
-          <div className="bg-secondary text-secondary-foreground relative overflow-hidden rounded-2xl p-8 sm:p-12 lg:flex lg:items-end lg:justify-between">
+        <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-28">
+          <div className="bg-secondary text-secondary-foreground relative overflow-hidden rounded-2xl p-6 sm:p-12 lg:flex lg:items-end lg:justify-between lg:gap-8">
             <Blocks className="absolute -top-10 -right-8 size-52 opacity-[0.07]" />
             <div className="relative max-w-2xl">
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -380,7 +383,7 @@ function Home() {
               </p>
             </div>
             <Link
-              className={`${buttonVariants({ size: "lg" })} relative mt-8 lg:mt-0`}
+              className={`${buttonVariants({ size: "lg" })} relative mt-8 w-full sm:w-auto lg:mt-0`}
               to="/docs"
             >
               {m.home_get_started()}
@@ -393,7 +396,7 @@ function Home() {
       <footer className="border-t">
         <div className="text-muted-foreground mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <span>{m.home_footer_note()}</span>
-          <div className="flex gap-5">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link className="hover:text-foreground" to="/docs">
               {m.home_nav_docs()}
             </Link>
@@ -421,19 +424,19 @@ function RegistryPreview() {
   ];
 
   return (
-    <div className="relative mx-auto w-full max-w-lg lg:ml-auto">
+    <div className="relative mx-auto w-full max-w-lg min-w-0 lg:ml-auto">
       <div className="bg-card shadow-foreground/10 overflow-hidden rounded-xl border shadow-2xl">
-        <div className="bg-muted/60 flex h-11 items-center gap-2 border-b px-4">
+        <div className="bg-muted/60 flex h-11 items-center gap-2 border-b px-3 sm:px-4">
           <span className="size-2.5 rounded-full bg-red-400/70" />
           <span className="size-2.5 rounded-full bg-amber-400/70" />
           <span className="size-2.5 rounded-full bg-emerald-400/70" />
-          <div className="bg-background text-muted-foreground ml-3 flex h-6 flex-1 items-center rounded border px-3 font-mono text-[10px]">
+          <div className="bg-background text-muted-foreground ml-1 flex h-6 min-w-0 flex-1 items-center truncate rounded border px-2 font-mono text-[10px] sm:ml-3 sm:px-3">
             krakstack.net/registry
           </div>
         </div>
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-8">
           <div className="mb-6 flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <div className="bg-primary mb-4 flex size-10 items-center justify-center rounded-lg">
                 <Blocks className="text-primary-foreground size-5" />
               </div>
@@ -442,7 +445,9 @@ function RegistryPreview() {
                 {m.home_preview_description()}
               </p>
             </div>
-            <Badge variant="secondary">{m.home_preview_badge()}</Badge>
+            <Badge className="shrink-0" variant="secondary">
+              {m.home_preview_badge()}
+            </Badge>
           </div>
           <div className="bg-foreground text-background flex items-start gap-3 overflow-x-auto rounded-lg p-3 font-mono text-[11px] dark:bg-black dark:text-white">
             <Terminal className="mt-0.5 size-3.5 shrink-0 opacity-70" />
@@ -468,7 +473,7 @@ function RegistryPreview() {
           </div>
         </div>
       </div>
-      <div className="bg-secondary absolute -right-5 -bottom-5 -z-10 h-40 w-40 rounded-xl opacity-70" />
+      <div className="bg-secondary absolute right-0 -bottom-5 -z-10 h-40 w-40 rounded-xl opacity-70 sm:-right-5" />
     </div>
   );
 }
@@ -488,7 +493,7 @@ function SectionHeading({
         <p className="text-primary font-mono text-xs font-semibold tracking-[0.18em] uppercase">
           {kicker}
         </p>
-        <h2 className="mt-4 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="mt-4 max-w-xl text-2xl font-semibold tracking-tight sm:text-4xl">
           {title}
         </h2>
       </div>
