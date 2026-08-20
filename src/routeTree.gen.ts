@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsChar123SlugChar125RouteImport } from './routes/docs.{-$slug}'
 import { Route as DocsDeveloperSetupRouteImport } from './routes/docs/developer-setup'
+import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as DocsSitesTemplateRouteImport } from './routes/docs/sites/template'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -47,6 +48,11 @@ const DocsDeveloperSetupRoute = DocsDeveloperSetupRouteImport.update({
   path: '/docs/developer-setup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsSitesTemplateRoute = DocsSitesTemplateRouteImport.update({
   id: '/docs/sites/template',
   path: '/docs/sites/template',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
   '/docs/': typeof DocsIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
   '/docs': typeof DocsIndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/$': typeof ApiSplatRoute
   '/docs/developer-setup': typeof DocsDeveloperSetupRoute
   '/docs/{-$slug}': typeof DocsChar123SlugChar125Route
   '/docs/': typeof DocsIndexRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/llms.txt'
     | '/sitemap.xml'
+    | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
     | '/docs/'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/llms.txt'
     | '/sitemap.xml'
+    | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
     | '/docs'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/llms.txt'
     | '/sitemap.xml'
+    | '/api/$'
     | '/docs/developer-setup'
     | '/docs/{-$slug}'
     | '/docs/'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiSplatRoute: typeof ApiSplatRoute
   DocsDeveloperSetupRoute: typeof DocsDeveloperSetupRoute
   DocsChar123SlugChar125Route: typeof DocsChar123SlugChar125Route
   DocsIndexRoute: typeof DocsIndexRoute
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsDeveloperSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs/sites/template': {
       id: '/docs/sites/template'
       path: '/docs/sites/template'
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiSplatRoute: ApiSplatRoute,
   DocsDeveloperSetupRoute: DocsDeveloperSetupRoute,
   DocsChar123SlugChar125Route: DocsChar123SlugChar125Route,
   DocsIndexRoute: DocsIndexRoute,

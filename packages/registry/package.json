@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -198,6 +198,10 @@
     "./service-file-extraction/schema": {
       "types": "./dist/services/file-extraction/schema.d.ts",
       "import": "./dist/services/file-extraction/schema.js"
+    },
+    "./service-health": {
+      "types": "./dist/services/health/index.d.ts",
+      "import": "./dist/services/health/index.js"
     },
     "./tailwind.css": "./tailwind.css",
     "./package.json": "./package.json"

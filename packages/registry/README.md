@@ -33,6 +33,11 @@ import { Query } from "@krak-stack/registry/query";
 import { createSeo } from "@krak-stack/registry/seo";
 import { FileExtractionService } from "@krak-stack/registry/service-file-extraction";
 import { FileExtractedTextSchema } from "@krak-stack/registry/service-file-extraction/schema";
+import {
+  HealthApiGroup,
+  healthHandler,
+  HealthService,
+} from "@krak-stack/registry/service-health";
 import { NotificationService } from "@krak-stack/registry/service-notification";
 ```
 
