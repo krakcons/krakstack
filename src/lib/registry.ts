@@ -46,6 +46,7 @@ export function getRegistryGroup(item: RegistryItem) {
     [
       "service-database",
       "service-opentelemetry",
+      "service-cloudflare-ai-gateway",
       "embedding-layer",
       "workflow-layer",
     ].includes(item.name)

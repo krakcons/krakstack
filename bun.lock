@@ -10,6 +10,7 @@
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
+        "@effect/ai-openai": "4.0.0-beta.99",
         "@effect/ai-openai-compat": "4.0.0-beta.85",
         "@effect/atom-react": "4.0.0-beta.85",
         "@effect/opentelemetry": "^0.63.0",
@@ -79,7 +80,7 @@
     },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.1.14",
+      "version": "0.1.19",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
       },
@@ -310,6 +311,8 @@
     "@dotenvx/primitives": ["@dotenvx/primitives@0.8.0", "", {}, "sha512-VYJy0uhFm9zTJ1TxBaW/pA8bjbOM/OttaNMwZ1RHG4JKyRG7DhSdiqD1ipQoAyoD22olUtxbP78W9xY3Wd11bg=="],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.11.0", "", {}, "sha512-hD3pekGiPg0WPCCGAZmusBBJsDqGUR66Y452YgQsZOnkdQ7ViEPKuyP4huUGEZQefp8g34RRodXYmJ2TbCH+tg=="],
+
+    "@effect/ai-openai": ["@effect/ai-openai@4.0.0-beta.99", "", { "peerDependencies": { "effect": "^4.0.0-beta.99" } }, "sha512-O215vDPLSJvN7xjnGjGay9uja4d4+thWWO0W5D897nilj5RHvCVGDkosArgDUXrodubGl1Eyi7DSq5kuPZE1qg=="],
 
     "@effect/ai-openai-compat": ["@effect/ai-openai-compat@4.0.0-beta.85", "", { "peerDependencies": { "effect": "^4.0.0-beta.85" } }, "sha512-9M3SPi4yBphjJ1WI3DThMsD952q6Tqvcu6/Y9BCYY1hkQYg35iNn4u4LctT30W4aZaqVDDJLGxicEmU4jDrr+g=="],
 
