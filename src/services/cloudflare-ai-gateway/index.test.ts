@@ -40,15 +40,15 @@ describe("CloudflareAIGateway", () => {
     Effect.gen(function* () {
       const request = yield* requestWith(
         CloudflareAIGateway.layerWith({
-          user_id: "user-id",
-          organization_id: "organization-id",
+          userId: "user-id",
+          organizationId: "organization-id",
           test: true,
         }),
       );
 
       expect(JSON.parse(request.headers["cf-aig-metadata"] ?? "")).toEqual({
-        user_id: "user-id",
-        organization_id: "organization-id",
+        userId: "user-id",
+        organizationId: "organization-id",
         test: true,
       });
     }),
