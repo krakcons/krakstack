@@ -1,8 +1,10 @@
 import introductionEn from "@/content/docs/en/introduction.mdx?raw";
 import notificationsEn from "@/content/docs/en/notifications.mdx?raw";
+import servicePersistenceEn from "@/content/docs/en/service-persistence.mdx?raw";
 import technologiesEn from "@/content/docs/en/technologies.mdx?raw";
 import introductionFr from "@/content/docs/fr/introduction.mdx?raw";
 import notificationsFr from "@/content/docs/fr/notifications.mdx?raw";
+import servicePersistenceFr from "@/content/docs/fr/service-persistence.mdx?raw";
 import technologiesFr from "@/content/docs/fr/technologies.mdx?raw";
 import { createMdxDocsSource, makeDocs, type DocsSection } from "@/lib/docs";
 import { krakstackSites } from "@/lib/krakstack-sites";
@@ -15,7 +17,13 @@ import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 
 const locales = ["en", "fr"] as const;
+const firstRegistryPageOrder = 4;
 const notificationGuideOrder = 17;
+
+const registryPageOrder = (index: number) => {
+  const order = index + firstRegistryPageOrder;
+  return order >= notificationGuideOrder ? order + 1 : order;
+};
 
 const sectionByGroup = {
   Components: "components",
@@ -48,6 +56,11 @@ const notificationFiles = {
   fr: ["../content/docs/fr/notifications.mdx", notificationsFr],
 } as const;
 
+const servicePersistenceFiles = {
+  en: ["../content/docs/en/service-persistence.mdx", servicePersistenceEn],
+  fr: ["../content/docs/fr/service-persistence.mdx", servicePersistenceFr],
+} as const;
+
 const technologyFiles = {
   en: ["../content/docs/en/technologies.mdx", technologiesEn],
   fr: ["../content/docs/fr/technologies.mdx", technologiesFr],
@@ -56,6 +69,7 @@ const technologyFiles = {
 const files = Object.fromEntries([
   ...locales.map((locale) => introductionFiles[locale]),
   ...locales.map((locale) => technologyFiles[locale]),
+  ...locales.map((locale) => servicePersistenceFiles[locale]),
   ...locales.map((locale) => notificationFiles[locale]),
   ...locales.flatMap((locale) =>
     registryItems.map((item, index) => {
@@ -79,7 +93,7 @@ const files = Object.fromEntries([
         `path: ${JSON.stringify(`/docs/${item.name}`)}`,
         `title: ${JSON.stringify(title)}`,
         `description: ${JSON.stringify(item.description)}`,
-        `order: ${index + 3 >= notificationGuideOrder ? index + 4 : index + 3}`,
+        `order: ${registryPageOrder(index)}`,
         `locale: ${locale}`,
         `section: ${section}`,
         "type: reference",
@@ -137,6 +151,7 @@ export const registryDocs = makeDocs({
     url: "https://github.com/krakcons/krakstack-site",
   },
   editable: (page) => !page.sourceFile.includes("/registry/"),
+  navigation: (page) => page.slug !== "service-persistence",
   sectionOrder: [
     "getting-started",
     "components",
@@ -157,17 +172,24 @@ export const registryDocs = makeDocs({
     label: () => (getLocale() === "fr" ? "Ressources" : "Resources"),
     items: [
       {
+        badge: () =>
+          m.registry_new({}, { locale: getLocale() === "fr" ? "fr" : "en" }),
+        label: () =>
+          getLocale() === "fr"
+            ? "Persistance des services"
+            : "Service Persistence",
+        href: "/docs/service-persistence",
+      },
+      {
         label: () =>
           getLocale() === "fr"
             ? "Configuration développeur"
             : "Developer setup",
         href: "/docs/developer-setup",
-        icon: "lucide:wrench",
       },
       ...krakstackSites.map((site) => ({
         label: site.title,
         href: site.docsHref,
-        icon: "lucide:globe",
       })),
     ],
   },

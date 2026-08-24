@@ -16,6 +16,7 @@ import { Streamdown, type Components, type ExtraProps } from "streamdown";
 import { parse } from "yaml";
 
 import { AppBrand } from "@/components/ui/app-brand";
+import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
@@ -76,6 +77,7 @@ export const DocsFrontmatter = Schema.Struct({
   createdAt: Schema.optional(DocsDate),
   updatedAt: Schema.optional(DocsDate),
   legacySlugs: Schema.optional(Schema.Array(Schema.String)),
+  tags: Schema.optional(Schema.Array(Schema.NonEmptyString)),
 }).annotate({ identifier: "DocsFrontmatter" });
 
 export const DocsHeadingSchema = Schema.Struct({
@@ -265,6 +267,8 @@ const validateDocsPages = (
           page.icon !== localized.icon ||
           page.createdAt !== localized.createdAt ||
           page.updatedAt !== localized.updatedAt ||
+          JSON.stringify(page.tags ?? []) !==
+            JSON.stringify(localized.tags ?? []) ||
           JSON.stringify(page.legacySlugs ?? []) !==
             JSON.stringify(localized.legacySlugs ?? [])
         ) {
@@ -368,6 +372,7 @@ export type DocsConfig = {
   };
   githubLabel?: string;
   sectionOrder?: ReadonlyArray<DocsSection>;
+  navigation?: (page: DocsPage) => boolean;
   github?: {
     url: `https://${string}`;
     branch?: string;
@@ -401,7 +406,9 @@ export const makeDocs = (config: DocsConfig) => {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
   const searchIndex = source.pages.flatMap((page) => {
-    const description = normalizeSearchText(page.description);
+    const description = normalizeSearchText(
+      `${page.description} ${(page.tags ?? []).join(" ")}`,
+    );
     return [
       {
         page,
@@ -429,7 +436,9 @@ export const makeDocs = (config: DocsConfig) => {
 
   const pages = (locale: DocsLocale) => source.getPages(locale);
   const sections = (locale: DocsLocale) => {
-    const localized = pages(locale);
+    const localized = pages(locale).filter(
+      (page) => config.navigation?.(page) ?? true,
+    );
     const ids = Array.from(new Set(localized.map((page) => page.section)));
     const configuredOrder = config.sectionOrder ?? [];
     const orderedIds = [
@@ -701,9 +710,9 @@ export const getDocsMessages = (
 });
 
 export type DocsResource = {
+  badge?: () => string;
   label: () => string;
   href: string;
-  icon: string;
   external?: boolean;
 };
 
@@ -889,7 +898,10 @@ const DocsTableOfContents = ({
   if (headings.length === 0) return null;
 
   return (
-    <nav aria-label={label} className="sticky top-20">
+    <nav
+      aria-label={label}
+      className="fixed top-20 max-h-[calc(100svh-6rem)] w-56 overflow-y-auto"
+    >
       <p className="text-foreground mb-3 text-sm font-semibold">{label}</p>
       <DocsTableOfContentsItems headings={headings} />
     </nav>
@@ -1042,9 +1054,10 @@ export const DocsLayout = ({
       label: resources.label,
       items: [
         ...resources.items.map((item) => ({
+          badge: item.badge,
           label: item.label,
           href: item.href,
-          icon: iconFor(item.icon),
+          icon: EmptyIcon,
           external: item.external,
         })),
         ...(docs.githubUrl
@@ -1052,7 +1065,7 @@ export const DocsLayout = ({
               {
                 label: () => docs.githubLabel,
                 href: docs.githubUrl,
-                icon: iconFor("lucide:code-2"),
+                icon: EmptyIcon,
                 external: true,
               },
             ]
@@ -1114,9 +1127,16 @@ export const DocsHeader = ({ docs, resolution }: DocsPageSectionProps) => {
         {resolvedMessages.sectionLabel(page.section)} ·{" "}
         {resolvedMessages.pageTypeLabel(page.type)}
       </p>
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-        {page.title}
-      </h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          {page.title}
+        </h1>
+        {page.tags?.map((tag) => (
+          <Badge key={tag} variant="secondary">
+            {tag}
+          </Badge>
+        ))}
+      </div>
       <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-7">
         {page.description}
       </p>

@@ -1,0 +1,267 @@
+---
+slug: service-persistence
+path: /docs/service-persistence
+title: Service Persistence
+description: Structure a reusable Effect service that owns its persistence while exposing configurable production and test layers.
+order: 3
+locale: en
+section: services
+type: how-to
+createdAt: "2026-08-24"
+updatedAt: "2026-08-24"
+tags: [Alpha]
+---
+
+# Service Persistence
+
+Build reusable backend capabilities as one public Effect service. The library owns its persistence mechanics and exposes a small service contract; the consuming application provides infrastructure and product policy.
+
+## Target boundary
+
+The default integration should be small:
+
+```text
+Application database layer
+    -> SqlClient
+        -> FeatureService.layer
+```
+
+The application consumes `FeatureService`. It should not assemble the service's repositories, tables, migrations, or workers.
+
+## Separate library and consumer ownership
+
+```text
+packages/feature/src/                 # Library
+  index.ts
+  schema.ts
+  migrations.ts
+  repository.ts
+  queue.ts
+
+apps/application/src/                 # Consumer application
+  api.ts
+  services/feature/api.group.ts
+  services/feature/api.builder.ts
+  lib/api-builder.ts
+```
+
+| Owner    | Responsibility                                                      |
+| -------- | ------------------------------------------------------------------- |
+| Library  | Service contract, schemas, persistence, migrations, and layers      |
+| Consumer | Database driver, authentication, authorization, HTTP, and UI policy |
+
+The persistence library should not import from the consuming application.
+
+## Define one public service
+
+**Library:** `packages/feature/src/index.ts`
+
+```ts
+import { Effect } from "effect";
+
+export interface FeatureServiceShape {
+  readonly create: (
+    input: CreateInput,
+  ) => Effect.Effect<FeatureRecord, FeatureError>;
+  readonly get: (
+    input: GetInput,
+  ) => Effect.Effect<FeatureRecord | null, FeatureError>;
+  readonly list: (
+    input: ListInput,
+  ) => Effect.Effect<FeatureRecordPage, FeatureError>;
+  readonly cancel: (
+    input: CancelInput,
+  ) => Effect.Effect<FeatureRecord, FeatureError>;
+}
+```
+
+Methods should accept object inputs and return domain values rather than repository or queue details. Actor and tenant identifiers may be inputs, but the application must resolve and authorize them before calling the service.
+
+## Own the SQL schema
+
+The library should own the tables that implement its behavior. Do not require each application to recreate those tables or maintain matching migrations.
+
+**Library:** `packages/feature/src/migrations.ts`
+
+```ts
+import { Effect } from "effect";
+import { Migrator, SqlClient } from "effect/unstable/sql";
+
+const migrations = Migrator.fromRecord({
+  "0001_create_feature_records": Effect.gen(function* () {
+    const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+
+    yield* sql`
+      CREATE TABLE feature_records (
+        id UUID PRIMARY KEY,
+        idempotency_key TEXT NOT NULL UNIQUE,
+        tenant_id TEXT,
+        status TEXT NOT NULL,
+        payload_version INTEGER NOT NULL,
+        payload JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+  }),
+});
+
+export const runFeatureMigrations = Migrator.make({})({
+  loader: migrations,
+  table: "krakstack_feature_migrations",
+}).pipe(Effect.withSpan("FeatureService.migrate"));
+```
+
+Use a unique migration table for each reusable service.
+
+### Migration rules
+
+- Never modify or reorder a released migration.
+- Add a migration for every schema change.
+- Keep persisted payload decoders compatible while older versions exist.
+- Fail service initialization when required migrations fail.
+- Do not let the library and application both manage the same tables.
+
+## Compose configurable layers
+
+Expose `FeatureService.layer` for the standard setup and `FeatureService.layerWith(...)` for explicit substitutions.
+
+**Library:** `packages/feature/src/index.ts`
+
+```ts
+import { Context, Effect, Layer } from "effect";
+import { SqlClient } from "effect/unstable/sql";
+
+export type FeatureServiceOptions<QueueError, QueueRequirements> = {
+  readonly queue: Effect.Effect<FeatureQueue, QueueError, QueueRequirements>;
+  readonly handoff: "same-sql" | "outbox";
+  readonly migrations: "auto" | "disabled";
+  readonly worker: "disabled" | "embedded";
+};
+
+export class FeatureService extends Context.Service<
+  FeatureService,
+  FeatureServiceShape
+>()("FeatureService") {
+  static readonly layerWith = <QueueError, QueueRequirements>(
+    options: FeatureServiceOptions<QueueError, QueueRequirements>,
+  ) =>
+    Layer.scoped(
+      this,
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+
+        if (options.migrations === "auto") {
+          yield* runFeatureMigrations;
+        }
+
+        const queue = yield* options.queue;
+        const repository = makeFeatureRepository(sql);
+        const service = makeFeatureService({
+          handoff: options.handoff,
+          queue,
+          repository,
+        });
+
+        if (options.worker === "embedded") {
+          yield* service.runWorker.pipe(Effect.forkScoped);
+        }
+
+        return service;
+      }),
+    );
+
+  static readonly layer = this.layerWith({
+    queue: SqlFeatureQueue,
+    handoff: "same-sql",
+    migrations: "auto",
+    worker: "disabled",
+  });
+}
+```
+
+The service receives a concrete `FeatureQueue`; it does not depend on a queue factory. Queue construction remains an adapter detail outside the service implementation.
+
+The default layer uses a queue backed by the same `SqlClient`, so the consumer still provides only its database layer. Alternate queue effects carry their own requirements through `layerWith(...)`.
+
+## Preserve persistence guarantees
+
+Queue configuration must not silently weaken consistency:
+
+- `same-sql` is valid only when queue writes participate in the active `SqlClient` transaction.
+- `outbox` persists a service-owned outbox row with domain state and relays it after commit.
+- An external queue must not be offered inside the SQL transaction as though it were atomic.
+
+Keep SQL as the source of truth for queryable lifecycle state. Queue payloads should contain stable lookup identifiers rather than complete mutable business records.
+
+## Compose in the application
+
+**Consumer application:** runtime composition
+
+```ts
+const FeatureLive = FeatureService.layer.pipe(Layer.provide(DB.layer));
+```
+
+Use `layerWith(...)` only when the application intentionally changes deployment behavior:
+
+```ts
+const FeatureWithExternalQueueLive = FeatureService.layerWith({
+  queue: ExternalFeatureQueue,
+  handoff: "outbox",
+  migrations: "disabled",
+  worker: "disabled",
+}).pipe(Layer.provide(DB.layer), Layer.provide(ExternalQueueClient.layer));
+```
+
+The application owns API registration, handlers, authentication, authorization, and transport error mapping. Those concerns should call `FeatureService`; they should not be shipped by the persistence library.
+
+## Control migrations
+
+- `auto` runs migrations before the service becomes available.
+- `disabled` assumes a release task already ran `runFeatureMigrations`.
+- Export the migration effect for deployment tooling.
+- Never start workers against an unknown schema version.
+
+## Test the real boundary
+
+Use the real PostgreSQL test database through `TEST_DATABASE_URL` and fresh service layers where practical.
+
+Test that:
+
+- Migrations are idempotent.
+- Idempotency keys prevent duplicate records.
+- Tenant-scoped queries cannot cross boundaries.
+- `same-sql` publication commits or rolls back with domain state.
+- `outbox` rows commit with domain state and relay idempotently.
+- Cancellation is checked before external effects.
+- Interrupted work can be recovered safely.
+
+## Avoid these designs
+
+- Requiring every application to implement storage for library-owned tables.
+- Exposing repositories as application dependencies.
+- Letting the library and application both own migrations for the same tables.
+- Deriving all configurable infrastructure internally from `SqlClient`.
+- Passing queue factories into the service instead of a typed queue.
+- Treating an external queue offer as part of a SQL transaction.
+- Starting background fibers outside a scoped layer.
+- Shipping HttpApi groups or handlers from the persistence library.
+
+## Result
+
+```text
+Application owns
+    - infrastructure layers
+    - actor and tenant authorization
+    - HTTP and UI boundaries
+    - product-specific policy
+
+Feature service owns
+    - public operations
+    - schema and migrations
+    - repositories and transactions
+    - persistence guarantees
+    - worker lifecycle
+```
+
+This keeps the library reusable without forcing the consuming application to rebuild its persistence internals.

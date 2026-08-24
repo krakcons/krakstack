@@ -1,0 +1,267 @@
+---
+slug: service-persistence
+path: /docs/service-persistence
+title: Persistance des services
+description: Structurez un service Effect réutilisable qui possède sa persistance tout en exposant des layers de production et de test configurables.
+order: 3
+locale: fr
+section: services
+type: how-to
+createdAt: "2026-08-24"
+updatedAt: "2026-08-24"
+tags: [Alpha]
+---
+
+# Persistance des services
+
+Construisez des capacités backend réutilisables sous la forme d'un service Effect public. La bibliothèque possède ses mécanismes de persistance et expose un petit contrat de service; l'application consommatrice fournit l'infrastructure et la politique produit.
+
+## Frontière cible
+
+L'intégration par défaut devrait rester petite :
+
+```text
+Layer de base de données de l'application
+    -> SqlClient
+        -> FeatureService.layer
+```
+
+L'application consomme `FeatureService`. Elle ne devrait pas assembler les repositories, tables, migrations ou workers du service.
+
+## Séparer la bibliothèque et l'application
+
+```text
+packages/feature/src/                 # Bibliothèque
+  index.ts
+  schema.ts
+  migrations.ts
+  repository.ts
+  queue.ts
+
+apps/application/src/                 # Application consommatrice
+  api.ts
+  services/feature/api.group.ts
+  services/feature/api.builder.ts
+  lib/api-builder.ts
+```
+
+| Propriétaire | Responsabilité                                                                |
+| ------------ | ----------------------------------------------------------------------------- |
+| Bibliothèque | Contrat, schémas, persistance, migrations et layers du service                |
+| Consommateur | Driver de base, authentification, autorisation, HTTP et politique d'interface |
+
+La bibliothèque de persistance ne devrait jamais importer l'application consommatrice.
+
+## Définir un seul service public
+
+**Bibliothèque :** `packages/feature/src/index.ts`
+
+```ts
+import { Effect } from "effect";
+
+export interface FeatureServiceShape {
+  readonly create: (
+    input: CreateInput,
+  ) => Effect.Effect<FeatureRecord, FeatureError>;
+  readonly get: (
+    input: GetInput,
+  ) => Effect.Effect<FeatureRecord | null, FeatureError>;
+  readonly list: (
+    input: ListInput,
+  ) => Effect.Effect<FeatureRecordPage, FeatureError>;
+  readonly cancel: (
+    input: CancelInput,
+  ) => Effect.Effect<FeatureRecord, FeatureError>;
+}
+```
+
+Les méthodes devraient accepter des objets et retourner des valeurs métier plutôt que des détails de repository ou de file. Les identifiants d'acteur et de tenant peuvent faire partie des entrées, mais l'application doit les résoudre et les autoriser avant d'appeler le service.
+
+## Posséder le schéma SQL
+
+La bibliothèque devrait posséder les tables qui implémentent son comportement. N'obligez pas chaque application à recréer ces tables ou à maintenir des migrations correspondantes.
+
+**Bibliothèque :** `packages/feature/src/migrations.ts`
+
+```ts
+import { Effect } from "effect";
+import { Migrator, SqlClient } from "effect/unstable/sql";
+
+const migrations = Migrator.fromRecord({
+  "0001_create_feature_records": Effect.gen(function* () {
+    const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+
+    yield* sql`
+      CREATE TABLE feature_records (
+        id UUID PRIMARY KEY,
+        idempotency_key TEXT NOT NULL UNIQUE,
+        tenant_id TEXT,
+        status TEXT NOT NULL,
+        payload_version INTEGER NOT NULL,
+        payload JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+  }),
+});
+
+export const runFeatureMigrations = Migrator.make({})({
+  loader: migrations,
+  table: "krakstack_feature_migrations",
+}).pipe(Effect.withSpan("FeatureService.migrate"));
+```
+
+Utilisez une table de migrations unique pour chaque service réutilisable.
+
+### Règles de migration
+
+- Ne modifiez et ne réordonnez jamais une migration publiée.
+- Ajoutez une migration pour chaque changement de schéma.
+- Gardez les décodeurs de payload compatibles tant que d'anciennes versions existent.
+- Faites échouer l'initialisation du service si une migration requise échoue.
+- Ne laissez pas la bibliothèque et l'application gérer les mêmes tables.
+
+## Composer des layers configurables
+
+Exposez `FeatureService.layer` pour la configuration standard et `FeatureService.layerWith(...)` pour les substitutions explicites.
+
+**Bibliothèque :** `packages/feature/src/index.ts`
+
+```ts
+import { Context, Effect, Layer } from "effect";
+import { SqlClient } from "effect/unstable/sql";
+
+export type FeatureServiceOptions<QueueError, QueueRequirements> = {
+  readonly queue: Effect.Effect<FeatureQueue, QueueError, QueueRequirements>;
+  readonly handoff: "same-sql" | "outbox";
+  readonly migrations: "auto" | "disabled";
+  readonly worker: "disabled" | "embedded";
+};
+
+export class FeatureService extends Context.Service<
+  FeatureService,
+  FeatureServiceShape
+>()("FeatureService") {
+  static readonly layerWith = <QueueError, QueueRequirements>(
+    options: FeatureServiceOptions<QueueError, QueueRequirements>,
+  ) =>
+    Layer.scoped(
+      this,
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+
+        if (options.migrations === "auto") {
+          yield* runFeatureMigrations;
+        }
+
+        const queue = yield* options.queue;
+        const repository = makeFeatureRepository(sql);
+        const service = makeFeatureService({
+          handoff: options.handoff,
+          queue,
+          repository,
+        });
+
+        if (options.worker === "embedded") {
+          yield* service.runWorker.pipe(Effect.forkScoped);
+        }
+
+        return service;
+      }),
+    );
+
+  static readonly layer = this.layerWith({
+    queue: SqlFeatureQueue,
+    handoff: "same-sql",
+    migrations: "auto",
+    worker: "disabled",
+  });
+}
+```
+
+Le service reçoit une `FeatureQueue` concrète; il ne dépend pas d'une factory de file. La construction de la file reste un détail d'adaptateur hors de l'implémentation du service.
+
+Le layer par défaut utilise une file adossée au même `SqlClient`; le consommateur fournit donc seulement son layer de base de données. Les effets de file alternatifs transmettent leurs propres exigences à travers `layerWith(...)`.
+
+## Préserver les garanties de persistance
+
+La configuration de la file ne doit pas affaiblir silencieusement la cohérence :
+
+- `same-sql` est valide uniquement lorsque les écritures de la file participent à la transaction `SqlClient` active.
+- `outbox` persiste une ligne d'outbox possédée par le service avec l'état métier, puis la relaie après le commit.
+- Une file externe ne doit pas recevoir d'offre dans la transaction SQL comme si cette offre était atomique.
+
+Gardez SQL comme source de vérité pour l'état du cycle de vie interrogeable. Les payloads de file devraient contenir des identifiants de recherche stables plutôt que des enregistrements métier complets et mutables.
+
+## Composer dans l'application
+
+**Application consommatrice :** composition runtime
+
+```ts
+const FeatureLive = FeatureService.layer.pipe(Layer.provide(DB.layer));
+```
+
+Utilisez `layerWith(...)` uniquement lorsque l'application change intentionnellement le comportement du déploiement :
+
+```ts
+const FeatureWithExternalQueueLive = FeatureService.layerWith({
+  queue: ExternalFeatureQueue,
+  handoff: "outbox",
+  migrations: "disabled",
+  worker: "disabled",
+}).pipe(Layer.provide(DB.layer), Layer.provide(ExternalQueueClient.layer));
+```
+
+L'application possède l'enregistrement des API, les handlers, l'authentification, l'autorisation et le mapping des erreurs de transport. Ces préoccupations devraient appeler `FeatureService`; elles ne devraient pas être distribuées par la bibliothèque de persistance.
+
+## Contrôler les migrations
+
+- `auto` exécute les migrations avant que le service soit disponible.
+- `disabled` suppose qu'une tâche de déploiement a déjà exécuté `runFeatureMigrations`.
+- Exportez l'effet de migration pour les outils de déploiement.
+- Ne démarrez jamais les workers sur une version inconnue du schéma.
+
+## Tester la vraie frontière
+
+Utilisez la vraie base PostgreSQL de test avec `TEST_DATABASE_URL` et des layers frais lorsque cela est possible.
+
+Vérifiez que :
+
+- Les migrations sont idempotentes.
+- Les clés d'idempotence empêchent les enregistrements en double.
+- Les requêtes scoped par tenant ne franchissent pas leurs frontières.
+- La publication `same-sql` est validée ou annulée avec l'état métier.
+- Les lignes d'outbox sont validées avec l'état métier et relayées de façon idempotente.
+- L'annulation est vérifiée avant les effets externes.
+- Le travail interrompu peut être récupéré en toute sécurité.
+
+## Éviter ces conceptions
+
+- Obliger chaque application à implémenter le stockage de tables possédées par la bibliothèque.
+- Exposer les repositories comme dépendances de l'application.
+- Laisser la bibliothèque et l'application posséder les migrations des mêmes tables.
+- Dériver toute l'infrastructure configurable en interne depuis `SqlClient`.
+- Transmettre des factories de file au service plutôt qu'une file typée.
+- Traiter une offre à une file externe comme une partie de la transaction SQL.
+- Démarrer des fibres d'arrière-plan hors d'un layer scoped.
+- Distribuer des groupes HttpApi ou des handlers depuis la bibliothèque de persistance.
+
+## Résultat
+
+```text
+L'application possède
+    - les layers d'infrastructure
+    - l'autorisation de l'acteur et du tenant
+    - les frontières HTTP et UI
+    - la politique propre au produit
+
+Le service possède
+    - les opérations publiques
+    - le schéma et les migrations
+    - les repositories et transactions
+    - les garanties de persistance
+    - le cycle de vie des workers
+```
+
+Cette frontière garde la bibliothèque réutilisable sans obliger l'application consommatrice à reconstruire ses mécanismes internes de persistance.

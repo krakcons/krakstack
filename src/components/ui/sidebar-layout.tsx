@@ -187,7 +187,7 @@ export function SidebarLayout({
       />
       <SidebarInset
         className={cn(
-          "min-w-0 overflow-x-hidden",
+          "min-w-0 overflow-x-clip",
           fullPage && "xl:h-svh xl:min-h-0 xl:overflow-hidden",
         )}
       >
