@@ -8,6 +8,7 @@ import {
   Children,
   forwardRef,
   useDeferredValue,
+  useEffect,
   useState,
   type ComponentProps,
   type ReactNode,
@@ -867,26 +868,82 @@ const DocsArticle = ({
   );
 };
 
+const useActiveDocsHeading = (headings: ReadonlyArray<DocsHeading>) => {
+  const [activeHeadingId, setActiveHeadingId] = useState(headings[0]?.id);
+
+  useEffect(() => {
+    const elements = headings.flatMap((heading) => {
+      const element = document.getElementById(heading.id);
+      return element ? [element] : [];
+    });
+    if (elements.length === 0) return;
+
+    let frame: number | undefined;
+    const updateActiveHeading = () => {
+      let activeId = elements[0].id;
+
+      for (const element of elements) {
+        if (element.getBoundingClientRect().top > 96) break;
+        activeId = element.id;
+      }
+
+      const isAtPageEnd =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 1;
+      setActiveHeadingId(
+        isAtPageEnd ? elements[elements.length - 1].id : activeId,
+      );
+    };
+    const scheduleUpdate = () => {
+      if (frame !== undefined) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateActiveHeading);
+    };
+
+    updateActiveHeading();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      if (frame !== undefined) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [headings]);
+
+  return activeHeadingId;
+};
+
 const DocsTableOfContentsItems = ({
   headings,
 }: {
   headings: ReadonlyArray<DocsHeading>;
-}) => (
-  <ol className="border-l">
-    {headings.map((heading) => (
-      <li key={heading.id}>
-        <a
-          className={`text-muted-foreground hover:text-foreground block border-l border-transparent py-1.5 text-sm leading-5 ${
-            heading.depth === 3 ? "pl-6" : "pl-4"
-          }`}
-          href={`#${heading.id}`}
-        >
-          {heading.title}
-        </a>
-      </li>
-    ))}
-  </ol>
-);
+}) => {
+  const activeHeadingId = useActiveDocsHeading(headings);
+
+  return (
+    <ol className="border-l">
+      {headings.map((heading) => {
+        const isActive = heading.id === activeHeadingId;
+
+        return (
+          <li key={heading.id}>
+            <a
+              aria-current={isActive ? "location" : undefined}
+              className={`hover:text-foreground -ml-px block border-l py-1.5 text-sm leading-5 transition-colors ${
+                isActive
+                  ? "border-primary text-foreground font-medium"
+                  : "text-muted-foreground border-transparent"
+              } ${heading.depth === 3 ? "pl-6" : "pl-4"}`}
+              href={`#${heading.id}`}
+            >
+              {heading.title}
+            </a>
+          </li>
+        );
+      })}
+    </ol>
+  );
+};
 
 const DocsTableOfContents = ({
   headings,
