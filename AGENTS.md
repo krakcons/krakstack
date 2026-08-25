@@ -26,6 +26,18 @@ The application is divided into two areas: frontend and backend.
 - Effect service state for data loading and mutations.
 - Prefer existing app form, table, dialog, and data-fetching patterns before adding new abstractions.
 
+### Client State And Mutations
+
+- Define server queries with Effect Atom and keep authoritative query atoms wrapped in `Atom.optimistic(...)` when previous successful data should remain visible during refresh.
+- Default to `Atom.optimisticFn(...)` for create, update, and delete operations when the expected client-side result can be calculated safely.
+- Do not expose a plain `ApiClient.mutation(...)` directly to a form when an existing query atom can be updated optimistically and rolled back on failure.
+- Reconcile optimistic state with authoritative server data after a successful mutation by invalidating the relevant queries.
+- Keep invalidation policy beside the mutation definition rather than repeating domain dependencies in form submit handlers when practical.
+- Use a plain mutation when the result cannot be predicted safely, including imports, generated results, complex server transformations, and destructive operations with unknown side effects.
+- For paginated, filtered, sorted, or localized query families, do not guess which cached results a mutation affects. Scope the optimistic mutation to an explicit query instance, or introduce a canonical entity store when updates must appear across every query.
+- Name query-retention and mutation-optimism concepts precisely: `Atom.optimistic(queryAtom)` preserves provisional or previous query state, while `Atom.optimisticFn(...)` applies an optimistic mutation reducer with rollback.
+- Use `src/agent-examples/service/atom.ts` in the KrakStack reference repository as the required starting pattern for optimistic CRUD atoms, then adapt it to the application's real `AtomHttpApi` query and mutation atoms.
+
 ### Backend
 
 - Effect application services.
