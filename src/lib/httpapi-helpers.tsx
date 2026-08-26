@@ -83,11 +83,15 @@ export type HttpApiOperationEntry = {
   readonly path: string;
   readonly operation: HttpApiOperation;
 };
+export type HttpApiOperationInputValue = ErrorOptions["cause"];
+export type HttpApiOperationInputValues = Readonly<
+  Record<string, HttpApiOperationInputValue>
+>;
 export type HttpApiOperationInput = {
-  readonly body?: Json;
-  readonly headers: JsonObject;
-  readonly params: JsonObject;
-  readonly query: JsonObject;
+  readonly body?: HttpApiOperationInputValue;
+  readonly headers: HttpApiOperationInputValues;
+  readonly params: HttpApiOperationInputValues;
+  readonly query: HttpApiOperationInputValues;
 };
 export type HttpApiSpecConfig = {
   readonly api: HttpApi.Constraint;
@@ -314,7 +318,7 @@ const reflectedSchema = (schema: Schema.Top) =>
   Schema.make<Schema.Codec<unknown, unknown>>(schema.ast);
 
 const reflectedOperationInputSchemas = (api: HttpApi.Top) => {
-  const schemas = new Map<string, Schema.Top>();
+  const schemas = new Map<string, Schema.Codec<unknown, unknown>>();
 
   HttpApi.reflect(api, {
     onGroup: () => undefined,
@@ -432,8 +436,10 @@ export class HttpApiSpec extends Context.Service<HttpApiSpec>()("HttpApiSpec", {
               operationJsonSchema(operation),
             );
 
-            return SchemaRepresentation.toSchema(
-              SchemaRepresentation.fromJsonSchemaDocument(document),
+            return reflectedSchema(
+              SchemaRepresentation.toSchema(
+                SchemaRepresentation.fromJsonSchemaDocument(document),
+              ),
             );
           },
         };
