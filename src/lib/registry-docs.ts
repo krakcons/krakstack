@@ -7,7 +7,7 @@ import notificationsFr from "@/content/docs/fr/notifications.mdx?raw";
 import servicePersistenceFr from "@/content/docs/fr/service-persistence.mdx?raw";
 import technologiesFr from "@/content/docs/fr/technologies.mdx?raw";
 import { createMdxDocsSource, makeDocs, type DocsSection } from "@/lib/docs";
-import { krakstackSites } from "@/lib/krakstack-sites";
+import { krakstackRepositories } from "@/lib/krakstack-repositories";
 import {
   getRegistryGroup,
   getRegistryItemMeta,
@@ -168,6 +168,17 @@ export const registryDocs = makeDocs({
     icon: "lucide:blocks",
     href: "/",
   },
+  sidebarGroups: [
+    {
+      label: () => m.home_repositories_title(),
+      items: krakstackRepositories.map((repository) => ({
+        badge: repository.isNew ? () => m.registry_new() : undefined,
+        label: repository.title,
+        href: repository.href,
+        external: true,
+      })),
+    },
+  ],
   resources: {
     label: () => (getLocale() === "fr" ? "Ressources" : "Resources"),
     items: [
@@ -187,10 +198,6 @@ export const registryDocs = makeDocs({
             : "Developer setup",
         href: "/docs/developer-setup",
       },
-      ...krakstackSites.map((site) => ({
-        label: site.title,
-        href: site.docsHref,
-      })),
     ],
   },
   messages: (locale) => ({

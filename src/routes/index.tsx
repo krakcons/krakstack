@@ -10,6 +10,7 @@ import {
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
+import { krakstackRepositories } from "@/lib/krakstack-repositories";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import {
   getRegistryGroup,
@@ -139,7 +140,6 @@ function Home() {
       description: m.home_platform_source_description(),
     },
   ];
-
   return (
     <div className="min-h-screen overflow-hidden">
       <header className="bg-background/90 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-30 border-b backdrop-blur-xl">
@@ -328,7 +328,54 @@ function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-28">
+        <section className="bg-muted/30 border-y">
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-28">
+            <SectionHeading
+              kicker={m.home_repositories_eyebrow()}
+              title={m.home_repositories_title()}
+              description={m.home_repositories_description()}
+            />
+            <div className="mt-9 grid gap-4 sm:mt-12 md:grid-cols-3">
+              {krakstackRepositories.map(
+                ({ description, href, icon: Icon, isNew, title }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group bg-background hover:border-primary/40 flex min-h-56 flex-col rounded-xl border p-5 transition-colors sm:p-7"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="bg-secondary text-secondary-foreground flex size-11 items-center justify-center rounded-lg">
+                        <Icon className="size-5" />
+                      </div>
+                      <GitHubIcon className="text-muted-foreground size-5" />
+                    </div>
+                    <div className="mt-auto pt-10">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-mono text-lg font-semibold">
+                          {title()}
+                        </h3>
+                        {isNew ? (
+                          <Badge variant="secondary">{m.registry_new()}</Badge>
+                        ) : null}
+                      </div>
+                      <p className="text-muted-foreground mt-3 text-sm leading-6">
+                        {description()}
+                      </p>
+                      <span className="text-primary mt-6 inline-flex items-center gap-1 text-sm font-medium">
+                        {m.home_repository_view()}
+                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </div>
+                  </a>
+                ),
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-28">
           <SectionHeading
             kicker={m.home_catalogue_eyebrow()}
             title={m.home_catalogue_title()}

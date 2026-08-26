@@ -371,6 +371,10 @@ export type DocsConfig = {
     label: () => string;
     items: ReadonlyArray<DocsResource>;
   };
+  sidebarGroups?: ReadonlyArray<{
+    label: () => string;
+    items: ReadonlyArray<DocsResource>;
+  }>;
   githubLabel?: string;
   sectionOrder?: ReadonlyArray<DocsSection>;
   navigation?: (page: DocsPage) => boolean;
@@ -548,6 +552,7 @@ export const makeDocs = (config: DocsConfig) => {
     getMessages,
     origin,
     resources: config.resources,
+    sidebarGroups: config.sidebarGroups,
     source,
     pages,
     resolve,
@@ -1089,7 +1094,7 @@ export const DocsLayout = ({
   headerActions,
   locale,
 }: DocsLayoutProps) => {
-  const { brand, resources } = docs;
+  const { brand, resources, sidebarGroups } = docs;
   const resolvedMessages = docs.getMessages(locale);
   const groups: NavGroup[] = docs.sections(locale).map((section) => ({
     label: () => resolvedMessages.sectionLabel(section.id),
@@ -1105,6 +1110,21 @@ export const DocsLayout = ({
       return navItem;
     }),
   }));
+
+  if (sidebarGroups) {
+    groups.push(
+      ...sidebarGroups.map((group) => ({
+        label: group.label,
+        items: group.items.map((item) => ({
+          badge: item.badge,
+          label: item.label,
+          href: item.href,
+          icon: EmptyIcon,
+          external: item.external,
+        })),
+      })),
+    );
+  }
 
   if (resources) {
     groups.push({
