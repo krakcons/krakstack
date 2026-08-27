@@ -1,31 +1,68 @@
+import { useAtom, useAtomSet } from "@effect/atom-react";
+import { Schema } from "effect";
+import { Atom } from "effect/unstable/reactivity";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  ChevronsUpDown,
+  Download,
+  EyeOff,
+  FileJson,
+  FileText,
+  GripVertical,
+  LayoutGrid,
+  MoreHorizontal,
+  RefreshCw,
+  Rows3,
+  Search,
+  Settings2,
+  X,
+} from "lucide-react";
+import {
+  createContext,
+  isValidElement,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/ui/loading";
+import {
+  Menubar,
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarGroup,
+  MenubarItem,
+  MenubarLabel,
+  MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 import {
   Pagination,
   paginationMessages,
@@ -52,234 +89,155 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
-import { SortParamsFromString } from "@/lib/query";
-import { TableSearchSchema, type TableParams } from "@/lib/table-search";
 import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
-import { useAtom } from "@effect/atom-react";
-import { BrowserKeyValueStore } from "@effect/platform-browser";
-import {
-  DndContext,
-  DragOverlay,
-  type DragEndEvent,
-  type DragStartEvent,
-  type Modifier,
-  PointerSensor,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { Effect, Layer, Option, Schema } from "effect";
-import { KeyValueStore } from "effect/unstable/persistence";
-import { Atom } from "effect/unstable/reactivity";
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  ChevronsUpDown,
-  Download,
-  EyeOff,
-  FileJson,
-  FileText,
-  GripVertical,
-  LayoutGrid,
-  MoreHorizontal,
-  RefreshCw,
-  Rows3,
-  Search,
-  Settings2,
-  X,
-} from "lucide-react";
-import {
-  isValidElement,
-  useEffect,
-  useMemo,
-  useState,
-  type HTMLAttributes,
-  type ReactNode,
-} from "react";
-import {
-  useNavigate,
-  useRouterState,
-  type ValidateFromPath,
-} from "@tanstack/react-router";
-import {
-  columnFilteringFeature,
-  columnResizingFeature,
-  columnSizingFeature,
-  columnVisibilityFeature,
-  createFilteredRowModel,
-  createPaginatedRowModel,
-  createSortedRowModel,
-  createTableHook,
-  globalFilteringFeature,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  tableFeatures,
-  type Column,
-  type ColumnDef,
-  flexRender,
-  type Header,
-  type Row,
-  type RowData,
-  type RowSelectionState,
-  type SortingState,
-  type ColumnVisibilityState,
-  type AppReactTable,
-  type TableState,
-} from "@tanstack/react-table";
 
-type DataTableColumnMeta = {
+type RowData = object;
+
+export type DataTableSorting = readonly { id: string; desc: boolean }[];
+export type DataTablePaginationState = { pageIndex: number; pageSize: number };
+export type DataTableView = "table" | "gallery";
+
+export interface DataTablePublicState {
+  globalFilter: string;
+  sorting: DataTableSorting;
+  pagination: DataTablePaginationState;
+  columnVisibility: Record<string, boolean>;
+  columnSizing: Record<string, number>;
+  rowSelection: Record<string, boolean>;
+  grouping: readonly string[];
+  collapsedGroups: Record<string, boolean>;
+  view: DataTableView;
+}
+
+export interface DataTableValueGetterParams<TData extends RowData> {
+  data: TData;
+  rowId: string;
+  rowIndex: number;
+  colDef: DataTableColDef<TData>;
+}
+
+export interface DataTableCellRendererParams<
+  TData extends RowData,
+> extends DataTableValueGetterParams<TData> {
+  value: unknown;
+}
+
+export interface DataTableColDef<TData extends RowData> {
+  field?: keyof TData & string;
+  colId?: string;
+  headerName: ReactNode;
+  // Cell value types are intentionally owned and narrowed by each consumer.
+  // oxlint-disable-next-line anti-slop/no-unknown-returns
+  valueGetter?: (params: DataTableValueGetterParams<TData>) => unknown;
+  valueFormatter?: (params: DataTableCellRendererParams<TData>) => ReactNode;
+  cellRenderer?: (params: DataTableCellRendererParams<TData>) => ReactNode;
+  sortable?: boolean;
+  // oxlint-disable anti-slop/no-unknown-parameters
+  comparator?: (
+    left: unknown,
+    right: unknown,
+    leftData: TData,
+    rightData: TData,
+  ) => number;
+  // oxlint-enable anti-slop/no-unknown-parameters
+  searchable?: boolean;
+  hideable?: boolean;
+  resizable?: boolean;
+  width?: number;
+  minWidth?: number;
+  maxWidth?: number;
   truncate?: boolean;
+}
+
+export interface DataTableStatus {
+  loading?: boolean;
+  error?: ReactNode;
+  empty?: ReactNode;
+}
+
+export type DataTableRowAction<TData> = {
+  id?: string;
+  name: string;
+  icon?: ReactNode;
+  variant?: "default" | "destructive";
+  onClick: (data: TData) => void;
+  visible?: (data: TData) => boolean;
 };
 
-const DEFAULT_COLUMN_MIN_SIZE = 128;
-const DEFAULT_COLUMN_SIZE = 224;
-const DEFAULT_COLUMN_MAX_SIZE = 640;
-const COLUMN_RESIZE_STEP = 8;
-const dataTableColumnMeta: DataTableColumnMeta = {};
+export type DataTableBulkAction<TData> = {
+  id?: string;
+  name: string;
+  icon?: ReactNode;
+  variant?: "default" | "destructive";
+  onClick: (rows: TData[]) => void;
+  visible?: (rows: TData[]) => boolean;
+};
 
-const dataTableFeatures = tableFeatures({
-  columnFilteringFeature,
-  columnResizingFeature,
-  columnSizingFeature,
-  columnVisibilityFeature,
-  globalFilteringFeature,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  filteredRowModel: createFilteredRowModel(),
-  paginatedRowModel: createPaginatedRowModel(),
-  sortedRowModel: createSortedRowModel(),
-  columnMeta: dataTableColumnMeta,
-});
+export type DataTableGroupAction = {
+  name: string;
+  icon?: ReactNode;
+  variant?: "default" | "destructive";
+  onClick: (groupId: string) => void;
+  visible?: (groupId: string) => boolean;
+};
 
-export const {
-  createAppColumnHelper: createDataTableColumnHelper,
-  useAppTable: useDataTable,
-  useCellContext: useDataTableCellContext,
-  useHeaderContext: useDataTableHeaderContext,
-  useTableContext: useDataTableContext,
-} = createTableHook({
-  features: dataTableFeatures,
-  defaultColumn: {
-    minSize: DEFAULT_COLUMN_MIN_SIZE,
-    size: DEFAULT_COLUMN_SIZE,
-    maxSize: DEFAULT_COLUMN_MAX_SIZE,
-  },
-  columnResizeMode: "onChange",
-  enableColumnResizing: true,
-  tableComponents: {},
-  cellComponents: {},
-  headerComponents: {},
-});
+export interface DataTableGroupingField<TData> {
+  id: string;
+  label: string;
+  getGroupId: (row: TData) => string;
+  getRowGroupIds?: (row: TData) => readonly string[];
+  getGroupIds?: () => readonly string[];
+  renderGroupLabel?: (groupId: string, rows: TData[]) => ReactNode;
+  renderEmptyGroup?: (groupId: string) => ReactNode;
+  onMoveToGroup?: (row: TData, groupId: string) => void;
+  actionsLabel?: string;
+  actions?: readonly DataTableGroupAction[];
+}
 
-export type DataTableColumnDef<
-  TData extends RowData,
-  TValue = unknown,
-> = ColumnDef<typeof dataTableFeatures, TData, TValue>;
-type DataTableColumn<TData extends RowData, TValue = unknown> = Column<
-  typeof dataTableFeatures,
-  TData,
-  TValue
->;
-type DataTableHeader<TData extends RowData, TValue = unknown> = Header<
-  typeof dataTableFeatures,
-  TData,
-  TValue
->;
-type DataTableRow<TData extends RowData> = Row<typeof dataTableFeatures, TData>;
-type DataTableInstance<TData extends RowData> = AppReactTable<
-  typeof dataTableFeatures,
-  TData,
-  TableState<typeof dataTableFeatures>,
-  Record<never, never>,
-  Record<never, never>,
-  Record<never, never>
->;
+export interface DataTableGroupingFeature<TData> {
+  fields: readonly DataTableGroupingField<TData>[];
+  initial?: readonly string[];
+  getRowLabel?: (row: TData) => string;
+}
 
-export {
-  TableSearchSchema,
-  TableSearchSchemaStandard,
-} from "@/lib/table-search";
-export type { TableParams } from "@/lib/table-search";
+export type DataTablePaginationFeature =
+  | false
+  | { mode: "client"; pageSizes?: readonly number[] }
+  | { mode: "server"; rowCount: number; pageSizes?: readonly number[] };
 
-const compactDataTableStorage = Layer.effect(
-  KeyValueStore.KeyValueStore,
-  Effect.map(KeyValueStore.KeyValueStore, (store) =>
-    KeyValueStore.make({
-      clear: store.clear,
-      get: (key) =>
-        Effect.flatMap(store.get(key), (value) =>
-          value === "{}"
-            ? Effect.as(store.remove(key), undefined)
-            : Effect.succeed(value),
-        ),
-      getUint8Array: store.getUint8Array,
-      remove: store.remove,
-      set: (key, value) =>
-        value === "{}" ? store.remove(key) : store.set(key, value),
-      size: store.size,
-    }),
-  ),
-).pipe(Layer.provide(BrowserKeyValueStore.layerLocalStorage));
-
-const dataTableStorageRuntime = Atom.runtime(compactDataTableStorage);
-
-const DataTableViewSchema = Schema.Union([
-  Schema.Literal("table"),
-  Schema.Literal("gallery"),
-]).annotate({ identifier: "DataTableView" });
-type DataTableView = typeof DataTableViewSchema.Type;
-
-const ColumnVisibilitySchema = Schema.Record(
-  Schema.String,
-  Schema.Boolean,
-).annotate({ identifier: "DataTableColumnVisibility" });
-const ColumnSizingSchema = Schema.Record(Schema.String, Schema.Number).annotate(
-  {
-    identifier: "DataTableColumnSizing",
-  },
-);
-const RowDragDataSchema = Schema.Struct({
-  type: Schema.Literal("row"),
-  label: Schema.optional(Schema.String),
-  rowId: Schema.String,
-}).annotate({ identifier: "DataTableRowDragData" });
-const RowReorderDragDataSchema = Schema.Struct({
-  type: Schema.Literal("row-reorder"),
-}).annotate({ identifier: "DataTableRowReorderDragData" });
-const GroupDropDataSchema = Schema.Struct({
-  type: Schema.Literal("group-target"),
-  fieldId: Schema.String,
-  groupId: Schema.String,
-}).annotate({ identifier: "DataTableGroupDropData" });
-
-const decodeTableSearch = Schema.decodeUnknownOption(TableSearchSchema);
-const decodeDataTableView = Schema.decodeUnknownOption(DataTableViewSchema);
-const decodeRowDragData = Schema.decodeUnknownOption(RowDragDataSchema);
-const decodeRowReorderDragData = Schema.decodeUnknownOption(
-  RowReorderDragDataSchema,
-);
-const decodeGroupDropData = Schema.decodeUnknownOption(GroupDropDataSchema);
-
-type TableSearchValue = string | number | readonly string[] | undefined;
-type TableSearchRecord = Record<string, TableSearchValue>;
-
-const validateTableSearchUpdate = (search: TableSearchRecord) => ({
-  ...search,
-  ...Schema.decodeUnknownSync(TableSearchSchema)(search),
-});
+export interface DataTableFeatures<TData> {
+  search?: boolean;
+  sorting?: boolean;
+  pagination?: DataTablePaginationFeature;
+  columnVisibility?: boolean;
+  selection?:
+    | false
+    | {
+        getRowId?: (row: TData) => string;
+        isRowSelectable?: (row: TData) => boolean;
+        onSelectionChange?: (rows: TData[]) => void;
+        bulkActions?:
+          | false
+          | { label?: string; items: readonly DataTableBulkAction<TData>[] };
+      };
+  rowActions?:
+    | false
+    | { label?: string; items: readonly DataTableRowAction<TData>[] };
+  export?: false | { baseName: string; scope?: "currentPage" | "filteredRows" };
+  gallery?:
+    | false
+    | { name: string; description?: string; tag?: string; tagIcon?: ReactNode };
+  grouping?: false | DataTableGroupingFeature<TData>;
+  reordering?:
+    | false
+    | {
+        onReorder: (rows: TData[]) => void;
+        getRowLabel?: (row: TData) => string;
+        handleLabel?: string;
+      };
+  refresh?: false | (() => void);
+}
 
 export type DataTableMessages = PaginationMessages & {
   actions: string;
@@ -297,9 +255,9 @@ export type DataTableMessages = PaginationMessages & {
   groupBy: string;
   sortAsc: string;
   sortDesc: string;
-  sortHide: string;
   sortClear: string;
   sortBy: string;
+  hideColumn: string;
   reorder: string;
   resizeColumn: (column: string) => string;
   listOthers: (count: number) => string;
@@ -307,6 +265,8 @@ export type DataTableMessages = PaginationMessages & {
   selectRow: string;
   selected: string;
 };
+
+export type DataTableMessageOverrides = Partial<DataTableMessages>;
 
 const messages = {
   en: {
@@ -324,11 +284,11 @@ const messages = {
     galleryView: "Gallery",
     columns: "Columns",
     groupBy: "Group by",
-    sortAsc: "Asc",
-    sortDesc: "Desc",
-    sortHide: "Hide",
-    sortClear: "Clear",
+    sortAsc: "Ascending",
+    sortDesc: "Descending",
+    sortClear: "Clear sorting",
     sortBy: "Sort by",
+    hideColumn: "Hide column",
     reorder: "Drag to reorder",
     resizeColumn: (column: string) => `Resize ${column} column`,
     listOthers: (count: number) =>
@@ -354,9 +314,9 @@ const messages = {
     groupBy: "Grouper par",
     sortAsc: "Croissant",
     sortDesc: "Décroissant",
-    sortHide: "Cacher",
-    sortClear: "Effacer",
+    sortClear: "Effacer le tri",
     sortBy: "Trier par",
+    hideColumn: "Masquer la colonne",
     reorder: "Glisser pour réordonner",
     resizeColumn: (column: string) => `Redimensionner la colonne ${column}`,
     listOthers: (count: number) =>
@@ -367,249 +327,610 @@ const messages = {
   },
 } as const satisfies Record<"en" | "fr", DataTableMessages>;
 
-export type DataTableMessageOverrides = Partial<DataTableMessages>;
-
 export const dataTableMessages = (overrides?: DataTableMessageOverrides) => ({
   ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
   ...overrides,
 });
 
-export interface DataTableGroupingField<TData> {
-  id: string;
-  label: string;
-  getGroupId: (row: TData) => string;
-  getRowGroupIds?: (row: TData) => string[];
-  getGroupIds?: () => string[];
-  getGroupLabel?: (groupId: string, rows: TData[]) => ReactNode;
-  renderGroupLabel?: (groupId: string, rows: TData[]) => ReactNode;
-  renderEmptyGroup?: (groupId: string) => ReactNode;
-  onMoveToGroup?: (row: TData, groupId: string) => void;
-  actionsTitle?: string;
-  actions?: DataTableGroupAction[];
-}
-
-export interface DataTableGrouping<TData> {
-  fields: DataTableGroupingField<TData>[];
-  initial?: string[];
-  getRowLabel?: (row: TData) => string;
-}
-
-export interface DataTableRelationshipOption {
-  icon?: ReactNode;
-  label: string;
-  value: string;
-}
-
-export interface DataTableGalleryConfig {
-  name: string;
-  description?: string;
-  tag?: string;
-  tagIcon?: ReactNode;
-}
-
-export interface DataTableReordering<TData> {
-  onReorder: (rows: TData[]) => void;
-  getRowId: (row: TData) => string;
-  getRowLabel?: (row: TData) => string;
-  handleLabel?: string;
-}
-
-export type DataTableRowAction<TData> = {
-  id?: string;
-  name: string;
-  icon?: ReactNode;
-  variant?: "default" | "destructive" | undefined;
-  onClick: (data: TData) => void;
-  visible?: (data: TData) => boolean;
-};
-
-export type DataTableBulkAction<TData> = {
-  id?: string;
-  name: string;
-  icon?: ReactNode;
-  variant?: "default" | "destructive" | undefined;
-  onClick: (rows: TData[]) => void;
-  visible?: (rows: TData[]) => boolean;
-};
-
-export type DataTableGroupAction = {
-  name: string;
-  icon?: ReactNode;
-  variant?: "default" | "destructive" | undefined;
-  onClick: (groupId: string) => void;
-  visible?: (groupId: string) => boolean;
-};
-
-export interface DataTableState {
-  loading?: boolean;
-  error?: ReactNode;
-  empty?: ReactNode;
-}
-
-export type DataTablePaginationFeature =
-  | false
-  | {
-      mode: "client";
-      pageSizes?: readonly number[];
-    }
-  | {
-      mode: "server";
-      rowCount: number;
-      pageSizes?: readonly number[];
-    };
-
-export interface DataTableExportFeature {
-  baseName: string;
-  scope?: "currentPage" | "filteredRows";
-}
-
-export interface DataTableRowActionsFeature<TData> {
-  label?: string;
-  items: readonly DataTableRowAction<TData>[];
-}
-
-export interface DataTableColumnVisibilityFeature {
-  default?: ColumnVisibilityState;
-}
-
-export interface DataTableSelectionFeature<TData> {
-  bulkActions?:
-    | false
-    | {
-        label?: string;
-        items: readonly DataTableBulkAction<TData>[];
-      };
-  getRowId: (row: TData) => string;
-  isRowSelectable?: (row: TData) => boolean;
-  onSelectionChange?: (rows: TData[]) => void;
-}
-
-export interface DataTableFeatures<TData> {
-  pagination?: DataTablePaginationFeature;
-  search?: boolean;
-  export?: false | DataTableExportFeature;
-  columnVisibility?: boolean | DataTableColumnVisibilityFeature;
-  gallery?: false | DataTableGalleryConfig;
-  sorting?: boolean;
-  rowActions?: false | DataTableRowActionsFeature<TData>;
-  selection?: false | DataTableSelectionFeature<TData>;
-}
-
-type LegacyDataTableRowAction<TData> = Omit<DataTableRowAction<TData>, "id"> & {
-  id?: string;
-};
-
-interface DataTableProps<TData extends RowData> {
-  columns: DataTableColumnDef<TData>[];
-  data: TData[];
-  state?: DataTableState;
-  search?: TableParams;
-  onSearchChange?: (search: TableParams) => void;
-  searchState?: "url" | "local";
-  emptyLabel?: ReactNode;
-  messages?: DataTableMessageOverrides;
-  exportFileName?: string;
-  isLoading?: boolean;
-  onRefresh?: () => void;
-  onRowClick?: (row: TData) => void;
-  routeFrom?: ValidateFromPath;
-  from?: ValidateFromPath;
-  grouping?: DataTableGrouping<TData>;
-  reordering?: DataTableReordering<TData>;
+export interface DataTableProps<TData extends RowData> {
+  rowData: readonly TData[];
+  columnDefs: readonly DataTableColDef<TData>[];
+  getRowId?: (row: TData) => string;
+  state?: Partial<DataTablePublicState>;
+  initialState?: Partial<DataTablePublicState>;
+  onStateChange?: (state: DataTablePublicState) => void;
+  status?: DataTableStatus;
   features?: DataTableFeatures<TData>;
-  // Compatibility props retained for existing registry consumers.
-  gallery?: DataTableGalleryConfig;
-  rowActions?: readonly LegacyDataTableRowAction<TData>[];
-  serverPagination?: { rowCount: number };
+  onRowClicked?: (row: TData) => void;
+  messages?: DataTableMessageOverrides;
 }
+
+export interface DataTableColumn<TData extends RowData> {
+  id: string;
+  colDef: DataTableColDef<TData>;
+  width: number;
+}
+
+export interface DataTableModelRow<TData extends RowData> {
+  id: string;
+  data: TData;
+  index: number;
+  values: ReadonlyMap<string, unknown>;
+}
+
+export interface DataTableModel<TData extends RowData> {
+  columns: readonly DataTableColumn<TData>[];
+  visibleColumns: readonly DataTableColumn<TData>[];
+  rows: readonly DataTableModelRow<TData>[];
+  filteredRows: readonly DataTableModelRow<TData>[];
+  sortedRows: readonly DataTableModelRow<TData>[];
+  pageRows: readonly DataTableModelRow<TData>[];
+  pageCount: number;
+  totalRows: number;
+}
+
+const DEFAULT_MIN_WIDTH = 96;
+const DEFAULT_WIDTH = 208;
+const DEFAULT_MAX_WIDTH = 640;
+const DEFAULT_STATE: DataTablePublicState = {
+  globalFilter: "",
+  sorting: [],
+  pagination: { pageIndex: 0, pageSize: 10 },
+  columnVisibility: {},
+  columnSizing: {},
+  rowSelection: {},
+  grouping: [],
+  collapsedGroups: {},
+  view: "table",
+};
+
+const clampWidth = <TData extends RowData>(
+  column: DataTableColDef<TData>,
+  width: number,
+) =>
+  Math.min(
+    column.maxWidth ?? DEFAULT_MAX_WIDTH,
+    Math.max(column.minWidth ?? DEFAULT_MIN_WIDTH, width),
+  );
+
+export const normalizeDataTableColumns = <TData extends RowData>(
+  columnDefs: readonly DataTableColDef<TData>[],
+  columnSizing: Readonly<Record<string, number>> = {},
+): DataTableColumn<TData>[] => {
+  const ids = new Set<string>();
+  return columnDefs.map((colDef) => {
+    const id = colDef.field ?? colDef.colId;
+    if (!id) {
+      throw new Error("DataTable columns require a field or colId");
+    }
+    if (ids.has(id)) {
+      throw new Error(`DataTable column IDs must be unique: ${id}`);
+    }
+    ids.add(id);
+    return {
+      id,
+      colDef,
+      width: clampWidth(
+        colDef,
+        columnSizing[id] ?? colDef.width ?? DEFAULT_WIDTH,
+      ),
+    };
+  });
+};
+
+export const getDataTableWidth = <TData extends RowData>(
+  columns: readonly DataTableColumn<TData>[],
+  utilityColumns = 0,
+) =>
+  columns.reduce((total, column) => total + column.width, 0) +
+  utilityColumns * 40;
+
+export const buildDataTableRows = <TData extends RowData>(
+  rowData: readonly TData[],
+  columns: readonly DataTableColumn<TData>[],
+  getRowId?: (row: TData) => string,
+): DataTableModelRow<TData>[] => {
+  const ids = new Set<string>();
+  return rowData.map((data, index) => {
+    const id = getRowId?.(data) ?? String(index);
+    if (ids.has(id)) throw new Error(`DataTable row IDs must be unique: ${id}`);
+    ids.add(id);
+    return {
+      id,
+      data,
+      index,
+      values: new Map(
+        columns.map((column) => {
+          const { colDef } = column;
+          const value = colDef.valueGetter
+            ? colDef.valueGetter({ data, rowId: id, rowIndex: index, colDef })
+            : colDef.field
+              ? data[colDef.field]
+              : undefined;
+          return [column.id, value];
+        }),
+      ),
+    };
+  });
+};
+
+export const filterDataTableRows = <TData extends RowData>(
+  rows: readonly DataTableModelRow<TData>[],
+  columns: readonly DataTableColumn<TData>[],
+  globalFilter: string,
+): DataTableModelRow<TData>[] => {
+  const query = globalFilter.trim().toLocaleLowerCase();
+  if (!query) return [...rows];
+  const searchable = columns.filter(
+    ({ colDef }) => colDef.searchable !== false,
+  );
+  return rows.filter((row) =>
+    searchable.some((column) =>
+      String(row.values.get(column.id) ?? "")
+        .toLocaleLowerCase()
+        .includes(query),
+    ),
+  );
+};
+
+export const sortDataTableRows = <TData extends RowData>(
+  rows: readonly DataTableModelRow<TData>[],
+  columns: readonly DataTableColumn<TData>[],
+  sorting: DataTableSorting,
+): DataTableModelRow<TData>[] => {
+  const byId = new Map(columns.map((column) => [column.id, column]));
+  return rows
+    .map((row, stableIndex) => ({ row, stableIndex }))
+    .sort((left, right) => {
+      for (const sort of sorting) {
+        const column = byId.get(sort.id);
+        if (!column) continue;
+        const leftValue = left.row.values.get(sort.id);
+        const rightValue = right.row.values.get(sort.id);
+        const comparison = column.colDef.comparator
+          ? column.colDef.comparator(
+              leftValue,
+              rightValue,
+              left.row.data,
+              right.row.data,
+            )
+          : Object.is(leftValue, rightValue)
+            ? 0
+            : leftValue === null || leftValue === undefined
+              ? 1
+              : rightValue === null || rightValue === undefined
+                ? -1
+                : Schema.is(Schema.Number)(leftValue) &&
+                    Schema.is(Schema.Number)(rightValue)
+                  ? leftValue - rightValue
+                  : String(leftValue).localeCompare(
+                      String(rightValue),
+                      undefined,
+                      { numeric: true, sensitivity: "base" },
+                    );
+        if (comparison !== 0) return sort.desc ? -comparison : comparison;
+      }
+      return left.stableIndex - right.stableIndex;
+    })
+    .map(({ row }) => row);
+};
+
+export const paginateDataTableRows = <TData extends RowData>(
+  rows: readonly DataTableModelRow<TData>[],
+  pagination: DataTablePaginationState,
+): DataTableModelRow<TData>[] => {
+  const pageSize = Math.max(1, pagination.pageSize);
+  const lastPageIndex = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
+  const pageIndex = Math.min(lastPageIndex, Math.max(0, pagination.pageIndex));
+  const start = pageIndex * pageSize;
+  return rows.slice(start, start + pageSize);
+};
+
+export const mergeDataTableState = (
+  state: DataTablePublicState,
+  controlledState: Partial<DataTablePublicState> = {},
+): DataTablePublicState => ({
+  globalFilter: controlledState.globalFilter ?? state.globalFilter,
+  sorting: controlledState.sorting ?? state.sorting,
+  pagination: controlledState.pagination ?? state.pagination,
+  columnVisibility: controlledState.columnVisibility ?? state.columnVisibility,
+  columnSizing: controlledState.columnSizing ?? state.columnSizing,
+  rowSelection: controlledState.rowSelection ?? state.rowSelection,
+  grouping: controlledState.grouping ?? state.grouping,
+  collapsedGroups: controlledState.collapsedGroups ?? state.collapsedGroups,
+  view: controlledState.view ?? state.view,
+});
+
+const sameDataTableState = (
+  left: DataTablePublicState,
+  right: DataTablePublicState,
+) =>
+  left.globalFilter === right.globalFilter &&
+  left.sorting === right.sorting &&
+  left.pagination === right.pagination &&
+  left.columnVisibility === right.columnVisibility &&
+  left.columnSizing === right.columnSizing &&
+  left.rowSelection === right.rowSelection &&
+  left.grouping === right.grouping &&
+  left.collapsedGroups === right.collapsedGroups &&
+  left.view === right.view;
+
+export const reorderDataTableRows = <TData extends RowData>(
+  rows: readonly DataTableModelRow<TData>[],
+  sourceRowId: string,
+  targetRowId: string,
+): TData[] => {
+  const sourceIndex = rows.findIndex((row) => row.id === sourceRowId);
+  const targetIndex = rows.findIndex((row) => row.id === targetRowId);
+  const reordered = rows.map((row) => row.data);
+  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+    return reordered;
+  }
+  const [source] = reordered.splice(sourceIndex, 1);
+  if (source) reordered.splice(targetIndex, 0, source);
+  return reordered;
+};
+
+type ResolvedConfig<TData extends RowData> = {
+  getRowId?: ((row: TData) => string) | undefined;
+  onStateChange?: ((state: DataTablePublicState) => void) | undefined;
+  status: DataTableStatus;
+  features: DataTableFeatures<TData>;
+  onRowClicked?: ((row: TData) => void) | undefined;
+  labels: DataTableMessages;
+};
+
+type PointerDragState = {
+  pointerId: number;
+  rowId: string;
+  label: string;
+  startX: number;
+  startY: number;
+  active: boolean;
+};
+
+type DataTableStore<TData extends RowData> = {
+  rowData: readonly TData[];
+  columnDefs: readonly DataTableColDef<TData>[];
+  config: ResolvedConfig<TData>;
+  state: DataTablePublicState;
+  controlledState: Partial<DataTablePublicState>;
+  model: DataTableModel<TData>;
+};
+
+type TableAtom<TData extends RowData> = Atom.Writable<DataTableStore<TData>>;
+
+const RowIdContext = createContext<string | null>(null);
+const ColumnIdContext = createContext<string | null>(null);
+
+const useRequiredId = (
+  context: typeof RowIdContext | typeof ColumnIdContext,
+) => {
+  const id = useContext(context);
+  if (!id) throw new Error("DataTable internal ID context is missing");
+  return id;
+};
+
+const getGroupDropKey = (fieldId: string, groupId: string) =>
+  `${encodeURIComponent(fieldId)}:${encodeURIComponent(groupId)}`;
+
+const parseGroupDropKey = (key: string) => {
+  const separator = key.indexOf(":");
+  if (separator === -1) return null;
+  return {
+    fieldId: decodeURIComponent(key.slice(0, separator)),
+    groupId: decodeURIComponent(key.slice(separator + 1)),
+  };
+};
+
+const findTableDragTarget = (
+  elements: Element[],
+  selector: "[data-table-group]" | "[data-table-row]",
+  root: HTMLElement | null,
+) => {
+  for (const element of elements) {
+    const target = element.closest(selector);
+    if (target instanceof HTMLElement && root?.contains(target)) return target;
+  }
+  return null;
+};
+
+const clearDragPresentation = (root: HTMLElement | null) => {
+  root
+    ?.querySelectorAll<HTMLElement>(
+      "[data-drag-source], [data-drop-target], [data-drop-position]",
+    )
+    .forEach((element) => {
+      element.removeAttribute("data-drag-source");
+      element.removeAttribute("data-drop-target");
+      element.removeAttribute("data-drop-position");
+    });
+};
+
+const resolveConfig = <TData extends RowData>(
+  props: DataTableProps<TData>,
+): ResolvedConfig<TData> => {
+  const features = props.features ?? {};
+  const selection = features.selection;
+  const getRowId =
+    (selection && selection.getRowId) || props.getRowId || undefined;
+  if ((selection || features.reordering) && !getRowId) {
+    throw new Error(
+      "DataTable requires getRowId when selection or reordering is enabled",
+    );
+  }
+  return {
+    getRowId,
+    onStateChange: props.onStateChange,
+    status: props.status ?? {},
+    features,
+    onRowClicked: props.onRowClicked,
+    labels: dataTableMessages(props.messages),
+  };
+};
+
+const initialPublicState = <TData extends RowData>(
+  props: DataTableProps<TData>,
+): DataTablePublicState => {
+  const grouping = props.features?.grouping;
+  const groupingInitial = grouping && grouping.initial ? grouping.initial : [];
+  return {
+    ...DEFAULT_STATE,
+    grouping: groupingInitial,
+    ...props.initialState,
+    ...props.state,
+  };
+};
+
+type ModelSource<TData extends RowData> = Pick<
+  DataTableStore<TData>,
+  "columnDefs" | "config" | "rowData" | "state"
+>;
+
+const buildDataTableModel = <TData extends RowData>(
+  store: ModelSource<TData>,
+): DataTableModel<TData> => {
+  const columns = normalizeDataTableColumns(
+    store.columnDefs,
+    store.state.columnSizing,
+  );
+  const selection = store.config.features.selection;
+  const rowId =
+    (selection && selection.getRowId) || store.config.getRowId || undefined;
+  const rows = buildDataTableRows(store.rowData, columns, rowId);
+  const pagination = store.config.features.pagination ?? { mode: "client" };
+  const server = pagination !== false && pagination.mode === "server";
+  const filteredRows = server
+    ? [...rows]
+    : filterDataTableRows(rows, columns, store.state.globalFilter);
+  const sortedRows = server
+    ? filteredRows
+    : sortDataTableRows(filteredRows, columns, store.state.sorting);
+  const pageRows =
+    pagination === false || server
+      ? sortedRows
+      : paginateDataTableRows(sortedRows, store.state.pagination);
+  const totalRows = server ? pagination.rowCount : sortedRows.length;
+  return {
+    columns,
+    visibleColumns: columns.filter(
+      ({ id }) => store.state.columnVisibility[id] !== false,
+    ),
+    rows,
+    filteredRows,
+    sortedRows,
+    pageRows,
+    pageCount: Math.max(
+      1,
+      Math.ceil(totalRows / Math.max(1, store.state.pagination.pageSize)),
+    ),
+    totalRows,
+  };
+};
+
+const useTableAtom = <TData extends RowData>(tableAtom: TableAtom<TData>) =>
+  useAtom(tableAtom);
+
+const changeState = <TData extends RowData>(
+  setStore: (
+    update: (store: DataTableStore<TData>) => DataTableStore<TData>,
+  ) => void,
+  update: (state: DataTablePublicState) => DataTablePublicState,
+) => {
+  setStore((store) => {
+    const proposed = update(store.state);
+    store.config.onStateChange?.(proposed);
+    const state = mergeDataTableState(proposed, store.controlledState);
+    if (sameDataTableState(state, store.state)) return store;
+    const next = { ...store, state };
+    return { ...next, model: buildDataTableModel(next) };
+  });
+};
+
+const deriveModel = <TData extends RowData>(
+  store: DataTableStore<TData>,
+): DataTableModel<TData> => store.model;
 
 type GroupSection<TData extends RowData> = {
   key: string;
   groupId: string;
   depth: number;
   field: DataTableGroupingField<TData>;
-  rows: DataTableRow<TData>[];
+  rows: DataTableModelRow<TData>[];
   children: GroupSection<TData>[];
 };
 
-const GROUP_INDENT_PX = 20;
-const GROUP_ROW_INDENT_OFFSET_PX = 44;
-
-const snapDragOverlayVerticalCenterToCursor: Modifier = ({
-  activatorEvent,
-  activeNodeRect,
-  overlayNodeRect,
-  transform,
-}) => {
-  if (
-    !globalThis.window ||
-    !(activatorEvent instanceof globalThis.window.MouseEvent) ||
-    !activeNodeRect ||
-    !overlayNodeRect
-  ) {
-    return transform;
-  }
-
-  return {
-    ...transform,
-    y:
-      transform.y +
-      activatorEvent.clientY -
-      activeNodeRect.top -
-      overlayNodeRect.height / 2,
-  };
+export const groupDataTableRows = <TData extends RowData>(
+  rows: readonly DataTableModelRow<TData>[],
+  fields: readonly DataTableGroupingField<TData>[],
+  depth = 0,
+  parentKey = "",
+): GroupSection<TData>[] => {
+  const field = fields[0];
+  if (!field) return [];
+  const groups = new Map<string, DataTableModelRow<TData>[]>();
+  field.getGroupIds?.().forEach((id) => groups.set(id, []));
+  rows.forEach((row) => {
+    const ids = field.getRowGroupIds?.(row.data) ?? [
+      field.getGroupId(row.data),
+    ];
+    ids.forEach((id) => groups.set(id, [...(groups.get(id) ?? []), row]));
+  });
+  return Array.from(groups, ([groupId, groupRows]) => {
+    const segment = `${encodeURIComponent(field.id)}:${encodeURIComponent(groupId)}`;
+    const key = `${parentKey}${parentKey ? "/" : ""}${segment}`;
+    return {
+      key,
+      groupId,
+      depth,
+      field,
+      rows: groupRows,
+      children: groupDataTableRows(groupRows, fields.slice(1), depth + 1, key),
+    };
+  });
 };
 
-const getDefaultGrouping = <TData,>(grouping?: DataTableGrouping<TData>) => {
-  if (!grouping) {
-    return [];
-  }
-
-  const validInitial = grouping.initial?.filter((id) =>
-    grouping.fields.some((field) => field.id === id),
+export const getDataTableSelectableRows = <TData extends RowData>(
+  model: DataTableModel<TData>,
+  grouped: boolean,
+  isRowSelectable?: (row: TData) => boolean,
+) =>
+  (grouped ? model.sortedRows : model.pageRows).filter(
+    (row) => isRowSelectable?.(row.data) ?? true,
   );
 
-  if (validInitial?.length) {
-    return validInitial;
-  }
-
-  return grouping.fields[0] ? [grouping.fields[0].id] : [];
+const getActiveGrouping = <TData extends RowData>(
+  store: DataTableStore<TData>,
+) => {
+  const grouping = store.config.features.grouping;
+  if (!grouping) return [];
+  return store.state.grouping.flatMap((id) => {
+    const field = grouping.fields.find((candidate) => candidate.id === id);
+    return field ? [field] : [];
+  });
 };
 
-const getGroupTargetDropId = (key: string) => `group-target:${key}`;
-const getRowDragId = (rowId: string) => `row:${rowId}`;
-const getSortableRowId = (rowId: string) => `sortable-row:${rowId}`;
-
-const getGroupLabels = <TData extends RowData>(
-  section: GroupSection<TData>,
+const canReorderRows = <TData extends RowData>(
+  store: DataTableStore<TData>,
 ) => {
-  const rows = section.rows.map((row) => row.original);
-  const label =
-    section.field.getGroupLabel?.(section.groupId, rows) ?? section.groupId;
+  const pagination = store.config.features.pagination;
+  return (
+    !!store.config.features.reordering &&
+    !getActiveGrouping(store).length &&
+    !store.state.globalFilter &&
+    !store.state.sorting.length &&
+    !(pagination && pagination.mode === "server")
+  );
+};
 
-  return section.field.renderGroupLabel?.(section.groupId, rows) ?? label;
+const canMoveRowsToGroups = <TData extends RowData>(
+  store: DataTableStore<TData>,
+) => getActiveGrouping(store).some((field) => !!field.onMoveToGroup);
+
+const canDragRows = <TData extends RowData>(store: DataTableStore<TData>) =>
+  getActiveGrouping(store).length
+    ? canMoveRowsToGroups(store)
+    : canReorderRows(store);
+
+const getSelectedRows = <TData extends RowData>(
+  store: DataTableStore<TData>,
+  model: DataTableModel<TData>,
+) =>
+  model.rows
+    .filter((row) => store.state.rowSelection[row.id])
+    .map((row) => row.data);
+
+const renderCell = <TData extends RowData>(
+  row: DataTableModelRow<TData>,
+  column: DataTableColumn<TData>,
+) => {
+  const value = row.values.get(column.id);
+  const params = {
+    data: row.data,
+    value,
+    rowId: row.id,
+    rowIndex: row.index,
+    colDef: column.colDef,
+  };
+  const CellRenderer = column.colDef.cellRenderer;
+  if (CellRenderer) return <CellRenderer {...params} />;
+  return (
+    column.colDef.valueFormatter?.(params) ??
+    (value === null || value === undefined ? null : String(value))
+  );
+};
+
+const nodeText = (node: ReactNode): string => {
+  if (Schema.is(Schema.String)(node) || Schema.is(Schema.Number)(node))
+    return String(node);
+  if (!isValidElement<{ children?: ReactNode; title?: ReactNode }>(node))
+    return "";
+  if (Schema.is(Schema.String)(node.props.title)) return node.props.title;
+  return nodeText(node.props.children);
+};
+
+const columnLabel = <TData extends RowData>(column: DataTableColumn<TData>) =>
+  nodeText(column.colDef.headerName) || column.id;
+
+export type CsvValue = string | number | boolean | null | undefined;
+
+const withExtension = (fileName: string, extension: string) =>
+  fileName.includes(".")
+    ? fileName.replace(/\.[^/.]+$/, `.${extension}`)
+    : `${fileName}.${extension}`;
+
+const escapeCsvValue = (value: CsvValue) => {
+  if (value === null || value === undefined) return "";
+  const text = String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+export const downloadCsv = (
+  headers: CsvValue[],
+  data: CsvValue[][],
+  fileName = "data.csv",
+) => {
+  const content = [headers, ...data]
+    .map((row) => row.map(escapeCsvValue).join(","))
+    .join("\n");
+  downloadBlob(
+    content,
+    "text/csv;charset=utf-8",
+    withExtension(fileName, "csv"),
+  );
+};
+
+export const downloadJson = <TData,>(data: TData, fileName = "data.json") =>
+  downloadBlob(
+    JSON.stringify(data, null, 2),
+    "application/json;charset=utf-8",
+    withExtension(fileName, "json"),
+  );
+
+const downloadBlob = (content: string, type: string, fileName: string) => {
+  const url = window.URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  requestAnimationFrame(() => window.URL.revokeObjectURL(url));
 };
 
 export const DataTableRowActions = <TData,>({
   actions,
-  contentClassName,
   row,
   title,
 }: {
   actions: readonly DataTableRowAction<TData>[];
-  contentClassName?: string | undefined;
   row: TData;
-  title?: string | undefined;
+  title?: string;
 }) => {
-  const resolvedTitle = title ?? dataTableMessages().actions;
-  const visibleActions = actions.filter(
+  const visible = actions.filter(
     (action) => !action.visible || action.visible(row),
   );
-
-  if (visibleActions.length === 0) {
-    return null;
-  }
-
+  if (!visible.length) return null;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -617,287 +938,6 @@ export const DataTableRowActions = <TData,>({
         render={
           <Button
             className="size-8 focus-visible:ring-inset [&_svg:not([class*='size-'])]:size-4"
-            variant="ghost"
-            size="icon"
-          >
-            <span className="sr-only">{resolvedTitle}</span>
-            <MoreHorizontal />
-          </Button>
-        }
-      />
-      <DropdownMenuContent
-        align="end"
-        className={cn("w-max", contentClassName)}
-      >
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>{resolvedTitle}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {visibleActions.map((action) => (
-            <DropdownMenuItem
-              key={action.id ?? action.name}
-              className="whitespace-nowrap"
-              onClick={(event) => {
-                event.stopPropagation();
-                action.onClick(row);
-              }}
-              {...(action.variant ? { variant: action.variant } : {})}
-            >
-              {action.icon}
-              {action.name}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
-const DataTableBulkActions = <TData,>({
-  actions,
-  label,
-  selectedLabel,
-  rows,
-}: {
-  actions: readonly DataTableBulkAction<TData>[];
-  label: string;
-  selectedLabel: string;
-  rows: TData[];
-}) => {
-  const visibleActions = actions.filter(
-    (action) => !action.visible || action.visible(rows),
-  );
-
-  if (visibleActions.length === 0) return null;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button className="h-9" size="sm" variant="default">
-            {selectedLabel}
-            <Badge
-              className="bg-primary-foreground/15 text-primary-foreground min-w-5 justify-center rounded-full border-0 px-1.5 tabular-nums"
-              variant="secondary"
-            >
-              {rows.length}
-            </Badge>
-            <ChevronRight className="rotate-90" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="start" className="w-max max-w-56">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>{label}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {visibleActions.map((action) => (
-            <DropdownMenuItem
-              key={action.id ?? action.name}
-              className="whitespace-nowrap"
-              onClick={() => action.onClick(rows)}
-              {...(action.variant ? { variant: action.variant } : {})}
-            >
-              {action.icon}
-              {action.name}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
-const buildGroupedSections = <TData extends RowData>(
-  rows: DataTableRow<TData>[],
-  fields: DataTableGroupingField<TData>[],
-  depth = 0,
-  parentKey = "",
-): GroupSection<TData>[] => {
-  if (fields.length === 0) {
-    return [];
-  }
-
-  const [field, ...remainingFields] = fields;
-  const groups = new Map<string, DataTableRow<TData>[]>();
-
-  field.getGroupIds?.().forEach((groupId) => {
-    groups.set(groupId, []);
-  });
-
-  rows.forEach((row) => {
-    const groupIds = field.getRowGroupIds?.(row.original) ?? [
-      field.getGroupId(row.original),
-    ];
-    for (const groupId of groupIds) {
-      const currentRows = groups.get(groupId) ?? [];
-      currentRows.push(row);
-      groups.set(groupId, currentRows);
-    }
-  });
-
-  return Array.from(groups.entries()).map(([groupId, groupRows]) => {
-    const key = parentKey
-      ? `${parentKey}::${field.id}:${groupId}`
-      : `${field.id}:${groupId}`;
-
-    return {
-      key,
-      groupId,
-      depth,
-      field,
-      rows: groupRows,
-      children:
-        groupRows.length > 0
-          ? buildGroupedSections(groupRows, remainingFields, depth + 1, key)
-          : [],
-    };
-  });
-};
-
-const GroupHeaderRow = <TData extends RowData>({
-  collapsed,
-  colSpan,
-  onToggle,
-  section,
-}: {
-  collapsed: boolean;
-  colSpan: number;
-  onToggle: () => void;
-  section: GroupSection<TData>;
-}) => {
-  return (
-    <TableRow>
-      <TableCell className="relative p-0" colSpan={colSpan} onClick={onToggle}>
-        <div
-          className="flex cursor-pointer items-center gap-3 px-2 py-2 font-medium transition-colors"
-          style={{
-            paddingLeft: `calc(0.5rem + ${section.depth * GROUP_INDENT_PX}px)`,
-          }}
-        >
-          {collapsed ? (
-            <ChevronRight className="size-4" />
-          ) : (
-            <ChevronDown className="size-4" />
-          )}
-          <div className="min-w-0 flex-1 text-left">
-            {getGroupLabels(section)}
-          </div>
-          <Badge variant="secondary" className="ml-auto">
-            {section.rows.length}
-          </Badge>
-          <DataTableGroupActions
-            actions={section.field.actions}
-            groupId={section.groupId}
-            title={section.field.actionsTitle}
-          />
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-};
-
-const GroupTableSection = <TData extends RowData>({
-  children,
-  section,
-}: {
-  children: ReactNode;
-  section: GroupSection<TData>;
-}) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id: getGroupTargetDropId(section.key),
-    disabled: !section.field.onMoveToGroup,
-    data: {
-      type: "group-target",
-      fieldId: section.field.id,
-      groupId: section.groupId,
-    },
-  });
-
-  return (
-    <TableBody
-      className={cn(
-        "relative px-2",
-        isOver && "ring-primary ring-1 ring-inset",
-      )}
-      ref={setNodeRef}
-    >
-      {children}
-    </TableBody>
-  );
-};
-
-const GroupHeaderCard = <TData extends RowData>({
-  collapsed,
-  onToggle,
-  section,
-}: {
-  collapsed: boolean;
-  onToggle: () => void;
-  section: GroupSection<TData>;
-}) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id: getGroupTargetDropId(section.key),
-    disabled: !section.field.onMoveToGroup,
-    data: {
-      type: "group-target",
-      fieldId: section.field.id,
-      groupId: section.groupId,
-    },
-  });
-
-  return (
-    <div
-      className={cn(
-        "flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left font-medium transition-colors",
-        isOver && "outline outline-primary",
-      )}
-      ref={setNodeRef}
-    >
-      <button
-        className="flex min-w-0 flex-1 items-center gap-3 text-left"
-        onClick={onToggle}
-        type="button"
-      >
-        {collapsed ? (
-          <ChevronRight className="size-4" />
-        ) : (
-          <ChevronDown className="size-4" />
-        )}
-        <div className="min-w-0 flex-1">{getGroupLabels(section)}</div>
-        <Badge variant="secondary" className="ml-auto">
-          {section.rows.length}
-        </Badge>
-      </button>
-      <DataTableGroupActions
-        actions={section.field.actions}
-        groupId={section.groupId}
-        title={section.field.actionsTitle}
-      />
-    </div>
-  );
-};
-
-const DataTableGroupActions = ({
-  actions,
-  groupId,
-  title,
-}: {
-  actions?: DataTableGroupAction[] | undefined;
-  groupId: string;
-  title?: string | undefined;
-}) => {
-  const visibleActions = actions?.filter(
-    (action) => !action.visible || action.visible(groupId),
-  );
-
-  if (!visibleActions?.length) return null;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        onClick={(event) => event.stopPropagation()}
-        render={
-          <Button
-            className="size-7 shadow-md [&_svg:not([class*='size-'])]:size-3.5"
             size="icon"
             variant="ghost"
           >
@@ -910,15 +950,14 @@ const DataTableGroupActions = ({
         <DropdownMenuGroup>
           <DropdownMenuLabel>{title}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {visibleActions.map((action) => (
+          {visible.map((action) => (
             <DropdownMenuItem
-              key={action.name}
-              className="whitespace-nowrap"
+              key={action.id ?? action.name}
               onClick={(event) => {
                 event.stopPropagation();
-                action.onClick(groupId);
+                action.onClick(row);
               }}
-              {...(action.variant ? { variant: action.variant } : {})}
+              variant={action.variant}
             >
               {action.icon}
               {action.name}
@@ -930,171 +969,694 @@ const DataTableGroupActions = ({
   );
 };
 
-const DataTableRow = <TData extends RowData>({
-  canDrag,
-  canReorder,
-  dragLabel,
-  indentDepth = 0,
-  reorderHandleLabel,
-  onRowClick,
-  row,
-  rowActions,
-  rowActionsLabel,
-  selectRowLabel,
-  selectable,
-  table,
+const DataTableToolbar = <TData extends RowData>({
+  tableAtom,
 }: {
-  canDrag: boolean;
-  canReorder: boolean;
-  dragLabel?: string | undefined;
-  indentDepth?: number | undefined;
-  reorderHandleLabel?: string | undefined;
-  onRowClick?: ((row: TData) => void) | undefined;
-  row: DataTableRow<TData>;
-  rowActions?: readonly DataTableRowAction<TData>[] | undefined;
-  rowActionsLabel?: string | undefined;
-  selectRowLabel: string;
-  selectable: boolean;
-  table: DataTableInstance<TData>;
+  tableAtom: TableAtom<TData>;
 }) => {
-  const sortable = useSortable({
-    id: getSortableRowId(row.id),
-    disabled: !canReorder,
-    data: {
-      type: "row-reorder",
-      row: row.original,
-      label: dragLabel,
-    },
-  });
-  const draggable = useDraggable({
-    id: getRowDragId(row.id),
-    disabled: !canDrag || canReorder,
-    data: {
-      type: "row",
-      rowId: row.id,
-      label: dragLabel,
-    },
-  });
-  const attributes = canReorder ? sortable.attributes : draggable.attributes;
-  const listeners = canReorder ? sortable.listeners : draggable.listeners;
-  const isDragging = canReorder ? sortable.isDragging : draggable.isDragging;
-  const setRowNodeRef = canReorder ? sortable.setNodeRef : draggable.setNodeRef;
-  const transform = canReorder
-    ? CSS.Transform.toString(sortable.transform)
-    : undefined;
-  const firstCellIndent =
-    indentDepth > 0
-      ? `calc(0.5rem + ${(indentDepth - 1) * GROUP_INDENT_PX + GROUP_ROW_INDENT_OFFSET_PX}px)`
-      : undefined;
-  const rowAttributes = canReorder
-    ? onRowClick
-      ? { role: "button", tabIndex: 0 }
-      : {}
-    : onRowClick
-      ? { ...attributes, role: "button", tabIndex: 0 }
-      : attributes;
-  const visibleCells = row.getVisibleCells();
+  const [store, setStore] = useTableAtom(tableAtom);
+  const { features, labels } = store.config;
+  const model = deriveModel(store);
+  const selectedRows = getSelectedRows(store, model);
+  const grouping = features.grouping;
+  const bulkActions = features.selection && features.selection.bulkActions;
+  const hasToolbar =
+    features.search !== false ||
+    features.sorting !== false ||
+    features.columnVisibility !== false ||
+    !!features.export ||
+    !!features.gallery ||
+    !!grouping ||
+    !!features.refresh ||
+    (!!bulkActions && selectedRows.length > 0);
+  if (!hasToolbar) return null;
 
+  const update = (
+    next: (state: DataTablePublicState) => DataTablePublicState,
+  ) => changeState(setStore, next);
+  const visibleBulkActions = bulkActions
+    ? bulkActions.items.filter(
+        (action) => !action.visible || action.visible(selectedRows),
+      )
+    : [];
+  const exportRows =
+    features.export && features.export.scope === "filteredRows"
+      ? model.filteredRows
+      : model.pageRows;
+
+  return (
+    <div className="flex flex-col gap-2 pb-4">
+      {features.search !== false ? (
+        <div className="relative min-w-0">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            className="px-9"
+            onChange={(event) =>
+              update((state) => ({
+                ...state,
+                globalFilter: event.target.value,
+                pagination: { ...state.pagination, pageIndex: 0 },
+              }))
+            }
+            placeholder={labels.filter}
+            value={store.state.globalFilter}
+          />
+          {store.state.globalFilter ? (
+            <Button
+              aria-label={labels.filter}
+              className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
+              onClick={() =>
+                update((state) => ({
+                  ...state,
+                  globalFilter: "",
+                  pagination: { ...state.pagination, pageIndex: 0 },
+                }))
+              }
+              size="icon"
+              variant="ghost"
+            >
+              <X />
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="-m-1 flex w-full overflow-x-auto p-1">
+        <Menubar className="h-auto w-max min-w-full justify-start bg-transparent shadow-none [&_[data-slot=menubar-trigger]]:gap-2 [&_[data-slot=menubar-trigger]_svg]:size-4">
+          {visibleBulkActions.length ? (
+            <MenubarMenu>
+              <MenubarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary/90">
+                {labels.selected}
+                <Badge variant="secondary">{selectedRows.length}</Badge>
+                <ChevronDown />
+              </MenubarTrigger>
+              <MenubarContent align="end" className="w-max">
+                <MenubarGroup>
+                  <MenubarLabel>
+                    {bulkActions && bulkActions.label
+                      ? bulkActions.label
+                      : labels.actions}
+                  </MenubarLabel>
+                  <MenubarSeparator />
+                  {visibleBulkActions.map((action) => (
+                    <MenubarItem
+                      key={action.id ?? action.name}
+                      onClick={() => action.onClick(selectedRows)}
+                      variant={action.variant}
+                    >
+                      {action.icon}
+                      {action.name}
+                    </MenubarItem>
+                  ))}
+                </MenubarGroup>
+              </MenubarContent>
+            </MenubarMenu>
+          ) : null}
+          {grouping ? (
+            <MenubarMenu>
+              <MenubarTrigger aria-label={labels.groupBy}>
+                <Rows3 />
+                <span className="hidden sm:inline">{labels.groupBy}</span>
+              </MenubarTrigger>
+              <MenubarContent align="end">
+                <MenubarGroup>
+                  <MenubarLabel>{labels.groupBy}</MenubarLabel>
+                  <MenubarSeparator />
+                  {grouping.fields.map((field) => (
+                    <MenubarCheckboxItem
+                      checked={store.state.grouping.includes(field.id)}
+                      key={field.id}
+                      onCheckedChange={(checked) =>
+                        update((state) => ({
+                          ...state,
+                          grouping: checked
+                            ? [...state.grouping, field.id]
+                            : state.grouping.filter((id) => id !== field.id),
+                        }))
+                      }
+                    >
+                      {field.label}
+                    </MenubarCheckboxItem>
+                  ))}
+                </MenubarGroup>
+              </MenubarContent>
+            </MenubarMenu>
+          ) : null}
+          {features.sorting !== false ? (
+            <SortMenu tableAtom={tableAtom} />
+          ) : null}
+          {features.gallery ? <ViewMenu tableAtom={tableAtom} /> : null}
+          {features.columnVisibility !== false ? (
+            <ColumnMenu tableAtom={tableAtom} />
+          ) : null}
+          {features.refresh ? (
+            <MenubarMenu>
+              <MenubarTrigger
+                aria-label={labels.refresh}
+                onClick={features.refresh}
+              >
+                <RefreshCw />
+                <span className="hidden sm:inline">{labels.refresh}</span>
+              </MenubarTrigger>
+            </MenubarMenu>
+          ) : null}
+          {features.export ? (
+            <MenubarMenu>
+              <MenubarTrigger
+                aria-label={labels.export}
+                disabled={!exportRows.length}
+              >
+                <Download />
+                <span className="hidden sm:inline">{labels.export}</span>
+              </MenubarTrigger>
+              <MenubarContent align="end">
+                <MenubarGroup>
+                  <MenubarLabel>{labels.export}</MenubarLabel>
+                  <MenubarSeparator />
+                  <MenubarItem
+                    onClick={() =>
+                      downloadCsv(
+                        model.visibleColumns.map(columnLabel),
+                        exportRows.map((row) =>
+                          model.visibleColumns.map((column) =>
+                            String(row.values.get(column.id) ?? ""),
+                          ),
+                        ),
+                        features.export ? features.export.baseName : "table",
+                      )
+                    }
+                  >
+                    <FileText />
+                    {labels.exportCsv}
+                  </MenubarItem>
+                  <MenubarItem
+                    onClick={() =>
+                      downloadJson(
+                        exportRows.map((row) =>
+                          Object.fromEntries(
+                            model.visibleColumns.map((column) => [
+                              column.id,
+                              row.values.get(column.id),
+                            ]),
+                          ),
+                        ),
+                        features.export ? features.export.baseName : "table",
+                      )
+                    }
+                  >
+                    <FileJson />
+                    {labels.exportJson}
+                  </MenubarItem>
+                </MenubarGroup>
+              </MenubarContent>
+            </MenubarMenu>
+          ) : null}
+        </Menubar>
+      </div>
+    </div>
+  );
+};
+
+const SortMenu = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const columns = deriveModel(store).columns.filter(
+    ({ colDef }) => colDef.sortable !== false,
+  );
+  if (!columns.length) return null;
+  const current = store.state.sorting[0];
+  const sort = (id: string, desc: boolean) =>
+    changeState(setStore, (state) => ({
+      ...state,
+      sorting: [{ id, desc }],
+      pagination: { ...state.pagination, pageIndex: 0 },
+    }));
+  return (
+    <MenubarMenu>
+      <MenubarTrigger aria-label={store.config.labels.sortBy}>
+        {current ? (
+          current.desc ? (
+            <ArrowDown />
+          ) : (
+            <ArrowUp />
+          )
+        ) : (
+          <ChevronsUpDown />
+        )}
+        <span className="hidden sm:inline">{store.config.labels.sortBy}</span>
+      </MenubarTrigger>
+      <MenubarContent align="end" className="w-52">
+        {columns.map((column) => {
+          const sortState = store.state.sorting.find(
+            ({ id }) => id === column.id,
+          );
+          return (
+            <MenubarSub key={column.id}>
+              <MenubarSubTrigger>
+                {sortState ? (
+                  sortState.desc ? (
+                    <ArrowDown />
+                  ) : (
+                    <ArrowUp />
+                  )
+                ) : null}
+                {columnLabel(column)}
+              </MenubarSubTrigger>
+              <MenubarSubContent>
+                <MenubarItem onClick={() => sort(column.id, false)}>
+                  <ArrowUp /> {store.config.labels.sortAsc}
+                </MenubarItem>
+                <MenubarItem onClick={() => sort(column.id, true)}>
+                  <ArrowDown /> {store.config.labels.sortDesc}
+                </MenubarItem>
+                {sortState ? (
+                  <>
+                    <MenubarSeparator />
+                    <MenubarItem
+                      onClick={() =>
+                        changeState(setStore, (state) => ({
+                          ...state,
+                          sorting: state.sorting.filter(
+                            ({ id }) => id !== column.id,
+                          ),
+                        }))
+                      }
+                    >
+                      <X /> {store.config.labels.sortClear}
+                    </MenubarItem>
+                  </>
+                ) : null}
+              </MenubarSubContent>
+            </MenubarSub>
+          );
+        })}
+      </MenubarContent>
+    </MenubarMenu>
+  );
+};
+
+const ViewMenu = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  return (
+    <MenubarMenu>
+      <MenubarTrigger aria-label={store.config.labels.view}>
+        {store.state.view === "gallery" ? <LayoutGrid /> : <Rows3 />}
+        <span className="hidden sm:inline">{store.config.labels.view}</span>
+      </MenubarTrigger>
+      <MenubarContent align="end">
+        <MenubarRadioGroup
+          onValueChange={(view) => {
+            if (view === "table" || view === "gallery") {
+              changeState(setStore, (state) => ({ ...state, view }));
+            }
+          }}
+          value={store.state.view}
+        >
+          <MenubarRadioItem value="table">
+            <Rows3 /> {store.config.labels.tableView}
+          </MenubarRadioItem>
+          <MenubarRadioItem value="gallery">
+            <LayoutGrid /> {store.config.labels.galleryView}
+          </MenubarRadioItem>
+        </MenubarRadioGroup>
+      </MenubarContent>
+    </MenubarMenu>
+  );
+};
+
+const ColumnMenu = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const columns = deriveModel(store).columns.filter(
+    ({ colDef }) => colDef.hideable !== false,
+  );
+  if (!columns.length) return null;
+  return (
+    <MenubarMenu>
+      <MenubarTrigger aria-label={store.config.labels.columns}>
+        <Settings2 />
+        <span className="hidden sm:inline">{store.config.labels.columns}</span>
+      </MenubarTrigger>
+      <MenubarContent align="end">
+        <MenubarGroup>
+          <MenubarLabel>{store.config.labels.columns}</MenubarLabel>
+          <MenubarSeparator />
+          {columns.map((column) => (
+            <MenubarCheckboxItem
+              checked={store.state.columnVisibility[column.id] !== false}
+              key={column.id}
+              onCheckedChange={(visible) =>
+                changeState(setStore, (state) => ({
+                  ...state,
+                  columnVisibility: {
+                    ...state.columnVisibility,
+                    [column.id]: visible,
+                  },
+                }))
+              }
+            >
+              {columnLabel(column)}
+            </MenubarCheckboxItem>
+          ))}
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
+  );
+};
+
+const ResizeHandle = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const columnId = useRequiredId(ColumnIdContext);
+  const column = deriveModel(store).columns.find(({ id }) => id === columnId);
+  if (!column || column.colDef.resizable === false) return null;
+  const resize = (width: number) =>
+    changeState(setStore, (state) => ({
+      ...state,
+      columnSizing: {
+        ...state.columnSizing,
+        [column.id]: clampWidth(column.colDef, width),
+      },
+    }));
+  const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.dataset.startX = String(event.clientX);
+    event.currentTarget.dataset.startWidth = String(column.width);
+  };
+  const onPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    const startX = Number(event.currentTarget.dataset.startX);
+    const startWidth = Number(event.currentTarget.dataset.startWidth);
+    resize(startWidth + event.clientX - startX);
+  };
+  return (
+    <button
+      aria-label={store.config.labels.resizeColumn(columnLabel(column))}
+      aria-orientation="vertical"
+      aria-valuemax={column.colDef.maxWidth ?? DEFAULT_MAX_WIDTH}
+      aria-valuemin={column.colDef.minWidth ?? DEFAULT_MIN_WIDTH}
+      aria-valuenow={column.width}
+      className="hover:bg-primary/60 absolute inset-y-0 right-0 z-10 w-1 cursor-col-resize touch-none"
+      onDoubleClick={() => resize(column.colDef.width ?? DEFAULT_WIDTH)}
+      onKeyDown={(event) => {
+        const delta =
+          event.key === "ArrowLeft" ? -8 : event.key === "ArrowRight" ? 8 : 0;
+        if (delta) {
+          event.preventDefault();
+          resize(column.width + delta);
+        }
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      role="separator"
+      type="button"
+    />
+  );
+};
+
+const DragHandle = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const rowId = useRequiredId(RowIdContext);
+  const dragRef = useRef<PointerDragState | null>(null);
+  const [overlay, setOverlay] = useState<{
+    label: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const reset = (element: HTMLElement) => {
+    clearDragPresentation(element.closest<HTMLElement>("[data-table-root]"));
+    dragRef.current = null;
+    setOverlay(null);
+  };
+  const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const row = deriveModel(store).rows.find(
+      (candidate) => candidate.id === rowId,
+    );
+    const grouping = store.config.features.grouping;
+    const reordering = store.config.features.reordering;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      rowId,
+      label:
+        (row && grouping && grouping.getRowLabel?.(row.data)) ||
+        (row && reordering && reordering.getRowLabel?.(row.data)) ||
+        rowId,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+    };
+  };
+  const onPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const root = event.currentTarget.closest<HTMLElement>("[data-table-root]");
+    const active =
+      drag.active ||
+      Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >= 8;
+    drag.active = active;
+    clearDragPresentation(root);
+    if (!active) return;
+
+    const elements = document.elementsFromPoint(event.clientX, event.clientY);
+    const rowTarget = findTableDragTarget(elements, "[data-table-row]", root);
+    const groupTarget = findTableDragTarget(
+      elements,
+      "[data-table-group]",
+      root,
+    );
+    event.currentTarget
+      .closest<HTMLElement>("[data-table-row]")
+      ?.setAttribute("data-drag-source", "true");
+    if (canMoveRowsToGroups(store)) {
+      groupTarget?.setAttribute("data-drop-target", "true");
+    } else if (rowTarget?.dataset.tableRow !== drag.rowId) {
+      const rows = deriveModel(store).pageRows;
+      const sourceIndex = rows.findIndex((row) => row.id === drag.rowId);
+      const targetIndex = rows.findIndex(
+        (row) => row.id === rowTarget?.dataset.tableRow,
+      );
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        rowTarget?.setAttribute(
+          "data-drop-position",
+          sourceIndex < targetIndex ? "after" : "before",
+        );
+      }
+    }
+    setOverlay({ label: drag.label, x: event.clientX, y: event.clientY });
+  };
+  const finish = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const root = event.currentTarget.closest<HTMLElement>("[data-table-root]");
+    const elements = document.elementsFromPoint(event.clientX, event.clientY);
+    const rowTarget = findTableDragTarget(elements, "[data-table-row]", root);
+    const groupTarget = findTableDragTarget(
+      elements,
+      "[data-table-group]",
+      root,
+    );
+    setStore((current) => {
+      const targetRowId = rowTarget?.dataset.tableRow;
+      const targetGroupKey = groupTarget?.dataset.tableGroup;
+      const model = deriveModel(current);
+      const source = model.sortedRows.find((row) => row.id === drag.rowId);
+      const grouping = current.config.features.grouping;
+      const reordering = current.config.features.reordering;
+      if (drag.active && source && targetGroupKey && grouping) {
+        const target = parseGroupDropKey(targetGroupKey);
+        const field = grouping.fields.find(({ id }) => id === target?.fieldId);
+        if (
+          target &&
+          field?.onMoveToGroup &&
+          field.getGroupId(source.data) !== target.groupId
+        ) {
+          field.onMoveToGroup(source.data, target.groupId);
+        }
+      } else if (
+        drag.active &&
+        source &&
+        targetRowId &&
+        reordering &&
+        canReorderRows(current) &&
+        source.id !== targetRowId
+      ) {
+        reordering.onReorder(
+          reorderDataTableRows(model.rows, source.id, targetRowId),
+        );
+      }
+      return current;
+    });
+    reset(event.currentTarget);
+  };
+  const cancel = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      reset(event.currentTarget);
+    }
+  };
+  const reorderWithKeyboard = (direction: -1 | 1) => {
+    const reordering = store.config.features.reordering;
+    if (!reordering || !canReorderRows(store)) return;
+    const model = deriveModel(store);
+    const visibleRows = model.pageRows;
+    const sourceIndex = visibleRows.findIndex((row) => row.id === rowId);
+    const target = visibleRows[sourceIndex + direction];
+    if (sourceIndex !== -1 && target) {
+      reordering.onReorder(reorderDataTableRows(model.rows, rowId, target.id));
+    }
+  };
+  return (
+    <>
+      <Button
+        aria-label={
+          store.config.features.reordering &&
+          store.config.features.reordering.handleLabel
+            ? store.config.features.reordering.handleLabel
+            : store.config.labels.reorder
+        }
+        className="size-8 cursor-grab touch-none active:cursor-grabbing"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+            event.preventDefault();
+            event.stopPropagation();
+            reorderWithKeyboard(event.key === "ArrowUp" ? -1 : 1);
+          }
+        }}
+        onPointerCancel={cancel}
+        onPointerDown={onPointerDown}
+        onLostPointerCapture={cancel}
+        onPointerMove={onPointerMove}
+        onPointerUp={finish}
+        size="icon"
+        variant="ghost"
+      >
+        <GripVertical />
+      </Button>
+      {overlay
+        ? createPortal(
+            <div
+              aria-hidden="true"
+              className="bg-background pointer-events-none fixed z-[100] rounded-md border px-3 py-2 text-sm shadow-lg"
+              style={{ left: overlay.x + 12, top: overlay.y + 12 }}
+            >
+              {overlay.label}
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+};
+
+const toggleRow = <TData extends RowData>(
+  store: DataTableStore<TData>,
+  setStore: (
+    update: (store: DataTableStore<TData>) => DataTableStore<TData>,
+  ) => void,
+  rowId: string,
+  selected: boolean,
+) =>
+  changeState(setStore, (state) => {
+    const rowSelection = { ...state.rowSelection, [rowId]: selected };
+    const selection = store.config.features.selection;
+    if (selection) {
+      const model = deriveModel(store);
+      selection.onSelectionChange?.(
+        model.rows.filter((row) => rowSelection[row.id]).map((row) => row.data),
+      );
+    }
+    return { ...state, rowSelection };
+  });
+
+const TableDataRow = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const rowId = useRequiredId(RowIdContext);
+  const model = deriveModel(store);
+  const row = model.sortedRows.find((candidate) => candidate.id === rowId);
+  if (!row) return null;
+  const selection = store.config.features.selection;
+  const selectable =
+    !!selection && (selection.isRowSelectable?.(row.data) ?? true);
+  const rowActions = store.config.features.rowActions;
+  const draggable = canDragRows(store);
   return (
     <TableRow
       className={cn(
-        "group/row h-16 focus-visible:outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid",
-        onRowClick && "cursor-pointer",
-        isDragging && "opacity-50",
+        "group/row h-16 data-[drag-source=true]:opacity-40 data-[drop-position=before]:[&>td]:border-t-2 data-[drop-position=before]:[&>td]:border-primary data-[drop-position=after]:[&>td]:border-b-2 data-[drop-position=after]:[&>td]:border-primary",
+        store.config.onRowClicked && "cursor-pointer",
       )}
-      data-state={row.getIsSelected() && "selected"}
-      key={row.id}
-      onClick={() => {
-        if (onRowClick) {
-          onRowClick(row.original);
-        }
-      }}
+      data-state={store.state.rowSelection[row.id] && "selected"}
+      data-table-row={row.id}
+      onClick={() => store.config.onRowClicked?.(row.data)}
       onKeyDown={(event) => {
-        if (!onRowClick || (event.key !== "Enter" && event.key !== " ")) {
-          return;
+        if (
+          event.target === event.currentTarget &&
+          store.config.onRowClicked &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          store.config.onRowClicked(row.data);
         }
-
-        event.preventDefault();
-        onRowClick(row.original);
       }}
-      ref={setRowNodeRef}
-      style={{
-        transform,
-        transition: sortable.transition,
-      }}
-      {...rowAttributes}
-      {...(!canReorder ? listeners : {})}
+      tabIndex={store.config.onRowClicked ? 0 : undefined}
     >
-      {selectable ? (
+      {selection ? (
         <TableCell
-          className="w-10 min-w-10 cursor-default pr-0"
+          className="w-10 pr-0"
           onClick={(event) => event.stopPropagation()}
         >
           <Checkbox
-            aria-label={selectRowLabel}
-            checked={row.getIsSelected()}
-            disabled={!row.getCanSelect()}
-            onCheckedChange={(checked, eventDetails) =>
-              row.getToggleSelectedHandler()({
-                nativeEvent: eventDetails.event,
-                target: { checked },
-              })
+            aria-label={store.config.labels.selectRow}
+            checked={!!store.state.rowSelection[row.id]}
+            disabled={!selectable}
+            onCheckedChange={(checked) =>
+              toggleRow(store, setStore, row.id, checked)
             }
-            onClick={(event) => event.stopPropagation()}
           />
         </TableCell>
       ) : null}
-      {canReorder ? (
-        <TableCell className="w-10 min-w-10 pr-0">
-          <Button
-            aria-label={reorderHandleLabel}
-            className="size-8 cursor-grab active:cursor-grabbing"
-            onClick={(event) => event.stopPropagation()}
-            size="icon"
-            type="button"
-            variant="ghost"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical />
-          </Button>
+      {draggable ? (
+        <TableCell className="w-10 pr-0">
+          <DragHandle tableAtom={tableAtom} />
         </TableCell>
       ) : null}
-      {visibleCells.map((cell, index) => {
-        return (
-          <table.AppCell cell={cell} key={cell.id}>
-            {(appCell) => (
-              <TableCell
-                className={cn(
-                  "align-center min-w-32 overflow-hidden [&:has([data-slot=relationship-cell])]:relative [&:has([data-slot=relationship-cell])]:p-0 [&:has([data-slot=relationship-cell])>div]:absolute [&:has([data-slot=relationship-cell])>div]:inset-0",
-                  cell.column.columnDef.meta?.truncate
-                    ? "whitespace-nowrap"
-                    : "whitespace-normal",
-                )}
-                style={
-                  index === 0 && firstCellIndent
-                    ? {
-                        paddingLeft: firstCellIndent,
-                        width: cell.column.getSize(),
-                      }
-                    : { width: cell.column.getSize() }
-                }
-              >
-                <div
-                  className={cn(
-                    "w-full max-w-full min-w-0 overflow-hidden break-words [&:has([data-slot=list-summary])]:line-clamp-none",
-                    cell.column.columnDef.meta?.truncate
-                      ? "truncate"
-                      : "line-clamp-3",
-                  )}
-                >
-                  <appCell.FlexRender />
-                </div>
-              </TableCell>
-            )}
-          </table.AppCell>
-        );
-      })}
+      {model.visibleColumns.map((column) => (
+        <TableCell
+          className={cn(
+            "min-w-24 overflow-hidden",
+            column.colDef.truncate ? "whitespace-nowrap" : "whitespace-normal",
+          )}
+          key={column.id}
+          style={{ width: column.width }}
+        >
+          <div className={cn("min-w-0", column.colDef.truncate && "truncate")}>
+            {renderCell(row, column)}
+          </div>
+        </TableCell>
+      ))}
       {rowActions ? (
         <TableCell
           className="bg-background group-data-[state=selected]/row:bg-muted sticky right-0 z-20 w-10 min-w-10 cursor-default p-0 transition-colors group-hover/row:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))]"
@@ -1102,9 +1664,9 @@ const DataTableRow = <TData extends RowData>({
         >
           <div className="flex h-16 items-center justify-center">
             <DataTableRowActions
-              actions={rowActions}
-              row={row.original}
-              title={rowActionsLabel}
+              actions={rowActions.items}
+              row={row.data}
+              title={rowActions.label ?? store.config.labels.actions}
             />
           </div>
         </TableCell>
@@ -1113,1600 +1675,728 @@ const DataTableRow = <TData extends RowData>({
   );
 };
 
-const DataTableGalleryCard = <TData extends RowData>({
-  canDrag,
-  dragLabel,
-  gallery,
-  onRowClick,
-  row,
-  rowActions,
-  rowActionsLabel,
-  selectRowLabel,
-  selectable,
-  table,
+const GroupActions = ({
+  actions,
+  groupId,
+  title,
 }: {
-  canDrag: boolean;
-  dragLabel?: string | undefined;
-  gallery?: DataTableGalleryConfig | undefined;
-  onRowClick?: ((row: TData) => void) | undefined;
-  row: DataTableRow<TData>;
-  rowActions?: readonly DataTableRowAction<TData>[] | undefined;
-  rowActionsLabel?: string | undefined;
-  selectRowLabel: string;
-  selectable: boolean;
-  table: DataTableInstance<TData>;
+  actions?: readonly DataTableGroupAction[];
+  groupId: string;
+  title: string;
 }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: getRowDragId(row.id),
-    disabled: !canDrag,
-    data: {
-      type: "row",
-      rowId: row.id,
-      label: dragLabel,
-    },
-  });
-
-  const nameCell = gallery
-    ? row.getVisibleCells().find((cell) => cell.column.id === gallery.name)
-    : null;
-  const descriptionCell = gallery?.description
-    ? row
-        .getVisibleCells()
-        .find((cell) => cell.column.id === gallery.description)
-    : null;
-  const tagCell = gallery?.tag
-    ? row.getVisibleCells().find((cell) => cell.column.id === gallery.tag)
-    : null;
-
-  if (gallery) {
-    const tagValue = gallery.tag ? row.getValue(gallery.tag) : null;
-    const tagLabel =
-      tagValue === null || tagValue === undefined ? null : String(tagValue);
-
-    return (
-      <Card
-        className={cn(
-          "relative mx-auto w-full max-w-sm transition-colors",
-          onRowClick && "cursor-pointer hover:bg-accent/20",
-          isDragging && "opacity-50",
-        )}
-        data-state={row.getIsSelected() && "selected"}
-        onClick={() => {
-          if (onRowClick) {
-            onRowClick(row.original);
-          }
-        }}
-        ref={setNodeRef}
-        {...attributes}
-        {...listeners}
-      >
-        {selectable ? (
-          <div
-            className="absolute top-4 left-4 z-10"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Checkbox
-              aria-label={selectRowLabel}
-              checked={row.getIsSelected()}
-              disabled={!row.getCanSelect()}
-              onCheckedChange={(checked, eventDetails) =>
-                row.getToggleSelectedHandler()({
-                  nativeEvent: eventDetails.event,
-                  target: { checked },
-                })
-              }
-            />
-          </div>
-        ) : null}
-        {rowActions ? (
-          <div
-            className="absolute top-4 right-4 z-10"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <DataTableRowActions
-              actions={rowActions}
-              row={row.original}
-              title={rowActionsLabel}
-            />
-          </div>
-        ) : null}
-        <CardHeader
-          className={cn(rowActions && "pr-14", selectable && "pl-12")}
-        >
-          {tagCell && tagLabel ? (
-            <Badge variant="secondary" className="mb-1 w-fit gap-1">
-              {gallery.tagIcon}
-              {tagLabel}
-            </Badge>
-          ) : null}
-          {nameCell ? (
-            <CardTitle className="min-w-0 text-base">
-              {flexRender(
-                nameCell.column.columnDef.cell,
-                nameCell.getContext(),
-              )}
-            </CardTitle>
-          ) : null}
-          {descriptionCell ? (
-            <CardDescription className="line-clamp-2 min-w-0">
-              {flexRender(
-                descriptionCell.column.columnDef.cell,
-                descriptionCell.getContext(),
-              )}
-            </CardDescription>
-          ) : null}
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  const contentCells = row.getVisibleCells();
-
-  return (
-    <Card
-      className={cn(
-        "relative gap-3 transition-colors",
-        onRowClick && "cursor-pointer hover:bg-accent/20",
-        isDragging && "opacity-50",
-      )}
-      data-state={row.getIsSelected() && "selected"}
-      onClick={() => {
-        if (onRowClick) {
-          onRowClick(row.original);
-        }
-      }}
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-    >
-      {selectable ? (
-        <div
-          className="absolute top-4 left-4 z-10"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <Checkbox
-            aria-label={selectRowLabel}
-            checked={row.getIsSelected()}
-            disabled={!row.getCanSelect()}
-            onCheckedChange={(checked, eventDetails) =>
-              row.getToggleSelectedHandler()({
-                nativeEvent: eventDetails.event,
-                target: { checked },
-              })
-            }
-          />
-        </div>
-      ) : null}
-      <CardHeader>
-        {rowActions ? (
-          <CardAction onClick={(event) => event.stopPropagation()}>
-            <DataTableRowActions
-              actions={rowActions}
-              row={row.original}
-              title={rowActionsLabel}
-            />
-          </CardAction>
-        ) : null}
-        {contentCells.length > 0 && (
-          <div className="grid min-w-0 gap-3">
-            <CardDescription className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-              {getColumnDisplayName(table, contentCells[0].column.id)}
-            </CardDescription>
-            <CardTitle className="text-base">
-              {flexRender(
-                contentCells[0].column.columnDef.cell,
-                contentCells[0].getContext(),
-              )}
-            </CardTitle>
-          </div>
-        )}
-      </CardHeader>
-      {contentCells.length > 1 && (
-        <CardContent className="grid gap-3">
-          {contentCells.slice(1).map((cell) => (
-            <div className="grid gap-1" key={cell.id}>
-              <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                {getColumnDisplayName(table, cell.column.id)}
-              </div>
-              <div className="min-w-0 text-sm">
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      )}
-    </Card>
+  const visible = actions?.filter(
+    (action) => !action.visible || action.visible(groupId),
   );
-};
-
-const extractTextFromElement = (element: ReactNode): string | null => {
-  if (Schema.is(Schema.String)(element)) return element;
-  if (Schema.is(Schema.Number)(element)) return String(element);
-  if (!isValidElement<{ children?: ReactNode; title?: ReactNode }>(element)) {
-    return null;
-  }
-  const { props } = element;
-  if (Schema.is(Schema.String)(props.title)) return props.title;
-  return extractTextFromElement(props.children);
-};
-
-const getColumnLabels = <TData extends RowData>(
-  table: DataTableInstance<TData>,
-) =>
-  new Map(
-    table
-      .getFlatHeaders()
-      .map((header) => [header.column.id, getHeaderName(header)]),
-  );
-
-const getHeaderName = <TData extends RowData>(
-  header: DataTableHeader<TData, unknown>,
-): string => {
-  const columnDef = header.column.columnDef;
-  if (columnDef.header instanceof Function) {
-    const headerContext = columnDef.header(header.getContext());
-    if (Schema.is(Schema.String)(headerContext)) {
-      return headerContext;
-    }
-    return extractTextFromElement(headerContext) ?? header.id;
-  }
-
-  return String(columnDef.header ?? header.id);
-};
-
-export const getHeaderNames = <TData extends RowData>(
-  headers: DataTableHeader<TData, unknown>[],
-): string[] => headers.map((header) => getHeaderName(header));
-
-const getColumnDisplayName = <TData extends RowData>(
-  table: DataTableInstance<TData>,
-  columnId: string,
-) => {
-  const header = table
-    .getFlatHeaders()
-    .find((currentHeader) => currentHeader.column.id === columnId);
-  return header ? getHeaderName(header) : columnId;
-};
-
-export type CsvValue = string | number | boolean | null | undefined;
-
-const withFileExtension = (fileName: string, extension: string) => {
-  const normalizedExtension = extension.startsWith(".")
-    ? extension
-    : `.${extension}`;
-  return fileName.includes(".")
-    ? fileName.replace(/\.[^/.]+$/, normalizedExtension)
-    : `${fileName}${normalizedExtension}`;
-};
-
-const escapeCsvValue = (value: CsvValue) => {
-  if (value === null || value === undefined) return "";
-  const stringValue = String(value);
-  if (
-    stringValue.includes(",") ||
-    stringValue.includes('"') ||
-    stringValue.includes("\n")
-  ) {
-    return `"${stringValue.replace(/"/g, '""')}"`;
-  }
-  return stringValue;
-};
-
-export const downloadCsv = (
-  headers: CsvValue[],
-  data: CsvValue[][],
-  fileName = "data.csv",
-) => {
-  const csvContent = [headers, ...data]
-    .map((row) => row.map(escapeCsvValue).join(","))
-    .join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  const url = window.URL.createObjectURL(blob);
-
-  link.href = url;
-  link.setAttribute("download", withFileExtension(fileName, "csv"));
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  requestAnimationFrame(() => window.URL.revokeObjectURL(url));
-};
-
-export const downloadJson = <Data,>(data: Data, fileName = "data.json") => {
-  const jsonContent = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonContent], {
-    type: "application/json;charset=utf-8;",
-  });
-  const link = document.createElement("a");
-  const url = window.URL.createObjectURL(blob);
-
-  link.href = url;
-  link.setAttribute("download", withFileExtension(fileName, "json"));
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  requestAnimationFrame(() => window.URL.revokeObjectURL(url));
-};
-
-const exportTableToCsv = <TData extends RowData>(
-  table: DataTableInstance<TData>,
-  rows: DataTableRow<TData>[],
-  fileName = "data.csv",
-): void => {
-  const exportableColumns = table.getVisibleLeafColumns();
-  const headerNames = exportableColumns.map((column) =>
-    getColumnDisplayName(table, column.id),
-  );
-  const data = rows.map((row) =>
-    exportableColumns.map((column) => {
-      const value = row.getValue(column.id);
-      return value === null || value === undefined ? "" : String(value);
-    }),
-  );
-
-  downloadCsv(headerNames, data, fileName);
-};
-
-const exportTableToJson = <TData extends RowData>(
-  table: DataTableInstance<TData>,
-  rows: DataTableRow<TData>[],
-  fileName = "data.json",
-): void => {
-  const exportableColumns = table.getVisibleLeafColumns();
-  const data = rows.map((row) =>
-    Object.fromEntries(
-      exportableColumns.map((column) => [column.id, row.getValue(column.id)]),
-    ),
-  );
-
-  downloadJson(data, fileName);
-};
-
-const DataTableToolbar = <TData extends RowData>({
-  activeGrouping,
-  bulkActions,
-  exportBaseName,
-  exportRows,
-  grouping,
-  labels,
-  onRefresh,
-  onToggleGrouping,
-  onViewChange,
-  selectedRows,
-  showColumnVisibility,
-  showExport,
-  showGallery,
-  showSearch,
-  showSorting,
-  table,
-  view,
-}: {
-  activeGrouping: readonly string[];
-  bulkActions?:
-    | {
-        label?: string;
-        items: readonly DataTableBulkAction<TData>[];
-      }
-    | undefined;
-  exportBaseName: string;
-  exportRows: DataTableRow<TData>[];
-  grouping?: DataTableGrouping<TData> | undefined;
-  labels: DataTableMessages;
-  onRefresh?: (() => void) | undefined;
-  onToggleGrouping: (fieldId: string, enabled: boolean) => void;
-  onViewChange: (view: DataTableView) => void;
-  selectedRows: TData[];
-  showColumnVisibility: boolean;
-  showExport: boolean;
-  showGallery: boolean;
-  showSearch: boolean;
-  showSorting: boolean;
-  table: DataTableInstance<TData>;
-  view: DataTableView;
-}) => {
-  const [refreshSpinCount, setRefreshSpinCount] = useState(0);
-  const [searchInput, setSearchInput] = useState(table.state.globalFilter);
-  const hasToolbar = Boolean(
-    showSearch ||
-    grouping?.fields.length ||
-    showSorting ||
-    showGallery ||
-    showColumnVisibility ||
-    onRefresh ||
-    showExport ||
-    (selectedRows.length > 0 && bulkActions?.items.length),
-  );
-
-  useEffect(() => {
-    setSearchInput(table.state.globalFilter);
-  }, [table.state.globalFilter]);
-
-  if (!hasToolbar) return null;
-
-  return (
-    <div className="flex flex-col gap-3 pb-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        {showSearch ? (
-          <div className="relative w-full min-w-0 flex-1 sm:min-w-sm">
-            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              className="px-9"
-              onChange={(event) => {
-                setSearchInput(event.target.value);
-                table.setGlobalFilter(event.target.value);
-              }}
-              placeholder={labels.filter}
-              value={searchInput}
-            />
-            {searchInput ? (
-              <Button
-                aria-label={labels.filter}
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 size-7 -translate-y-1/2 active:!-translate-y-1/2"
-                onClick={() => {
-                  setSearchInput("");
-                  table.setGlobalFilter("");
-                }}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <X className="size-4" />
-              </Button>
-            ) : null}
-          </div>
-        ) : (
-          <div />
-        )}
-        <div className="-m-1 flex items-center gap-2 overflow-x-auto p-1">
-          {bulkActions && selectedRows.length > 0 ? (
-            <DataTableBulkActions
-              actions={bulkActions.items}
-              label={bulkActions.label ?? labels.actions}
-              rows={selectedRows}
-              selectedLabel={labels.selected}
-            />
-          ) : null}
-          {grouping?.fields.length ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    aria-label={labels.groupBy}
-                    className="h-9"
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Rows3 />
-                    <span className="hidden sm:inline">{labels.groupBy}</span>
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>{labels.groupBy}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {grouping.fields.map((field) => (
-                    <DropdownMenuCheckboxItem
-                      checked={activeGrouping.includes(field.id)}
-                      key={field.id}
-                      onCheckedChange={(value) =>
-                        onToggleGrouping(field.id, !!value)
-                      }
-                    >
-                      {field.label}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-          {showSorting ? (
-            <DataTableSortDropdown messages={labels} table={table} />
-          ) : null}
-          {showGallery ? (
-            <DataTableDisplayModeSwitch
-              messages={labels}
-              onChange={onViewChange}
-              value={view}
-            />
-          ) : null}
-          {showColumnVisibility ? (
-            <DataTableViewOptions messages={labels} table={table} />
-          ) : null}
-          {onRefresh ? (
-            <Button
-              aria-label={labels.refresh}
-              className="h-9"
-              onClick={() => {
-                setRefreshSpinCount((count) => count + 1);
-                onRefresh();
-              }}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <RefreshCw
-                className={cn(
-                  refreshSpinCount > 0 && "animate-[spin_500ms_ease-in-out_1]",
-                )}
-                key={refreshSpinCount}
-              />
-              <span className="hidden sm:inline">{labels.refresh}</span>
-            </Button>
-          ) : null}
-          {showExport ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    aria-label={labels.export}
-                    className="h-9"
-                    disabled={exportRows.length === 0}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Download />
-                    <span className="hidden sm:inline">{labels.export}</span>
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="w-[180px]">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>{labels.export}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() =>
-                      exportTableToCsv(table, exportRows, exportBaseName)
-                    }
-                  >
-                    <FileText />
-                    {labels.exportCsv}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      exportTableToJson(table, exportRows, exportBaseName)
-                    }
-                  >
-                    <FileJson />
-                    {labels.exportJson}
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export function DataTable<TData extends RowData>({
-  columns,
-  data,
-  state,
-  search: controlledSearch,
-  onSearchChange,
-  searchState = "url",
-  emptyLabel,
-  messages,
-  exportFileName,
-  isLoading: legacyIsLoading,
-  onRefresh,
-  onRowClick,
-  from,
-  routeFrom,
-  grouping,
-  gallery,
-  rowActions: legacyRowActions,
-  reordering,
-  serverPagination,
-  features,
-}: DataTableProps<TData>) {
-  const labels = dataTableMessages(messages);
-  const isLoading = state?.loading ?? legacyIsLoading ?? false;
-  const emptyContent =
-    state?.error ?? state?.empty ?? emptyLabel ?? labels.empty;
-  const paginationFeature: DataTablePaginationFeature =
-    features?.pagination ??
-    (serverPagination
-      ? { mode: "server", rowCount: serverPagination.rowCount }
-      : { mode: "client" });
-  const exportFeature: false | DataTableExportFeature =
-    features?.export ??
-    (exportFileName
-      ? { baseName: exportFileName, scope: "currentPage" }
-      : false);
-  const exportBaseName = exportFeature ? exportFeature.baseName : "table";
-  const galleryConfig =
-    features?.gallery === false ? undefined : (features?.gallery ?? gallery);
-  const rowActionsFeature =
-    features?.rowActions === false
-      ? undefined
-      : (features?.rowActions ??
-        (legacyRowActions?.length
-          ? {
-              items: legacyRowActions.map((action) => ({
-                ...action,
-                id: action.id ?? action.name,
-              })),
-            }
-          : undefined));
-  const rowActions = rowActionsFeature?.items.length
-    ? rowActionsFeature.items
-    : undefined;
-  const rowActionsLabel = rowActionsFeature?.label ?? labels.actions;
-  const showPagination = paginationFeature !== false;
-  const pageSizes = paginationFeature ? paginationFeature.pageSizes : undefined;
-  const showSearch = features?.search ?? true;
-  const showExport = exportFeature !== false;
-  const columnVisibilityFeature = features?.columnVisibility ?? true;
-  const showColumnVisibility = columnVisibilityFeature !== false;
-  const defaultColumnVisibility = Schema.is(
-    Schema.Struct({ default: ColumnVisibilitySchema }),
-  )(columnVisibilityFeature)
-    ? columnVisibilityFeature.default
-    : undefined;
-  const showGallery = !!galleryConfig;
-  const showSorting = features?.sorting ?? true;
-  const selectionFeature =
-    features?.selection === false ? undefined : features?.selection;
-  const selectable = !!selectionFeature;
-  const bulkActions =
-    selectionFeature?.bulkActions === false
-      ? undefined
-      : selectionFeature?.bulkActions;
-  const isServerMode =
-    paginationFeature !== false && paginationFeature.mode === "server";
-  const serverRowCount = isServerMode ? paginationFeature.rowCount : undefined;
-  const location = useRouterState({
-    select: (state) => state.location,
-  });
-  const search = Option.getOrUndefined(decodeTableSearch(location.search));
-  const pathname = location.pathname;
-  const resolvedRouteFrom = routeFrom ?? from;
-  const [storagePath] = useState(() => resolvedRouteFrom ?? pathname);
-  const navigate = useNavigate(
-    resolvedRouteFrom ? { from: resolvedRouteFrom } : undefined,
-  );
-  const [localSearch, setLocalSearch] = useState<TableParams>({
-    globalFilter: "",
-  });
-  const tableSearch =
-    controlledSearch ?? (searchState === "local" ? localSearch : search);
-
-  const {
-    page = 0,
-    pageSize = 10,
-    sort,
-    globalFilter = "",
-    grouping: urlGrouping,
-  } = tableSearch ?? {};
-  const pagination = { pageIndex: page, pageSize };
-  const decodedSort = sort ? Schema.decodeSync(SortParamsFromString)(sort) : [];
-  const sorting: SortingState = decodedSort.map((sortParam) => ({
-    id: sortParam.id,
-    desc: sortParam.direction === "desc",
-  }));
-  const tableStorageId = useMemo(() => {
-    const columnIds = columns
-      .map((column, index) => {
-        if ("id" in column && Schema.is(Schema.String)(column.id)) {
-          return column.id;
-        }
-
-        if (
-          "accessorKey" in column &&
-          Schema.is(Schema.String)(column.accessorKey)
-        ) {
-          return column.accessorKey;
-        }
-
-        return String(index);
-      })
-      .join(",");
-
-    return `${storagePath}:${columnIds}`;
-  }, [columns, storagePath]);
-  const columnVisibilityAtom = useMemo(
-    () =>
-      Atom.kvs({
-        runtime: dataTableStorageRuntime,
-        key: `data-table:column-visibility:${tableStorageId}`,
-        schema: ColumnVisibilitySchema,
-        defaultValue: () => defaultColumnVisibility ?? {},
-      }),
-    [defaultColumnVisibility, tableStorageId],
-  );
-  const columnSizingAtom = useMemo(
-    () =>
-      Atom.kvs({
-        runtime: dataTableStorageRuntime,
-        key: `data-table:column-sizing:${tableStorageId}`,
-        schema: ColumnSizingSchema,
-        defaultValue: () => ({}),
-      }),
-    [tableStorageId],
-  );
-  const viewAtom = useMemo(
-    () =>
-      Atom.kvs({
-        runtime: dataTableStorageRuntime,
-        key: `data-table:view:${tableStorageId}`,
-        schema: DataTableViewSchema,
-        defaultValue: (): DataTableView => "table",
-      }),
-    [tableStorageId],
-  );
-  const [columnVisibility, setColumnVisibility] = useAtom(columnVisibilityAtom);
-  const [columnSizing, setColumnSizing] = useAtom(columnSizingAtom);
-  const [storedView, setStoredView] = useAtom(viewAtom);
-  const currentView: DataTableView = showGallery ? storedView : "table";
-  const isGalleryView = currentView === "gallery";
-
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [collapsedGroups, setCollapsedGroups] = useState<
-    Record<string, boolean>
-  >({});
-  const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
-  const availableGroupFieldIds =
-    grouping?.fields.map((field) => field.id) ?? [];
-  const activeGrouping =
-    urlGrouping?.filter((groupId) =>
-      availableGroupFieldIds.includes(groupId),
-    ) ?? getDefaultGrouping(grouping);
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-  );
-
-  const updateTableSearch = (
-    updater: (current: TableSearchRecord) => TableSearchRecord,
-    options?: { replace?: boolean },
-  ) => {
-    if (controlledSearch || onSearchChange || searchState === "local") {
-      const nextSearch = Schema.decodeUnknownSync(TableSearchSchema)(
-        updater(controlledSearch ?? localSearch),
-      );
-
-      if (onSearchChange) {
-        onSearchChange(nextSearch);
-      } else {
-        setLocalSearch(nextSearch);
-      }
-      return;
-    }
-
-    navigate({
-      to: ".",
-      replace: options?.replace ?? false,
-      resetScroll: false,
-      search: (current: TableSearchRecord) =>
-        validateTableSearchUpdate(updater(current)),
-    });
-  };
-
-  const table = useDataTable({
-    key: tableStorageId,
-    data,
-    columns,
-    onColumnSizingChange: (updater) => {
-      const nextColumnSizing =
-        updater instanceof Function ? updater(columnSizing) : updater;
-
-      setColumnSizing(nextColumnSizing);
-    },
-    ...(selectionFeature
-      ? { getRowId: selectionFeature.getRowId }
-      : reordering
-        ? { getRowId: reordering.getRowId }
-        : {}),
-    enableRowSelection: selectionFeature?.isRowSelectable
-      ? (row) => selectionFeature.isRowSelectable?.(row.original) ?? true
-      : selectable,
-    enableMultiRowSelection: selectable,
-    onPaginationChange: (updater) => {
-      const newPagination =
-        updater instanceof Function ? updater(pagination) : updater;
-      if (
-        pagination.pageIndex === newPagination.pageIndex &&
-        pagination.pageSize === newPagination.pageSize
-      ) {
-        return;
-      }
-      updateTableSearch((current) => ({
-        ...current,
-        page: newPagination.pageIndex,
-        pageSize: newPagination.pageSize,
-      }));
-    },
-    onSortingChange: (updater) => {
-      const newSorting =
-        updater instanceof Function ? updater([...sorting]) : updater;
-      if (
-        sorting.length === newSorting.length &&
-        sorting.every(
-          (sortState, i) =>
-            sortState.id === newSorting[i]?.id &&
-            sortState.desc === newSorting[i]?.desc,
-        )
-      ) {
-        return;
-      }
-      const nextSort = newSorting.length
-        ? Schema.encodeSync(SortParamsFromString)(
-            newSorting.map((sortState) => ({
-              id: sortState.id,
-              direction: sortState.desc ? "desc" : "asc",
-            })),
-          )
-        : undefined;
-      updateTableSearch((current) => ({
-        ...current,
-        sort: nextSort,
-        page: 0,
-      }));
-    },
-    onGlobalFilterChange: (updater) => {
-      const newGlobalFilter =
-        updater instanceof Function ? updater(globalFilter) : updater;
-      if (globalFilter === newGlobalFilter) {
-        return;
-      }
-      updateTableSearch(
-        (current) => ({
-          ...current,
-          page: 0,
-          globalFilter: newGlobalFilter,
-        }),
-        { replace: true },
-      );
-    },
-    manualSorting: isServerMode || undefined,
-    manualFiltering: isServerMode || undefined,
-    ...(paginationFeature !== false && paginationFeature.mode === "server"
-      ? { manualPagination: true, rowCount: paginationFeature.rowCount }
-      : paginationFeature === false
-        ? { manualPagination: true }
-        : {}),
-    autoResetPageIndex: false,
-    onColumnVisibilityChange: (updater) => {
-      const nextColumnVisibility =
-        updater instanceof Function ? updater(columnVisibility) : updater;
-
-      setColumnVisibility(nextColumnVisibility);
-    },
-    onRowSelectionChange: (updater) => {
-      setRowSelection((current) => {
-        const next = updater instanceof Function ? updater(current) : updater;
-        selectionFeature?.onSelectionChange?.(
-          data.filter((row) => next[selectionFeature.getRowId(row)]),
-        );
-        return next;
-      });
-    },
-    state: {
-      sorting,
-      pagination,
-      globalFilter,
-      columnVisibility,
-      columnSizing,
-      rowSelection,
-    },
-  });
-
-  const activeGroupingFields = useMemo(
-    () =>
-      activeGrouping
-        .map((groupId) =>
-          grouping?.fields.find((field) => field.id === groupId),
-        )
-        .filter((field): field is DataTableGroupingField<TData> => !!field),
-    [activeGrouping, grouping],
-  );
-  const hasActiveGrouping = activeGroupingFields.length > 0;
-  const filteredRows = table.getPrePaginatedRowModel().rows;
-  const selectedRows = selectionFeature
-    ? data.filter((row) => rowSelection[selectionFeature.getRowId(row)])
-    : [];
-  const exportRows =
-    exportFeature && exportFeature.scope === "filteredRows"
-      ? filteredRows
-      : table.getRowModel().rows;
-  const bodyRows = hasActiveGrouping ? filteredRows : table.getRowModel().rows;
-  const sortableRowIds = bodyRows.map((row) => getSortableRowId(row.id));
-  const groupedSections = useMemo(
-    () => buildGroupedSections(bodyRows, activeGroupingFields),
-    [activeGroupingFields, bodyRows],
-  );
-  const canReorderRows = Boolean(reordering) && !hasActiveGrouping;
-  const colSpan =
-    Math.max(table.getVisibleLeafColumns().length, 1) +
-    (rowActions ? 1 : 0) +
-    (selectable ? 1 : 0) +
-    (canReorderRows ? 1 : 0);
-  const canDragRows = activeGroupingFields.some(
-    (field) => !!field.onMoveToGroup,
-  );
-  const addGroupingField = (fieldId: string) => {
-    if (activeGrouping.includes(fieldId)) return;
-    updateTableSearch((current) => ({
-      ...current,
-      grouping: [...activeGrouping, fieldId],
-    }));
-  };
-
-  const removeGroupingField = (fieldId: string) => {
-    updateTableSearch((current) => ({
-      ...current,
-      grouping: activeGrouping.filter((currentId) => currentId !== fieldId),
-    }));
-  };
-
-  const toggleGroupingField = (fieldId: string, enabled: boolean) => {
-    if (enabled) {
-      addGroupingField(fieldId);
-      return;
-    }
-
-    removeGroupingField(fieldId);
-  };
-
-  const toggleGroup = (groupKey: string) => {
-    setCollapsedGroups((current) => ({
-      ...current,
-      [groupKey]: !current[groupKey],
-    }));
-  };
-
-  const setView = (nextView: DataTableView) => {
-    if (nextView === currentView) {
-      return;
-    }
-
-    setStoredView(nextView);
-  };
-
-  const renderLoadingState = () => <Loading label={labels.loading} />;
-
-  const renderEmptyContent = () =>
-    state?.error ?? (isLoading ? renderLoadingState() : emptyContent);
-
-  const renderTableEmptyState = () => (
-    <TableRow>
-      <TableCell className="h-24 text-center" colSpan={colSpan}>
-        {renderEmptyContent()}
-      </TableCell>
-    </TableRow>
-  );
-
-  const renderGalleryEmptyState = (message?: ReactNode) => (
-    <div className="text-muted-foreground rounded-xl border border-dashed px-4 py-10 text-center text-sm">
-      {message ?? renderEmptyContent()}
-    </div>
-  );
-
-  const renderGalleryRows = (rows: DataTableRow<TData>[], canDrag: boolean) => (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {rows.map((row) => (
-        <DataTableGalleryCard
-          canDrag={canDrag}
-          dragLabel={grouping?.getRowLabel?.(row.original)}
-          gallery={galleryConfig}
-          key={row.id}
-          onRowClick={onRowClick}
-          row={row}
-          rowActions={rowActions}
-          rowActionsLabel={rowActionsLabel}
-          selectRowLabel={labels.selectRow}
-          selectable={selectable}
-          table={table}
-        />
-      ))}
-    </div>
-  );
-
-  const renderGroupedTableSections = (
-    sections: GroupSection<TData>[],
-  ): ReactNode =>
-    sections.flatMap((section) => {
-      const isCollapsed = collapsedGroups[section.key] ?? false;
-      const hasChildren = section.children.length > 0;
-      const sectionBody = (
-        <GroupTableSection key={section.key} section={section}>
-          <GroupHeaderRow
-            collapsed={isCollapsed}
-            colSpan={colSpan}
-            onToggle={() => toggleGroup(section.key)}
-            section={section}
-          />
-          {!isCollapsed &&
-            !hasChildren &&
-            (section.rows.length > 0 ? (
-              section.rows.map((row) => (
-                <DataTableRow
-                  canDrag={canDragRows}
-                  canReorder={false}
-                  dragLabel={grouping?.getRowLabel?.(row.original)}
-                  indentDepth={section.depth + 1}
-                  key={row.id}
-                  onRowClick={onRowClick}
-                  row={row}
-                  rowActions={rowActions}
-                  rowActionsLabel={rowActionsLabel}
-                  selectRowLabel={labels.selectRow}
-                  selectable={selectable}
-                  table={table}
-                />
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  className="text-muted-foreground h-16"
-                  colSpan={colSpan}
-                  style={{
-                    paddingLeft: `calc(0.5rem + ${section.depth * GROUP_INDENT_PX + GROUP_ROW_INDENT_OFFSET_PX}px)`,
-                  }}
-                >
-                  {isLoading
-                    ? renderLoadingState()
-                    : (section.field.renderEmptyGroup?.(section.groupId) ??
-                      labels.empty)}
-                </TableCell>
-              </TableRow>
-            ))}
-        </GroupTableSection>
-      );
-
-      return !isCollapsed && hasChildren
-        ? [sectionBody, renderGroupedTableSections(section.children)]
-        : [sectionBody];
-    });
-
-  const renderGroupedGallerySections = (
-    sections: GroupSection<TData>[],
-  ): ReactNode =>
-    sections.map((section) => {
-      const isCollapsed = collapsedGroups[section.key] ?? false;
-      const hasChildren = section.children.length > 0;
-
-      return (
-        <div className="space-y-3" key={section.key}>
-          <GroupHeaderCard
-            collapsed={isCollapsed}
-            onToggle={() => toggleGroup(section.key)}
-            section={section}
-          />
-          {!isCollapsed &&
-            (hasChildren
-              ? renderGroupedGallerySections(section.children)
-              : section.rows.length > 0
-                ? renderGalleryRows(section.rows, canDragRows)
-                : renderGalleryEmptyState(
-                    isLoading
-                      ? renderLoadingState()
-                      : (section.field.renderEmptyGroup?.(section.groupId) ??
-                          labels.empty),
-                  ))}
-        </div>
-      );
-    });
-
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveDragLabel(null);
-    if (!over) return;
-
-    const reorderData = decodeRowReorderDragData(active.data.current);
-    if (Option.isSome(reorderData) && reordering && canReorderRows) {
-      const sourceRowId = String(active.id).replace(/^sortable-row:/, "");
-      const targetRowId = String(over.id).replace(/^sortable-row:/, "");
-      const currentIndex = bodyRows.findIndex((row) => row.id === sourceRowId);
-      const nextIndex = bodyRows.findIndex((row) => row.id === targetRowId);
-
-      if (
-        currentIndex !== -1 &&
-        nextIndex !== -1 &&
-        currentIndex !== nextIndex
-      ) {
-        reordering.onReorder(
-          arrayMove(
-            bodyRows.map((row) => row.original),
-            currentIndex,
-            nextIndex,
-          ),
-        );
-      }
-      return;
-    }
-
-    const rowData = decodeRowDragData(active.data.current);
-    const groupData = decodeGroupDropData(over.data.current);
-    if (Option.isNone(rowData) || Option.isNone(groupData)) return;
-
-    const row = bodyRows.find(({ id }) => id === rowData.value.rowId)?.original;
-    const field = grouping?.fields.find(
-      (currentField) => currentField.id === groupData.value.fieldId,
-    );
-    const nextGroupId = groupData.value.groupId;
-
-    if (row && field?.onMoveToGroup && field.getGroupId(row) !== nextGroupId) {
-      field.onMoveToGroup(row, nextGroupId);
-    }
-  };
-
-  const handleDragStart = ({ active }: DragStartEvent) => {
-    const rowData = decodeRowDragData(active.data.current);
-    setActiveDragLabel(
-      Option.isSome(rowData) ? (rowData.value.label ?? null) : null,
-    );
-  };
-
-  return (
-    <div className="w-full max-w-full min-w-0 rounded-md">
-      <DataTableToolbar
-        activeGrouping={activeGrouping}
-        bulkActions={bulkActions}
-        exportBaseName={exportBaseName}
-        exportRows={exportRows}
-        grouping={grouping}
-        labels={labels}
-        onRefresh={onRefresh}
-        onToggleGrouping={toggleGroupingField}
-        onViewChange={setView}
-        selectedRows={selectedRows}
-        showColumnVisibility={showColumnVisibility}
-        showExport={showExport}
-        showGallery={showGallery}
-        showSearch={showSearch}
-        showSorting={showSorting}
-        table={table}
-        view={currentView}
-      />
-      <DndContext
-        onDragCancel={() => setActiveDragLabel(null)}
-        onDragEnd={handleDragEnd}
-        onDragStart={handleDragStart}
-        sensors={sensors}
-      >
-        <table.AppTable>
-          {isGalleryView ? (
-            hasActiveGrouping ? (
-              groupedSections.length > 0 ? (
-                <div className="space-y-4">
-                  {renderGroupedGallerySections(groupedSections)}
-                </div>
-              ) : (
-                renderGalleryEmptyState()
-              )
-            ) : bodyRows.length > 0 ? (
-              renderGalleryRows(bodyRows, false)
-            ) : (
-              renderGalleryEmptyState()
-            )
-          ) : (
-            <ScrollArea className="-m-1 max-w-full min-w-0">
-              <div className="max-w-full min-w-0 p-1">
-                <Table
-                  className="table-fixed"
-                  style={{
-                    width: `max(100%, ${table.getTotalSize() + (canReorderRows ? 40 : 0) + (selectable ? 40 : 0) + (rowActions ? 40 : 0)}px)`,
-                  }}
-                >
-                  <TableHeader>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <TableRow key={headerGroup.id} className="p-4">
-                        {selectable ? (
-                          <TableHead className="w-10 min-w-10 pr-0">
-                            <Checkbox
-                              aria-label={labels.selectAllRows}
-                              checked={table.getIsAllPageRowsSelected()}
-                              indeterminate={
-                                table.getIsSomePageRowsSelected() &&
-                                !table.getIsAllPageRowsSelected()
-                              }
-                              onCheckedChange={(checked) =>
-                                table.toggleAllPageRowsSelected(checked)
-                              }
-                            />
-                          </TableHead>
-                        ) : null}
-                        {canReorderRows ? (
-                          <TableHead className="w-10 min-w-10 p-0" />
-                        ) : null}
-                        {headerGroup.headers.map((header) => (
-                          <table.AppHeader header={header} key={header.id}>
-                            {(appHeader) => (
-                              <TableHead
-                                className="relative h-12 min-w-32 p-0"
-                                style={{ width: header.getSize() }}
-                              >
-                                {header.isPlaceholder ? null : (
-                                  <appHeader.FlexRender />
-                                )}
-                                {header.column.getCanResize() ? (
-                                  <button
-                                    aria-label={labels.resizeColumn(
-                                      getHeaderName(header),
-                                    )}
-                                    aria-orientation="vertical"
-                                    aria-valuemax={
-                                      header.column.columnDef.maxSize ??
-                                      DEFAULT_COLUMN_MAX_SIZE
-                                    }
-                                    aria-valuemin={
-                                      header.column.columnDef.minSize ??
-                                      DEFAULT_COLUMN_MIN_SIZE
-                                    }
-                                    aria-valuenow={header.column.getSize()}
-                                    className={cn(
-                                      "hover:bg-primary/60 absolute inset-y-0 right-0 z-10 w-1 cursor-col-resize touch-none bg-transparent p-0 select-none",
-                                      header.column.getIsResizing() &&
-                                        "bg-primary",
-                                    )}
-                                    onKeyDown={(event) => {
-                                      const minSize =
-                                        header.column.columnDef.minSize ??
-                                        DEFAULT_COLUMN_MIN_SIZE;
-                                      const maxSize =
-                                        header.column.columnDef.maxSize ??
-                                        DEFAULT_COLUMN_MAX_SIZE;
-                                      const currentSize =
-                                        header.column.getSize();
-                                      const nextSize =
-                                        event.key === "ArrowLeft"
-                                          ? currentSize - COLUMN_RESIZE_STEP
-                                          : event.key === "ArrowRight"
-                                            ? currentSize + COLUMN_RESIZE_STEP
-                                            : event.key === "Home"
-                                              ? minSize
-                                              : event.key === "End"
-                                                ? maxSize
-                                                : undefined;
-
-                                      if (nextSize === undefined) return;
-                                      event.preventDefault();
-                                      table.setColumnSizing((current) => ({
-                                        ...current,
-                                        [header.column.id]: Math.min(
-                                          maxSize,
-                                          Math.max(minSize, nextSize),
-                                        ),
-                                      }));
-                                    }}
-                                    role="separator"
-                                    type="button"
-                                    onDoubleClick={() =>
-                                      header.column.resetSize()
-                                    }
-                                    onMouseDown={header.getResizeHandler()}
-                                    onTouchStart={header.getResizeHandler()}
-                                  />
-                                ) : null}
-                              </TableHead>
-                            )}
-                          </table.AppHeader>
-                        ))}
-                        {rowActions ? (
-                          <TableHead className="w-10 min-w-10 p-0" />
-                        ) : null}
-                      </TableRow>
-                    ))}
-                  </TableHeader>
-                  {hasActiveGrouping ? (
-                    groupedSections.length > 0 ? (
-                      renderGroupedTableSections(groupedSections)
-                    ) : (
-                      <TableBody className="px-2">
-                        {renderTableEmptyState()}
-                      </TableBody>
-                    )
-                  ) : (
-                    <TableBody className="px-2">
-                      {bodyRows.length > 0 ? (
-                        canReorderRows ? (
-                          <SortableContext
-                            items={sortableRowIds}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            {bodyRows.map((row) => (
-                              <DataTableRow
-                                canDrag={false}
-                                canReorder
-                                dragLabel={reordering?.getRowLabel?.(
-                                  row.original,
-                                )}
-                                key={row.id}
-                                onRowClick={onRowClick}
-                                reorderHandleLabel={
-                                  reordering?.handleLabel ?? labels.reorder
-                                }
-                                row={row}
-                                rowActions={rowActions}
-                                rowActionsLabel={rowActionsLabel}
-                                selectRowLabel={labels.selectRow}
-                                selectable={selectable}
-                                table={table}
-                              />
-                            ))}
-                          </SortableContext>
-                        ) : (
-                          bodyRows.map((row) => (
-                            <DataTableRow
-                              canDrag={false}
-                              canReorder={false}
-                              key={row.id}
-                              onRowClick={onRowClick}
-                              row={row}
-                              rowActions={rowActions}
-                              rowActionsLabel={rowActionsLabel}
-                              selectRowLabel={labels.selectRow}
-                              selectable={selectable}
-                              table={table}
-                            />
-                          ))
-                        )
-                      ) : (
-                        renderTableEmptyState()
-                      )}
-                    </TableBody>
-                  )}
-                </Table>
-              </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          )}
-          <DragOverlay modifiers={[snapDragOverlayVerticalCenterToCursor]}>
-            {activeDragLabel ? (
-              <div className="bg-background rounded-md border px-3 py-2 text-sm shadow-sm">
-                {activeDragLabel}
-              </div>
-            ) : null}
-          </DragOverlay>
-        </table.AppTable>
-      </DndContext>
-      {showPagination && !hasActiveGrouping && (
-        <div className="p-2">
-          <DataTablePagination
-            messages={labels}
-            pageSizes={pageSizes}
-            rowCount={serverRowCount}
-            table={table}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DataTableDisplayModeSwitch({
-  messages,
-  value,
-  onChange,
-}: {
-  messages: DataTableMessages;
-  value: DataTableView;
-  onChange: (value: DataTableView) => void;
-}) {
+  if (!visible?.length) return null;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        onClick={(event) => event.stopPropagation()}
         render={
-          <Button
-            aria-label={messages.view}
-            className="h-9"
-            size="sm"
-            variant="outline"
-          >
-            {value === "gallery" ? <LayoutGrid /> : <Rows3 />}
-            <span className="hidden sm:inline">{messages.view}</span>
+          <Button size="icon" variant="ghost">
+            <span className="sr-only">{title}</span>
+            <MoreHorizontal />
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuRadioGroup
-          value={value}
-          onValueChange={(nextValue) => {
-            const view = decodeDataTableView(nextValue);
-            if (Option.isSome(view)) onChange(view.value);
-          }}
-        >
-          <DropdownMenuRadioItem value="table">
-            <Rows3 />
-            {messages.tableView}
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="gallery">
-            <LayoutGrid />
-            {messages.galleryView}
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
+      <DropdownMenuContent align="end">
+        <DropdownMenuGroup>
+          {visible.map((action) => (
+            <DropdownMenuItem
+              key={action.name}
+              onClick={() => action.onClick(groupId)}
+              variant={action.variant}
+            >
+              {action.icon} {action.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
-function DataTableSortDropdown<TData extends RowData>({
-  messages,
-  table,
+const GroupedTable = <TData extends RowData>({
+  tableAtom,
 }: {
-  messages: DataTableMessages;
-  table: DataTableInstance<TData>;
-}) {
-  const sorting = table.state.sorting;
-  const sortableColumns = table
-    .getAllColumns()
-    .filter((column) => column.getCanSort());
-  const columnLabels = getColumnLabels(table);
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const model = deriveModel(store);
+  const sections = groupDataTableRows(
+    model.sortedRows,
+    getActiveGrouping(store),
+  );
+  const extra =
+    (store.config.features.selection ? 1 : 0) +
+    (store.config.features.rowActions ? 1 : 0) +
+    (canDragRows(store) ? 1 : 0);
+  const renderSections = (items: GroupSection<TData>[]): ReactNode =>
+    items.flatMap((section) => {
+      const collapsed = !!store.state.collapsedGroups[section.key];
+      const targetKey = getGroupDropKey(section.field.id, section.groupId);
+      const body = (
+        <TableBody
+          className="data-[drop-target=true]:outline-primary relative data-[drop-target=true]:z-30 data-[drop-target=true]:outline-2 data-[drop-target=true]:-outline-offset-2 data-[drop-target=true]:[&>tr]:border-transparent data-[drop-target=true]:[&>tr>td:last-child]:z-0"
+          data-table-group={section.field.onMoveToGroup ? targetKey : undefined}
+          key={section.key}
+        >
+          <TableRow className="bg-muted/40">
+            <TableCell colSpan={model.visibleColumns.length + extra}>
+              <div
+                className="flex items-center gap-2"
+                style={{ paddingLeft: section.depth * 20 }}
+              >
+                <button
+                  aria-expanded={!collapsed}
+                  className="flex flex-1 items-center gap-2 text-left"
+                  onClick={() =>
+                    changeState(setStore, (state) => ({
+                      ...state,
+                      collapsedGroups: {
+                        ...state.collapsedGroups,
+                        [section.key]: !collapsed,
+                      },
+                    }))
+                  }
+                  type="button"
+                >
+                  {collapsed ? (
+                    <ChevronRight className="size-4" />
+                  ) : (
+                    <ChevronDown className="size-4" />
+                  )}
+                  <span className="flex-1">
+                    {section.field.renderGroupLabel?.(
+                      section.groupId,
+                      section.rows.map((row) => row.data),
+                    ) ?? section.groupId}
+                  </span>
+                </button>
+                <Badge variant="secondary">{section.rows.length}</Badge>
+                <GroupActions
+                  actions={section.field.actions}
+                  groupId={section.groupId}
+                  title={
+                    section.field.actionsLabel ?? store.config.labels.actions
+                  }
+                />
+              </div>
+            </TableCell>
+          </TableRow>
+          {!collapsed && !section.children.length
+            ? section.rows.length
+              ? section.rows.map((row) => (
+                  <RowIdContext.Provider
+                    key={`${section.key}:${row.id}`}
+                    value={row.id}
+                  >
+                    <TableDataRow tableAtom={tableAtom} />
+                  </RowIdContext.Provider>
+                ))
+              : [
+                  <TableRow key={`${section.key}:empty`}>
+                    <TableCell
+                      className="text-muted-foreground h-16"
+                      colSpan={model.visibleColumns.length + extra}
+                    >
+                      {section.field.renderEmptyGroup?.(section.groupId) ??
+                        store.config.labels.empty}
+                    </TableCell>
+                  </TableRow>,
+                ]
+            : null}
+        </TableBody>
+      );
+      return !collapsed && section.children.length
+        ? [body, renderSections(section.children)]
+        : [body];
+    });
+  return <>{renderSections(sections)}</>;
+};
 
-  if (sortableColumns.length === 0) {
-    return null;
+const ColumnHeaderMenu = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const columnId = useRequiredId(ColumnIdContext);
+  const column = deriveModel(store).columns.find(({ id }) => id === columnId);
+  if (!column) return null;
+  const sortingEnabled =
+    store.config.features.sorting !== false && column.colDef.sortable !== false;
+  const hidingEnabled =
+    store.config.features.columnVisibility !== false &&
+    column.colDef.hideable !== false;
+  const sort = store.state.sorting.find(({ id }) => id === column.id);
+  const update = (
+    next: (state: DataTablePublicState) => DataTablePublicState,
+  ) => changeState(setStore, next);
+  const setSort = (desc: boolean) =>
+    update((state) => ({
+      ...state,
+      sorting: [{ id: column.id, desc }],
+      pagination: { ...state.pagination, pageIndex: 0 },
+    }));
+  const label = columnLabel(column);
+
+  if (!sortingEnabled && !hidingEnabled) {
+    return <div className="truncate">{column.colDef.headerName}</div>;
   }
-
-  const activeSortColumn = sorting.length > 0 ? sorting[0] : null;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <Button
-            aria-label={messages.sortBy}
-            className="h-9"
+            aria-label={label}
+            className="h-8 max-w-full justify-start px-2"
             size="sm"
-            variant="outline"
+            variant="ghost"
           >
-            {activeSortColumn ? (
-              activeSortColumn.desc ? (
+            <span className="truncate">{column.colDef.headerName}</span>
+            {sort ? (
+              sort.desc ? (
                 <ArrowDown />
               ) : (
                 <ArrowUp />
               )
-            ) : (
+            ) : sortingEnabled ? (
               <ChevronsUpDown />
-            )}
-            <span className="hidden sm:inline">{messages.sortBy}</span>
+            ) : null}
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-[200px]">
+      <DropdownMenuContent align="start" className="w-48">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{messages.sortBy}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {sortableColumns.map((column) => {
-            const sortState = sorting.find((s) => s.id === column.id);
-            const label = columnLabels.get(column.id) ?? column.id;
-
-            return (
-              <DropdownMenuSub key={column.id}>
-                <DropdownMenuSubTrigger inset={!!sortState}>
-                  {sortState ? (
-                    <span className="pointer-events-none absolute left-3 flex size-4 items-center justify-center">
-                      {sortState.desc ? <ArrowDown /> : <ArrowUp />}
-                    </span>
-                  ) : null}
-                  {label}
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-                    <ArrowUp />
-                    {messages.sortAsc}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-                    <ArrowDown />
-                    {messages.sortDesc}
-                  </DropdownMenuItem>
-                  {sortState && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => column.clearSorting()}>
-                        {messages.sortClear}
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            );
-          })}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function DataTableViewOptions<TData extends RowData>({
-  messages,
-  table,
-}: {
-  messages: DataTableMessages;
-  table: DataTableInstance<TData>;
-}) {
-  const columnLabels = getColumnLabels(table);
-  const columns = table
-    .getAllColumns()
-    .filter((column) => column.accessorFn !== undefined && column.getCanHide());
-
-  if (columns.length === 0) {
-    return null;
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            aria-label={messages.columns}
-            className="h-9"
-            size="sm"
-            variant="outline"
-          >
-            <Settings2 />
-            <span className="hidden sm:inline">{messages.columns}</span>
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end" className="w-[180px]">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>{messages.columns}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {columns.map((column) => (
-            <DropdownMenuCheckboxItem
-              checked={column.getIsVisible()}
-              className="capitalize"
-              key={column.id}
-              onCheckedChange={(value) => column.toggleVisibility(!!value)}
+          {sortingEnabled ? (
+            <>
+              <DropdownMenuItem onClick={() => setSort(false)}>
+                <ArrowUp /> {store.config.labels.sortAsc}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSort(true)}>
+                <ArrowDown /> {store.config.labels.sortDesc}
+              </DropdownMenuItem>
+              {sort ? (
+                <DropdownMenuItem
+                  onClick={() =>
+                    update((state) => ({
+                      ...state,
+                      sorting: state.sorting.filter(
+                        ({ id }) => id !== column.id,
+                      ),
+                    }))
+                  }
+                >
+                  <X /> {store.config.labels.sortClear}
+                </DropdownMenuItem>
+              ) : null}
+            </>
+          ) : null}
+          {sortingEnabled && hidingEnabled ? <DropdownMenuSeparator /> : null}
+          {hidingEnabled ? (
+            <DropdownMenuItem
+              onClick={() =>
+                update((state) => ({
+                  ...state,
+                  columnVisibility: {
+                    ...state.columnVisibility,
+                    [column.id]: false,
+                  },
+                }))
+              }
             >
-              {columnLabels.get(column.id) ?? column.id}
-            </DropdownMenuCheckboxItem>
-          ))}
+              <EyeOff /> {store.config.labels.hideColumn}
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
-interface DataTablePaginationProps<TData extends RowData> {
-  messages?: DataTableMessageOverrides;
-  pageSizes?: readonly number[] | undefined;
-  rowCount?: number | undefined;
-  table: DataTableInstance<TData>;
-}
+const DataTableHeader = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const model = deriveModel(store);
+  const selection = store.config.features.selection;
+  const grouped = getActiveGrouping(store).length > 0;
+  const draggable = canDragRows(store);
+  const selectableRows = getDataTableSelectableRows(
+    model,
+    grouped,
+    selection ? selection.isRowSelectable : undefined,
+  );
+  const allSelected =
+    selectableRows.length > 0 &&
+    selectableRows.every((row) => store.state.rowSelection[row.id]);
+  const someSelected = selectableRows.some(
+    (row) => store.state.rowSelection[row.id],
+  );
+  return (
+    <TableHeader>
+      <TableRow>
+        {selection ? (
+          <TableHead className="w-10 pr-0">
+            <Checkbox
+              aria-label={store.config.labels.selectAllRows}
+              checked={allSelected}
+              indeterminate={someSelected && !allSelected}
+              onCheckedChange={(checked) => {
+                changeState(setStore, (state) => {
+                  const rowSelection = { ...state.rowSelection };
+                  selectableRows.forEach(
+                    (row) => (rowSelection[row.id] = checked),
+                  );
+                  selection.onSelectionChange?.(
+                    model.rows
+                      .filter((row) => rowSelection[row.id])
+                      .map((row) => row.data),
+                  );
+                  return { ...state, rowSelection };
+                });
+              }}
+            />
+          </TableHead>
+        ) : null}
+        {draggable ? <TableHead className="w-10" /> : null}
+        {model.visibleColumns.map((column) => {
+          return (
+            <TableHead
+              className="relative h-12"
+              key={column.id}
+              style={{ width: column.width }}
+            >
+              <ColumnIdContext.Provider value={column.id}>
+                <ColumnHeaderMenu tableAtom={tableAtom} />
+                <ResizeHandle tableAtom={tableAtom} />
+              </ColumnIdContext.Provider>
+            </TableHead>
+          );
+        })}
+        {store.config.features.rowActions ? (
+          <TableHead className="w-10" />
+        ) : null}
+      </TableRow>
+    </TableHeader>
+  );
+};
 
-export function DataTablePagination<TData extends RowData>({
-  messages,
-  pageSizes = [10, 20, 30, 40, 50],
-  rowCount,
-  table,
-}: DataTablePaginationProps<TData>) {
-  const labels = dataTableMessages(messages);
-  const selectedRows = table.getFilteredSelectedRowModel().rows.length;
-  const filteredRows = table.getFilteredRowModel().rows.length;
-  const totalRows = rowCount ?? filteredRows;
+const DataTableBody = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store] = useTableAtom(tableAtom);
+  const model = deriveModel(store);
+  const grouped = getActiveGrouping(store).length > 0;
+  const rows = grouped ? model.sortedRows : model.pageRows;
+  const colSpan =
+    model.visibleColumns.length +
+    (store.config.features.selection ? 1 : 0) +
+    (store.config.features.rowActions ? 1 : 0) +
+    (canDragRows(store) ? 1 : 0);
+  if (grouped && rows.length && !store.config.status.error) {
+    return <GroupedTable tableAtom={tableAtom} />;
+  }
+  return (
+    <TableBody>
+      {store.config.status.error ||
+      (!rows.length && !store.config.status.loading) ? (
+        <TableRow>
+          <TableCell
+            className="h-24 text-center"
+            colSpan={Math.max(colSpan, 1)}
+          >
+            {store.config.status.error ??
+              store.config.status.empty ??
+              store.config.labels.empty}
+          </TableCell>
+        </TableRow>
+      ) : store.config.status.loading && !rows.length ? (
+        <TableRow>
+          <TableCell
+            className="h-24 text-center"
+            colSpan={Math.max(colSpan, 1)}
+          >
+            <Loading label={store.config.labels.loading} />
+          </TableCell>
+        </TableRow>
+      ) : (
+        rows.map((row) => (
+          <RowIdContext.Provider key={row.id} value={row.id}>
+            <TableDataRow tableAtom={tableAtom} />
+          </RowIdContext.Provider>
+        ))
+      )}
+    </TableBody>
+  );
+};
+
+const GalleryCard = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const rowId = useRequiredId(RowIdContext);
+  const model = deriveModel(store);
+  const row = model.sortedRows.find((candidate) => candidate.id === rowId);
+  const gallery = store.config.features.gallery;
+  if (!row || !gallery) return null;
+  const find = (id?: string) =>
+    id ? model.visibleColumns.find((column) => column.id === id) : undefined;
+  const name = find(gallery.name);
+  const description = find(gallery.description);
+  const tag = find(gallery.tag);
+  const selection = store.config.features.selection;
+  const selectable =
+    !!selection && (selection.isRowSelectable?.(row.data) ?? true);
+  const rowActions = store.config.features.rowActions;
+  const draggable = canDragRows(store);
+  return (
+    <Card
+      className={cn(
+        "relative gap-3 data-[drag-source=true]:opacity-40 data-[drop-position=before]:border-t-2 data-[drop-position=before]:border-t-primary data-[drop-position=after]:border-b-2 data-[drop-position=after]:border-b-primary",
+        store.config.onRowClicked && "cursor-pointer",
+      )}
+      data-table-row={row.id}
+      onClick={() => store.config.onRowClicked?.(row.data)}
+      onKeyDown={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          store.config.onRowClicked &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          store.config.onRowClicked(row.data);
+        }
+      }}
+      tabIndex={store.config.onRowClicked ? 0 : undefined}
+    >
+      <CardHeader className="pr-12">
+        <div className="flex items-center gap-2">
+          {selection ? (
+            <Checkbox
+              aria-label={store.config.labels.selectRow}
+              checked={!!store.state.rowSelection[row.id]}
+              disabled={!selectable}
+              onCheckedChange={(checked) =>
+                toggleRow(store, setStore, row.id, checked)
+              }
+              onClick={(event) => event.stopPropagation()}
+            />
+          ) : null}
+          {draggable ? <DragHandle tableAtom={tableAtom} /> : null}
+          {tag ? (
+            <Badge variant="secondary">
+              {gallery.tagIcon}
+              {renderCell(row, tag)}
+            </Badge>
+          ) : null}
+        </div>
+        <CardTitle>{name ? renderCell(row, name) : row.id}</CardTitle>
+        {description ? (
+          <div className="text-muted-foreground line-clamp-3 text-sm">
+            {renderCell(row, description)}
+          </div>
+        ) : null}
+        {rowActions ? (
+          <div
+            className="absolute top-4 right-4"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <DataTableRowActions
+              actions={rowActions.items}
+              row={row.data}
+              title={rowActions.label ?? store.config.labels.actions}
+            />
+          </div>
+        ) : null}
+      </CardHeader>
+    </Card>
+  );
+};
+
+const DataTableGallery = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const model = deriveModel(store);
+  const fields = getActiveGrouping(store);
+  const rows = fields.length ? model.sortedRows : model.pageRows;
+  if (store.config.status.error) {
+    return (
+      <div className="text-destructive rounded-lg border border-dashed p-10 text-center">
+        {store.config.status.error}
+      </div>
+    );
+  }
+  if (store.config.status.loading && !rows.length) {
+    return (
+      <div className="rounded-lg border border-dashed p-10 text-center">
+        <Loading label={store.config.labels.loading} />
+      </div>
+    );
+  }
+  if (!rows.length) {
+    return (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-10 text-center">
+        {store.config.status.empty ?? store.config.labels.empty}
+      </div>
+    );
+  }
+  if (!fields.length) {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {rows.map((row) => (
+          <RowIdContext.Provider key={row.id} value={row.id}>
+            <GalleryCard tableAtom={tableAtom} />
+          </RowIdContext.Provider>
+        ))}
+      </div>
+    );
+  }
+  const renderSections = (sections: GroupSection<TData>[]): ReactNode =>
+    sections.map((section) => {
+      const collapsed = !!store.state.collapsedGroups[section.key];
+      const targetKey = getGroupDropKey(section.field.id, section.groupId);
+      return (
+        <section
+          className="data-[drop-target=true]:ring-primary space-y-3 rounded-lg transition-shadow data-[drop-target=true]:ring-2"
+          data-table-group={section.field.onMoveToGroup ? targetKey : undefined}
+          key={section.key}
+        >
+          <div className="flex items-center gap-2 rounded-lg border p-3">
+            <button
+              aria-expanded={!collapsed}
+              className="flex flex-1 items-center gap-2 text-left"
+              onClick={() =>
+                changeState(setStore, (state) => ({
+                  ...state,
+                  collapsedGroups: {
+                    ...state.collapsedGroups,
+                    [section.key]: !collapsed,
+                  },
+                }))
+              }
+              type="button"
+            >
+              {collapsed ? (
+                <ChevronRight className="size-4" />
+              ) : (
+                <ChevronDown className="size-4" />
+              )}
+              <span className="flex-1">
+                {section.field.renderGroupLabel?.(
+                  section.groupId,
+                  section.rows.map((row) => row.data),
+                ) ?? section.groupId}
+              </span>
+              <Badge variant="secondary">{section.rows.length}</Badge>
+            </button>
+            <GroupActions
+              actions={section.field.actions}
+              groupId={section.groupId}
+              title={section.field.actionsLabel ?? store.config.labels.actions}
+            />
+          </div>
+          {!collapsed ? (
+            section.children.length ? (
+              renderSections(section.children)
+            ) : section.rows.length ? (
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {section.rows.map((row) => (
+                  <RowIdContext.Provider
+                    key={`${section.key}:${row.id}`}
+                    value={row.id}
+                  >
+                    <GalleryCard tableAtom={tableAtom} />
+                  </RowIdContext.Provider>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center">
+                {section.field.renderEmptyGroup?.(section.groupId) ??
+                  store.config.labels.empty}
+              </div>
+            )
+          ) : null}
+        </section>
+      );
+    });
+  return (
+    <div className="space-y-4">
+      {renderSections(groupDataTableRows(rows, fields))}
+    </div>
+  );
+};
+
+const DataTablePagination = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const model = deriveModel(store);
+  const pagination = store.config.features.pagination ?? { mode: "client" };
+  const clientGrouping =
+    pagination !== false &&
+    pagination.mode === "client" &&
+    getActiveGrouping(store).length > 0;
+  const paginationVisible = pagination !== false && !clientGrouping;
+  const pageIndex = store.state.pagination.pageIndex;
+  const maxPageIndex = model.pageCount - 1;
+  useLayoutEffect(() => {
+    if (paginationVisible && pageIndex > maxPageIndex) {
+      changeState(setStore, (state) => ({
+        ...state,
+        pagination: { ...state.pagination, pageIndex: maxPageIndex },
+      }));
+    }
+  }, [maxPageIndex, pageIndex, paginationVisible, setStore]);
+  if (!paginationVisible) return null;
+  const selected = model.rows.filter(
+    (row) => store.state.rowSelection[row.id],
+  ).length;
+  const setPagination = (next: DataTablePaginationState) =>
+    changeState(setStore, (state) => ({ ...state, pagination: next }));
+  return (
+    <div className="pt-4">
+      <Pagination
+        messages={store.config.labels}
+        onPageChange={(pageIndex) =>
+          setPagination({ ...store.state.pagination, pageIndex })
+        }
+        onPageSizeChange={(pageSize) =>
+          setPagination({ pageIndex: 0, pageSize })
+        }
+        page={Math.min(store.state.pagination.pageIndex, model.pageCount - 1)}
+        pageCount={model.pageCount}
+        pageSize={store.state.pagination.pageSize}
+        pageSizes={pagination.pageSizes}
+        selectedRows={selected}
+        totalRows={model.totalRows}
+      />
+    </div>
+  );
+};
+
+export const DataTable = <TData extends RowData>(
+  props: DataTableProps<TData>,
+) => {
+  const validatedConfig = resolveConfig(props);
+  const atomRef = useRef<TableAtom<TData> | null>(null);
+  if (!atomRef.current) {
+    const initial = {
+      rowData: props.rowData,
+      columnDefs: props.columnDefs,
+      config: validatedConfig,
+      state: initialPublicState(props),
+      controlledState: props.state ?? {},
+    };
+    atomRef.current = Atom.make<DataTableStore<TData>>({
+      ...initial,
+      model: buildDataTableModel(initial),
+    });
+  }
+  const tableAtom = atomRef.current;
+  const setStore = useAtomSet(tableAtom);
+
+  useLayoutEffect(() => {
+    setStore((store) => {
+      const features = props.features ?? {};
+      const selection = features.selection;
+      const config: ResolvedConfig<TData> = {
+        getRowId:
+          (selection && selection.getRowId) || props.getRowId || undefined,
+        onStateChange: props.onStateChange,
+        status: props.status ?? {},
+        features,
+        onRowClicked: props.onRowClicked,
+        labels: dataTableMessages(props.messages),
+      };
+      const state = mergeDataTableState(store.state, props.state);
+      const modelChanged =
+        store.rowData !== props.rowData ||
+        store.columnDefs !== props.columnDefs ||
+        !sameDataTableState(store.state, state) ||
+        store.config.getRowId !== config.getRowId ||
+        store.config.features.pagination !== config.features.pagination;
+      const next = {
+        ...store,
+        rowData: props.rowData,
+        columnDefs: props.columnDefs,
+        config,
+        controlledState: props.state ?? {},
+        state,
+      };
+      return modelChanged
+        ? { ...next, model: buildDataTableModel(next) }
+        : next;
+    });
+  }, [
+    props.columnDefs,
+    props.features,
+    props.getRowId,
+    props.messages,
+    props.onRowClicked,
+    props.onStateChange,
+    props.rowData,
+    props.state,
+    props.status,
+    setStore,
+  ]);
 
   return (
-    <Pagination
-      messages={{
-        pageSize: labels.pageSize,
-        results: labels.results,
-        selectedOf: labels.selectedOf,
-        pageOf: labels.pageOf,
-        goToFirstPage: labels.goToFirstPage,
-        goToPreviousPage: labels.goToPreviousPage,
-        goToNextPage: labels.goToNextPage,
-        goToLastPage: labels.goToLastPage,
-      }}
-      onPageChange={(page) => table.setPageIndex(page)}
-      onPageSizeChange={(pageSize) => table.setPageSize(pageSize)}
-      page={table.state.pagination.pageIndex}
-      pageCount={table.getPageCount()}
-      pageSize={table.state.pagination.pageSize}
-      pageSizes={pageSizes}
-      selectedRows={selectedRows}
-      totalRows={totalRows}
-    />
+    <div className="w-full max-w-full min-w-0 rounded-md" data-table-root="">
+      <DataTableToolbar tableAtom={tableAtom} />
+      <DataTableContent tableAtom={tableAtom} />
+      <DataTablePagination tableAtom={tableAtom} />
+    </div>
   );
+};
+
+const DataTableContent = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store] = useTableAtom(tableAtom);
+  if (store.config.features.gallery && store.state.view === "gallery") {
+    return <DataTableGallery tableAtom={tableAtom} />;
+  }
+  const model = deriveModel(store);
+  const width = getDataTableWidth(
+    model.visibleColumns,
+    (store.config.features.selection ? 1 : 0) +
+      (store.config.features.rowActions ? 1 : 0) +
+      (canDragRows(store) ? 1 : 0),
+  );
+  return (
+    <ScrollArea className="max-w-full min-w-0">
+      <Table className="table-fixed" style={{ width: `max(100%, ${width}px)` }}>
+        <DataTableHeader tableAtom={tableAtom} />
+        <DataTableBody tableAtom={tableAtom} />
+      </Table>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
+  );
+};
+
+export interface DataTableRelationshipOption {
+  icon?: ReactNode;
+  label: string;
+  value: string;
 }
 
-export function DataTableRelationshipCell({
+export const DataTableRelationshipCell = ({
   emptyLabel,
   manageLabel,
   onAdd,
@@ -2715,65 +2405,57 @@ export function DataTableRelationshipCell({
   value,
 }: {
   emptyLabel: string;
-  from?: ValidateFromPath;
   manageLabel: string;
   onAdd?: (value: string) => void;
   onRemove?: (value: string) => void;
   options: readonly DataTableRelationshipOption[];
   value: readonly DataTableRelationshipOption[];
-}) {
-  const [selectedOptions, setSelectedOptions] = useState(() => [...value]);
-  const selectedValues = new Set(selectedOptions.map(({ value }) => value));
-  const orderedOptions = [...options].sort(
-    (a, b) =>
-      Number(selectedValues.has(b.value)) - Number(selectedValues.has(a.value)),
-  );
-
-  useEffect(() => {
-    setSelectedOptions([...value]);
-  }, [value]);
-
+}) => {
+  const [selected, setSelected] = useState([...value]);
+  useLayoutEffect(() => setSelected([...value]), [value]);
+  const selectedValues = new Set(selected.map((item) => item.value));
   return (
     <VirtualizedCombobox
       ariaLabel={manageLabel}
       emptyLabel={emptyLabel}
-      items={orderedOptions}
+      items={[...options].sort(
+        (left, right) =>
+          Number(selectedValues.has(right.value)) -
+          Number(selectedValues.has(left.value)),
+      )}
       messages={{ search: manageLabel }}
       multiple
-      onValueChange={(nextOptions) => {
-        const nextValues = new Set(nextOptions.map(({ value }) => value));
-        for (const option of selectedOptions) {
-          if (!nextValues.has(option.value)) onRemove?.(option.value);
-        }
-        for (const option of nextOptions) {
-          if (!selectedValues.has(option.value)) onAdd?.(option.value);
-        }
-        setSelectedOptions(nextOptions);
+      onValueChange={(next) => {
+        const nextValues = new Set(next.map((item) => item.value));
+        selected.forEach(
+          (item) => !nextValues.has(item.value) && onRemove?.(item.value),
+        );
+        next.forEach(
+          (item) => !selectedValues.has(item.value) && onAdd?.(item.value),
+        );
+        setSelected(next);
       }}
       placeholder={emptyLabel}
       trigger={
         <Button
-          aria-label={manageLabel}
-          className="h-full min-h-16 w-full min-w-0 justify-between gap-2 overflow-hidden rounded-none px-2 py-2 text-left font-normal"
-          data-slot="relationship-cell"
-          type="button"
+          className="h-full min-h-16 w-full justify-between rounded-none"
           variant="ghost"
         >
           <DataTableListSummary
             emptyLabel={emptyLabel}
             expandable={false}
-            items={selectedOptions}
-            variant={selectedOptions.some(({ icon }) => icon) ? "icon" : "text"}
+            items={selected}
+            variant={selected.some((item) => item.icon) ? "icon" : "text"}
           />
-          <ChevronDown className="text-muted-foreground size-4 shrink-0" />
+          <ChevronDown />
         </Button>
       }
-      value={selectedOptions}
+      value={selected}
     />
   );
-}
+};
 
-export function DataTableListSummary({
+export const DataTableListSummary = ({
   emptyLabel,
   expandable = true,
   items,
@@ -2783,65 +2465,48 @@ export function DataTableListSummary({
   visibleCount = 3,
 }: {
   emptyLabel: ReactNode;
-  expandable?: boolean | undefined;
+  expandable?: boolean;
   items: readonly (
     | string
     | { icon?: ReactNode; label: string; value?: string }
   )[];
-  overflowLabel?: ((remaining: number) => ReactNode) | undefined;
-  totalCount?: number | undefined;
-  variant?: "icon" | "text" | undefined;
-  visibleCount?: number | undefined;
-}) {
+  overflowLabel?: (remaining: number) => ReactNode;
+  totalCount?: number;
+  variant?: "icon" | "text";
+  visibleCount?: number;
+}) => {
   const labels = dataTableMessages();
-  const normalizedItems = items.map((item) =>
+  const normalized = items.map((item) =>
     Schema.is(Schema.String)(item) ? { label: item } : item,
   );
-  const visibleItems = normalizedItems.slice(0, visibleCount);
-  const visibleLabels = visibleItems.map(({ label }) => label).join(", ");
-  const remaining = Math.max(totalCount - visibleItems.length, 0);
-  const remainingLabel =
-    overflowLabel?.(remaining) ?? labels.listOthers(remaining);
-  const expandedItems = (
-    <PopoverContent
-      align="start"
-      className="max-h-72 w-72 overflow-y-auto p-2"
-      onClick={(event) => event.stopPropagation()}
-    >
-      <ul className="grid gap-1">
-        {normalizedItems.map((item, index) => (
-          <li
-            className="flex items-center gap-2 rounded-sm px-2 py-1.5 break-words"
-            key={item.value ?? `${item.label}-${index}`}
-          >
-            {item.icon ? (
-              <span className="bg-muted flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full text-[9px] font-semibold">
-                {item.icon}
-              </span>
-            ) : null}
-            <span className="min-w-0">{item.label}</span>
-          </li>
-        ))}
-      </ul>
+  if (!normalized.length)
+    return <span className="text-muted-foreground">{emptyLabel}</span>;
+  const visible = normalized.slice(0, visibleCount);
+  const remaining = Math.max(totalCount - visible.length, 0);
+  const details = (
+    <PopoverContent align="start" className="max-h-72 w-72 overflow-y-auto p-2">
+      {normalized.map((item, index) => (
+        <div
+          className="flex items-center gap-2 p-2"
+          key={item.value ?? `${item.label}-${index}`}
+        >
+          {item.icon}
+          {item.label}
+        </div>
+      ))}
     </PopoverContent>
   );
-
-  if (normalizedItems.length === 0) {
-    return <span className="text-muted-foreground text-sm">{emptyLabel}</span>;
-  }
-
   if (variant === "icon") {
     return (
       <TooltipProvider>
-        <span className="flex min-w-0 items-center pl-2">
-          {visibleItems.map((item, index) => (
+        <span className="flex items-center">
+          {visible.map((item) => (
             <Tooltip key={item.value ?? item.label}>
               <TooltipTrigger
                 render={
                   <span
                     aria-label={item.label}
-                    className="bg-muted border-background relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-[10px] font-semibold"
-                    style={{ marginLeft: index ? -8 : 0 }}
+                    className="bg-muted -ml-1 flex size-8 items-center justify-center rounded-full"
                   >
                     {item.icon ?? item.label.slice(0, 2).toUpperCase()}
                   </span>
@@ -2850,146 +2515,50 @@ export function DataTableListSummary({
               <TooltipContent>{item.label}</TooltipContent>
             </Tooltip>
           ))}
-          {remaining ? (
-            expandable ? (
-              <Popover>
-                <PopoverTrigger
-                  render={
-                    <button
-                      aria-label={labels.listOthers(remaining)}
-                      className="bg-muted border-background relative -ml-2 flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-semibold tabular-nums"
-                      onClick={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      type="button"
-                    >
-                      +{remaining}
-                    </button>
-                  }
-                />
-                {expandedItems}
-              </Popover>
-            ) : (
-              <span className="bg-muted border-background relative -ml-2 flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-semibold tabular-nums">
-                +{remaining}
-              </span>
-            )
+          {remaining && expandable ? (
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <button
+                    aria-label={labels.listOthers(remaining)}
+                    className="bg-muted -ml-1 flex size-8 items-center justify-center rounded-full"
+                    type="button"
+                  >
+                    +{remaining}
+                  </button>
+                }
+              />
+              {details}
+            </Popover>
+          ) : remaining ? (
+            <span className="bg-muted -ml-1 flex size-8 items-center justify-center rounded-full">
+              +{remaining}
+            </span>
           ) : null}
         </span>
       </TooltipProvider>
     );
   }
-
-  return remaining > 0 ? (
-    <span
-      className="block min-w-0 text-sm whitespace-normal"
-      data-slot="list-summary"
-    >
-      <span>{visibleLabels}</span>{" "}
-      <span className="inline-block whitespace-nowrap">
-        {expandable ? (
-          <Popover>
-            <PopoverTrigger
-              render={
-                <button
-                  className="text-muted-foreground hover:text-foreground underline decoration-dotted underline-offset-2"
-                  onClick={(event) => event.stopPropagation()}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  type="button"
-                >
-                  {remainingLabel}
-                </button>
-              }
-            />
-            {expandedItems}
-          </Popover>
-        ) : (
-          remainingLabel
-        )}
-      </span>
-    </span>
+  const summary = (
+    <>
+      {visible.map((item) => item.label).join(", ")}
+      {remaining
+        ? ` ${overflowLabel?.(remaining) ?? labels.listOthers(remaining)}`
+        : ""}
+    </>
+  );
+  return remaining && expandable ? (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button className="text-left text-sm" type="button">
+            {summary}
+          </button>
+        }
+      />
+      {details}
+    </Popover>
   ) : (
-    <span className="block min-w-0 text-sm" data-slot="list-summary">
-      {visibleLabels}
-    </span>
+    <span className="text-sm">{summary}</span>
   );
-}
-
-interface DataTableColumnHeaderProps<
-  TData extends RowData,
-  TValue,
-> extends HTMLAttributes<HTMLDivElement> {
-  column: DataTableColumn<TData, TValue>;
-  messages?: DataTableMessageOverrides;
-  title: string;
-}
-
-export function DataTableColumnHeader<TData extends RowData, TValue>({
-  column,
-  messages,
-  title,
-  className,
-}: DataTableColumnHeaderProps<TData, TValue>) {
-  const labels = dataTableMessages(messages);
-  const sortDirection = column.getIsSorted();
-
-  if (!column.getCanSort()) {
-    return (
-      <div
-        className={cn(
-          "flex h-12 items-center truncate px-2 text-sm",
-          className,
-        )}
-      >
-        {title}
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn("flex h-12 items-center", className)}>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="data-[state=open]:bg-accent h-8 max-w-full justify-start px-2"
-            >
-              <span className="min-w-0 truncate text-sm">{title}</span>
-              {sortDirection === "desc" ? (
-                <ArrowDown />
-              ) : sortDirection === "asc" ? (
-                <ArrowUp />
-              ) : (
-                <ChevronsUpDown />
-              )}
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="start" className="max-w-56">
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-              <ArrowUp className="text-muted-foreground/70 h-3.5 w-3.5" />
-              {labels.sortAsc}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-              <ArrowDown className="text-muted-foreground/70 h-3.5 w-3.5" />
-              {labels.sortDesc}
-            </DropdownMenuItem>
-            {sortDirection ? (
-              <DropdownMenuItem onClick={() => column.clearSorting()}>
-                <X className="text-muted-foreground/70 h-3.5 w-3.5" />
-                {labels.sortClear}
-              </DropdownMenuItem>
-            ) : null}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-              <EyeOff className="text-muted-foreground/70 h-3.5 w-3.5" />
-              {labels.sortHide}
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
+};

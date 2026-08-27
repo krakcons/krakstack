@@ -1,7 +1,6 @@
 import {
   DataTable,
-  DataTableColumnHeader,
-  type DataTableColumnDef,
+  type DataTableColDef,
   type DataTableRowAction,
 } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
+import { useState } from "react";
 
 type Project = {
   id: string;
@@ -112,71 +112,57 @@ const projects: Project[] = [
   },
 ];
 
-const columns: DataTableColumnDef<Project>[] = [
+const columns: DataTableColDef<Project>[] = [
   {
-    accessorKey: "name",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Project" />
-    ),
-    cell: ({ row }) => (
+    field: "name",
+    headerName: "Project",
+    cellRenderer: ({ data }) => (
       <div className="grid gap-1">
-        <span className="font-medium">{row.original.name}</span>
-        <span className="text-muted-foreground text-xs">{row.original.id}</span>
+        <span className="font-medium">{data.name}</span>
+        <span className="text-muted-foreground text-xs">{data.id}</span>
       </div>
     ),
   },
   {
-    accessorKey: "summary",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Summary" />
-    ),
-    cell: ({ row }) => (
+    field: "summary",
+    headerName: "Summary",
+    cellRenderer: ({ data }) => (
       <span className="text-muted-foreground max-w-[24rem]">
-        {row.original.summary}
+        {data.summary}
       </span>
     ),
   },
   {
-    accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    cell: ({ row }) => (
+    field: "status",
+    headerName: "Status",
+    cellRenderer: ({ data }) => (
       <Badge
         className="gap-1"
-        variant={row.original.status === "Shipped" ? "default" : "secondary"}
+        variant={data.status === "Shipped" ? "default" : "secondary"}
       >
         <CircleDot className="size-3" />
-        {row.original.status}
+        {data.status}
       </Badge>
     ),
   },
   {
-    accessorKey: "owner",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Owner" />
+    field: "owner",
+    headerName: "Owner",
+  },
+  {
+    field: "category",
+    headerName: "Category",
+  },
+  {
+    field: "score",
+    headerName: "Score",
+    cellRenderer: ({ data }) => (
+      <span className="tabular-nums">{data.score}</span>
     ),
   },
   {
-    accessorKey: "category",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Category" />
-    ),
-  },
-  {
-    accessorKey: "score",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Score" />
-    ),
-    cell: ({ row }) => (
-      <span className="tabular-nums">{row.original.score}</span>
-    ),
-  },
-  {
-    accessorKey: "updated",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Updated" />
-    ),
+    field: "updated",
+    headerName: "Updated",
   },
 ];
 
@@ -201,78 +187,100 @@ const rowActions: DataTableRowAction<Project>[] = [
 ];
 
 export function DataTablePreview() {
+  const [sortableProjects, setSortableProjects] = useState(projects);
   return (
-    <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
-      <CardHeader>
-        <CardTitle>Project Queue</CardTitle>
-        <CardDescription>
-          This demo uses the exported `DataTable`, `DataTableColumnHeader`, and
-          row actions.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="max-w-full min-w-0">
-        <DataTable
-          columns={columns}
-          data={projects}
-          features={{
-            export: { baseName: "projects", scope: "filteredRows" },
-            gallery: { name: "name", description: "summary", tag: "status" },
-            rowActions: { items: rowActions },
-            selection: {
-              getRowId: (project) => project.id,
-              bulkActions: {
-                label: "Actions",
-                items: [
+    <div className="grid gap-6">
+      <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
+        <CardHeader>
+          <CardTitle>Project Queue</CardTitle>
+          <CardDescription>
+            This demo uses the exported `DataTable`, custom cells, and row
+            actions.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="max-w-full min-w-0">
+          <DataTable
+            columnDefs={columns}
+            getRowId={(project) => project.id}
+            rowData={projects}
+            features={{
+              export: { baseName: "projects", scope: "filteredRows" },
+              gallery: {
+                name: "name",
+                description: "summary",
+                tag: "status",
+              },
+              rowActions: { items: rowActions },
+              selection: {
+                bulkActions: {
+                  label: "Actions",
+                  items: [
+                    {
+                      name: "Archive",
+                      icon: <Archive />,
+                      variant: "destructive",
+                      visible: (selectedProjects) =>
+                        selectedProjects.some(
+                          (project) => project.status !== "Shipped",
+                        ),
+                      onClick: (selectedProjects) =>
+                        window.alert(
+                          `Archive ${selectedProjects.length} projects`,
+                        ),
+                    },
+                  ],
+                },
+              },
+              grouping: {
+                initial: ["status"],
+                getRowLabel: (project) => project.name,
+                fields: [
                   {
-                    name: "Archive",
-                    icon: <Archive />,
-                    variant: "destructive",
-                    visible: (selectedProjects) =>
-                      selectedProjects.some(
-                        (project) => project.status !== "Shipped",
-                      ),
-                    onClick: (selectedProjects) =>
-                      window.alert(
-                        `Archive ${selectedProjects.length} projects`,
-                      ),
+                    id: "status",
+                    label: "Status",
+                    getGroupId: (project) => project.status,
+                    getGroupIds: () => [
+                      "Backlog",
+                      "In Progress",
+                      "Review",
+                      "Shipped",
+                    ],
+                    renderGroupLabel: (status) => status,
+                    renderEmptyGroup: (status) =>
+                      `No projects are currently ${status.toLowerCase()}.`,
+                    onMoveToGroup: (project, status) =>
+                      window.alert(`Move ${project.name} to ${status}`),
+                  },
+                  {
+                    id: "owner",
+                    label: "Owner",
+                    getGroupId: (project) => project.owner,
+                    getGroupIds: () => ["Ada", "Grace", "Hedy", "Linus"],
+                    renderGroupLabel: (owner) => owner,
                   },
                 ],
               },
-            },
-          }}
-          grouping={{
-            initial: ["status"],
-            getRowLabel: (project) => project.name,
-            fields: [
-              {
-                id: "status",
-                label: "Status",
-                getGroupId: (project) => project.status,
-                getGroupIds: () => [
-                  "Backlog",
-                  "In Progress",
-                  "Review",
-                  "Shipped",
-                ],
-                getGroupLabel: (status) => status,
-                renderEmptyGroup: (status) =>
-                  `No projects are currently ${status.toLowerCase()}.`,
-                onMoveToGroup: (project, status) =>
-                  window.alert(`Move ${project.name} to ${status}`),
+            }}
+            onRowClicked={(project) => window.alert(`Selected ${project.name}`)}
+          />
+        </CardContent>
+      </Card>
+      <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
+        <CardContent className="max-w-full min-w-0 pt-6">
+          <DataTable
+            columnDefs={columns}
+            features={{
+              pagination: false,
+              reordering: {
+                getRowLabel: (project) => project.name,
+                onReorder: setSortableProjects,
               },
-              {
-                id: "owner",
-                label: "Owner",
-                getGroupId: (project) => project.owner,
-                getGroupIds: () => ["Ada", "Grace", "Hedy", "Linus"],
-                getGroupLabel: (owner) => owner,
-              },
-            ],
-          }}
-          onRowClick={(project) => window.alert(`Selected ${project.name}`)}
-          routeFrom="/docs/{-$slug}"
-        />
-      </CardContent>
-    </Card>
+            }}
+            getRowId={(project) => project.id}
+            rowData={sortableProjects}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }

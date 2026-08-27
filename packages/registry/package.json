@@ -219,9 +219,6 @@
   "peerDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
     "@effect/atom-react": "4.0.0-beta.85",
     "@effect/platform-browser": "4.0.0-beta.85",
     "@iconify/react": "^6.0.2",
@@ -231,7 +228,6 @@
     "@tanstack/highlight": "^0.0.10",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",
-    "@tanstack/react-table": "^9.1.2",
     "@tanstack/react-virtual": "^3.14.5",
     "@xberg-io/xberg": "1.0.14",
     "class-variance-authority": "^0.7.1",
@@ -246,15 +242,6 @@
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-sesv2": {
-      "optional": true
-    },
-    "@dnd-kit/core": {
-      "optional": true
-    },
-    "@dnd-kit/sortable": {
-      "optional": true
-    },
-    "@dnd-kit/utilities": {
       "optional": true
     },
     "@effect/atom-react": {
@@ -285,9 +272,6 @@
       "optional": true
     },
     "@tanstack/react-router": {
-      "optional": true
-    },
-    "@tanstack/react-table": {
       "optional": true
     },
     "@tanstack/react-virtual": {

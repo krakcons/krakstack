@@ -6,8 +6,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   DataTable,
-  DataTableColumnHeader,
-  type DataTableColumnDef,
+  type DataTableColDef,
   type DataTableRowAction,
 } from "@/components/ui/data-table";
 
@@ -37,21 +36,17 @@ export function ExampleTable() {
       Array.from(value),
   });
 
-  const columns: DataTableColumnDef<Example>[] = [
+  const columns: DataTableColDef<Example>[] = [
     {
-      accessorKey: "name",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={messages.example} />
-      ),
+      field: "name",
+      headerName: messages.example,
     },
     {
-      accessorKey: "active",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={messages.active} />
-      ),
-      cell: ({ row }) => (
-        <Badge variant={row.original.active ? "default" : "secondary"}>
-          {row.original.active ? messages.active : messages.inactive}
+      field: "active",
+      headerName: messages.active,
+      cellRenderer: ({ data }) => (
+        <Badge variant={data.active ? "default" : "secondary"}>
+          {data.active ? messages.active : messages.inactive}
         </Badge>
       ),
     },
@@ -79,10 +74,11 @@ export function ExampleTable() {
   return (
     <>
       <DataTable
-        columns={columns}
-        data={examples}
-        rowActions={rowActions}
-        onRowClick={setEditing}
+        columnDefs={columns}
+        features={{ rowActions: { items: rowActions } }}
+        getRowId={(example) => example.id}
+        onRowClicked={setEditing}
+        rowData={examples}
       />
       {editing ? (
         <ExampleDialog
