@@ -78,6 +78,11 @@ export const AgentToolMetadata = Schema.Struct({
   destructive: Schema.Boolean,
 }).annotate({ identifier: "AgentToolMetadata" });
 
+export const AgentMarkdownCodeBlock = Schema.Struct({
+  code: Schema.String,
+  language: Schema.String,
+}).annotate({ identifier: "AgentMarkdownCodeBlock" });
+
 export const AgentEvent = Schema.Union([
   Schema.Struct({
     type: Schema.Literal("message-start"),
@@ -87,6 +92,12 @@ export const AgentEvent = Schema.Union([
     type: Schema.Literal("text-delta"),
     messageId: Schema.String,
     delta: Schema.String,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("markdown-snapshot"),
+    messageId: Schema.String,
+    html: Schema.String,
+    codeBlocks: Schema.Array(AgentMarkdownCodeBlock),
   }),
   Schema.Struct({
     type: Schema.Literal("tool-call"),

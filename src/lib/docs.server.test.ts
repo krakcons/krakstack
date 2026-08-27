@@ -25,7 +25,7 @@ const answer = 42;
     expect(result.html).toContain('href="https://example.com"');
     expect(result.html).toContain('href="#"');
     expect(result.html).toContain(
-      '<docs-code-block data-index="0"></docs-code-block>',
+      '<markdown-code-block data-index="0"></markdown-code-block>',
     );
     expect(result.html).not.toContain("<script>");
     expect(result.codeBlocks).toEqual([

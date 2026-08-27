@@ -126,3 +126,10 @@ export const getRegistryDocsPages = createServerFn({ method: "GET" }).handler(
     return loadRegistryDocsPages();
   },
 );
+
+export const getAgentsPreviewMarkdown = createServerFn({
+  method: "GET",
+}).handler(async () => {
+  const { loadAgentsPreviewMarkdown } = await import("./registry-docs.server");
+  return loadAgentsPreviewMarkdown();
+});

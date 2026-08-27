@@ -17,6 +17,8 @@ import {
   Toolkit,
 } from "effect/unstable/ai";
 
+import { compileMarkdown } from "@/lib/markdown/server";
+
 import type { AgentAction, AgentEvent } from "./schema";
 
 export type AgentStreamOptions<Tools extends Record<string, Tool.Any>> = {
@@ -273,13 +275,49 @@ export class AgentService extends Context.Service<AgentService>()(
           prompt: action.type === "message" ? action.text : [],
           toolkit,
         });
+        const renderedRounds = Stream.suspend(() => {
+          let source = "";
+
+          return rounds.pipe(
+            Stream.groupedWithin(32, "50 millis"),
+            Stream.flatMap((events) => {
+              const output: AgentEvent[] = [];
+              let textChanged = false;
+              const appendSnapshot = () => {
+                if (!textChanged) return;
+                const compiled = compileMarkdown(source);
+                output.push({
+                  type: "markdown-snapshot",
+                  messageId,
+                  html: compiled.html,
+                  codeBlocks: compiled.codeBlocks,
+                });
+                textChanged = false;
+              };
+
+              for (const event of events) {
+                if (event.type === "text-delta") {
+                  source += event.delta;
+                  textChanged = true;
+                  output.push(event);
+                  continue;
+                }
+
+                appendSnapshot();
+                output.push(event);
+              }
+              appendSnapshot();
+              return Stream.fromIterable(output);
+            }),
+          );
+        });
         const complete = Stream.fromEffect(
           Effect.gen(function* () {
             const history = yield* conversation.exportJson;
             return { type: "history", value: history } satisfies AgentEvent;
           }),
         ).pipe(Stream.concat(Stream.succeed<AgentEvent>({ type: "finish" })));
-        const response = Stream.concat(rounds, complete).pipe(
+        const response = Stream.concat(renderedRounds, complete).pipe(
           Stream.provideService(LanguageModel.LanguageModel, model),
           Stream.catch((error) =>
             Stream.fromEffect(

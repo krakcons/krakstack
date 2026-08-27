@@ -1,4 +1,7 @@
-import { Markdown } from "@/components/markdown";
+import {
+  MarkdownContent,
+  type MarkdownContentProps,
+} from "@/lib/markdown/content";
 import {
   Card,
   CardContent,
@@ -6,9 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import agentsMd from "../../../AGENTS.md?raw";
-
-export function AgentsPreview() {
+export function AgentsPreview({
+  markdown,
+}: {
+  readonly markdown: Pick<MarkdownContentProps, "codeBlocks" | "html">;
+}) {
   return (
     <Card className="bg-[var(--surface-strong)]">
       <CardHeader>
@@ -19,7 +24,10 @@ export function AgentsPreview() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Markdown content={agentsMd} />
+        <MarkdownContent
+          codeBlocks={markdown.codeBlocks}
+          html={markdown.html}
+        />
       </CardContent>
     </Card>
   );

@@ -2,6 +2,7 @@ import { Schema } from "effect";
 
 import { compileDocsMarkdown, loadMdxDocsDirectory } from "@/lib/docs.server";
 import { DocsPageSchema, type DocsPage, type DocsSection } from "@/lib/docs";
+import { compileMarkdown } from "@/lib/markdown/server";
 import {
   getRegistryGroup,
   getRegistryItemMeta,
@@ -68,3 +69,6 @@ export const loadRegistryDocsPages = async () => [
   ...(await loadMdxDocsDirectory("src/content/docs")),
   ...registryPages(),
 ];
+
+export const loadAgentsPreviewMarkdown = async () =>
+  compileMarkdown(await Bun.file("AGENTS.md").text());

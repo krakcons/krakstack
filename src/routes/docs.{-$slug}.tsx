@@ -1,4 +1,5 @@
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
+import { AgentsPreview } from "@/components/registry-previews/agents-preview";
 import { TableSearchSchemaStandard } from "@/lib/table-search";
 import {
   Card,
@@ -16,6 +17,7 @@ import {
   DocsPage,
 } from "@/lib/docs";
 import {
+  getAgentsPreviewMarkdown,
   getRegistryDocsPages,
   makeRegistryDocs,
   registryDocsShell,
@@ -59,14 +61,6 @@ const registryPreviews = new Map<string, LazyExoticComponent<ComponentType>>([
     lazy(() =>
       import("@/components/registry-previews/file-picker-preview").then(
         ({ FilePickerPreview }) => ({ default: FilePickerPreview }),
-      ),
-    ),
-  ],
-  [
-    "agents",
-    lazy(() =>
-      import("@/components/registry-previews/agents-preview").then(
-        ({ AgentsPreview }) => ({ default: AgentsPreview }),
       ),
     ),
   ],
@@ -141,7 +135,9 @@ export const Route = createFileRoute("/docs/{-$slug}")({
       throw redirect({ to: resolution.page.path, statusCode: 301 });
     }
     const item = getRegistryItem(resolution.page.slug);
-    return { item, pages, resolution };
+    const agentsPreviewMarkdown =
+      item?.name === "agents" ? await getAgentsPreviewMarkdown() : undefined;
+    return { agentsPreviewMarkdown, item, pages, resolution };
   },
   head: ({ loaderData }) => {
     const docs = makeRegistryDocs(loaderData?.pages ?? []);
@@ -158,7 +154,8 @@ export const Route = createFileRoute("/docs/{-$slug}")({
 });
 
 function RegistryDocs() {
-  const { item, pages, resolution } = Route.useLoaderData();
+  const { agentsPreviewMarkdown, item, pages, resolution } =
+    Route.useLoaderData();
   const docs = makeRegistryDocs(pages);
 
   return (
@@ -169,7 +166,10 @@ function RegistryDocs() {
         {item ? (
           <div className="mt-12 grid gap-8">
             <Dependencies item={item} />
-            <RegistryPreview slug={item.name} />
+            <RegistryPreview
+              agentsMarkdown={agentsPreviewMarkdown}
+              slug={item.name}
+            />
           </div>
         ) : null}
         <DocsFooter docs={docs} resolution={resolution} />
@@ -264,9 +264,15 @@ function getRegistryDependencyHref(dependency: string) {
   return `https://ui.shadcn.com/docs/components/${dependency}`;
 }
 
-function RegistryPreview({ slug }: { slug: string }) {
+function RegistryPreview({
+  agentsMarkdown,
+  slug,
+}: {
+  agentsMarkdown?: Awaited<ReturnType<typeof getAgentsPreviewMarkdown>>;
+  slug: string;
+}) {
   const Preview = registryPreviews.get(slug);
-  if (!Preview) return null;
+  if (!Preview && !(slug === "agents" && agentsMarkdown)) return null;
 
   return (
     <section className="grid gap-3">
@@ -274,7 +280,11 @@ function RegistryPreview({ slug }: { slug: string }) {
         Preview
       </h2>
       <Suspense fallback={null}>
-        <Preview />
+        {slug === "agents" && agentsMarkdown ? (
+          <AgentsPreview markdown={agentsMarkdown} />
+        ) : Preview ? (
+          <Preview />
+        ) : null}
       </Suspense>
     </section>
   );

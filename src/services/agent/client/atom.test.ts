@@ -57,12 +57,19 @@ describe("agent client state", () => {
       messageId: "message-1",
       delta: "there",
     });
-    const withHistory = reduceAgentEvent(second, {
+    const rendered = reduceAgentEvent(second, {
+      type: "markdown-snapshot",
+      messageId: "message-1",
+      html: "<p>Hello there</p>",
+      codeBlocks: [],
+    });
+    const withHistory = reduceAgentEvent(rendered, {
       type: "history",
       value: "agent-state",
     });
 
     expect(withHistory.messages[0]?.text).toBe("Hello there");
+    expect(withHistory.messages[0]?.markdown?.html).toBe("<p>Hello there</p>");
     expect(withHistory.history).toBe("agent-state");
   });
 

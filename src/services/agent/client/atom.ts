@@ -27,6 +27,13 @@ export type AgentToolActivity = Extract<
 
 export type AgentMessage = {
   readonly id: string;
+  readonly markdown?: {
+    readonly codeBlocks: ReadonlyArray<{
+      readonly code: string;
+      readonly language: string;
+    }>;
+    readonly html: string;
+  };
   readonly role: "user" | "assistant";
   readonly text: string;
   readonly tools: ReadonlyArray<AgentToolActivity>;
@@ -139,6 +146,21 @@ export const reduceAgentEvent = <Resource>(
         messages: state.messages.map((message) =>
           message.id === event.messageId
             ? { ...message, text: message.text + event.delta }
+            : message,
+        ),
+      };
+    case "markdown-snapshot":
+      return {
+        ...state,
+        messages: state.messages.map((message) =>
+          message.id === event.messageId
+            ? {
+                ...message,
+                markdown: {
+                  codeBlocks: event.codeBlocks,
+                  html: event.html,
+                },
+              }
             : message,
         ),
       };

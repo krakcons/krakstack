@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { code } from "@streamdown/code";
 import {
   ArrowDownIcon,
   BotIcon,
@@ -13,13 +12,14 @@ import {
   SquareIcon,
   XIcon,
 } from "lucide-react";
-import { Streamdown } from "streamdown";
 import type { AgentEvent } from "../schema";
 
+import { MarkdownContent } from "@/lib/markdown/content";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/ui/code-block";
 import {
   Card,
   CardContent,
@@ -230,15 +230,8 @@ const errorMessage = (code: AgentErrorCode, labels: AgentWidgetMessages) => {
 
 type AgentToolInput = Extract<AgentEvent, { type: "tool-call" }>["input"];
 
-const inputCodeBlock = (input: AgentToolInput) => {
-  const value = JSON.stringify(input, null, 2) ?? String(input);
-  const longestFence = Math.max(
-    0,
-    ...(value.match(/`+/g)?.map((fence) => fence.length) ?? []),
-  );
-  const fence = "`".repeat(Math.max(3, longestFence + 1));
-  return `${fence}json\n${value}\n${fence}`;
-};
+const inputCode = (input: AgentToolInput) =>
+  JSON.stringify(input, null, 2) ?? String(input);
 
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -402,22 +395,11 @@ function ToolActivityCard({
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="min-w-0 overflow-hidden border-y py-3">
-            <Streamdown
-              className="min-w-0 text-xs"
-              controls={{
-                code: { copy: true, download: false },
-                mermaid: false,
-                table: false,
-              }}
-              linkSafety={{ enabled: false }}
-              plugins={{ code }}
-              translations={{
-                copied: labels.copied,
-                copyCode: labels.copy,
-              }}
-            >
-              {inputCodeBlock(tool.input)}
-            </Streamdown>
+            <CodeBlock
+              code={inputCode(tool.input)}
+              language="json"
+              messages={{ copied: labels.copied, copy: labels.copy }}
+            />
           </CardContent>
         </CollapsibleContent>
         <CardFooter className="flex flex-wrap gap-2">
@@ -659,25 +641,15 @@ function AgentMessageRow({
                 {message.text}
               </BubbleContent>
             </Bubble>
-          ) : (
-            <Streamdown
-              animated
+          ) : message.markdown ? (
+            <MarkdownContent
               className="w-full"
-              controls={{
-                code: { copy: true, download: false },
-                mermaid: false,
-                table: false,
-              }}
-              isAnimating={pending}
-              linkSafety={{ enabled: false }}
-              plugins={{ code }}
-              translations={{
-                copied: labels.copied,
-                copyCode: labels.copy,
-              }}
-            >
-              {message.text}
-            </Streamdown>
+              codeBlocks={message.markdown.codeBlocks}
+              html={message.markdown.html}
+              messages={{ copied: labels.copied, copy: labels.copy }}
+            />
+          ) : (
+            <div className="w-full whitespace-pre-wrap">{message.text}</div>
           )
         ) : null}
       </MessageContent>
