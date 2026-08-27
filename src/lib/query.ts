@@ -1,10 +1,4 @@
-import {
-  Effect,
-  Option,
-  Schema,
-  SchemaIssue,
-  SchemaTransformation,
-} from "effect";
+import { Effect, Schema, SchemaIssue, SchemaTransformation } from "effect";
 
 export type SortDirection = "asc" | "desc";
 
@@ -61,9 +55,10 @@ export const SortParamFromString = Schema.String.pipe(
 
         if (!sortParam) {
           return Effect.fail(
-            new SchemaIssue.InvalidValue(Option.some(sort), {
-              message: 'Expected sort in the format "field" or "-field"',
-            }),
+            new SchemaIssue.InvalidValue(
+              { message: 'Expected sort in the format "field" or "-field"' },
+              sort,
+            ),
           );
         }
 
@@ -95,9 +90,10 @@ export const SortParamsFromString = Schema.String.pipe(
 
           if (!sortParam) {
             return Effect.fail(
-              new SchemaIssue.InvalidValue(Option.some(sort), {
-                message: 'Expected sort in the format "field,-otherField"',
-              }),
+              new SchemaIssue.InvalidValue(
+                { message: 'Expected sort in the format "field,-otherField"' },
+                sort,
+              ),
             );
           }
 

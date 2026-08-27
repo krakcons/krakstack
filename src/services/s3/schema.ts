@@ -28,7 +28,7 @@ export const PresignedUpload = Schema.Struct({
 
 export type PresignUploadPayload = typeof PresignUploadPayload.Type;
 
-export class S3ServiceError extends Schema.TaggedErrorClass<S3ServiceError>()(
+export class S3ServiceError extends Schema.TaggedError<S3ServiceError>()(
   "S3ServiceError",
   {
     message: Schema.String,

@@ -3,12 +3,7 @@
   "name": "agent",
   "title": "Agent",
   "description": "A generic Effect AI agent service, typed streaming API, client atoms, and localized assistant widget with tools, approvals, context, and references.",
-  "dependencies": [
-    "@base-ui/react",
-    "effect@4.0.0-beta.99",
-    "lucide-react",
-    "react"
-  ],
+  "dependencies": ["@base-ui/react", "effect@rc", "lucide-react", "react"],
   "registryDependencies": [
     "@krak-stack/markdown",
     "alert",

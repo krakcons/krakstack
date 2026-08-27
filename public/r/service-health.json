@@ -3,7 +3,7 @@
   "name": "service-health",
   "title": "Health Service",
   "description": "A configurable Effect service and HTTP API contract for aggregate, liveness, readiness, and startup checks.",
-  "dependencies": ["effect@beta"],
+  "dependencies": ["effect@rc"],
   "files": [
     {
       "path": "src/services/health/index.ts",
@@ -32,7 +32,7 @@
   ],
   "meta": {
     "createdAt": "2026-08-20",
-    "updatedAt": "2026-08-20"
+    "updatedAt": "2026-08-27"
   },
   "docs": "## Overview\n\n`service-health` provides a configurable `HealthService`, documented Effect schemas, a `HealthApiGroup`, and an exported handler implementation. It exposes `/health`, `/health/live`, `/health/ready`, and `/health/started`. Successful checks return `UP`; any failed check produces `DOWN`, and the HTTP contract maps unhealthy responses to status 503. Package consumers import the complete public API from `@krak-stack/registry/service-health`.\n\n## Included Files\n\n- `services/health/index.ts` - public barrel and health service\n- `services/health/schema.ts` - health response schemas and HTTP status metadata\n- `services/health/api.group.ts` - public health API group\n- `services/health/api.builder.ts` - reusable handler implementation\n\n## Register The API Group\n\nAdd `HealthApiGroup` after applying authentication middleware to application groups so health endpoints remain public. Apply the root prefix after adding the health group so every endpoint receives the same prefix.\n\n```ts\nimport { HealthApiGroup } from \"@/services/health\";\n\nexport const Api = HttpApi.make(\"AppApi\")\n  .add(ApplicationApiGroup)\n  .middleware(AuthMiddleware)\n  .add(HealthApiGroup)\n  .prefix(\"/api\");\n```\n\n## Build And Register The Handler\n\nBind the exported `healthHandler` implementation to the parent API group. Configure checks with `HealthService.layerWith`, then provide the resulting layer to the application's `HttpApiBuilder` layer. The handler automatically uses the paths and prefix already present on `Api`. Check dependencies such as `DB` are captured when the health service layer is built.\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { HttpApiBuilder } from \"effect/unstable/httpapi\";\n\nimport { Api } from \"@/api\";\nimport { DB } from \"@/services/database\";\nimport { healthHandler, HealthService } from \"@/services/health\";\n\nconst healthLayer = HttpApiBuilder.group(Api, \"health\", healthHandler).pipe(\n  Layer.provide(\n    HealthService.layerWith({\n      checks: {\n        ready: [\n          {\n            name: \"database\",\n            check: Effect.gen(function* () {\n              const db = yield* DB;\n              yield* db.$client`SELECT 1`;\n              return HealthService.up();\n            }).pipe(Effect.timeout(\"2 seconds\")),\n          },\n        ],\n      },\n    }),\n  ),\n);\n\nexport const apiLayer = HttpApiBuilder.layer(Api).pipe(\n  Layer.provide(healthLayer),\n  Layer.provide(DB.layer),\n);\n```\n\nFailed effects, defects, and timeouts become `DOWN` results without exposing internal errors. Optional diagnostic data accepts non-sensitive string, number, and boolean values.",
   "type": "registry:lib"

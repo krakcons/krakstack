@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Schema } from "effect";
 
-import { Query } from "./query";
+import { Query, SortParamFromString, SortParamsFromString } from "./query";
 
 describe("Query", () => {
   it("defaults omitted pagination for router and request consumers", () => {
@@ -51,5 +51,14 @@ describe("Query", () => {
         { id: "createdAt", direction: "asc" },
       ],
     });
+  });
+
+  it("reports invalid encoded sorting", () => {
+    expect(() => Schema.decodeUnknownSync(SortParamFromString)("-")).toThrow(
+      'Expected sort in the format "field" or "-field"',
+    );
+    expect(() =>
+      Schema.decodeUnknownSync(SortParamsFromString)("name,-"),
+    ).toThrow('Expected sort in the format "field,-otherField"');
   });
 });

@@ -3,7 +3,7 @@
   "name": "service-opentelemetry",
   "title": "OpenTelemetry",
   "description": "An Effect layer that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's standard environment configuration.",
-  "dependencies": ["effect@beta"],
+  "dependencies": ["effect@rc"],
   "files": [
     {
       "path": "src/services/opentelemetry.ts",
@@ -13,7 +13,7 @@
     }
   ],
   "meta": {
-    "updatedAt": "2026-08-26"
+    "updatedAt": "2026-08-27"
   },
   "docs": "## Overview\n\n`service-opentelemetry` uses `Otlp.layerFromConfig()` from `effect/unstable/observability` with `FetchHttpClient` from `effect/unstable/http` to export traces, metrics, and logs over OTLP/HTTP JSON. Effect reads the standard OpenTelemetry environment variables through its configuration layer.\n\n## Layer\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { Otlp, OtlpSerialization } from \"effect/unstable/observability\";\n\nexport const OpenTelemetryLive = Otlp.layerFromConfig().pipe(\n  Layer.provide(OtlpSerialization.layerJson),\n  Layer.provide(FetchHttpClient.layer),\n);\n```\n\n### Environment Variables\n\n- `OTEL_SERVICE_NAME` - Service name used in the OpenTelemetry resource\n- `OTEL_EXPORTER_OTLP_ENDPOINT` - Base URL for the OTLP collector\n- `OTEL_LOGS_EXPORTER=otlp` - Enables log export\n- `OTEL_METRICS_EXPORTER=otlp` - Enables metric export\n- `OTEL_TRACES_EXPORTER=otlp` - Enables trace export\n\nEffect leaves each exporter disabled when its corresponding exporter variable is omitted.",
   "type": "registry:lib"

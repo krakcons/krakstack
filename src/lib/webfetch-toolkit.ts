@@ -159,69 +159,38 @@ export const WebFetchToolkitLayer = (
       const extraction = yield* FileExtractionService;
 
       return WebFetchToolkit.of({
-        webFetch: ({ url }) =>
-          Effect.gen(function* () {
-            const request = HttpClientRequest.get(url).pipe(
-              HttpClientRequest.setHeaders({
-                accept:
-                  "text/markdown, text/plain;q=0.9, text/html;q=0.8, application/xhtml+xml;q=0.7, application/pdf;q=0.6, application/json;q=0.5",
-                "user-agent": "krak-stack-webfetch/1.0",
+        webFetch: Effect.fn("WebFetchToolkit.webFetch")(function* ({
+          url,
+        }): Effect.fn.Return<WebFetchResponse, WebFetchFailure> {
+          const request = HttpClientRequest.get(url).pipe(
+            HttpClientRequest.setHeaders({
+              accept:
+                "text/markdown, text/plain;q=0.9, text/html;q=0.8, application/xhtml+xml;q=0.7, application/pdf;q=0.6, application/json;q=0.5",
+              "user-agent": "krak-stack-webfetch/1.0",
+            }),
+          );
+          const response = yield* HttpClient.filterStatusOk(http)
+            .execute(request)
+            .pipe(
+              Effect.mapError(() =>
+                failure("unavailable", "The web page could not be fetched"),
+              ),
+              Effect.timeoutOrElse({
+                duration: "20 seconds",
+                orElse: () =>
+                  Effect.fail(
+                    failure("unavailable", "The web page request timed out"),
+                  ),
               }),
             );
-            const response = yield* HttpClient.filterStatusOk(http)
-              .execute(request)
-              .pipe(
-                Effect.mapError(() =>
-                  failure("unavailable", "The web page could not be fetched"),
-                ),
-                Effect.timeoutOrElse({
-                  duration: "20 seconds",
-                  orElse: () =>
-                    Effect.fail(
-                      failure("unavailable", "The web page request timed out"),
-                    ),
-                }),
-              );
 
-            const contentLength = response.headers["content-length"];
-            if (contentLength !== undefined) {
-              const decodedContentLength = decodeContentLength(contentLength);
-              if (
-                Option.isNone(decodedContentLength) ||
-                decodedContentLength.value > resolved.maxResponseBytes
-              ) {
-                return yield* Effect.fail(
-                  failure(
-                    "too-large",
-                    "The web page exceeds the response size limit",
-                  ),
-                );
-              }
-            }
-
-            const mediaType = response.headers["content-type"]
-              ?.split(";", 1)[0]
-              ?.trim()
-              .toLowerCase();
-            const decodedMediaType = decodeMediaType(mediaType);
-            if (Option.isNone(decodedMediaType)) {
-              return yield* Effect.fail(
-                failure(
-                  "unsupported-content",
-                  "The web page has an unsupported content type",
-                ),
-              );
-            }
-
-            const arrayBuffer = yield* response.arrayBuffer.pipe(
-              Effect.mapError(() =>
-                failure(
-                  "invalid-response",
-                  "The web page body could not be read",
-                ),
-              ),
-            );
-            if (arrayBuffer.byteLength > resolved.maxResponseBytes) {
+          const contentLength = response.headers["content-length"];
+          if (contentLength !== undefined) {
+            const decodedContentLength = decodeContentLength(contentLength);
+            if (
+              Option.isNone(decodedContentLength) ||
+              decodedContentLength.value > resolved.maxResponseBytes
+            ) {
               return yield* Effect.fail(
                 failure(
                   "too-large",
@@ -229,36 +198,67 @@ export const WebFetchToolkitLayer = (
                 ),
               );
             }
+          }
 
-            const parsedUrl = new URL(url);
-            const filename =
-              parsedUrl.pathname.split("/").at(-1) || "page.html";
-            const extracted = yield* extraction
-              .markdown({
-                bytes: new Uint8Array(arrayBuffer),
-                filename,
-                mimeType: decodedMediaType.value,
-              })
-              .pipe(
-                Effect.mapError(() =>
-                  failure(
-                    "invalid-response",
-                    "The web page did not contain readable content",
-                  ),
-                ),
-              );
-            const bounded = truncateContent(
-              extracted.content,
-              resolved.maxContentCharacters,
+          const mediaType = response.headers["content-type"]
+            ?.split(";", 1)[0]
+            ?.trim()
+            .toLowerCase();
+          const decodedMediaType = decodeMediaType(mediaType);
+          if (Option.isNone(decodedMediaType)) {
+            return yield* Effect.fail(
+              failure(
+                "unsupported-content",
+                "The web page has an unsupported content type",
+              ),
             );
+          }
 
-            return {
-              url,
-              contentType: decodedMediaType.value,
-              content: bounded.content,
-              truncated: extracted.truncated || bounded.truncated,
-            };
-          }),
+          const arrayBuffer = yield* response.arrayBuffer.pipe(
+            Effect.mapError(() =>
+              failure(
+                "invalid-response",
+                "The web page body could not be read",
+              ),
+            ),
+          );
+          if (arrayBuffer.byteLength > resolved.maxResponseBytes) {
+            return yield* Effect.fail(
+              failure(
+                "too-large",
+                "The web page exceeds the response size limit",
+              ),
+            );
+          }
+
+          const parsedUrl = new URL(url);
+          const filename = parsedUrl.pathname.split("/").at(-1) || "page.html";
+          const extracted = yield* extraction
+            .markdown({
+              bytes: new Uint8Array(arrayBuffer),
+              filename,
+              mimeType: decodedMediaType.value,
+            })
+            .pipe(
+              Effect.mapError(() =>
+                failure(
+                  "invalid-response",
+                  "The web page did not contain readable content",
+                ),
+              ),
+            );
+          const bounded = truncateContent(
+            extracted.content,
+            resolved.maxContentCharacters,
+          );
+
+          return {
+            url,
+            contentType: decodedMediaType.value,
+            content: bounded.content,
+            truncated: extracted.truncated || bounded.truncated,
+          };
+        }),
       });
     }),
   );

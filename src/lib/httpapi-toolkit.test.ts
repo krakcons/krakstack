@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, Layer, Schema, Stream } from "effect";
+import { Effect, Layer, Schema, SchemaIssue, Stream } from "effect";
 import { OpenAiStructuredOutput, Tool } from "effect/unstable/ai";
 import {
   HttpApi,
@@ -179,7 +179,9 @@ describe("HttpApi toolkit", () => {
         },
       }).pipe(Effect.flip);
 
-      expect(error.issue.toString()).toContain("correct");
+      expect(SchemaIssue.makeFormatterDefault()(error.issue)).toContain(
+        "correct",
+      );
     }).pipe(Effect.provide(HttpApiSpec.layer({ api: TestApi }))),
   );
 });

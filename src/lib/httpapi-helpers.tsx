@@ -437,9 +437,7 @@ export class HttpApiSpec extends Context.Service<HttpApiSpec>()("HttpApiSpec", {
             );
 
             return reflectedSchema(
-              SchemaRepresentation.toSchema(
-                SchemaRepresentation.fromJsonSchemaDocument(document),
-              ),
+              SchemaRepresentation.fromJsonSchemaDocument(document),
             );
           },
         };

@@ -22,7 +22,7 @@ export const NotificationMessageSchema = Schema.Record(
   ],
 });
 
-export class NotificationSendError extends Schema.TaggedErrorClass<NotificationSendError>()(
+export class NotificationSendError extends Schema.TaggedError<NotificationSendError>()(
   "NotificationSendError",
   {
     message: Schema.String,

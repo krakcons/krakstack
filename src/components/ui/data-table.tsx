@@ -1161,7 +1161,7 @@ const DataTableToolbar = <TData extends RowData>({
           ) : null}
         </div>
       ) : null}
-      <div className="-m-1 flex w-full overflow-x-auto p-1">
+      <div className="-m-1 flex overflow-x-auto p-1">
         <Menubar className="h-auto w-max min-w-full justify-start bg-transparent shadow-none [&_[data-slot=menubar-trigger]]:gap-2 [&_[data-slot=menubar-trigger]_svg]:size-4">
           {visibleBulkActions.length ? (
             <MenubarMenu>

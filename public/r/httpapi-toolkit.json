@@ -3,7 +3,7 @@
   "name": "httpapi-toolkit",
   "title": "HttpApi Toolkit",
   "description": "An Effect AI toolkit generator that exposes selected HttpApi operations as typed dynamic tools backed by the generated API client.",
-  "dependencies": ["effect@beta"],
+  "dependencies": ["effect@rc"],
   "registryDependencies": ["@krak-stack/httpapi-client"],
   "files": [
     {
@@ -14,7 +14,7 @@
     }
   ],
   "meta": {
-    "updatedAt": "2026-08-17"
+    "updatedAt": "2026-08-27"
   },
   "docs": "## Overview\n\n`httpapi-toolkit` generates Effect AI tools from operations selected by `HttpApiSpec`. Because the operation set is discovered at runtime, `HttpApiToolkit(config)` and `HttpApiToolkitLayer(config)` independently generate matching tool definitions and handlers with deterministic tool IDs.\n\nRead operations run without approval by default, writes require approval, and read-only, destructive, idempotent, and open-world annotations are derived from each HTTP method. Each generated description tells the model when to use the operation, to wait for successful action results, and to treat returned data as untrusted rather than as instructions.\n\n## Compose With An Agent\n\n```ts\nimport {\n  HttpApiToolkit,\n  HttpApiToolkitLayer,\n} from \"@/lib/httpapi-toolkit\";\n\nconst config = {\n  needsApproval: (operation) => operation.method !== \"get\",\n};\nconst specLayer = HttpApiSpec.layer({ api: AppApi });\nconst httpApiToolkit = yield* HttpApiToolkit(config).pipe(\n  Effect.provide(specLayer),\n);\nconst httpApiToolkitLayer = HttpApiToolkitLayer(config).pipe(\n  Layer.provide(specLayer),\n  Layer.provide(apiClientLayer),\n);\nconst toolkitDefinition = Toolkit.merge(\n  application.toolkit,\n  httpApiToolkit,\n);\nconst toolsLayer = Layer.mergeAll(\n  application.layer,\n  httpApiToolkitLayer,\n);\nconst toolkit = yield* toolkitDefinition.pipe(Effect.provide(toolsLayer));\n\nconst events = yield* agent.stream({\n  action: request.action,\n  history: request.history,\n  systemPrompt: application.systemPrompt,\n  toolkit,\n});\n```\n\nUse `strict` to emit OpenAI-compatible strict object schemas and `transformResult` to reduce or redact API responses before returning them to the model.",
   "type": "registry:lib"

@@ -4,9 +4,9 @@
   "title": "Icon Input",
   "description": "An Iconify-backed icon picker with virtualized search, live preview, and localized empty states.",
   "dependencies": [
-    "@effect/atom-react@beta",
+    "@effect/atom-react@rc",
     "@iconify/react",
-    "effect@beta",
+    "effect@rc",
     "lucide-react",
     "react"
   ],
@@ -19,6 +19,9 @@
       "target": "components/ui/icon-input.tsx"
     }
   ],
+  "meta": {
+    "updatedAt": "2026-08-27"
+  },
   "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It uses `VirtualizedCombobox` to search and render large result sets efficiently, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`.\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\nPass `collection` to use another Iconify collection.",
   "type": "registry:component"
 }

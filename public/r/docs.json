@@ -3,7 +3,7 @@
   "name": "docs",
   "title": "Documentation",
   "description": "A provider-neutral localized documentation source, catalog, search index, and complete responsive documentation UI.",
-  "dependencies": ["effect@beta", "react"],
+  "dependencies": ["effect@rc", "react"],
   "registryDependencies": [
     "@krak-stack/app-brand",
     "@krak-stack/markdown",

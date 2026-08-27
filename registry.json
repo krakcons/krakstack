@@ -88,6 +88,7 @@
       "type": "registry:component",
       "title": "Icon Input",
       "description": "An Iconify-backed icon picker with virtualized search, live preview, and localized empty states.",
+      "meta": { "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It uses `VirtualizedCombobox` to search and render large result sets efficiently, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`.\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\nPass `collection` to use another Iconify collection.",
       "files": [
         {
@@ -98,9 +99,9 @@
       ],
       "registryDependencies": ["button", "@krak-stack/virtualized-combobox"],
       "dependencies": [
-        "@effect/atom-react@beta",
+        "@effect/atom-react@rc",
         "@iconify/react",
-        "effect@beta",
+        "effect@rc",
         "lucide-react",
         "react"
       ]
@@ -153,9 +154,9 @@
         "tooltip"
       ],
       "dependencies": [
-        "@effect/atom-react@beta",
-        "@effect/platform-browser@beta",
-        "effect@beta",
+        "@effect/atom-react@rc",
+        "@effect/platform-browser@rc",
+        "effect@rc",
         "lucide-react",
         "react"
       ]
@@ -215,7 +216,7 @@
       "type": "registry:block",
       "title": "Effect Form",
       "description": "Reusable Effect Form fields, submission state, errors, grouping, file inputs, and dirty-navigation blocking.",
-      "meta": { "updatedAt": "2026-08-17" },
+      "meta": { "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`effect-form` provides reusable field components for `@lucas-barake/effect-form-react`. It includes schema-backed fields, submission errors and state, grouped fields, revert actions, and form-owned dirty-navigation blocking. Built-in English and French labels can be read or overridden with `effectFormMessages`.\n\n## Available Fields\n\n- `TextField` and `NameField` — string inputs, with a standard localized name variant\n- `TextAreaField`, `DescriptionField`, and `NullableTextAreaField` — required and nullable multiline values\n- `CheckboxField` — boolean values\n- `SelectField` and `FolderField` — single string selection\n- `MultiSelectField` and `NullableMultiSelectField` — array and nullable array selection\n- `SearchableSelectField` and `SingleSearchableSelectField` — virtualized searchable multiple and single selection\n- `KeyValueField` and `NullableKeyValueField` — record editors\n- `FileField` — clearable native `File` values through the shared `FilePicker`\n- `ImageField` — local file and persisted URL image values with previews\n- `RevertButton` — restores a string field to its original value\n\n## Form Helpers\n\n- `FieldWrapper` groups related fields with a legend and optional locale badge\n- `SubmitButton` observes dirty, changed-since-submit, and waiting state\n- `SubmitError` and `ErrorMessage` present typed failures\n- `BlockNavigation` observes the form and guards unsaved navigation\n\n## Usage\n\n```tsx\nconst builder = FormBuilder.empty.addField(\"name\", Schema.String);\n\nconst form = FormReact.make(builder, {\n  fields: { name: TextField },\n  onSubmit: (_, { decoded }) => save(decoded),\n});\n\n<form.Initialize defaultValues={{ name: \"\" }}>\n  <form.name label=\"Name\" />\n  <SubmitError result={submitResult} />\n  <SubmitButton form={form} />\n  <BlockNavigation form={form} />\n</form.Initialize>\n```",
       "files": [
         {
@@ -237,11 +238,11 @@
         "@krak-stack/virtualized-combobox"
       ],
       "dependencies": [
-        "@effect/atom-react@beta",
+        "@effect/atom-react@rc",
         "@lucas-barake/effect-form@0.25.0-beta.6",
         "@lucas-barake/effect-form-react@0.26.0-beta.5",
         "@tanstack/react-router",
-        "effect@beta",
+        "effect@rc",
         "lucide-react",
         "react"
       ]
@@ -330,10 +331,10 @@
       "name": "service-notification",
       "title": "Notification Service",
       "description": "An Effect notification dispatcher with optional persistence-store support for inbox and delivery queue snapshots.",
-      "meta": { "createdAt": "2026-08-17", "updatedAt": "2026-08-17" },
+      "meta": { "createdAt": "2026-08-17", "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-notification` provides the core Effect notification dispatcher. It supports two send forms: channel-only messages such as `{ email: ... }`, and structured envelopes such as `{ persist, message }`. The structured form lets the service call a consumer-provided `NotificationPersistenceStore` so inbox notifications and delivery queue snapshots are persisted by `send` before optional channel dispatch.\n\nThe core package intentionally does not include provider-specific dependencies, database clients, migrations, authorization, or worker runtime ownership. Install separate channel registry entries, such as `notification-channel-email-ses`, to add transports. Use `notification-persistence` for reusable table definitions when you want durable inbox and delivery queue storage.\n\n## Included Files\n\n- `services/notification/index.ts` - Main `NotificationService`, persistence-store contract, and layer helpers\n- `services/notification/channels/index.ts` - Channel contract, channel registry, and structured send input types\n- `services/notification/schema.ts` - Dynamic message envelope and shared send error\n\n## Channel Dispatch\n\n```ts\nconst notifications = yield* NotificationService;\n\nyield* notifications.send({\n  email: {\n    to: \"user@example.com\",\n    subject: \"Deploy succeeded\",\n    html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n  },\n});\n```\n\n## Persistence-Aware Send\n\nProvide a `NotificationPersistenceStore` implementation that writes to your app-owned database transaction or repository. Then call `send` with a structured envelope.\n\n```ts\nconst notificationServiceLayer = NotificationService.makePersistentLayer({\n  channels: [emailChannel],\n  store: {\n    persist: (input) => saveNotificationAndDeliveries(input),\n  },\n});\n\nyield* notifications.send({\n  persist: {\n    idempotencyKey: \"application:123:submitted\",\n    eventKey: \"application.submitted\",\n    recipientUserId: \"user_123\",\n    inbox: {\n      title: \"Application submitted\",\n      href: \"/applications/123\",\n    },\n    deliveries: [\n      {\n        channel: \"email\",\n        purpose: \"transactional\",\n        recipientAddress: \"user@example.com\",\n        payload: {\n          to: \"user@example.com\",\n          subject: \"Application submitted\",\n          text: \"Thanks for applying.\",\n        },\n      },\n    ],\n  },\n});\n```\n\nThe service owns orchestration. The consumer still owns trusted recipient lookup, authorization, database writes, migrations, retry workers, and any app-specific correlation fields.\n\n## Typed Messages\n\n`NotificationService.send` remains typed from installed channel payload declarations through `NotificationChannels`. Structured envelopes add a generic `persist` payload without forcing a database dependency into the registry item.",
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/services/notification/index.ts",
@@ -357,10 +358,10 @@
       "name": "notification-channel-email-ses",
       "title": "SES Channel",
       "description": "An AWS SES email channel for the notification service. It handles the `email` message key and validates its own email payload schema.",
-      "meta": { "createdAt": "2026-08-17", "updatedAt": "2026-08-17" },
+      "meta": { "createdAt": "2026-08-17", "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`notification-channel-email-ses` adds AWS SES email delivery to `service-notification`. It handles the `email` top-level key in notification messages, contributes the `email` payload type to `NotificationChannels`, and keeps the SES-specific payload schema beside the channel implementation.\n\n## Included Files\n\n- `services/notification/channels/ses/index.ts` - SES channel, config service, and channel layer\n- `services/notification/channels/ses/schema.ts` - SES email payload schema\n\n## Usage\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { NotificationService } from \"@/services/notification\";\nimport { NotificationChannelRegistry } from \"@/services/notification/channels\";\nimport { SesNotificationChannel } from \"@/services/notification/channels/ses\";\n\nconst notificationChannelsLayer = Layer.effect(\n  NotificationChannelRegistry,\n  Effect.gen(function* () {\n    const email = yield* SesNotificationChannel;\n    return NotificationChannelRegistry.make(email);\n  }),\n).pipe(Layer.provide(SesNotificationChannel.layer));\n\nconst notificationServiceLayer = NotificationService.layer.pipe(\n  Layer.provide(notificationChannelsLayer),\n);\n\nconst program = Effect.gen(function* () {\n  const notifications = yield* NotificationService;\n\n  yield* notifications.send({\n    email: {\n      to: \"alice@example.com\",\n      subject: \"Deploy succeeded\",\n      html: \"<h1>main -> production</h1><p>All checks passed.</p>\",\n    },\n  });\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(notificationServiceLayer)),\n);\n```\n\nThe payload can include `from`, or the channel can read `NOTIFICATION_EMAIL_FROM` from the environment.\n\n## Merging With Other Channels\n\nUse `SesNotificationChannel.layer` when building a multi-channel registry. Pull `SesNotificationChannel` and any other channel services into one `NotificationChannelRegistry.make(...)`, then provide that registry to `NotificationService.layer`. See the `service-notification` docs for a complete merge example.\n\n## Environment Variables\n\n- `SES_REGION` - AWS SES region\n- `SES_ACCESS_KEY_ID` - AWS access key ID\n- `SES_SECRET_ACCESS_KEY` - AWS secret access key\n- `NOTIFICATION_EMAIL_FROM` - Optional default sender address when the payload omits `from`",
-      "dependencies": ["@aws-sdk/client-sesv2", "effect@beta"],
+      "dependencies": ["@aws-sdk/client-sesv2", "effect@rc"],
       "registryDependencies": ["@krak-stack/service-notification"],
       "files": [
         {
@@ -379,10 +380,10 @@
       "name": "notification-persistence",
       "title": "Notification Persistence",
       "description": "Reusable PostgreSQL tables and Effect codecs for notification inbox records, channel settings, and durable delivery snapshots.",
-      "meta": { "createdAt": "2026-08-17", "updatedAt": "2026-08-17" },
+      "meta": { "createdAt": "2026-08-17", "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`notification-persistence` provides three project-owned PostgreSQL tables: `notifications`, `notification_settings`, and `notification_deliveries`. It also provides Effect schemas for records and versioned channel payloads. The module intentionally does not provide authorization queries, CRUD operations, migrations, a relay, or a worker.\n\n## Included Files\n\n- `services/notification/persistence/drizzle.ts` - Drizzle PostgreSQL tables, indexes, constraints, and inferred row types\n- `services/notification/persistence/schema.ts` - Effect record schemas, delivery lifecycle values, and versioned payload codecs\n- `services/notification/persistence/index.ts` - Server-only persistence exports\n\n## Schema Setup\n\nRe-export the tables from your project's Drizzle schema entry:\n\n```ts\nexport * from \"@/services/notification/persistence/drizzle\";\n```\n\nThen generate and commit a migration in the receiving project. KrakStack ships definitions rather than shared migration history, so existing projects remain in control of schema evolution.\n\n## Durable Inserts\n\nImport `notificationDeliveries` in a caller-owned database transaction and insert one row per channel. Store a fully rendered, versioned payload snapshot so retries do not render changed templates. Use a stable idempotency key from the originating domain operation.\n\n```ts\nyield* transaction.insert(notificationDeliveries).values({\n  idempotencyKey: `application-approved:${applicationId}:email`,\n  eventKey: \"application.approved\",\n  channel: \"email\",\n  purpose: \"transactional\",\n  recipientAddress: recipient.email,\n  payloadVersion: 1,\n  payload: {\n    to: recipient.email,\n    subject: rendered.subject,\n    text: rendered.text,\n  },\n});\n```\n\n## Ownership\n\nThe application must derive trusted recipient and tenant scope, authorize inbox operations, resolve preferences, generate migrations, and operate any relay or worker. Effect's workflow and persisted-queue tables remain Effect-owned and are not defined by this item.",
-      "dependencies": ["drizzle-orm@rc", "effect@beta"],
+      "dependencies": ["drizzle-orm@rc", "effect@rc"],
       "registryDependencies": [],
       "files": [
         {
@@ -406,10 +407,10 @@
       "name": "service-health",
       "title": "Health Service",
       "description": "A configurable Effect service and HTTP API contract for aggregate, liveness, readiness, and startup checks.",
-      "meta": { "createdAt": "2026-08-20", "updatedAt": "2026-08-20" },
+      "meta": { "createdAt": "2026-08-20", "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-health` provides a configurable `HealthService`, documented Effect schemas, a `HealthApiGroup`, and an exported handler implementation. It exposes `/health`, `/health/live`, `/health/ready`, and `/health/started`. Successful checks return `UP`; any failed check produces `DOWN`, and the HTTP contract maps unhealthy responses to status 503. Package consumers import the complete public API from `@krak-stack/registry/service-health`.\n\n## Included Files\n\n- `services/health/index.ts` - public barrel and health service\n- `services/health/schema.ts` - health response schemas and HTTP status metadata\n- `services/health/api.group.ts` - public health API group\n- `services/health/api.builder.ts` - reusable handler implementation\n\n## Register The API Group\n\nAdd `HealthApiGroup` after applying authentication middleware to application groups so health endpoints remain public. Apply the root prefix after adding the health group so every endpoint receives the same prefix.\n\n```ts\nimport { HealthApiGroup } from \"@/services/health\";\n\nexport const Api = HttpApi.make(\"AppApi\")\n  .add(ApplicationApiGroup)\n  .middleware(AuthMiddleware)\n  .add(HealthApiGroup)\n  .prefix(\"/api\");\n```\n\n## Build And Register The Handler\n\nBind the exported `healthHandler` implementation to the parent API group. Configure checks with `HealthService.layerWith`, then provide the resulting layer to the application's `HttpApiBuilder` layer. The handler automatically uses the paths and prefix already present on `Api`. Check dependencies such as `DB` are captured when the health service layer is built.\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { HttpApiBuilder } from \"effect/unstable/httpapi\";\n\nimport { Api } from \"@/api\";\nimport { DB } from \"@/services/database\";\nimport { healthHandler, HealthService } from \"@/services/health\";\n\nconst healthLayer = HttpApiBuilder.group(Api, \"health\", healthHandler).pipe(\n  Layer.provide(\n    HealthService.layerWith({\n      checks: {\n        ready: [\n          {\n            name: \"database\",\n            check: Effect.gen(function* () {\n              const db = yield* DB;\n              yield* db.$client`SELECT 1`;\n              return HealthService.up();\n            }).pipe(Effect.timeout(\"2 seconds\")),\n          },\n        ],\n      },\n    }),\n  ),\n);\n\nexport const apiLayer = HttpApiBuilder.layer(Api).pipe(\n  Layer.provide(healthLayer),\n  Layer.provide(DB.layer),\n);\n```\n\nFailed effects, defects, and timeouts become `DOWN` results without exposing internal errors. Optional diagnostic data accepts non-sensitive string, number, and boolean values.",
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/services/health/index.ts",
@@ -437,10 +438,10 @@
       "name": "service-s3",
       "title": "S3 Service",
       "description": "An Effect service wrapping Bun's S3 client for object reads, writes, metadata, presigned URLs, listing, and deletion with typed service errors.",
-      "meta": { "updatedAt": "2026-08-17" },
+      "meta": { "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-s3` provides an Effect service around Bun's built-in S3 client. It reads S3 configuration from environment variables, exposes a reusable `S3Service.layer`, and maps client failures into `S3ServiceError` values.\n\n## Included Files\n\n- `services/s3/index.ts` - S3 config service, S3 client service, production layer, and test layer helper\n- `services/s3/schema.ts` - Typed `S3ServiceError` schema\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { S3Service } from \"@/services/s3\";\n\nconst program = Effect.gen(function* () {\n  const s3 = yield* S3Service;\n\n  yield* s3.write(\"uploads/hello.txt\", \"Hello world\", {\n    type: \"text/plain\",\n  });\n\n  const text = yield* s3.text(\"uploads/hello.txt\");\n  const url = yield* s3.presign(\"uploads/hello.txt\", { expiresIn: 60 });\n\n  return { text, url };\n});\n\nconst result = await Effect.runPromise(\n  program.pipe(Effect.provide(S3Service.layer)),\n);\n```\n\n## Available Operations\n\n- `file(path, options?)` - Create a Bun `S3File` reference\n- `write(path, data, options?)` - Write object data\n- `text(path)`, `json(path)`, `bytes(path)`, `arrayBuffer(path)`, `stream(path)` - Read object data\n- `exists(path)`, `stat(path)`, `size(path)` - Read object metadata\n- `delete(path)` - Delete an object\n- `presign(path, options?)` - Create a presigned object URL\n- `list(options?)` - List bucket objects\n\n## Environment Variables\n\n- `S3_ACCESS_KEY_ID` - S3 access key ID\n- `S3_SECRET_ACCESS_KEY` - S3 secret access key\n- `S3_BUCKET` - S3 bucket name\n- `S3_REGION` - Optional S3 region\n- `S3_ENDPOINT` - Optional custom S3-compatible endpoint\n- `S3_SESSION_TOKEN` - Optional session token\n\nThis service uses Bun's `S3Client`, so it is intended for Bun runtimes or compatible S3-compatible deployments.",
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "devDependencies": ["@types/bun"],
       "files": [
         {
@@ -460,9 +461,9 @@
       "title": "Cloudflare AI Gateway",
       "description": "An Effect service that configures the OpenAI client for Cloudflare AI Gateway with optional per-request metadata.",
       "type": "registry:lib",
-      "meta": { "createdAt": "2026-08-21", "updatedAt": "2026-08-21" },
+      "meta": { "createdAt": "2026-08-21", "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`service-cloudflare-ai-gateway` is a copy/paste Effect service for Cloudflare's OpenAI-compatible REST API. It reads `AI_GATEWAY_BASE_URL`, `AI_GATEWAY_API_KEY`, and `AI_GATEWAY_ID`, then applies bearer authorization and the required `cf-aig-gateway-id` header.\n\nUse `CloudflareAIGateway.layer` when no custom metadata is needed. Use `CloudflareAIGateway.layerWith(metadata)` to attach up to five string, number, or boolean values through `cf-aig-metadata`. Use the `userId` metadata key for Cloudflare User Insights attribution.\n\n## Complete Layer\n\n```ts\nimport { OpenAiClient } from \"@effect/ai-openai\";\nimport { Config, Context, Effect, Layer } from \"effect\";\nimport {\n  FetchHttpClient,\n  HttpClient,\n  HttpClientRequest,\n} from \"effect/unstable/http\";\n\nexport type CloudflareAIGatewayMetadata = Readonly<\n  Record<string, string | number | boolean>\n>;\n\nexport class CloudflareAIGateway extends Context.Service<CloudflareAIGateway>()(\n  \"CloudflareAIGateway\",\n  {\n    make: Effect.gen(function* () {\n      const apiUrl = yield* Config.string(\"AI_GATEWAY_BASE_URL\");\n      const apiKey = yield* Config.redacted(\"AI_GATEWAY_API_KEY\");\n      const gatewayId = yield* Config.string(\"AI_GATEWAY_ID\");\n      return { apiUrl, apiKey, gatewayId };\n    }),\n  },\n) {\n  static readonly baseLayer = Layer.effect(this, this.make);\n\n  private static readonly clientLayer = (\n    metadata?: CloudflareAIGatewayMetadata,\n  ) =>\n    Layer.unwrap(\n      Effect.map(this, ({ apiKey, apiUrl, gatewayId }) =>\n        OpenAiClient.layer({\n          apiKey,\n          apiUrl,\n          transformClient: (client) =>\n            HttpClient.mapRequest(client, (request) => {\n              const gatewayRequest = HttpClientRequest.setHeader(\n                request,\n                \"cf-aig-gateway-id\",\n                gatewayId,\n              );\n              return metadata\n                ? HttpClientRequest.setHeader(\n                    gatewayRequest,\n                    \"cf-aig-metadata\",\n                    JSON.stringify(metadata),\n                  )\n                : gatewayRequest;\n            }),\n        }),\n      ),\n    ).pipe(\n      Layer.provide(FetchHttpClient.layer),\n      Layer.provide(this.baseLayer),\n    );\n\n  static readonly layer = this.clientLayer();\n  static readonly layerWith = (metadata: CloudflareAIGatewayMetadata) =>\n    this.clientLayer(metadata);\n}\n```\n\n## Usage\n\n```ts\nimport { OpenAiLanguageModel } from \"@effect/ai-openai\";\nimport { Layer } from \"effect\";\nimport { CloudflareAIGateway } from \"@/services/cloudflare-ai-gateway\";\n\nconst model = OpenAiLanguageModel.model(\"openai/gpt-5.6-luna\", {\n  reasoning: { effort: \"low\" },\n}).pipe(\n  Layer.provide(\n    CloudflareAIGateway.layerWith({\n      userId: \"user-id\",\n      organizationId: \"organization-id\",\n    }),\n  ),\n);\n```\n\nThird-party models must use Cloudflare's provider-qualified `provider/model` form, such as `openai/gpt-5.6-luna`. Workers AI models use the `@cf/author/model` form.\n\n## Environment Variables\n\n- `AI_GATEWAY_BASE_URL` - Cloudflare OpenAI-compatible REST API base URL\n- `AI_GATEWAY_API_KEY` - Cloudflare API token with Workers AI Read permission\n- `AI_GATEWAY_ID` - AI Gateway ID sent in `cf-aig-gateway-id`",
-      "dependencies": ["@effect/ai-openai@beta", "effect@beta"],
+      "dependencies": ["@effect/ai-openai@rc", "effect@rc"],
       "files": [
         {
           "path": "src/services/cloudflare-ai-gateway/index.ts",
@@ -476,9 +477,9 @@
       "title": "File Extraction Service",
       "description": "A configurable Effect service that safely extracts bounded Markdown text from in-memory documents using Xberg.",
       "type": "registry:lib",
-      "meta": { "createdAt": "2026-08-13", "updatedAt": "2026-08-13" },
+      "meta": { "createdAt": "2026-08-13", "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`service-file-extraction` extracts Markdown text from document bytes through Xberg. It provides bounded input and output sizes, UTF-8-safe truncation, concurrency control, extraction timeouts, archive security limits, and typed Effect failures.\n\n## Example: Extract an S3 Document to Markdown\n\nRead the object through `S3Service`, then pass its bytes and stored metadata to the extraction service. The returned `content` is Markdown. Install `@krak-stack/service-s3` separately when using this integration.\n\n```ts\nimport { Effect, Layer } from \"effect\";\nimport { FileExtractionService } from \"@/services/file-extraction\";\nimport { S3Service } from \"@/services/s3\";\n\nconst objectToMarkdown = ({\n  objectKey,\n  filename,\n  mimeType,\n}: {\n  objectKey: string;\n  filename: string;\n  mimeType: string;\n}) =>\n  Effect.gen(function* () {\n    const s3 = yield* S3Service;\n    const extraction = yield* FileExtractionService;\n    const bytes = yield* s3.bytes(objectKey);\n    const result = yield* extraction.markdown({ bytes, filename, mimeType });\n    return result.content;\n  });\n\nconst layer = Layer.merge(S3Service.layer, FileExtractionService.layer);\nconst markdown = await Effect.runPromise(\n  objectToMarkdown({\n    objectKey: \"uploads/document.pdf\",\n    filename: \"document.pdf\",\n    mimeType: \"application/pdf\",\n  }).pipe(Effect.provide(layer)),\n);\n```\n\n## Example: Extract In-Memory Bytes\n\nUse the extraction service directly when bytes have already been loaded from another source.\n\n```ts\nconst result = await Effect.runPromise(\n  Effect.gen(function* () {\n    const extraction = yield* FileExtractionService;\n    return yield* extraction.markdown({\n      bytes,\n      filename: \"document.pdf\",\n      mimeType: \"application/pdf\",\n    });\n  }).pipe(Effect.provide(FileExtractionService.layer)),\n);\n```\n\n## API\n\n```ts\ntype FileExtractionInput = {\n  bytes: Uint8Array;\n  filename: string;\n  mimeType: string;\n};\n\ntype ExtractFileInput = FileExtractionInput & {\n  outputFormat: OutputFormat;\n};\n\ntype FileExtractedText = {\n  content: string;\n  contentByteSize: number;\n  truncated: boolean;\n};\n\nextraction.markdown(input: FileExtractionInput)\nextraction.text(input: FileExtractionInput)\nextraction.html(input: FileExtractionInput)\nextraction.extract(input: ExtractFileInput)\n```\n\n- `markdown` renders `OutputFormat.Markdown`.\n- `text` renders `OutputFormat.Plain`.\n- `html` renders `OutputFormat.Html`.\n- `extract` requires any Xberg `OutputFormat`, including `Djot`, `Json`, `Structured`, and `Custom`.\n\n## Output Formats\n\nUse `markdown`, `text`, or `html` when the desired format is known. Use `extract` with a required Xberg `OutputFormat` for lower-level access to any supported format.\n\n```ts\nimport { OutputFormat } from \"@/services/file-extraction\";\n\nconst markdown = yield* extraction.markdown(input);\nconst text = yield* extraction.text(input);\nconst html = yield* extraction.html(input);\nconst djot = yield* extraction.extract({\n  ...input,\n  outputFormat: OutputFormat.Djot,\n});\n```\n\nAll methods return the same bounded result shape with `content`, `contentByteSize`, and `truncated`.\n\n## Configuration\n\nThe default layer accepts inputs up to 20 MB, returns up to 512 KB of Markdown, runs two extractions concurrently, and applies a 30-second timeout. Use `layerWith` to override operational limits while retaining secure extraction defaults.\n\n```ts\nconst layer = FileExtractionService.layerWith({\n  maxInputBytes: 10 * 1024 * 1024,\n  maxOutputBytes: 256 * 1024,\n  maxConcurrentExtractions: 4,\n  timeoutSeconds: 20,\n});\n```",
-      "dependencies": ["effect@beta", "@xberg-io/xberg@1.0.14"],
+      "dependencies": ["effect@rc", "@xberg-io/xberg@1.0.14"],
       "files": [
         {
           "path": "src/services/file-extraction/index.ts",
@@ -496,11 +497,12 @@
       "name": "service-database",
       "title": "Database",
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
+      "meta": { "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-database` provides a Drizzle PostgreSQL client as an Effect service. It reads `DATABASE_URL`, configures pg type parsing for date and interval types, and exposes a reusable layer for application programs.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { DB } from \"@/services/database\";\nimport { users } from \"@/db/schema\";\n\nconst program = Effect.gen(function* () {\n  const db = yield* DB;\n  return yield* db.select().from(users);\n});\n\nconst usersList = await Effect.runPromise(\n  program.pipe(Effect.provide(DB.layer)),\n);\n```",
       "dependencies": [
-        "effect@beta",
-        "@effect/sql-pg@beta",
+        "effect@rc",
+        "@effect/sql-pg@rc",
         "pg",
         "drizzle-orm@rc"
       ],
@@ -518,10 +520,10 @@
       "title": "Workflow Engine",
       "description": "A shared Effect durable workflow engine layer with a versioned service workflow example using idempotency and durable activities.",
       "type": "registry:lib",
-      "meta": { "createdAt": "2026-08-12", "updatedAt": "2026-08-12" },
+      "meta": { "createdAt": "2026-08-12", "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`workflow-layer` installs the shared `ClusterWorkflowEngine` layer used to run durable Effect workflows. It uses PostgreSQL for durable workflow state and a single in-memory runner suitable for a single application process.\n\nOnly `services/workflow.ts` is installed. The example below is documentation for adapting to an application-owned service; it is not copied into the receiving project.\n\n## Shared Workflow Engine Layer\n\nThe installed shared layer is small enough to use directly:\n\n```ts\nimport { Layer } from \"effect\";\nimport { ClusterWorkflowEngine, SingleRunner } from \"effect/unstable/cluster\";\n\nimport { DB } from \"@/services/database\";\n\nexport const workflowEngineLayer = ClusterWorkflowEngine.layer.pipe(\n  Layer.provide(SingleRunner.layer({ runnerStorage: \"memory\" })),\n  Layer.provide(DB.clientLayer),\n);\n```\n\n## Durable Workflow Example\n\nDefine workflows beside the service they orchestrate, for example in `src/services/example/workflows.ts`. This versioned workflow uses a stable caller-provided idempotency key and wraps persistence in a durable activity.\n\n```ts\nimport { Effect, Schema } from \"effect\";\nimport { Activity, Workflow } from \"effect/unstable/workflow\";\n\nimport { ExampleSchema } from \"./schema\";\nimport { Examples } from \"./service\";\n\nexport const CreateExampleV1 = Workflow.make(\"CreateExampleV1\", {\n  payload: {\n    requestId: Schema.String,\n    userId: Schema.String,\n    name: Schema.NonEmptyString,\n    description: Schema.optional(Schema.String),\n  },\n  success: ExampleSchema,\n  idempotencyKey: ({ requestId }) => requestId,\n});\n\nexport const examplesWorkflowLayer = CreateExampleV1.toLayer(\n  ({ userId, name, description }) =>\n    Effect.gen(function* () {\n      const examples = yield* Examples;\n\n      return yield* Activity.make({\n        name: \"PersistExampleV1\",\n        success: ExampleSchema,\n        execute: examples.create({\n          userId,\n          payload: { name, description },\n        }),\n      });\n    }),\n);\n```\n\n`ExampleSchema` is the serializable result schema and `Examples` is the application-owned domain service. Keep HTTP and authentication concerns outside the workflow and pass validated actor identifiers in its payload.\n\n## Application Setup\n\nProvide each workflow implementation with its domain service, then provide the shared engine at the application composition root.\n\n```ts\nimport { Layer } from \"effect\";\n\nimport { examplesWorkflowLayer } from \"@/services/example/workflows\";\nimport { Examples } from \"@/services/example\";\nimport { workflowEngineLayer } from \"@/services/workflow\";\n\nexport const workflowsLayer = examplesWorkflowLayer.pipe(\n  Layer.provide(Examples.layer),\n  Layer.provide(workflowEngineLayer),\n);\n```\n\nStart `CreateExampleV1` through Effect's workflow APIs with a unique `requestId`. Reusing the same request ID preserves idempotency across retries.\n\n## Production Considerations\n\n`SingleRunner.layer({ runnerStorage: \"memory\" })` is intended for a single process. Replace the runner topology when deploying multiple workflow workers. Workflow and activity names are persisted compatibility boundaries, so version names rather than renaming an active workflow in place.",
       "registryDependencies": ["@krak-stack/service-database"],
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/services/workflow.ts",
@@ -535,9 +537,9 @@
       "title": "Localization",
       "description": "Request-scoped locale resolution and Effect HttpApi middleware for Paraglide applications.",
       "type": "registry:lib",
-      "meta": { "updatedAt": "2026-08-17" },
+      "meta": { "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`localization` provides request-scoped locale context for Effect HttpApi applications using Paraglide. It resolves the locale from the `locale` URL query parameter, the `locale` request header, the `locale` cookie, or `Accept-Language`, in that order, then provides that context to downstream handlers through `LocaleMiddleware`. All explicit locale values are validated with Effect Schema and cookies are parsed with Effect's HTTP cookie utilities. The `localize` helper selects a record translation using the current locale and fallback settings.\n\n## Included Files\n\n- `lib/localization.ts` - `LocaleContext`, `LocaleMiddleware`, `LocaleMiddlewareLive`, `LocalizedInputType`, and `localize`\n\n## Requirements\n\nThe receiving project must use Paraglide and expose its generated runtime at `@/paraglide/runtime`. Supported locales are derived from the receiving project's Paraglide configuration.\n\n## API Setup\n\nRegister the live middleware layer in the application HTTP API layer:\n\n```ts\nimport { Layer } from \"effect\";\nimport { LocaleMiddlewareLive } from \"@/lib/localization\";\n\nconst apiLayer = Layer.mergeAll(/* application layers */).pipe(\n  Layer.provide(LocaleMiddlewareLive),\n);\n```\n\nApply `LocaleMiddleware` to an API group and read `LocaleContext` in endpoint handlers:\n\n```ts\nimport { Effect } from \"effect\";\nimport { HttpApiGroup } from \"effect/unstable/httpapi\";\nimport { LocaleContext, LocaleMiddleware } from \"@/lib/localization\";\n\nconst RecordsGroup = HttpApiGroup.make(\"records\").middleware(LocaleMiddleware);\n\nconst program = Effect.gen(function* () {\n  const { locale, fallbackLocale } = yield* LocaleContext;\n  // Use locale and fallbackLocale to resolve localized data.\n});\n```\n\n## Translation Resolution\n\n`localize` expects a record with a `translations` array whose items have a `locale` field. It returns the matching translation merged with the base record, falls back to `fallbackLocale` or the first translation, and respects `fallbackLocale: \"none\"` when a translation must exactly match.\n\n```ts\nimport { localize, type LocalizedInputType } from \"@/lib/localization\";\n\nconst context: LocalizedInputType = { locale: \"fr\", fallbackLocale: \"en\" };\nconst record = localize(context, {\n  id: \"welcome\",\n  translations: [\n    { locale: \"en\", name: \"Welcome\" },\n    { locale: \"fr\", name: \"Bienvenue\" },\n  ],\n});\n```",
-      "dependencies": ["@inlang/paraglide-js", "effect@beta"],
+      "dependencies": ["@inlang/paraglide-js", "effect@rc"],
       "files": [
         {
           "path": "src/lib/localization.ts",
@@ -553,7 +555,7 @@
       "type": "registry:lib",
       "meta": { "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`query-helpers` provides reusable Effect query helpers for API endpoints that accept paginated, filtered, and sorted query input and return paginated lists. Use `Query` for request validation, `encodeSortParam` and `decodeSortParam` for table sort query strings, `PaginationMeta` for response metadata, and `PaginatedResponse` to wrap item schemas in a consistent `{ data, meta }` envelope.\n\n## Query Input\n\n`Query` validates the request query parameters accepted by list endpoints:\n\n- `page` - zero-based page index. The first page is `0`.\n- `pageSize` - number of records to request per page. Must be between `1` and `100`.\n- `globalFilter` - optional free-text filter value for server-side search.\n- `sort` - optional sort value encoded as `field:direction`, where direction is `asc` or `desc`.\n\nExample query input:\n\n```ts\n{\n  page: 0,\n  pageSize: 10,\n  globalFilter: \"housing\",\n  sort: \"publicName:asc\",\n}\n```\n\n## Sort Helpers\n\n`encodeSortParam` converts the first TanStack Table-style sorting entry into a compact query string. `decodeSortParam` parses a sort query string back into `{ id, direction }` and returns `null` when the input is missing or invalid.\n\n```ts\nconst sort = encodeSortParam([{ id: \"publicName\", desc: false }]);\n// \"publicName:asc\"\n\nconst parsed = decodeSortParam(sort);\n// { id: \"publicName\", direction: \"asc\" }\n```\n\n## Included Files\n\n- `lib/query.ts` - `Query`, `QueryType`, `SortDirection`, `SortState`, `SortParam`, `encodeSortParam`, `decodeSortParam`, `PaginationMeta`, `PaginatedResponse`, and exported schema types\n\n## Usage\n\n```ts\nimport { Query, PaginatedResponse, decodeSortParam } from \"@/lib/query\";\nimport { Record } from \"@/services/record/schema\";\n\nexport const PaginatedRecords = PaginatedResponse(Record);\n\nHttpApiEndpoint.get(\"listRecords\", \"/records\", {\n  query: Query,\n  success: PaginatedRecords,\n});\n\nconst sort = decodeSortParam(query.sort);\n```\n\nReturn data with the matching envelope. `meta.page` and `meta.pageSize` should mirror the accepted query input, while `total` and `pageCount` describe the full result set:\n\n```ts\nreturn {\n  data: rows,\n  meta: {\n    page,\n    pageSize,\n    total,\n    pageCount: Math.ceil(total / pageSize),\n  },\n};\n```",
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/lib/query.ts",
@@ -566,10 +568,10 @@
       "name": "httpapi-client",
       "title": "HttpApi Client",
       "description": "A generated Effect HttpApi client service with shared OpenAPI operation discovery, input decoding, and tool schema helpers.",
-      "meta": { "updatedAt": "2026-08-26" },
+      "meta": { "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`httpapi-client` provides the shared foundation for generated HTTP API adapters. `HttpApiSpec` discovers operations from an Effect `HttpApi`, builds self-contained input schemas, and decodes tool or CLI input. `ApiClient` executes those operations through Effect's generated `HttpApiClient`, preserving the API's typed transport and response decoding.\n\n## Included Files\n\n- `lib/httpapi-client.ts` - `ApiClient`, its configuration, and generated operation execution\n- `lib/httpapi-helpers.tsx` - shared OpenAPI operation types, input schemas, decoders, naming, and `HttpApiSpec`\n\n## Usage\n\n```ts\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\nimport { AppApi } from \"@/api\";\n\nexport const apiClientLayer = ApiClient.layer({\n  api: AppApi,\n  baseUrl: \"https://example.com\",\n}).pipe(Layer.provide(FetchHttpClient.layer));\n\nexport const apiSpecLayer = HttpApiSpec.layer({\n  api: AppApi,\n  methods: [\"get\", \"post\"],\n});\n```",
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/lib/httpapi-client.ts",
@@ -608,12 +610,7 @@
         "popover",
         "tooltip"
       ],
-      "dependencies": [
-        "@base-ui/react",
-        "effect@4.0.0-beta.99",
-        "lucide-react",
-        "react"
-      ],
+      "dependencies": ["@base-ui/react", "effect@rc", "lucide-react", "react"],
       "files": [
         {
           "path": "src/services/agent/schema.ts",
@@ -652,7 +649,7 @@
         "@krak-stack/sidebar-layout",
         "@krak-stack/seo"
       ],
-      "dependencies": ["effect@beta", "react"],
+      "dependencies": ["effect@rc", "react"],
       "files": [
         {
           "path": "src/lib/docs.server.ts",
@@ -695,7 +692,7 @@
       "type": "registry:lib",
       "docs": "## Overview\n\n`documentation-toolkit` exports `DocumentationToolkit` and `DocumentationToolkitLayer(options)` for searching and reading the same localized documentation catalog used by the application UI. Model selection, chat transport, authentication, authorization, and persistence remain application-owned.\n\nThe tools describe their own workflow: `searchDocumentation` identifies exact paths, and `readDocumentation` reads those paths before answering documented behavior questions. Their descriptions also tell the model to treat retrieved content as reference data rather than instructions, so no separate system prompt contribution is required.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/documentation-toolkit\n```\n\n## Compose With An Agent\n\n```ts\nimport {\n  DocumentationToolkit,\n  DocumentationToolkitLayer,\n} from \"@/lib/documentation-toolkit\";\n\nconst documentation = { docs, locale: \"en\" as const };\nconst toolkitDefinition = Toolkit.merge(\n  application.toolkit,\n  DocumentationToolkit,\n);\nconst toolsLayer = Layer.mergeAll(\n  application.layer,\n  DocumentationToolkitLayer(documentation),\n);\nconst toolkit = yield* toolkitDefinition.pipe(Effect.provide(toolsLayer));\n\nconst events = yield* agent.stream({\n  action: request.action,\n  history: request.history,\n  systemPrompt: application.systemPrompt,\n  toolkit,\n});\n```\n\n`searchDocumentation` returns ranked pages and headings. `readDocumentation` accepts one to three exact paths.",
       "registryDependencies": ["@krak-stack/docs"],
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/lib/documentation-toolkit.ts",
@@ -703,17 +700,17 @@
           "target": "lib/documentation-toolkit.ts"
         }
       ],
-      "meta": { "updatedAt": "2026-08-26" }
+      "meta": { "updatedAt": "2026-08-27" }
     },
     {
       "name": "webfetch-toolkit",
       "title": "Web Fetch Toolkit",
       "description": "An Effect AI toolkit for safely fetching known public web pages and extracting bounded Markdown with Xberg.",
       "type": "registry:lib",
-      "meta": { "createdAt": "2026-08-15", "updatedAt": "2026-08-15" },
+      "meta": { "createdAt": "2026-08-15", "updatedAt": "2026-08-27" },
       "docs": "## Overview\n\n`webfetch-toolkit` reads a known public HTTPS URL with Effect `HttpClient` and uses the existing Xberg-backed `FileExtractionService` to return bounded Markdown. It does not search for URLs and does not use a paid search provider.\n\n`WebFetchToolkit` defines the tool contract. `WebFetchToolkitLayer(options)` implements its handler with validated limits and acquires the HTTP and extraction services during layer construction.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/webfetch-toolkit\n```\n\nThe item installs `src/lib/webfetch-toolkit.ts` and the Xberg-backed file extraction service.\n\n## Compose With An Agent\n\n```ts\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport {\n  WebFetchToolkit,\n  WebFetchToolkitLayer,\n} from \"@/lib/webfetch-toolkit\";\nimport { FileExtractionService } from \"@/services/file-extraction\";\n\nconst toolkitDefinition = Toolkit.merge(\n  application.toolkit,\n  WebFetchToolkit,\n);\nconst webFetchLayer = WebFetchToolkitLayer({\n  maxResponseBytes: 5 * 1024 * 1024,\n  maxContentCharacters: 50_000,\n}).pipe(\n  Layer.provide(FileExtractionService.layer),\n  Layer.provide(FetchHttpClient.layer),\n);\nconst toolsLayer = Layer.mergeAll(application.layer, webFetchLayer);\nconst toolkit = yield* toolkitDefinition.pipe(Effect.provide(toolsLayer));\n\nconst events = yield* agent.stream({\n  action: request.action,\n  history: request.history,\n  systemPrompt: application.systemPrompt,\n  toolkit,\n});\n```\n\n## Options\n\n- `maxResponseBytes` defaults to 2 MB and may be configured up to the Xberg-aligned 20 MB ceiling.\n- `maxContentCharacters` defaults to 30,000 and may be configured up to 200,000 characters.\n\nInvalid options fail immediately when `WebFetchToolkitLayer` is constructed. The tool uses a fixed 20-second request timeout.\n\n## Tool Contract\n\nThe model calls `webFetch` with one `url`. Successful results contain the original URL, normalized content type, extracted Markdown, and a `truncated` flag. Failures use `invalid-response`, `too-large`, `unavailable`, or `unsupported-content`.\n\n## Security\n\nThe request schema requires HTTPS, rejects URL credentials and custom ports, and blocks single-label/internal hostnames and literal IP addresses. Responses have time, byte, content-type, and model-context limits. Fetched content is untrusted data and must never authorize privileged actions.\n\nHostname validation cannot prevent a public DNS name from resolving to a private address or changing between resolution and connection. Production deployments should enforce outbound network policy through a proxy, firewall, or runtime that blocks loopback, private, link-local, and cloud metadata ranges, and should validate redirect destinations. Apply authentication, per-user quotas, and concurrency limits at the agent endpoint.",
       "registryDependencies": ["@krak-stack/service-file-extraction"],
-      "dependencies": ["effect@4.0.0-beta.99"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/lib/webfetch-toolkit.ts",
@@ -745,7 +742,7 @@
       "type": "registry:lib",
       "docs": "## Overview\n\n`httpapi-toolkit` generates Effect AI tools from operations selected by `HttpApiSpec`. Because the operation set is discovered at runtime, `HttpApiToolkit(config)` and `HttpApiToolkitLayer(config)` independently generate matching tool definitions and handlers with deterministic tool IDs.\n\nRead operations run without approval by default, writes require approval, and read-only, destructive, idempotent, and open-world annotations are derived from each HTTP method. Each generated description tells the model when to use the operation, to wait for successful action results, and to treat returned data as untrusted rather than as instructions.\n\n## Compose With An Agent\n\n```ts\nimport {\n  HttpApiToolkit,\n  HttpApiToolkitLayer,\n} from \"@/lib/httpapi-toolkit\";\n\nconst config = {\n  needsApproval: (operation) => operation.method !== \"get\",\n};\nconst specLayer = HttpApiSpec.layer({ api: AppApi });\nconst httpApiToolkit = yield* HttpApiToolkit(config).pipe(\n  Effect.provide(specLayer),\n);\nconst httpApiToolkitLayer = HttpApiToolkitLayer(config).pipe(\n  Layer.provide(specLayer),\n  Layer.provide(apiClientLayer),\n);\nconst toolkitDefinition = Toolkit.merge(\n  application.toolkit,\n  httpApiToolkit,\n);\nconst toolsLayer = Layer.mergeAll(\n  application.layer,\n  httpApiToolkitLayer,\n);\nconst toolkit = yield* toolkitDefinition.pipe(Effect.provide(toolsLayer));\n\nconst events = yield* agent.stream({\n  action: request.action,\n  history: request.history,\n  systemPrompt: application.systemPrompt,\n  toolkit,\n});\n```\n\nUse `strict` to emit OpenAI-compatible strict object schemas and `transformResult` to reduce or redact API responses before returning them to the model.",
       "registryDependencies": ["@krak-stack/httpapi-client"],
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/lib/httpapi-toolkit.ts",
@@ -753,17 +750,17 @@
           "target": "lib/httpapi-toolkit.ts"
         }
       ],
-      "meta": { "updatedAt": "2026-08-17" }
+      "meta": { "updatedAt": "2026-08-27" }
     },
     {
       "name": "httpapi-cli",
       "title": "HttpApi CLI",
       "description": "An Effect CLI generator driven by OpenAPI metadata that executes selected HttpApi operations and prints stream responses incrementally as NDJSON.",
-      "meta": { "updatedAt": "2026-08-26" },
+      "meta": { "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "registryDependencies": ["@krak-stack/httpapi-client"],
       "docs": "## Overview\n\n`httpapi-cli` turns operations selected by `HttpApiSpec` into grouped Effect CLI commands. API, group, operation, and parameter names are normalized to kebab-case. Path parameters become positional arguments, while query, header, and top-level JSON payload fields become typed flags with required values, descriptions, enum choices, and boolean negation derived from OpenAPI metadata. Structured object and array fields accept JSON. Calls are validated with the reflected Effect operation schema and delegated to `ApiClient`, keeping request encoding, authentication, and response decoding aligned with the generated Effect `HttpApiClient`.\n\n## Configure OpenAPI Metadata\n\nAnnotate the API once; the CLI and MCP server use the same metadata:\n\n```ts\nexport const AppApi = HttpApi.make(\"AppApi\")\n  .annotateMerge(\n    OpenApi.annotations({\n      title: \"App API\",\n      version: \"1.0.0\",\n      description: \"API for the App application\",\n    }),\n  )\n  .add(/* groups */);\n```\n\n## Create A CLI Handler\n\nCreate an app-owned handler such as `src/lib/cli-handler.ts`. This is where the application selects exposed methods, its API origin, and any authenticated `HttpClient` layer:\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nimport { AppApi } from \"@/api\";\nimport { env } from \"@/env\";\nimport { HttpApiCli, runHttpApiCli } from \"@/lib/httpapi-cli\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\n\nconst httpApiLayer = Layer.mergeAll(\n  HttpApiSpec.layer({\n    api: AppApi,\n    methods: [\"get\", \"post\", \"put\", \"patch\", \"delete\"],\n  }),\n  ApiClient.layer({\n    api: AppApi,\n    baseUrl: env.VITE_SITE_URL,\n  }).pipe(Layer.provide(FetchHttpClient.layer)),\n);\n\nconst cliLayer = HttpApiCli.layer.pipe(Layer.provide(httpApiLayer));\n\nexport const runCli = (args = process.argv.slice(2)) =>\n  runHttpApiCli(cliLayer, args);\n\nif (import.meta.main) {\n  runCli();\n}\n```\n\nFor API keys or session forwarding, replace `FetchHttpClient.layer` with an app-owned layer that transforms requests before providing it to `ApiClient.layer`.\n\n## Create A Binary Entrypoint\n\n```ts\n#!/usr/bin/env node\n\nimport { runCli } from \"@/lib/cli-handler\";\n\nrunCli();\n```\n\n## Request To CLI Example\n\nGiven an `examples.createExample` operation, this JSON HTTP request:\n\n```http\nPOST /examples/example-123?includeArchived=true\nContent-Type: application/json\n\n{\n  \"displayName\": \"CLI example\",\n  \"count\": 3,\n  \"metadata\": {\n    \"owner\": \"docs-team\"\n  }\n}\n```\n\nbecomes:\n\n```bash\napp-api examples create-example example-123 \\\n  --include-archived \\\n  --display-name \"CLI example\" \\\n  --count 3 \\\n  --metadata '{\"owner\":\"docs-team\"}'\n```\n\n`example-123` is the positional path parameter, `--include-archived` is the boolean query flag, and the scalar body fields become typed flags. Only the structured `metadata` object remains JSON. Use the generated `--help` output and shell completions to discover each operation's exact inputs.",
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/lib/httpapi-cli.ts",
@@ -776,11 +773,11 @@
       "name": "httpapi-mcp",
       "title": "HttpApi MCP",
       "description": "An Effect MCP registrar and HTTP server driven by OpenAPI metadata, exposing selected HttpApi operations through the generated API client.",
-      "meta": { "updatedAt": "2026-08-17" },
+      "meta": { "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "registryDependencies": ["@krak-stack/httpapi-client"],
       "docs": "## Overview\n\n`httpapi-mcp` turns operations selected by `HttpApiSpec` into MCP tools. Tool calls are delegated to `ApiClient`, keeping request encoding, authentication, transport overrides, and response decoding in the generated Effect HTTP API client. `httpApiMcpServerLayer` derives the MCP server name and version from the API OpenAPI `info` metadata.\n\n## Configure OpenAPI Metadata\n\nAnnotate the API with `OpenApi.annotations({ title, version, description })`. The same metadata drives API documentation, CLI identity, and MCP server identity.\n\n## Create An MCP Handler\n\nCreate an app-owned handler such as `src/lib/mcp-handler.ts`:\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nimport { AppApi } from \"@/api\";\nimport { env } from \"@/env\";\nimport { ApiClient } from \"@/lib/httpapi-client\";\nimport {\n  HttpApiMcp,\n  httpApiMcpServerLayer,\n  httpApiMcpToolsLayer,\n} from \"@/lib/httpapi-mcp\";\nimport { HttpApiSpec } from \"@/lib/httpapi-helpers\";\n\nconst httpApiLayer = Layer.mergeAll(\n  HttpApiSpec.layer({ api: AppApi, methods: [\"get\"] }),\n  ApiClient.layer({\n    api: AppApi,\n    baseUrl: env.VITE_SITE_URL,\n  }).pipe(Layer.provide(FetchHttpClient.layer)),\n);\n\nconst mcpToolsLayer = httpApiMcpToolsLayer.pipe(\n  Layer.provide(\n    HttpApiMcp.layer({\n      toolMetaKey: \"app/httpapi\",\n    }),\n  ),\n);\n\nconst mcpHttpLayer = httpApiMcpServerLayer(\"/api/mcp\");\n\nexport const mcpLayer = Layer.mergeAll(mcpToolsLayer).pipe(\n  Layer.provideMerge(mcpHttpLayer),\n  Layer.provide(httpApiLayer),\n);\n```\n\nProvide `mcpLayer` from the application HTTP runtime alongside its API layers. Keep request-scoped authentication, telemetry, error mapping, and deployment-specific routing in this app-owned handler. For authentication, provide an app-owned `HttpClient` layer to `ApiClient.layer`; do not expose credentials as MCP tool inputs.\n\n## Exposed Operations\n\n`HttpApiSpec.layer` controls which methods and operations become tools. Restrict MCP to `get` by default unless write operations and their approval policy are intentionally exposed.",
-      "dependencies": ["effect@beta"],
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/lib/httpapi-mcp.ts",
@@ -795,8 +792,8 @@
       "description": "An Effect layer that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's standard environment configuration.",
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-opentelemetry` uses `Otlp.layerFromConfig()` from `effect/unstable/observability` with `FetchHttpClient` from `effect/unstable/http` to export traces, metrics, and logs over OTLP/HTTP JSON. Effect reads the standard OpenTelemetry environment variables through its configuration layer.\n\n## Layer\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { Otlp, OtlpSerialization } from \"effect/unstable/observability\";\n\nexport const OpenTelemetryLive = Otlp.layerFromConfig().pipe(\n  Layer.provide(OtlpSerialization.layerJson),\n  Layer.provide(FetchHttpClient.layer),\n);\n```\n\n### Environment Variables\n\n- `OTEL_SERVICE_NAME` - Service name used in the OpenTelemetry resource\n- `OTEL_EXPORTER_OTLP_ENDPOINT` - Base URL for the OTLP collector\n- `OTEL_LOGS_EXPORTER=otlp` - Enables log export\n- `OTEL_METRICS_EXPORTER=otlp` - Enables metric export\n- `OTEL_TRACES_EXPORTER=otlp` - Enables trace export\n\nEffect leaves each exporter disabled when its corresponding exporter variable is omitted.",
-      "meta": { "updatedAt": "2026-08-26" },
-      "dependencies": ["effect@beta"],
+      "meta": { "updatedAt": "2026-08-27" },
+      "dependencies": ["effect@rc"],
       "files": [
         {
           "path": "src/services/opentelemetry.ts",
@@ -809,9 +806,10 @@
       "name": "embedding-layer",
       "title": "Embeddings",
       "description": "An Effect layer that configures an OpenAI-compatible embeddings model from EMBEDDINGS_URL, EMBEDDINGS_MODEL, and EMBEDDINGS_DIMENSIONS.",
+      "meta": { "updatedAt": "2026-08-27" },
       "type": "registry:lib",
       "docs": "## Overview\n\n`embedding-layer` provides an OpenAI-compatible embedding model layer configured through Effect `Config`. It reads the embeddings endpoint, model name, and output dimensions from the environment, then wires the OpenAI-compatible client through `FetchHttpClient`.\n\n## Layers\n\n```ts\nimport { OpenAiClient, OpenAiEmbeddingModel } from \"@effect/ai-openai-compat\";\nimport { Config, Effect, Layer, Redacted } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\n\nexport const EmbeddingLayer = Layer.unwrap(\n  Effect.gen(function* () {\n    const apiUrl = yield* Config.string(\"EMBEDDINGS_URL\");\n    const embeddingModel = yield* Config.string(\"EMBEDDINGS_MODEL\");\n    const embeddingDimensions = yield* Config.number(\"EMBEDDINGS_DIMENSIONS\");\n\n    const embeddingClientLayer = OpenAiClient.layer({\n      apiKey: Redacted.make(\"embedding\"),\n      apiUrl,\n    });\n\n    return OpenAiEmbeddingModel.layer({\n      model: embeddingModel,\n      config: {\n        dimensions: embeddingDimensions,\n        encoding_format: \"float\",\n      },\n    }).pipe(\n      Layer.provide(embeddingClientLayer),\n      Layer.provide(FetchHttpClient.layer),\n    );\n  }),\n);\n```\n\n## Environment Variables\n\n- `EMBEDDINGS_URL` - OpenAI-compatible embeddings API URL\n- `EMBEDDINGS_MODEL` - Embeddings model name\n- `EMBEDDINGS_DIMENSIONS` - Embedding vector dimensions",
-      "dependencies": ["@effect/ai-openai-compat@beta", "effect@beta"],
+      "dependencies": ["@effect/ai-openai-compat@rc", "effect@rc"],
       "files": [
         {
           "path": "src/services/embedding.ts",
