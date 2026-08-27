@@ -1,34 +1,38 @@
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
 import { DocsContent, DocsFooter, DocsHeader, DocsPage } from "@/lib/docs";
-import { registryDocs } from "@/lib/registry-docs";
+import { getRegistryDocsPages, makeRegistryDocs } from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/docs/")({
-  loader: () => {
-    const resolution = registryDocs.resolve(undefined, getLocale());
+  loader: async () => {
+    const pages = await getRegistryDocsPages();
+    const docs = makeRegistryDocs(pages);
+    const resolution = docs.resolve(undefined, getLocale());
     if (!resolution) throw notFound();
-    return { resolution };
+    return { pages, resolution };
   },
   head: ({ loaderData }) => {
-    const options: Parameters<typeof registryDocs.getHead>[0] = {
+    const docs = makeRegistryDocs(loaderData?.pages ?? []);
+    const options: Parameters<typeof docs.getHead>[0] = {
       locale: loaderData?.resolution.page.locale ?? getLocale(),
     };
     if (loaderData?.resolution.page) options.page = loaderData.resolution.page;
-    return registryDocs.getHead(options);
+    return docs.getHead(options);
   },
   component: IntroductionDocs,
 });
 
 function IntroductionDocs() {
-  const { resolution } = Route.useLoaderData();
+  const { pages, resolution } = Route.useLoaderData();
+  const docs = makeRegistryDocs(pages);
 
   return (
-    <RegistryDocsLayout>
-      <DocsPage docs={registryDocs} resolution={resolution}>
-        <DocsHeader docs={registryDocs} resolution={resolution} />
-        <DocsContent docs={registryDocs} resolution={resolution} />
-        <DocsFooter docs={registryDocs} resolution={resolution} />
+    <RegistryDocsLayout docs={docs}>
+      <DocsPage docs={docs} resolution={resolution}>
+        <DocsHeader docs={docs} resolution={resolution} />
+        <DocsContent docs={docs} resolution={resolution} />
+        <DocsFooter docs={docs} resolution={resolution} />
       </DocsPage>
     </RegistryDocsLayout>
   );

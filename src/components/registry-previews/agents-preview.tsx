@@ -1,6 +1,4 @@
 import { Markdown } from "@/components/markdown";
-import { shikiHighlighter } from "@/lib/shiki";
-import { use } from "react";
 import {
   Card,
   CardContent,
@@ -11,8 +9,6 @@ import {
 import agentsMd from "../../../AGENTS.md?raw";
 
 export function AgentsPreview() {
-  const highlighter = use(shikiHighlighter);
-
   return (
     <Card className="bg-[var(--surface-strong)]">
       <CardHeader>
@@ -23,7 +19,7 @@ export function AgentsPreview() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Markdown content={agentsMd} highlighter={highlighter} />
+        <Markdown content={agentsMd} />
       </CardContent>
     </Card>
   );

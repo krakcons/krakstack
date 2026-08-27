@@ -1,17 +1,15 @@
 import { CodeBlock } from "@/components/ui/code-block";
-import type { HighlighterCore } from "shiki/core";
 
 type MarkdownProps = {
   content: string;
-  highlighter: HighlighterCore;
 };
 
-export function Markdown({ content, highlighter }: MarkdownProps) {
+export function Markdown({ content }: MarkdownProps) {
   const blocks = parseBlocks(content);
 
   return (
     <div className="prose prose-slate dark:prose-invert prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-[#1d2e45] prose-pre:text-[#e8efff] max-w-none">
-      {blocks.map((block, index) => renderBlock(block, index, highlighter))}
+      {blocks.map((block, index) => renderBlock(block, index))}
     </div>
   );
 }
@@ -52,25 +50,14 @@ function parseBlocks(content: string) {
   return blocks;
 }
 
-function renderBlock(
-  block: string,
-  index: number,
-  highlighter: HighlighterCore,
-) {
+function renderBlock(block: string, index: number) {
   if (block.startsWith("```")) {
     const lines = block.split("\n");
     const language = normalizeLanguage(lines[0]?.slice(3).trim());
     const code = lines
       .slice(1, lines.at(-1) === "```" ? -1 : undefined)
       .join("\n");
-    return (
-      <CodeBlock
-        code={code}
-        highlighter={highlighter}
-        key={index}
-        language={language}
-      />
-    );
+    return <CodeBlock code={code} key={index} language={language} />;
   }
 
   if (block.startsWith("#### "))

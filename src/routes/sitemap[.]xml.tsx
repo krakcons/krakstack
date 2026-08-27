@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { registryDocs } from "@/lib/registry-docs";
+import { makeRegistryDocs } from "@/lib/registry-docs";
 
 const origin = "https://krakstack.net";
 const locales = ["en", "fr"] as const;
@@ -12,8 +12,10 @@ const escapeXml = (value: string) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
-const sitemap = () => {
-  const paths = ["/", ...registryDocs.pages("en").map((page) => page.path)];
+const sitemap = async () => {
+  const { loadRegistryDocsPages } = await import("@/lib/registry-docs.server");
+  const docs = makeRegistryDocs(await loadRegistryDocsPages());
+  const paths = ["/", ...docs.pages("en").map((page) => page.path)];
   const urls = paths.flatMap((path) =>
     locales.map((locale) => {
       const localizedPath = path === "/" ? "/" : path;
@@ -36,8 +38,8 @@ ${urls.join("\n")}
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
-      GET: () =>
-        new Response(sitemap(), {
+      GET: async () =>
+        new Response(await sitemap(), {
           headers: {
             "cache-control": "public, max-age=3600",
             "content-type": "application/xml; charset=utf-8",

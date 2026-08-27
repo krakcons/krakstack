@@ -2,16 +2,21 @@ import type { ReactNode } from "react";
 
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
-import { DocsLayout } from "@/lib/docs";
-import { registryDocs } from "@/lib/registry-docs";
+import { DocsLayout, type DocsCatalog } from "@/lib/docs";
 import { getLocale } from "@/paraglide/runtime";
 
-export const RegistryDocsLayout = ({ children }: { children: ReactNode }) => {
+export const RegistryDocsLayout = ({
+  children,
+  docs,
+}: {
+  children: ReactNode;
+  docs: DocsCatalog;
+}) => {
   const { theme, setTheme } = useTheme();
 
   return (
     <DocsLayout
-      docs={registryDocs}
+      docs={docs}
       locale={getLocale()}
       headerActions={
         <>

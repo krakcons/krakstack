@@ -8,8 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CodeBlock } from "@/components/ui/code-block";
-import { shikiHighlighter } from "@/lib/shiki";
-import { use, useState } from "react";
+import { useState } from "react";
 
 const interestOptions = [
   { label: "Forms", value: "forms" },
@@ -56,7 +55,6 @@ const defaultValues: FormValues = {
 };
 
 export function FormPreview() {
-  const highlighter = use(shikiHighlighter);
   const [submitted, setSubmitted] = useState<SubmittedValues | null>(null);
   const form = useAppForm({
     defaultValues,
@@ -229,7 +227,6 @@ export function FormPreview() {
               null,
               2,
             )}
-            highlighter={highlighter}
             language="json"
           />
         </CardContent>

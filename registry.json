@@ -645,27 +645,18 @@
       "docs": "## Overview\n\n`docs` provides a Fumadocs-style source and catalog API for localized technical documentation. It validates page records with Effect Schema, parses raw MDX, builds navigation and a shared search index, renders the documentation layout and pages, and leaves route ownership with the application.\n\n## Install\n\n```bash\nbunx shadcn@latest add @krak-stack/docs\n```\n\nThe item creates `src/lib/docs.tsx`. It includes built-in English and French UI messages and accepts message overrides through `makeDocs`.\n\n## Content Sources\n\nUse `createMdxDocsSource` with any raw-file provider. The included `docsSource` uses an eager Vite glob for `src/content/docs/**/*.mdx` with English and French locales. A CMS or generated manifest can bypass MDX parsing with `createDocsSource({ pages, locales })` and records matching `DocsPageSchema`.\n\n```text\nsrc/content/docs/\n├── en/\n│   ├── introduction.mdx\n│   └── operations.mdx\n└── fr/\n    ├── introduction.mdx\n    └── operations.mdx\n```\n\nEvery MDX file requires matching frontmatter and body titles. Localized versions share routing metadata while translating `title`, `description`, headings, and body content.\n\n```mdx\n---\nslug: introduction\npath: /docs\ntitle: Introduction\ndescription: Learn how to use the application.\nicon: lucide:book-open\norder: 1\nlocale: en\nsection: start\ntype: concept\nlegacySlugs: [overview]\n---\n\n# Introduction\n\nWelcome to the documentation.\n\n## First steps\n\nStart here.\n```\n\n`section` is an arbitrary stable navigation group. `type` is one of `concept`, `tutorial`, `how-to`, `reference`, or `runbook`. `legacySlugs` is optional and redirects old public URLs to the canonical page.\n\n## Configure The Catalog\n\n`makeDocs` applies project-level routing, metadata, navigation, branding, resources, messages, and repository settings to a source.\n\n```tsx\nconst docs = makeDocs({\n  source: docsSource,\n  basePath: \"/docs\",\n  defaultSlug: \"introduction\",\n  origin: \"https://example.com\",\n  siteName: \"Example Docs\",\n  sectionOrder: [\"start\", \"guides\", \"operations\", \"reference\"],\n  brand: {\n    label: \"Example\",\n    subtitle: () => \"Documentation\",\n    icon: \"lucide:book-open\",\n    href: \"/\",\n  },\n  github: {\n    url: \"https://github.com/example/project\",\n    branch: \"main\",\n  },\n});\n```\n\nThe returned catalog exposes `pages`, `sections`, `resolve`, `search`, `getMessages`, `getHead`, `url`, and `editUrl`.\n\n## Set Up The Optional Slug Route\n\nCreate `src/routes/docs.{-$slug}.tsx`. The application owns this route because locale resolution, canonical origin, redirects, not-found behavior, and header actions are project decisions.\n\n```tsx\nimport { createFileRoute, notFound, redirect } from \"@tanstack/react-router\";\n\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\nimport { ThemeToggle } from \"@/components/theme-toggle\";\nimport {\n  DocsLayout,\n  DocsNotFound,\n  DocsPage,\n  docsSource,\n  makeDocs,\n  type DocsLocale,\n} from \"@/lib/docs\";\nimport { getLocale } from \"@/paraglide/runtime\";\n\nconst docsLocale = (): DocsLocale =>\n  getLocale() === \"fr\" ? \"fr\" : \"en\";\n\nconst docs = makeDocs({\n  source: docsSource,\n  basePath: \"/docs\",\n  defaultSlug: \"introduction\",\n  origin: \"https://example.com\",\n  siteName: \"Example Docs\",\n  sectionOrder: [\"start\", \"guides\", \"operations\", \"reference\"],\n  github: { url: \"https://github.com/example/project\" },\n});\n\nexport const Route = createFileRoute(\"/docs/{-$slug}\")({\n  loader: ({ params }) => {\n    const resolution = docs.resolve(params.slug, docsLocale());\n    if (!resolution) throw notFound();\n\n    if (!resolution.canonical) {\n      throw redirect({\n        to: resolution.page.path,\n        statusCode: 301,\n      });\n    }\n\n    return resolution;\n  },\n  head: ({ loaderData }) => {\n    const locale = loaderData?.page.locale ?? docsLocale();\n    return docs.getHead({\n      locale,\n      ...(loaderData?.page ? { page: loaderData.page } : {}),\n    });\n  },\n  component: DocsRoutePage,\n  notFoundComponent: () => (\n    <DocsNotFound docs={docs} locale={docsLocale()} />\n  ),\n});\n\nfunction DocsRoutePage() {\n  const resolution = Route.useLoaderData();\n\n  return (\n    <DocsLayout\n      docs={docs}\n      locale={resolution.page.locale}\n      headerActions={\n        <>\n          <ThemeToggle />\n          <LocaleSwitcher />\n        </>\n      }\n    >\n      <DocsPage docs={docs} resolution={resolution} />\n    </DocsLayout>\n  );\n}\n```\n\nThe optional segment makes `/docs` resolve `defaultSlug` and `/docs/operations` resolve the matching page. `docs.resolve` also identifies legacy aliases; redirect every non-canonical resolution permanently so only one URL is indexed.\n\n## Search And Rendering\n\n`DocsLayout` renders ordered navigation, GitHub, documentation search, branding, and app-provided header actions. `DocsPage` renders Streamdown content, heading anchors, desktop and mobile tables of contents, edit links, and previous/next navigation. Browser search and `documentation-toolkit` share `docs.search`, so page text is indexed once and result ranking stays consistent.\n\nFor additional locales, provide message overrides through `makeDocs({ messages })`. Keep public application-specific labels in the receiving project's localization system.",
       "registryDependencies": [
         "@krak-stack/app-brand",
+        "@krak-stack/code-block",
         "collapsible",
         "@krak-stack/search-menu",
         "@krak-stack/sidebar-layout",
         "@krak-stack/seo"
       ],
-      "dependencies": [
-        "@iconify-json/lucide",
-        "@iconify/react",
-        "@streamdown/code",
-        "@tanstack/react-router",
-        "effect@beta",
-        "lucide-react",
-        "react",
-        "streamdown",
-        "yaml"
-      ],
+      "dependencies": ["effect@beta", "react"],
       "files": [
         {
-          "path": "src/lib/docs-core.tsx",
+          "path": "src/lib/docs.server.ts",
           "type": "registry:file",
-          "target": "lib/docs-core.tsx"
+          "target": "lib/docs.server.ts"
         },
         {
           "path": "src/lib/docs.tsx",
@@ -689,7 +680,7 @@
           "target": "lib/documentation-toolkit.ts"
         }
       ],
-      "meta": { "updatedAt": "2026-08-17" }
+      "meta": { "updatedAt": "2026-08-26" }
     },
     {
       "name": "webfetch-toolkit",
@@ -959,9 +950,9 @@
       "name": "code-block",
       "type": "registry:block",
       "title": "Code Block",
-      "description": "A syntax-highlighted code block with Shiki highlighting, language label, copy action, and plain-text fallback.",
-      "meta": { "updatedAt": "2026-08-17" },
-      "docs": "## Overview\n\n`CodeBlock` renders syntax-highlighted code with Shiki using a highlighter supplied by your app. The component stays synchronous and prop-driven so your project can create one shared highlighter and reuse it across every code block. It falls back to plain text if highlighting fails and includes a copy-to-clipboard button.\n\n## Highlighter Setup\n\nCreate a project-managed highlighter, for example in `src/lib/shiki.ts`. This file is intentionally not included by the registry item so each app can choose its bundled themes and languages. Load both `vitesse-light` and `vitesse-dark` unless you also change the themes in `CodeBlock`.\n\n```ts\nimport bash from \"@shikijs/langs/bash\";\nimport javascript from \"@shikijs/langs/javascript\";\nimport json from \"@shikijs/langs/json\";\nimport tsx from \"@shikijs/langs/tsx\";\nimport typescript from \"@shikijs/langs/typescript\";\nimport vitesseDark from \"@shikijs/themes/vitesse-dark\";\nimport vitesseLight from \"@shikijs/themes/vitesse-light\";\nimport { createHighlighterCore } from \"shiki/core\";\nimport { createOnigurumaEngine } from \"shiki/engine/oniguruma\";\n\nexport const shikiHighlighter = createHighlighterCore({\n  themes: [vitesseLight, vitesseDark],\n  langs: [bash, javascript, json, tsx, typescript],\n  langAlias: { js: \"javascript\", ts: \"typescript\", sh: \"bash\" },\n  engine: createOnigurumaEngine(import(\"shiki/wasm\")),\n});\n```\n\n## Usage\n\nResolve the highlighter outside `CodeBlock` and pass it in.\n\n```tsx\nimport { CodeBlock } from \"@/components/ui/code-block\";\nimport { shikiHighlighter } from \"@/lib/shiki\";\nimport { use } from \"react\";\n\nfunction Example({ source }: { source: string }) {\n  const highlighter = use(shikiHighlighter);\n\n  return (\n    <CodeBlock\n      code={source}\n      highlighter={highlighter}\n      language=\"tsx\"\n      messages={{ copy: \"Copy code\", copied: \"Copied\" }}\n    />\n  );\n}\n```",
+      "description": "A syntax-highlighted code block with TanStack Highlight, semantic light and dark colors, a language label, and a copy action.",
+      "meta": { "updatedAt": "2026-08-26" },
+      "docs": "## Overview\n\n`CodeBlock` renders code with synchronous [TanStack Highlight](https://tanstack.com/highlight/latest) syntax highlighting, semantic light and dark token colors, a language label, and a copy action. The bundled all-language registry is compact and falls back to escaped plain text for unknown languages.\n\n## Usage\n\n```tsx\nimport { CodeBlock } from \"@/components/ui/code-block\";\n\nfunction Example({ source }: { source: string }) {\n  return (\n    <CodeBlock\n      code={source}\n      language=\"tsx\"\n      messages={{ copy: \"Copy code\", copied: \"Copied\" }}\n    />\n  );\n}\n```",
       "files": [
         {
           "path": "src/components/ui/code-block.tsx",

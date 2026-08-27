@@ -1,7 +1,7 @@
 import { CodeBlock } from "@/components/ui/code-block";
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
 import { SidebarPageHeader } from "@/components/ui/sidebar-layout";
-import { shikiHighlighter } from "@/lib/shiki";
+import { getRegistryDocsPages, makeRegistryDocs } from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -10,15 +10,19 @@ import {
   PackagePlus,
   Settings2,
 } from "lucide-react";
-import { use, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
-const DeveloperSetupDocsRoute = () => (
-  <RegistryDocsLayout>
-    <DeveloperSetupDocs />
-  </RegistryDocsLayout>
-);
+const DeveloperSetupDocsRoute = () => {
+  const docs = makeRegistryDocs(Route.useLoaderData());
+  return (
+    <RegistryDocsLayout docs={docs}>
+      <DeveloperSetupDocs />
+    </RegistryDocsLayout>
+  );
+};
 
 export const Route = createFileRoute("/docs/developer-setup")({
+  loader: () => getRegistryDocsPages(),
   component: DeveloperSetupDocsRoute,
 });
 
@@ -131,7 +135,6 @@ const content = {
 };
 
 function DeveloperSetupDocs() {
-  const highlighter = use(shikiHighlighter);
   const page = content[getLocale()];
 
   return (
@@ -161,22 +164,14 @@ function DeveloperSetupDocs() {
         title={page.registryConfigTitle}
         description={`${page.registryConfigDescription} ${page.configNote}`}
       >
-        <CodeBlock
-          code={registryConfig}
-          highlighter={highlighter}
-          language="json"
-        />
+        <CodeBlock code={registryConfig} language="json" />
       </DocSection>
 
       <DocSection
         title={page.installCommandTitle}
         description={page.installCommandDescription}
       >
-        <CodeBlock
-          code={installCommands}
-          highlighter={highlighter}
-          language="bash"
-        />
+        <CodeBlock code={installCommands} language="bash" />
       </DocSection>
 
       <DocSection
@@ -191,20 +186,12 @@ function DeveloperSetupDocs() {
             </div>
             <Checklist items={page.opencodeItems} compact />
           </div>
-          <CodeBlock
-            code={opencodeConfig}
-            highlighter={highlighter}
-            language="json"
-          />
+          <CodeBlock code={opencodeConfig} language="json" />
         </div>
       </DocSection>
 
       <DocSection title={page.reviewTitle} description={page.reviewDescription}>
-        <CodeBlock
-          code={verificationCommands}
-          highlighter={highlighter}
-          language="bash"
-        />
+        <CodeBlock code={verificationCommands} language="bash" />
       </DocSection>
     </main>
   );

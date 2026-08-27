@@ -11,17 +11,22 @@ import {
 } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { krakstackSites } from "@/lib/krakstack-sites";
+import { getRegistryDocsPages, makeRegistryDocs } from "@/lib/registry-docs";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 import { createFileRoute } from "@tanstack/react-router";
 
-const TemplateSiteDocsRoute = () => (
-  <RegistryDocsLayout>
-    <TemplateSiteDocs />
-  </RegistryDocsLayout>
-);
+const TemplateSiteDocsRoute = () => {
+  const docs = makeRegistryDocs(Route.useLoaderData());
+  return (
+    <RegistryDocsLayout docs={docs}>
+      <TemplateSiteDocs />
+    </RegistryDocsLayout>
+  );
+};
 
 export const Route = createFileRoute("/docs/sites/template")({
+  loader: () => getRegistryDocsPages(),
   component: TemplateSiteDocsRoute,
 });
 

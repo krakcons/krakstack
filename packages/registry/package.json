@@ -49,8 +49,8 @@
       "import": "./dist/lib/httpapi-mcp.js"
     },
     "./docs": {
-      "types": "./dist/lib/docs-core.d.ts",
-      "import": "./dist/lib/docs-core.js"
+      "types": "./dist/lib/docs.d.ts",
+      "import": "./dist/lib/docs.js"
     },
     "./documentation-toolkit": {
       "types": "./dist/lib/documentation-toolkit.d.ts",
@@ -224,12 +224,12 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@effect/atom-react": "4.0.0-beta.85",
     "@effect/platform-browser": "4.0.0-beta.85",
-    "@iconify-json/lucide": "^1.2.83",
     "@iconify/react": "^6.0.2",
     "@inlang/paraglide-js": "^2.19.0",
     "@lucas-barake/effect-form": "0.25.0-beta.6",
     "@lucas-barake/effect-form-react": "0.26.0-beta.5",
     "@streamdown/code": "^1.1.1",
+    "@tanstack/highlight": "^0.0.10",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-table": "^9.1.2",
@@ -243,10 +243,8 @@
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "shiki": "^4.2.0",
     "streamdown": "^2.5.0",
-    "tailwind-merge": "^3.6.0",
-    "yaml": "^2.8.2"
+    "tailwind-merge": "^3.6.0"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-sesv2": {
@@ -267,9 +265,6 @@
     "@effect/platform-browser": {
       "optional": true
     },
-    "@iconify-json/lucide": {
-      "optional": true
-    },
     "@iconify/react": {
       "optional": true
     },
@@ -288,6 +283,9 @@
     "@streamdown/code": {
       "optional": true
     },
+    "@tanstack/highlight": {
+      "optional": true
+    },
     "@tanstack/react-form": {
       "optional": true
     },
@@ -303,13 +301,7 @@
     "@xberg-io/xberg": {
       "optional": true
     },
-    "shiki": {
-      "optional": true
-    },
     "streamdown": {
-      "optional": true
-    },
-    "yaml": {
       "optional": true
     }
   }

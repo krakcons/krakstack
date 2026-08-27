@@ -29,49 +29,57 @@ import {
   DocsNotFound,
   DocsPage,
 } from "@/lib/docs";
-import { registryDocs } from "@/lib/registry-docs";
+import {
+  getRegistryDocsPages,
+  makeRegistryDocs,
+  registryDocsShell,
+} from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/docs/{-$slug}")({
   validateSearch: TableSearchSchemaStandard,
-  loader: ({ params }) => {
-    const resolution = registryDocs.resolve(params.slug, getLocale());
+  loader: async ({ params }) => {
+    const pages = await getRegistryDocsPages();
+    const docs = makeRegistryDocs(pages);
+    const resolution = docs.resolve(params.slug, getLocale());
     if (!resolution) throw notFound();
     if (!resolution.canonical) {
       throw redirect({ to: resolution.page.path, statusCode: 301 });
     }
     const item = getRegistryItem(resolution.page.slug);
-    return { item, resolution };
+    return { item, pages, resolution };
   },
   head: ({ loaderData }) => {
-    const options: Parameters<typeof registryDocs.getHead>[0] = {
+    const docs = makeRegistryDocs(loaderData?.pages ?? []);
+    const options: Parameters<typeof docs.getHead>[0] = {
       locale: loaderData?.resolution.page.locale ?? getLocale(),
     };
     if (loaderData?.resolution.page) options.page = loaderData.resolution.page;
-    return registryDocs.getHead(options);
+    return docs.getHead(options);
   },
   component: RegistryDocs,
   notFoundComponent: () => (
-    <DocsNotFound docs={registryDocs} locale={getLocale()} />
+    <DocsNotFound docs={registryDocsShell} locale={getLocale()} />
   ),
 });
 
 function RegistryDocs() {
-  const { item, resolution } = Route.useLoaderData();
+  const { item, pages, resolution } = Route.useLoaderData();
+  const docs = makeRegistryDocs(pages);
 
   return (
-    <RegistryDocsLayout>
-      <DocsPage docs={registryDocs} resolution={resolution}>
-        <DocsHeader docs={registryDocs} resolution={resolution} />
-        <DocsContent docs={registryDocs} resolution={resolution} />
+    <RegistryDocsLayout docs={docs}>
+      <DocsPage docs={docs} resolution={resolution}>
+        <DocsHeader docs={docs} resolution={resolution} />
+        <DocsContent docs={docs} resolution={resolution} />
         {item ? (
           <div className="mt-12 grid gap-8">
             <Dependencies item={item} />
             <RegistryPreview slug={item.name} />
           </div>
         ) : null}
-        <DocsFooter docs={registryDocs} resolution={resolution} />
+        <DocsFooter docs={docs} resolution={resolution} />
       </DocsPage>
     </RegistryDocsLayout>
   );
