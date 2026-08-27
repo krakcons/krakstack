@@ -20,7 +20,8 @@ import {
 } from "@krak-stack/registry/httpapi-toolkit";
 import { ApiClient } from "@krak-stack/registry/httpapi/client";
 import { HttpApiSpec } from "@krak-stack/registry/httpapi/helpers";
-import { createMdxDocsSource, makeDocs } from "@krak-stack/registry/docs";
+import { createDocsSource, makeDocs } from "@krak-stack/registry/docs";
+import { loadMdxDocsDirectory } from "@krak-stack/registry/docs/server";
 import {
   DocumentationToolkit,
   DocumentationToolkitLayer,
@@ -68,8 +69,18 @@ HTTP API client, schema, AI tool, CLI, and MCP utilities are available under
 the `@krak-stack/registry/httpapi/*` subpaths. Keep application-specific API
 layers, handlers, authentication, and client bindings in the application.
 
-Documentation consumers create their content source in the application so Vite
-can resolve the local `import.meta.glob`, then pass it to `makeDocs`.
+Documentation consumers load and compile their application-owned MDX on the
+server, then pass the validated page records to `createDocsSource` and
+`makeDocs`:
+
+```ts
+const pages = await loadMdxDocsDirectory("src/content/docs");
+const source = createDocsSource({ pages, locales: ["en", "fr"] });
+```
+
+The `@krak-stack/registry/docs/server` export requires the Bun runtime. Keep it
+behind a server-only module or server function so it is not included in browser
+bundles.
 
 Add the package's Tailwind source to the application stylesheet:
 

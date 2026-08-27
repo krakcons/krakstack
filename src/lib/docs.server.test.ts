@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { compileDocsMarkdown, compileMdxDocsPage } from "./docs.server";
+import {
+  compileDocsMarkdown,
+  compileMdxDocsPage,
+} from "@krak-stack/registry/docs/server";
 
 describe("docs server", () => {
   it("compiles GFM content with headings and safe links", () => {

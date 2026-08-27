@@ -81,7 +81,11 @@ for (const entry of entries) {
     outdir: dirname(entry.output),
     packages: "external",
     plugins: [sourceAliasPlugin],
-    target: entry.output.includes("/oxlint/") ? "node" : "browser",
+    target: entry.output.endsWith(".server.js")
+      ? "bun"
+      : entry.output.includes("/oxlint/")
+        ? "node"
+        : "browser",
   });
 
   if (!result.success) {

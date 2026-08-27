@@ -20,6 +20,7 @@
     "../../src/lib/httpapi-helpers.tsx",
     "../../src/lib/httpapi-mcp.ts",
     "../../src/lib/docs.tsx",
+    "../../src/lib/docs.server.ts",
     "../../src/lib/documentation-toolkit.ts",
     "../../src/lib/webfetch-toolkit.ts",
     "../../src/lib/query.ts",
