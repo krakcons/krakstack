@@ -133,6 +133,11 @@
           "path": "src/components/ui/data-table.tsx",
           "type": "registry:component",
           "target": "components/ui/data-table.tsx"
+        },
+        {
+          "path": "src/lib/table-search.ts",
+          "type": "registry:lib",
+          "target": "lib/table-search.ts"
         }
       ],
       "registryDependencies": [

@@ -2,8 +2,6 @@ import {
   DataTable,
   DataTableColumnHeader,
   type DataTableColumnDef,
-  TableSearchSchema,
-  TableSearchSchemaStandard,
   type DataTableRowAction,
 } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
-
-export { TableSearchSchema, TableSearchSchemaStandard };
 
 type Project = {
   id: string;

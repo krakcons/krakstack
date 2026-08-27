@@ -1,19 +1,5 @@
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
-import {
-  DataTablePreview,
-  TableSearchSchemaStandard,
-} from "@/components/registry-previews/data-table-preview";
-import { AgentsPreview } from "@/components/registry-previews/agents-preview";
-import { FormPreview } from "@/components/registry-previews/form-preview";
-import { EffectFormPreview } from "@/components/registry-previews/effect-form-preview";
-import { FilePickerPreview } from "@/components/registry-previews/file-picker-preview";
-import { LintFormatPreview } from "@/components/registry-previews/lint-format-preview";
-import { CopyButtonPreview } from "@/components/registry-previews/copy-button-preview";
-import { AgentPreview } from "@/components/registry-previews/agent-preview";
-import { LoadingPreview } from "@/components/registry-previews/loading-preview";
-import { PaginationPreview } from "@/components/registry-previews/pagination-preview";
-import { IconInputPreview } from "@/components/registry-previews/icon-input-preview";
-import { VirtualizedComboboxPreview } from "@/components/registry-previews/virtualized-combobox-preview";
+import { TableSearchSchemaStandard } from "@/lib/table-search";
 import {
   Card,
   CardDescription,
@@ -36,6 +22,113 @@ import {
 } from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import {
+  lazy,
+  Suspense,
+  type ComponentType,
+  type LazyExoticComponent,
+} from "react";
+
+const registryPreviews = new Map<string, LazyExoticComponent<ComponentType>>([
+  [
+    "data-table",
+    lazy(() =>
+      import("@/components/registry-previews/data-table-preview").then(
+        ({ DataTablePreview }) => ({ default: DataTablePreview }),
+      ),
+    ),
+  ],
+  [
+    "form",
+    lazy(() =>
+      import("@/components/registry-previews/form-preview").then(
+        ({ FormPreview }) => ({ default: FormPreview }),
+      ),
+    ),
+  ],
+  [
+    "effect-form",
+    lazy(() =>
+      import("@/components/registry-previews/effect-form-preview").then(
+        ({ EffectFormPreview }) => ({ default: EffectFormPreview }),
+      ),
+    ),
+  ],
+  [
+    "file-picker",
+    lazy(() =>
+      import("@/components/registry-previews/file-picker-preview").then(
+        ({ FilePickerPreview }) => ({ default: FilePickerPreview }),
+      ),
+    ),
+  ],
+  [
+    "agents",
+    lazy(() =>
+      import("@/components/registry-previews/agents-preview").then(
+        ({ AgentsPreview }) => ({ default: AgentsPreview }),
+      ),
+    ),
+  ],
+  [
+    "lint-format",
+    lazy(() =>
+      import("@/components/registry-previews/lint-format-preview").then(
+        ({ LintFormatPreview }) => ({ default: LintFormatPreview }),
+      ),
+    ),
+  ],
+  [
+    "copy-button",
+    lazy(() =>
+      import("@/components/registry-previews/copy-button-preview").then(
+        ({ CopyButtonPreview }) => ({ default: CopyButtonPreview }),
+      ),
+    ),
+  ],
+  [
+    "agent",
+    lazy(() =>
+      import("@/components/registry-previews/agent-preview").then(
+        ({ AgentPreview }) => ({ default: AgentPreview }),
+      ),
+    ),
+  ],
+  [
+    "loading",
+    lazy(() =>
+      import("@/components/registry-previews/loading-preview").then(
+        ({ LoadingPreview }) => ({ default: LoadingPreview }),
+      ),
+    ),
+  ],
+  [
+    "pagination",
+    lazy(() =>
+      import("@/components/registry-previews/pagination-preview").then(
+        ({ PaginationPreview }) => ({ default: PaginationPreview }),
+      ),
+    ),
+  ],
+  [
+    "icon-input",
+    lazy(() =>
+      import("@/components/registry-previews/icon-input-preview").then(
+        ({ IconInputPreview }) => ({ default: IconInputPreview }),
+      ),
+    ),
+  ],
+  [
+    "virtualized-combobox",
+    lazy(() =>
+      import("@/components/registry-previews/virtualized-combobox-preview").then(
+        ({ VirtualizedComboboxPreview }) => ({
+          default: VirtualizedComboboxPreview,
+        }),
+      ),
+    ),
+  ],
+]);
 
 export const Route = createFileRoute("/docs/{-$slug}")({
   validateSearch: TableSearchSchemaStandard,
@@ -172,41 +265,17 @@ function getRegistryDependencyHref(dependency: string) {
 }
 
 function RegistryPreview({ slug }: { slug: string }) {
-  const preview =
-    slug === "data-table" ? (
-      <DataTablePreview />
-    ) : slug === "form" ? (
-      <FormPreview />
-    ) : slug === "effect-form" ? (
-      <EffectFormPreview />
-    ) : slug === "file-picker" ? (
-      <FilePickerPreview />
-    ) : slug === "agents" ? (
-      <AgentsPreview />
-    ) : slug === "lint-format" ? (
-      <LintFormatPreview />
-    ) : slug === "copy-button" ? (
-      <CopyButtonPreview />
-    ) : slug === "agent" ? (
-      <AgentPreview />
-    ) : slug === "loading" ? (
-      <LoadingPreview />
-    ) : slug === "pagination" ? (
-      <PaginationPreview />
-    ) : slug === "icon-input" ? (
-      <IconInputPreview />
-    ) : slug === "virtualized-combobox" ? (
-      <VirtualizedComboboxPreview />
-    ) : null;
-
-  if (!preview) return null;
+  const Preview = registryPreviews.get(slug);
+  if (!Preview) return null;
 
   return (
     <section className="grid gap-3">
       <h2 className="text-foreground text-3xl font-semibold tracking-tight">
         Preview
       </h2>
-      {preview}
+      <Suspense fallback={null}>
+        <Preview />
+      </Suspense>
     </section>
   );
 }

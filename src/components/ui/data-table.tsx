@@ -52,7 +52,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
-import { Query, SortParamsFromString } from "@/lib/query";
+import { SortParamsFromString } from "@/lib/query";
+import { TableSearchSchema, type TableParams } from "@/lib/table-search";
 import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
 import { useAtom } from "@effect/atom-react";
@@ -207,18 +208,11 @@ type DataTableInstance<TData extends RowData> = AppReactTable<
   Record<never, never>
 >;
 
-export const TableSearchSchema = Schema.Struct({
-  page: Schema.optional(Query.fields.page),
-  pageSize: Schema.optional(Query.fields.pageSize),
-  globalFilter: Query.fields.globalFilter,
-  sort: Query.fields.sort,
-  grouping: Schema.optional(Schema.Array(Schema.String)),
-}).annotate({ identifier: "TableSearch" });
-
-export const TableSearchSchemaStandard: ReturnType<
-  typeof Schema.toStandardSchemaV1<typeof TableSearchSchema>
-> = Schema.toStandardSchemaV1(TableSearchSchema);
-export type TableParams = Schema.Schema.Type<typeof TableSearchSchema>;
+export {
+  TableSearchSchema,
+  TableSearchSchemaStandard,
+} from "@/lib/table-search";
+export type { TableParams } from "@/lib/table-search";
 
 const compactDataTableStorage = Layer.effect(
   KeyValueStore.KeyValueStore,
