@@ -259,6 +259,8 @@ export type DataTableMessages = PaginationMessages & {
   sortBy: string;
   hideColumn: string;
   reorder: string;
+  moveUp: string;
+  moveDown: string;
   resizeColumn: (column: string) => string;
   listOthers: (count: number) => string;
   selectAllRows: string;
@@ -290,6 +292,8 @@ const messages = {
     sortBy: "Sort by",
     hideColumn: "Hide column",
     reorder: "Drag to reorder",
+    moveUp: "Move up",
+    moveDown: "Move down",
     resizeColumn: (column: string) => `Resize ${column} column`,
     listOthers: (count: number) =>
       count === 1 ? "and 1 other" : `and ${count} others`,
@@ -318,6 +322,8 @@ const messages = {
     sortBy: "Trier par",
     hideColumn: "Masquer la colonne",
     reorder: "Glisser pour réordonner",
+    moveUp: "Déplacer vers le haut",
+    moveDown: "Déplacer vers le bas",
     resizeColumn: (column: string) => `Redimensionner la colonne ${column}`,
     listOthers: (count: number) =>
       count === 1 ? "et 1 autre" : `et ${count} autres`,
@@ -832,6 +838,10 @@ const canDragRows = <TData extends RowData>(store: DataTableStore<TData>) =>
     ? canMoveRowsToGroups(store)
     : canReorderRows(store);
 
+const hasRowActionMenu = <TData extends RowData>(
+  store: DataTableStore<TData>,
+) => !!store.config.features.rowActions || canReorderRows(store);
+
 const getSelectedRows = <TData extends RowData>(
   store: DataTableStore<TData>,
   model: DataTableModel<TData>,
@@ -966,6 +976,54 @@ export const DataTableRowActions = <TData,>({
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+};
+
+const DataTableRowActionMenu = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store] = useTableAtom(tableAtom);
+  const rowId = useRequiredId(RowIdContext);
+  const model = deriveModel(store);
+  const row = model.sortedRows.find((candidate) => candidate.id === rowId);
+  if (!row) return null;
+
+  const rowActions = store.config.features.rowActions || undefined;
+  const visibleRows = model.pageRows;
+  const rowIndex = visibleRows.findIndex((candidate) => candidate.id === rowId);
+  const reordering = store.config.features.reordering;
+  const reorderActions: DataTableRowAction<TData>[] = [];
+  if (reordering && canReorderRows(store)) {
+    const move = (targetIndex: number) =>
+      reordering.onReorder(
+        reorderDataTableRows(model.rows, rowId, visibleRows[targetIndex]!.id),
+      );
+    if (rowIndex > 0) {
+      reorderActions.push({
+        id: "data-table-move-up",
+        name: store.config.labels.moveUp,
+        icon: <ArrowUp />,
+        onClick: () => move(rowIndex - 1),
+      });
+    }
+    if (rowIndex !== -1 && rowIndex < visibleRows.length - 1) {
+      reorderActions.push({
+        id: "data-table-move-down",
+        name: store.config.labels.moveDown,
+        icon: <ArrowDown />,
+        onClick: () => move(rowIndex + 1),
+      });
+    }
+  }
+
+  return (
+    <DataTableRowActions
+      actions={[...reorderActions, ...(rowActions ? rowActions.items : [])]}
+      row={row.data}
+      title={rowActions?.label ?? store.config.labels.actions}
+    />
   );
 };
 
@@ -1600,7 +1658,6 @@ const TableDataRow = <TData extends RowData>({
   const selection = store.config.features.selection;
   const selectable =
     !!selection && (selection.isRowSelectable?.(row.data) ?? true);
-  const rowActions = store.config.features.rowActions;
   const draggable = canDragRows(store);
   return (
     <TableRow
@@ -1657,17 +1714,13 @@ const TableDataRow = <TData extends RowData>({
           </div>
         </TableCell>
       ))}
-      {rowActions ? (
+      {hasRowActionMenu(store) ? (
         <TableCell
           className="bg-background group-data-[state=selected]/row:bg-muted sticky right-0 z-20 w-10 min-w-10 cursor-default p-0 transition-colors group-hover/row:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))]"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex h-16 items-center justify-center">
-            <DataTableRowActions
-              actions={rowActions.items}
-              row={row.data}
-              title={rowActions.label ?? store.config.labels.actions}
-            />
+            <DataTableRowActionMenu tableAtom={tableAtom} />
           </div>
         </TableCell>
       ) : null}
@@ -1729,7 +1782,7 @@ const GroupedTable = <TData extends RowData>({
   );
   const extra =
     (store.config.features.selection ? 1 : 0) +
-    (store.config.features.rowActions ? 1 : 0) +
+    (hasRowActionMenu(store) ? 1 : 0) +
     (canDragRows(store) ? 1 : 0);
   const renderSections = (items: GroupSection<TData>[]): ReactNode =>
     items.flatMap((section) => {
@@ -1978,9 +2031,7 @@ const DataTableHeader = <TData extends RowData>({
             </TableHead>
           );
         })}
-        {store.config.features.rowActions ? (
-          <TableHead className="w-10" />
-        ) : null}
+        {hasRowActionMenu(store) ? <TableHead className="w-10" /> : null}
       </TableRow>
     </TableHeader>
   );
@@ -1998,7 +2049,7 @@ const DataTableBody = <TData extends RowData>({
   const colSpan =
     model.visibleColumns.length +
     (store.config.features.selection ? 1 : 0) +
-    (store.config.features.rowActions ? 1 : 0) +
+    (hasRowActionMenu(store) ? 1 : 0) +
     (canDragRows(store) ? 1 : 0);
   if (grouped && rows.length && !store.config.status.error) {
     return <GroupedTable tableAtom={tableAtom} />;
@@ -2056,7 +2107,6 @@ const GalleryCard = <TData extends RowData>({
   const selection = store.config.features.selection;
   const selectable =
     !!selection && (selection.isRowSelectable?.(row.data) ?? true);
-  const rowActions = store.config.features.rowActions;
   const draggable = canDragRows(store);
   return (
     <Card
@@ -2105,16 +2155,12 @@ const GalleryCard = <TData extends RowData>({
             {renderCell(row, description)}
           </div>
         ) : null}
-        {rowActions ? (
+        {hasRowActionMenu(store) ? (
           <div
             className="absolute top-4 right-4"
             onClick={(event) => event.stopPropagation()}
           >
-            <DataTableRowActions
-              actions={rowActions.items}
-              row={row.data}
-              title={rowActions.label ?? store.config.labels.actions}
-            />
+            <DataTableRowActionMenu tableAtom={tableAtom} />
           </div>
         ) : null}
       </CardHeader>
@@ -2376,7 +2422,7 @@ const DataTableContent = <TData extends RowData>({
   const width = getDataTableWidth(
     model.visibleColumns,
     (store.config.features.selection ? 1 : 0) +
-      (store.config.features.rowActions ? 1 : 0) +
+      (hasRowActionMenu(store) ? 1 : 0) +
       (canDragRows(store) ? 1 : 0),
   );
   return (

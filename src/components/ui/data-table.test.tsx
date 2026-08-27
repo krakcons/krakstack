@@ -337,6 +337,30 @@ describe("DataTable model", () => {
     expect(document.body.contains(overlay)).toBe(false);
   });
 
+  it("includes move up and move down actions for reorderable rows", async () => {
+    const onReorder = vi.fn();
+    render(
+      <DataTable
+        columnDefs={columns}
+        features={{ pagination: false, reordering: { onReorder } }}
+        getRowId={(row) => row.id}
+        rowData={data}
+      />,
+    );
+
+    const actionButtons = screen.getAllByRole("button", { name: "Actions" });
+    expect(actionButtons).toHaveLength(3);
+
+    fireEvent.click(actionButtons[0]!);
+    expect(screen.queryByText("Move up")).toBeNull();
+    fireEvent.click(await screen.findByText("Move down"));
+    expect(onReorder).toHaveBeenLastCalledWith([data[1], data[0], data[2]]);
+
+    fireEvent.click(actionButtons[1]!);
+    expect(await screen.findByText("Move up")).toBeTruthy();
+    expect(screen.getByText("Move down")).toBeTruthy();
+  });
+
   it("reconciles an out-of-range controlled page", async () => {
     const onStateChange = vi.fn();
     render(
