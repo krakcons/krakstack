@@ -128,23 +128,6 @@ export const SortParamsFromString = Schema.String.pipe(
   }),
 );
 
-const SortParamSearch = SortParamsFromString.pipe(
-  Schema.decodeTo(
-    Schema.String,
-    SchemaTransformation.transform({
-      decode: (sort) => Schema.encodeSync(SortParamsFromString)(sort),
-      encode: (sort) => Schema.decodeUnknownSync(SortParamsFromString)(sort),
-    }),
-  ),
-  Schema.annotate({
-    identifier: "SortParamSearch",
-    title: "Sort Search Parameter",
-    description:
-      'Search parameter sort value normalized to the compact "-field,otherField" URL format.',
-    examples: ["-name,age"],
-  }),
-);
-
 export const Query = Schema.Struct({
   page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(0)),
@@ -153,7 +136,7 @@ export const Query = Schema.Struct({
     Schema.isBetween({ minimum: 1, maximum: 100 }),
   ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
   globalFilter: Schema.optional(Schema.String),
-  sort: Schema.optional(SortParamSearch),
+  sort: Schema.optional(SortParamsFromString),
 }).annotate({
   identifier: "Query",
   title: "Query",
@@ -164,12 +147,16 @@ export const Query = Schema.Struct({
       page: 0,
       pageSize: 10,
       globalFilter: "housing",
-      sort: "-publicName,createdAt",
+      sort: [
+        { id: "publicName", direction: "desc" },
+        { id: "createdAt", direction: "asc" },
+      ],
     },
   ],
 });
 
 export type QueryType = typeof Query.Type;
+export type QueryEncoded = typeof Query.Encoded;
 
 export const QueryStandard: ReturnType<
   typeof Schema.toStandardSchemaV1<typeof Query>

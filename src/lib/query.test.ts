@@ -11,7 +11,7 @@ describe("Query", () => {
     });
   });
 
-  it("normalizes compact sorting", () => {
+  it("decodes compact sorting into structured parameters", () => {
     expect(
       Schema.decodeUnknownSync(Query)({
         page: 2,
@@ -23,7 +23,23 @@ describe("Query", () => {
       page: 2,
       pageSize: 25,
       globalFilter: "active",
-      sort: "-name,createdAt",
+      sort: [
+        { id: "name", direction: "desc" },
+        { id: "createdAt", direction: "asc" },
+      ],
     });
+  });
+
+  it("encodes structured sorting for the wire", () => {
+    expect(
+      Schema.encodeSync(Query)({
+        page: 2,
+        pageSize: 25,
+        sort: [
+          { id: "name", direction: "desc" },
+          { id: "createdAt", direction: "asc" },
+        ],
+      }),
+    ).toEqual({ page: 2, pageSize: 25, sort: "-name,createdAt" });
   });
 });

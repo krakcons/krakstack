@@ -89,20 +89,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
-import { SortParamsFromString, type QueryType } from "@/lib/query";
+import type { QueryType, SortDirection } from "@/lib/query";
 import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
 
 type RowData = object;
 
-export type DataTableSorting = readonly { id: string; desc: boolean }[];
-export type DataTablePaginationState = { pageIndex: number; pageSize: number };
 export type DataTableView = "table" | "gallery";
 
-export interface DataTablePublicState {
-  globalFilter: string;
-  sorting: DataTableSorting;
-  pagination: DataTablePaginationState;
+export interface DataTableUiState {
   columnVisibility: Record<string, boolean>;
   columnSizing: Record<string, number>;
   rowSelection: Record<string, boolean>;
@@ -110,6 +105,8 @@ export interface DataTablePublicState {
   collapsedGroups: Record<string, boolean>;
   view: DataTableView;
 }
+
+export type DataTablePublicState = QueryType & DataTableUiState;
 
 export interface DataTableValueGetterParams<TData extends RowData> {
   data: TData;
@@ -343,11 +340,9 @@ export interface DataTableProps<TData extends RowData> {
   rowData: readonly TData[];
   columnDefs: readonly DataTableColDef<TData>[];
   getRowId?: (row: TData) => string;
-  state?: Partial<DataTablePublicState>;
+  state?: DataTablePublicState;
   initialState?: Partial<DataTablePublicState>;
   onStateChange?: (state: DataTablePublicState) => void;
-  query?: QueryType;
-  onQueryChange?: (query: QueryType) => void;
   status?: DataTableStatus;
   features?: DataTableFeatures<TData>;
   onRowClicked?: (row: TData) => void;
@@ -382,9 +377,8 @@ const DEFAULT_MIN_WIDTH = 96;
 const DEFAULT_WIDTH = 208;
 const DEFAULT_MAX_WIDTH = 640;
 const DEFAULT_STATE: DataTablePublicState = {
-  globalFilter: "",
-  sorting: [],
-  pagination: { pageIndex: 0, pageSize: 10 },
+  page: 0,
+  pageSize: 10,
   columnVisibility: {},
   columnSizing: {},
   rowSelection: {},
@@ -485,7 +479,7 @@ export const filterDataTableRows = <TData extends RowData>(
 export const sortDataTableRows = <TData extends RowData>(
   rows: readonly DataTableModelRow<TData>[],
   columns: readonly DataTableColumn<TData>[],
-  sorting: DataTableSorting,
+  sorting: NonNullable<QueryType["sort"]>,
 ): DataTableModelRow<TData>[] => {
   const byId = new Map(columns.map((column) => [column.id, column]));
   return rows
@@ -517,7 +511,8 @@ export const sortDataTableRows = <TData extends RowData>(
                       undefined,
                       { numeric: true, sensitivity: "base" },
                     );
-        if (comparison !== 0) return sort.desc ? -comparison : comparison;
+        if (comparison !== 0)
+          return sort.direction === "desc" ? -comparison : comparison;
       }
       return left.stableIndex - right.stableIndex;
     })
@@ -526,37 +521,23 @@ export const sortDataTableRows = <TData extends RowData>(
 
 export const paginateDataTableRows = <TData extends RowData>(
   rows: readonly DataTableModelRow<TData>[],
-  pagination: DataTablePaginationState,
+  pagination: Pick<QueryType, "page" | "pageSize">,
 ): DataTableModelRow<TData>[] => {
   const pageSize = Math.max(1, pagination.pageSize);
   const lastPageIndex = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
-  const pageIndex = Math.min(lastPageIndex, Math.max(0, pagination.pageIndex));
+  const pageIndex = Math.min(lastPageIndex, Math.max(0, pagination.page));
   const start = pageIndex * pageSize;
   return rows.slice(start, start + pageSize);
 };
-
-export const mergeDataTableState = (
-  state: DataTablePublicState,
-  controlledState: Partial<DataTablePublicState> = {},
-): DataTablePublicState => ({
-  globalFilter: controlledState.globalFilter ?? state.globalFilter,
-  sorting: controlledState.sorting ?? state.sorting,
-  pagination: controlledState.pagination ?? state.pagination,
-  columnVisibility: controlledState.columnVisibility ?? state.columnVisibility,
-  columnSizing: controlledState.columnSizing ?? state.columnSizing,
-  rowSelection: controlledState.rowSelection ?? state.rowSelection,
-  grouping: controlledState.grouping ?? state.grouping,
-  collapsedGroups: controlledState.collapsedGroups ?? state.collapsedGroups,
-  view: controlledState.view ?? state.view,
-});
 
 const sameDataTableState = (
   left: DataTablePublicState,
   right: DataTablePublicState,
 ) =>
+  left.page === right.page &&
+  left.pageSize === right.pageSize &&
   left.globalFilter === right.globalFilter &&
-  left.sorting === right.sorting &&
-  left.pagination === right.pagination &&
+  left.sort === right.sort &&
   left.columnVisibility === right.columnVisibility &&
   left.columnSizing === right.columnSizing &&
   left.rowSelection === right.rowSelection &&
@@ -582,7 +563,6 @@ export const reorderDataTableRows = <TData extends RowData>(
 
 type ResolvedConfig<TData extends RowData> = {
   getRowId?: ((row: TData) => string) | undefined;
-  onQueryChange?: ((query: QueryType) => void) | undefined;
   onStateChange?: ((state: DataTablePublicState) => void) | undefined;
   status: DataTableStatus;
   features: DataTableFeatures<TData>;
@@ -604,7 +584,7 @@ type DataTableStore<TData extends RowData> = {
   columnDefs: readonly DataTableColDef<TData>[];
   config: ResolvedConfig<TData>;
   state: DataTablePublicState;
-  controlledState: Partial<DataTablePublicState>;
+  controlledState?: DataTablePublicState;
   model: DataTableModel<TData>;
 };
 
@@ -671,7 +651,6 @@ const resolveConfig = <TData extends RowData>(
   }
   return {
     getRowId,
-    onQueryChange: props.onQueryChange,
     onStateChange: props.onStateChange,
     status: props.status ?? {},
     features,
@@ -680,63 +659,18 @@ const resolveConfig = <TData extends RowData>(
   };
 };
 
-const dataTableStateFromQuery = (
-  query?: QueryType,
-): Partial<DataTablePublicState> =>
-  query
-    ? {
-        globalFilter: query.globalFilter ?? "",
-        sorting: query.sort
-          ? Schema.decodeSync(SortParamsFromString)(query.sort).map(
-              ({ id, direction }) => ({
-                id,
-                desc: direction === "desc",
-              }),
-            )
-          : [],
-        pagination: { pageIndex: query.page, pageSize: query.pageSize },
-      }
-    : {};
-
-const queryFromDataTableState = (state: DataTablePublicState): QueryType => ({
-  page: state.pagination.pageIndex,
-  pageSize: state.pagination.pageSize,
-  globalFilter: state.globalFilter || undefined,
-  sort: state.sorting.length
-    ? Schema.encodeSync(SortParamsFromString)(
-        state.sorting.map(({ id, desc }) => ({
-          id,
-          direction: desc ? "desc" : "asc",
-        })),
-      )
-    : undefined,
-});
-
-const sameQuery = (left: QueryType, right: QueryType) =>
-  left.page === right.page &&
-  left.pageSize === right.pageSize &&
-  left.globalFilter === right.globalFilter &&
-  left.sort === right.sort;
-
-const controlledStateFromProps = (
-  query: QueryType | undefined,
-  state: Partial<DataTablePublicState> | undefined,
-): Partial<DataTablePublicState> => ({
-  ...dataTableStateFromQuery(query),
-  ...state,
-});
-
 const initialPublicState = <TData extends RowData>(
   props: DataTableProps<TData>,
 ): DataTablePublicState => {
   const grouping = props.features?.grouping;
   const groupingInitial = grouping && grouping.initial ? grouping.initial : [];
-  return {
-    ...DEFAULT_STATE,
-    grouping: groupingInitial,
-    ...props.initialState,
-    ...controlledStateFromProps(props.query, props.state),
-  };
+  return (
+    props.state ?? {
+      ...DEFAULT_STATE,
+      grouping: groupingInitial,
+      ...props.initialState,
+    }
+  );
 };
 
 type ModelSource<TData extends RowData> = Pick<
@@ -759,14 +693,14 @@ const buildDataTableModel = <TData extends RowData>(
   const server = pagination !== false && pagination.mode === "server";
   const filteredRows = server
     ? [...rows]
-    : filterDataTableRows(rows, columns, store.state.globalFilter);
+    : filterDataTableRows(rows, columns, store.state.globalFilter ?? "");
   const sortedRows = server
     ? filteredRows
-    : sortDataTableRows(filteredRows, columns, store.state.sorting);
+    : sortDataTableRows(filteredRows, columns, store.state.sort ?? []);
   const pageRows =
     pagination === false || server
       ? sortedRows
-      : paginateDataTableRows(sortedRows, store.state.pagination);
+      : paginateDataTableRows(sortedRows, store.state);
   const totalRows = server ? pagination.rowCount : sortedRows.length;
   return {
     columns,
@@ -779,7 +713,7 @@ const buildDataTableModel = <TData extends RowData>(
     pageRows,
     pageCount: Math.max(
       1,
-      Math.ceil(totalRows / Math.max(1, store.state.pagination.pageSize)),
+      Math.ceil(totalRows / Math.max(1, store.state.pageSize)),
     ),
     totalRows,
   };
@@ -796,13 +730,8 @@ const changeState = <TData extends RowData>(
 ) => {
   setStore((store) => {
     const proposed = update(store.state);
-    const previousQuery = queryFromDataTableState(store.state);
-    const nextQuery = queryFromDataTableState(proposed);
-    if (!sameQuery(previousQuery, nextQuery)) {
-      store.config.onQueryChange?.(nextQuery);
-    }
     store.config.onStateChange?.(proposed);
-    const state = mergeDataTableState(proposed, store.controlledState);
+    const state = store.controlledState ?? proposed;
     if (sameDataTableState(state, store.state)) return store;
     const next = { ...store, state };
     return { ...next, model: buildDataTableModel(next) };
@@ -880,7 +809,7 @@ const canReorderRows = <TData extends RowData>(
     !!store.config.features.reordering &&
     !getActiveGrouping(store).length &&
     !store.state.globalFilter &&
-    !store.state.sorting.length &&
+    !store.state.sort?.length &&
     !(pagination && pagination.mode === "server")
   );
 };
@@ -1129,11 +1058,11 @@ const DataTableToolbar = <TData extends RowData>({
               update((state) => ({
                 ...state,
                 globalFilter: event.target.value,
-                pagination: { ...state.pagination, pageIndex: 0 },
+                page: 0,
               }))
             }
             placeholder={labels.filter}
-            value={store.state.globalFilter}
+            value={store.state.globalFilter ?? ""}
           />
           {store.state.globalFilter ? (
             <Button
@@ -1142,8 +1071,8 @@ const DataTableToolbar = <TData extends RowData>({
               onClick={() =>
                 update((state) => ({
                   ...state,
-                  globalFilter: "",
-                  pagination: { ...state.pagination, pageIndex: 0 },
+                  globalFilter: undefined,
+                  page: 0,
                 }))
               }
               size="icon"
@@ -1300,18 +1229,18 @@ const SortMenu = <TData extends RowData>({
     ({ colDef }) => colDef.sortable !== false,
   );
   if (!columns.length) return null;
-  const current = store.state.sorting[0];
-  const sort = (id: string, desc: boolean) =>
+  const current = store.state.sort?.[0];
+  const sort = (id: string, direction: SortDirection) =>
     changeState(setStore, (state) => ({
       ...state,
-      sorting: [{ id, desc }],
-      pagination: { ...state.pagination, pageIndex: 0 },
+      sort: [{ id, direction }],
+      page: 0,
     }));
   return (
     <MenubarMenu>
       <MenubarTrigger aria-label={store.config.labels.sortBy}>
         {current ? (
-          current.desc ? (
+          current.direction === "desc" ? (
             <ArrowDown />
           ) : (
             <ArrowUp />
@@ -1323,14 +1252,14 @@ const SortMenu = <TData extends RowData>({
       </MenubarTrigger>
       <MenubarContent align="end" className="w-52">
         {columns.map((column) => {
-          const sortState = store.state.sorting.find(
+          const sortState = store.state.sort?.find(
             ({ id }) => id === column.id,
           );
           return (
             <MenubarSub key={column.id}>
               <MenubarSubTrigger>
                 {sortState ? (
-                  sortState.desc ? (
+                  sortState.direction === "desc" ? (
                     <ArrowDown />
                   ) : (
                     <ArrowUp />
@@ -1339,10 +1268,10 @@ const SortMenu = <TData extends RowData>({
                 {columnLabel(column)}
               </MenubarSubTrigger>
               <MenubarSubContent>
-                <MenubarItem onClick={() => sort(column.id, false)}>
+                <MenubarItem onClick={() => sort(column.id, "asc")}>
                   <ArrowUp /> {store.config.labels.sortAsc}
                 </MenubarItem>
-                <MenubarItem onClick={() => sort(column.id, true)}>
+                <MenubarItem onClick={() => sort(column.id, "desc")}>
                   <ArrowDown /> {store.config.labels.sortDesc}
                 </MenubarItem>
                 {sortState ? (
@@ -1352,7 +1281,7 @@ const SortMenu = <TData extends RowData>({
                       onClick={() =>
                         changeState(setStore, (state) => ({
                           ...state,
-                          sorting: state.sorting.filter(
+                          sort: state.sort?.filter(
                             ({ id }) => id !== column.id,
                           ),
                         }))
@@ -1938,15 +1867,15 @@ const ColumnHeaderMenu = <TData extends RowData>({
   const hidingEnabled =
     store.config.features.columnVisibility !== false &&
     column.colDef.hideable !== false;
-  const sort = store.state.sorting.find(({ id }) => id === column.id);
+  const sort = store.state.sort?.find(({ id }) => id === column.id);
   const update = (
     next: (state: DataTablePublicState) => DataTablePublicState,
   ) => changeState(setStore, next);
-  const setSort = (desc: boolean) =>
+  const setSort = (direction: SortDirection) =>
     update((state) => ({
       ...state,
-      sorting: [{ id: column.id, desc }],
-      pagination: { ...state.pagination, pageIndex: 0 },
+      sort: [{ id: column.id, direction }],
+      page: 0,
     }));
   const label = columnLabel(column);
 
@@ -1966,7 +1895,7 @@ const ColumnHeaderMenu = <TData extends RowData>({
           >
             <span className="truncate">{column.colDef.headerName}</span>
             {sort ? (
-              sort.desc ? (
+              sort.direction === "desc" ? (
                 <ArrowDown />
               ) : (
                 <ArrowUp />
@@ -1981,10 +1910,10 @@ const ColumnHeaderMenu = <TData extends RowData>({
         <DropdownMenuGroup>
           {sortingEnabled ? (
             <>
-              <DropdownMenuItem onClick={() => setSort(false)}>
+              <DropdownMenuItem onClick={() => setSort("asc")}>
                 <ArrowUp /> {store.config.labels.sortAsc}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSort(true)}>
+              <DropdownMenuItem onClick={() => setSort("desc")}>
                 <ArrowDown /> {store.config.labels.sortDesc}
               </DropdownMenuItem>
               {sort ? (
@@ -1992,9 +1921,7 @@ const ColumnHeaderMenu = <TData extends RowData>({
                   onClick={() =>
                     update((state) => ({
                       ...state,
-                      sorting: state.sorting.filter(
-                        ({ id }) => id !== column.id,
-                      ),
+                      sort: state.sort?.filter(({ id }) => id !== column.id),
                     }))
                   }
                 >
@@ -2353,13 +2280,13 @@ const DataTablePagination = <TData extends RowData>({
     pagination.mode === "client" &&
     getActiveGrouping(store).length > 0;
   const paginationVisible = pagination !== false && !clientGrouping;
-  const pageIndex = store.state.pagination.pageIndex;
+  const pageIndex = store.state.page;
   const maxPageIndex = model.pageCount - 1;
   useLayoutEffect(() => {
     if (paginationVisible && pageIndex > maxPageIndex) {
       changeState(setStore, (state) => ({
         ...state,
-        pagination: { ...state.pagination, pageIndex: maxPageIndex },
+        page: maxPageIndex,
       }));
     }
   }, [maxPageIndex, pageIndex, paginationVisible, setStore]);
@@ -2367,21 +2294,19 @@ const DataTablePagination = <TData extends RowData>({
   const selected = model.rows.filter(
     (row) => store.state.rowSelection[row.id],
   ).length;
-  const setPagination = (next: DataTablePaginationState) =>
-    changeState(setStore, (state) => ({ ...state, pagination: next }));
+  const setPagination = (next: Pick<QueryType, "page" | "pageSize">) =>
+    changeState(setStore, (state) => ({ ...state, ...next }));
   return (
     <div className="pt-4">
       <Pagination
         messages={store.config.labels}
-        onPageChange={(pageIndex) =>
-          setPagination({ ...store.state.pagination, pageIndex })
+        onPageChange={(page) =>
+          setPagination({ page, pageSize: store.state.pageSize })
         }
-        onPageSizeChange={(pageSize) =>
-          setPagination({ pageIndex: 0, pageSize })
-        }
-        page={Math.min(store.state.pagination.pageIndex, model.pageCount - 1)}
+        onPageSizeChange={(pageSize) => setPagination({ page: 0, pageSize })}
+        page={Math.min(store.state.page, model.pageCount - 1)}
         pageCount={model.pageCount}
-        pageSize={store.state.pagination.pageSize}
+        pageSize={store.state.pageSize}
         pageSizes={pagination.pageSizes}
         selectedRows={selected}
         totalRows={model.totalRows}
@@ -2401,7 +2326,7 @@ export const DataTable = <TData extends RowData>(
       columnDefs: props.columnDefs,
       config: validatedConfig,
       state: initialPublicState(props),
-      controlledState: controlledStateFromProps(props.query, props.state),
+      controlledState: props.state,
     };
     atomRef.current = Atom.make<DataTableStore<TData>>({
       ...initial,
@@ -2418,18 +2343,13 @@ export const DataTable = <TData extends RowData>(
       const config: ResolvedConfig<TData> = {
         getRowId:
           (selection && selection.getRowId) || props.getRowId || undefined,
-        onQueryChange: props.onQueryChange,
         onStateChange: props.onStateChange,
         status: props.status ?? {},
         features,
         onRowClicked: props.onRowClicked,
         labels: dataTableMessages(props.messages),
       };
-      const controlledState = controlledStateFromProps(
-        props.query,
-        props.state,
-      );
-      const state = mergeDataTableState(store.state, controlledState);
+      const state = props.state ?? store.state;
       const modelChanged =
         store.rowData !== props.rowData ||
         store.columnDefs !== props.columnDefs ||
@@ -2441,7 +2361,7 @@ export const DataTable = <TData extends RowData>(
         rowData: props.rowData,
         columnDefs: props.columnDefs,
         config,
-        controlledState,
+        controlledState: props.state,
         state,
       };
       return modelChanged
@@ -2454,9 +2374,7 @@ export const DataTable = <TData extends RowData>(
     props.getRowId,
     props.messages,
     props.onRowClicked,
-    props.onQueryChange,
     props.onStateChange,
-    props.query,
     props.rowData,
     props.state,
     props.status,

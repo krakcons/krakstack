@@ -18,7 +18,6 @@ import {
   filterDataTableRows,
   getDataTableWidth,
   getDataTableSelectableRows,
-  mergeDataTableState,
   normalizeDataTableColumns,
   paginateDataTableRows,
   reorderDataTableRows,
@@ -54,9 +53,8 @@ const HookCell = ({ value }: DataTableCellRendererParams<Row>) => {
 };
 
 const state: DataTablePublicState = {
-  globalFilter: "",
-  sorting: [],
-  pagination: { pageIndex: 0, pageSize: 2 },
+  page: 0,
+  pageSize: 2,
   columnVisibility: {},
   columnSizing: {},
   rowSelection: {},
@@ -196,19 +194,20 @@ describe("DataTable model", () => {
     expect(await screen.findByText("Open row")).toBeTruthy();
   });
 
-  it("controls request state with Query and emits API-ready query changes", () => {
-    const onQueryChange = vi.fn();
+  it("controls API-ready query and UI state through one state callback", () => {
+    const onStateChange = vi.fn();
     render(
       <DataTable
         columnDefs={columns}
         features={{ pagination: false, selection: {} }}
         getRowId={(row) => row.id}
-        onQueryChange={onQueryChange}
-        query={{
+        onStateChange={onStateChange}
+        state={{
+          ...state,
           page: 0,
           pageSize: 10,
           globalFilter: "Alpha",
-          sort: "-name",
+          sort: [{ id: "name", direction: "desc" }],
         }}
         rowData={data}
       />,
@@ -218,17 +217,26 @@ describe("DataTable model", () => {
     fireEvent.click(
       screen.getAllByRole("checkbox", { name: "Select row" })[0]!,
     );
-    expect(onQueryChange).not.toHaveBeenCalled();
+    expect(onStateChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 0,
+        pageSize: 10,
+        rowSelection: { one: true },
+      }),
+    );
+    onStateChange.mockClear();
 
     fireEvent.change(screen.getByDisplayValue("Alpha"), {
       target: { value: "Beta" },
     });
-    expect(onQueryChange).toHaveBeenCalledWith({
-      page: 0,
-      pageSize: 10,
-      globalFilter: "Beta",
-      sort: "-name",
-    });
+    expect(onStateChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 0,
+        pageSize: 10,
+        globalFilter: "Beta",
+        sort: [{ id: "name", direction: "desc" }],
+      }),
+    );
   });
 
   it("highlights group drop targets and moves the dropped row", () => {
@@ -302,7 +310,7 @@ describe("DataTable model", () => {
         columnDefs={columns}
         features={{ reordering }}
         getRowId={(row) => row.id}
-        initialState={{ sorting: [{ id: "name", desc: false }] }}
+        initialState={{ sort: [{ id: "name", direction: "asc" }] }}
         rowData={data}
       />,
     );
@@ -405,13 +413,13 @@ describe("DataTable model", () => {
         getRowId={(row) => row.id}
         onStateChange={onStateChange}
         rowData={data}
-        state={{ pagination: { pageIndex: 9, pageSize: 2 } }}
+        state={{ ...state, page: 9, pageSize: 2 }}
       />,
     );
 
     await waitFor(() =>
       expect(onStateChange).toHaveBeenCalledWith(
-        expect.objectContaining({ pagination: { pageIndex: 1, pageSize: 2 } }),
+        expect.objectContaining({ page: 1, pageSize: 2 }),
       ),
     );
   });
@@ -499,10 +507,10 @@ describe("DataTable model", () => {
     const rows = buildDataTableRows(data, resolvedColumns, (row) => row.id);
     const filtered = filterDataTableRows(rows, resolvedColumns, "a");
     const sorted = sortDataTableRows(filtered, resolvedColumns, [
-      { id: "score", desc: false },
+      { id: "score", direction: "asc" },
     ]);
     const page = paginateDataTableRows(sorted, {
-      pageIndex: 1,
+      page: 1,
       pageSize: 2,
     });
 
@@ -515,7 +523,7 @@ describe("DataTable model", () => {
     const rows = buildDataTableRows(data, resolvedColumns, (row) => row.id);
 
     expect(
-      paginateDataTableRows(rows, { pageIndex: 4, pageSize: 2 }).map(
+      paginateDataTableRows(rows, { page: 4, pageSize: 2 }).map(
         (row) => row.id,
       ),
     ).toEqual(["three"]);
@@ -528,18 +536,6 @@ describe("DataTable model", () => {
     expect(
       reorderDataTableRows(rows, "three", "one").map((row) => row.id),
     ).toEqual(["three", "one", "two"]);
-  });
-
-  it("overlays only supplied controlled state fields", () => {
-    const proposed = {
-      ...state,
-      globalFilter: "proposed",
-      pagination: { pageIndex: 1, pageSize: 2 },
-    };
-    const merged = mergeDataTableState(proposed, { globalFilter: "accepted" });
-
-    expect(merged.globalFilter).toBe("accepted");
-    expect(merged.pagination).toEqual({ pageIndex: 1, pageSize: 2 });
   });
 
   it("uses all grouped rows and honors row selectability", () => {
