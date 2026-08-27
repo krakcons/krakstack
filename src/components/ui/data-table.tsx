@@ -1,6 +1,7 @@
 import { useAtom, useAtomSet } from "@effect/atom-react";
+import { BrowserKeyValueStore } from "@effect/platform-browser";
 import { Schema } from "effect";
-import { Atom } from "effect/unstable/reactivity";
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import {
   ArrowDown,
   ArrowUp,
@@ -23,8 +24,10 @@ import {
 import {
   createContext,
   isValidElement,
+  useCallback,
   useContext,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -97,7 +100,7 @@ type RowData = object;
 
 export type DataTableView = "table" | "gallery";
 
-export interface DataTableUiState {
+interface DataTableUiState {
   columnVisibility: Record<string, boolean>;
   columnSizing: Record<string, number>;
   rowSelection: Record<string, boolean>;
@@ -106,7 +109,29 @@ export interface DataTableUiState {
   view: DataTableView;
 }
 
-export type DataTablePublicState = QueryType & DataTableUiState;
+export type DataTablePublicState = QueryType;
+
+type DataTableState = QueryType & DataTableUiState;
+
+type DataTablePersistedUiState = Pick<
+  DataTableUiState,
+  "columnVisibility" | "columnSizing" | "view"
+>;
+
+type DataTableTransientUiState = Omit<
+  DataTableUiState,
+  keyof DataTablePersistedUiState
+>;
+
+const DataTablePersistedUiStateSchema = Schema.Struct({
+  columnVisibility: Schema.Record(Schema.String, Schema.Boolean),
+  columnSizing: Schema.Record(Schema.String, Schema.Number),
+  view: Schema.Literals(["table", "gallery"]),
+}).annotate({ identifier: "DataTablePersistedUiState" });
+
+const dataTableStorageRuntime = Atom.runtime(
+  BrowserKeyValueStore.layerLocalStorage,
+);
 
 export interface DataTableValueGetterParams<TData extends RowData> {
   data: TData;
@@ -376,9 +401,12 @@ export interface DataTableModel<TData extends RowData> {
 const DEFAULT_MIN_WIDTH = 96;
 const DEFAULT_WIDTH = 208;
 const DEFAULT_MAX_WIDTH = 640;
-const DEFAULT_STATE: DataTablePublicState = {
+const DEFAULT_QUERY: DataTablePublicState = {
   page: 0,
   pageSize: 10,
+};
+
+const DEFAULT_UI_STATE: DataTableUiState = {
   columnVisibility: {},
   columnSizing: {},
   rowSelection: {},
@@ -386,6 +414,22 @@ const DEFAULT_STATE: DataTablePublicState = {
   collapsedGroups: {},
   view: "table",
 };
+
+const persistedUiFromState = (
+  state: DataTableUiState,
+): DataTablePersistedUiState => ({
+  columnVisibility: state.columnVisibility,
+  columnSizing: state.columnSizing,
+  view: state.view,
+});
+
+const transientUiFromState = (
+  state: DataTableUiState,
+): DataTableTransientUiState => ({
+  rowSelection: state.rowSelection,
+  grouping: state.grouping,
+  collapsedGroups: state.collapsedGroups,
+});
 
 const clampWidth = <TData extends RowData>(
   column: DataTableColDef<TData>,
@@ -530,10 +574,7 @@ export const paginateDataTableRows = <TData extends RowData>(
   return rows.slice(start, start + pageSize);
 };
 
-const sameDataTableState = (
-  left: DataTablePublicState,
-  right: DataTablePublicState,
-) =>
+const sameDataTableState = (left: DataTableState, right: DataTableState) =>
   left.page === right.page &&
   left.pageSize === right.pageSize &&
   left.globalFilter === right.globalFilter &&
@@ -564,6 +605,7 @@ export const reorderDataTableRows = <TData extends RowData>(
 type ResolvedConfig<TData extends RowData> = {
   getRowId?: ((row: TData) => string) | undefined;
   onStateChange?: ((state: DataTablePublicState) => void) | undefined;
+  onUiStateChange: (state: DataTableUiState) => void;
   status: DataTableStatus;
   features: DataTableFeatures<TData>;
   onRowClicked?: ((row: TData) => void) | undefined;
@@ -583,7 +625,7 @@ type DataTableStore<TData extends RowData> = {
   rowData: readonly TData[];
   columnDefs: readonly DataTableColDef<TData>[];
   config: ResolvedConfig<TData>;
-  state: DataTablePublicState;
+  state: DataTableState;
   controlledState?: DataTablePublicState;
   model: DataTableModel<TData>;
 };
@@ -639,6 +681,7 @@ const clearDragPresentation = (root: HTMLElement | null) => {
 
 const resolveConfig = <TData extends RowData>(
   props: DataTableProps<TData>,
+  onUiStateChange: (state: DataTableUiState) => void,
 ): ResolvedConfig<TData> => {
   const features = props.features ?? {};
   const selection = features.selection;
@@ -652,6 +695,7 @@ const resolveConfig = <TData extends RowData>(
   return {
     getRowId,
     onStateChange: props.onStateChange,
+    onUiStateChange,
     status: props.status ?? {},
     features,
     onRowClicked: props.onRowClicked,
@@ -659,19 +703,45 @@ const resolveConfig = <TData extends RowData>(
   };
 };
 
+const queryFromState = (state: DataTableState): DataTablePublicState => ({
+  page: state.page,
+  pageSize: state.pageSize,
+  globalFilter: state.globalFilter,
+  sort: state.sort,
+});
+
+const uiFromState = (state: DataTableState): DataTableUiState => ({
+  columnVisibility: state.columnVisibility,
+  columnSizing: state.columnSizing,
+  rowSelection: state.rowSelection,
+  grouping: state.grouping,
+  collapsedGroups: state.collapsedGroups,
+  view: state.view,
+});
+
+const sameUiState = (left: DataTableUiState, right: DataTableUiState) =>
+  left.columnVisibility === right.columnVisibility &&
+  left.columnSizing === right.columnSizing &&
+  left.rowSelection === right.rowSelection &&
+  left.grouping === right.grouping &&
+  left.collapsedGroups === right.collapsedGroups &&
+  left.view === right.view;
+
+const sameQueryState = (left: QueryType, right: QueryType) =>
+  left.page === right.page &&
+  left.pageSize === right.pageSize &&
+  left.globalFilter === right.globalFilter &&
+  left.sort === right.sort;
+
 const initialPublicState = <TData extends RowData>(
   props: DataTableProps<TData>,
-): DataTablePublicState => {
-  const grouping = props.features?.grouping;
-  const groupingInitial = grouping && grouping.initial ? grouping.initial : [];
-  return (
-    props.state ?? {
-      ...DEFAULT_STATE,
-      grouping: groupingInitial,
-      ...props.initialState,
-    }
-  );
-};
+  uiState: DataTableUiState,
+): DataTableState => ({
+  ...DEFAULT_QUERY,
+  ...props.initialState,
+  ...props.state,
+  ...uiState,
+});
 
 type ModelSource<TData extends RowData> = Pick<
   DataTableStore<TData>,
@@ -726,12 +796,21 @@ const changeState = <TData extends RowData>(
   setStore: (
     update: (store: DataTableStore<TData>) => DataTableStore<TData>,
   ) => void,
-  update: (state: DataTablePublicState) => DataTablePublicState,
+  update: (state: DataTableState) => DataTableState,
 ) => {
   setStore((store) => {
     const proposed = update(store.state);
-    store.config.onStateChange?.(proposed);
-    const state = store.controlledState ?? proposed;
+    const query = queryFromState(proposed);
+    if (!sameQueryState(query, store.state)) {
+      store.config.onStateChange?.(query);
+    }
+    const uiState = uiFromState(proposed);
+    if (!sameUiState(uiState, store.state)) {
+      store.config.onUiStateChange(uiState);
+    }
+    const state = store.controlledState
+      ? { ...proposed, ...store.controlledState }
+      : proposed;
     if (sameDataTableState(state, store.state)) return store;
     const next = { ...store, state };
     return { ...next, model: buildDataTableModel(next) };
@@ -1034,9 +1113,8 @@ const DataTableToolbar = <TData extends RowData>({
     (!!bulkActions && selectedRows.length > 0);
   if (!hasToolbar) return null;
 
-  const update = (
-    next: (state: DataTablePublicState) => DataTablePublicState,
-  ) => changeState(setStore, next);
+  const update = (next: (state: DataTableState) => DataTableState) =>
+    changeState(setStore, next);
   const visibleBulkActions = bulkActions
     ? bulkActions.items.filter(
         (action) => !action.visible || action.visible(selectedRows),
@@ -1773,13 +1851,24 @@ const GroupedTable = <TData extends RowData>({
     items.flatMap((section) => {
       const collapsed = !!store.state.collapsedGroups[section.key];
       const targetKey = getGroupDropKey(section.field.id, section.groupId);
+      const toggleCollapsed = () =>
+        changeState(setStore, (state) => ({
+          ...state,
+          collapsedGroups: {
+            ...state.collapsedGroups,
+            [section.key]: !collapsed,
+          },
+        }));
       const body = (
         <TableBody
           className="data-[drop-target=true]:outline-primary relative data-[drop-target=true]:z-30 data-[drop-target=true]:outline-2 data-[drop-target=true]:-outline-offset-2 data-[drop-target=true]:[&>tr]:border-transparent data-[drop-target=true]:[&>tr>td:last-child]:z-0"
           data-table-group={section.field.onMoveToGroup ? targetKey : undefined}
           key={section.key}
         >
-          <TableRow className="bg-muted/40">
+          <TableRow
+            className="bg-muted/40 hover:bg-accent! cursor-pointer"
+            onClick={toggleCollapsed}
+          >
             <TableCell colSpan={model.visibleColumns.length + extra}>
               <div
                 className="flex items-center gap-2"
@@ -1787,16 +1876,7 @@ const GroupedTable = <TData extends RowData>({
               >
                 <button
                   aria-expanded={!collapsed}
-                  className="flex flex-1 items-center gap-2 text-left"
-                  onClick={() =>
-                    changeState(setStore, (state) => ({
-                      ...state,
-                      collapsedGroups: {
-                        ...state.collapsedGroups,
-                        [section.key]: !collapsed,
-                      },
-                    }))
-                  }
+                  className="flex flex-1 cursor-pointer items-center gap-2 text-left font-medium"
                   type="button"
                 >
                   {collapsed ? (
@@ -1868,9 +1948,8 @@ const ColumnHeaderMenu = <TData extends RowData>({
     store.config.features.columnVisibility !== false &&
     column.colDef.hideable !== false;
   const sort = store.state.sort?.find(({ id }) => id === column.id);
-  const update = (
-    next: (state: DataTablePublicState) => DataTablePublicState,
-  ) => changeState(setStore, next);
+  const update = (next: (state: DataTableState) => DataTableState) =>
+    changeState(setStore, next);
   const setSort = (direction: SortDirection) =>
     update((state) => ({
       ...state,
@@ -2196,25 +2275,27 @@ const DataTableGallery = <TData extends RowData>({
     sections.map((section) => {
       const collapsed = !!store.state.collapsedGroups[section.key];
       const targetKey = getGroupDropKey(section.field.id, section.groupId);
+      const toggleCollapsed = () =>
+        changeState(setStore, (state) => ({
+          ...state,
+          collapsedGroups: {
+            ...state.collapsedGroups,
+            [section.key]: !collapsed,
+          },
+        }));
       return (
         <section
           className="data-[drop-target=true]:ring-primary space-y-3 rounded-lg transition-shadow data-[drop-target=true]:ring-2"
           data-table-group={section.field.onMoveToGroup ? targetKey : undefined}
           key={section.key}
         >
-          <div className="flex items-center gap-2 rounded-lg border p-3">
+          <div
+            className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-lg border p-3 transition-colors"
+            onClick={toggleCollapsed}
+          >
             <button
               aria-expanded={!collapsed}
-              className="flex flex-1 items-center gap-2 text-left"
-              onClick={() =>
-                changeState(setStore, (state) => ({
-                  ...state,
-                  collapsedGroups: {
-                    ...state.collapsedGroups,
-                    [section.key]: !collapsed,
-                  },
-                }))
-              }
+              className="flex flex-1 cursor-pointer items-center gap-2 text-left font-medium"
               type="button"
             >
               {collapsed ? (
@@ -2315,17 +2396,47 @@ const DataTablePagination = <TData extends RowData>({
   );
 };
 
-export const DataTable = <TData extends RowData>(
-  props: DataTableProps<TData>,
-) => {
-  const validatedConfig = resolveConfig(props);
+type HydratedDataTableProps<TData extends RowData> = DataTableProps<TData> & {
+  persistedUiState: DataTablePersistedUiState;
+  setPersistedUiState: (state: DataTablePersistedUiState) => void;
+};
+
+const HydratedDataTable = <TData extends RowData>({
+  persistedUiState,
+  setPersistedUiState,
+  ...props
+}: HydratedDataTableProps<TData>) => {
+  const transientUiAtomRef =
+    useRef<Atom.Writable<DataTableTransientUiState> | null>(null);
+  if (!transientUiAtomRef.current) {
+    const grouping = props.features?.grouping;
+    transientUiAtomRef.current = Atom.make({
+      ...transientUiFromState(DEFAULT_UI_STATE),
+      grouping: grouping && grouping.initial ? grouping.initial : [],
+    });
+  }
+  const [transientUiState, setTransientUiState] = useAtom(
+    transientUiAtomRef.current,
+  );
+  const uiState: DataTableUiState = useMemo(
+    () => ({ ...persistedUiState, ...transientUiState }),
+    [persistedUiState, transientUiState],
+  );
+  const setUiState = useCallback(
+    (state: DataTableUiState) => {
+      setPersistedUiState(persistedUiFromState(state));
+      setTransientUiState(transientUiFromState(state));
+    },
+    [setPersistedUiState, setTransientUiState],
+  );
+  const validatedConfig = resolveConfig(props, (state) => setUiState(state));
   const atomRef = useRef<TableAtom<TData> | null>(null);
   if (!atomRef.current) {
     const initial = {
       rowData: props.rowData,
       columnDefs: props.columnDefs,
       config: validatedConfig,
-      state: initialPublicState(props),
+      state: initialPublicState(props, uiState),
       controlledState: props.state,
     };
     atomRef.current = Atom.make<DataTableStore<TData>>({
@@ -2344,12 +2455,13 @@ export const DataTable = <TData extends RowData>(
         getRowId:
           (selection && selection.getRowId) || props.getRowId || undefined,
         onStateChange: props.onStateChange,
+        onUiStateChange: (state) => setUiState(state),
         status: props.status ?? {},
         features,
         onRowClicked: props.onRowClicked,
         labels: dataTableMessages(props.messages),
       };
-      const state = props.state ?? store.state;
+      const state = { ...store.state, ...uiState, ...props.state };
       const modelChanged =
         store.rowData !== props.rowData ||
         store.columnDefs !== props.columnDefs ||
@@ -2379,6 +2491,8 @@ export const DataTable = <TData extends RowData>(
     props.state,
     props.status,
     setStore,
+    setUiState,
+    uiState,
   ]);
 
   return (
@@ -2387,6 +2501,51 @@ export const DataTable = <TData extends RowData>(
       <DataTableContent tableAtom={tableAtom} />
       <DataTablePagination tableAtom={tableAtom} />
     </div>
+  );
+};
+
+export const DataTable = <TData extends RowData>(
+  props: DataTableProps<TData>,
+) => {
+  const persistedUiAtomRef = useRef<Atom.Writable<
+    AsyncResult.AsyncResult<DataTablePersistedUiState>,
+    DataTablePersistedUiState
+  > | null>(null);
+  if (!persistedUiAtomRef.current) {
+    const pathname = globalThis.window?.location.pathname ?? "/";
+    const columnIds = normalizeDataTableColumns(props.columnDefs)
+      .map(({ id }) => id)
+      .join(",");
+    const viewCapability = props.features?.gallery ? "gallery" : "table";
+    persistedUiAtomRef.current = Atom.kvs({
+      mode: "async",
+      runtime: dataTableStorageRuntime,
+      key: `data-table:${pathname}:${columnIds}:${viewCapability}:ui`,
+      schema: DataTablePersistedUiStateSchema,
+      defaultValue: () => persistedUiFromState(DEFAULT_UI_STATE),
+    });
+  }
+  const [persistedUiResult, setPersistedUiState] = useAtom(
+    persistedUiAtomRef.current,
+  );
+  if (
+    !AsyncResult.isSuccess(persistedUiResult) ||
+    AsyncResult.isWaiting(persistedUiResult)
+  ) {
+    return (
+      <div
+        aria-busy="true"
+        className="invisible w-full max-w-full min-w-0 rounded-md"
+        data-table-root=""
+      />
+    );
+  }
+  return (
+    <HydratedDataTable
+      {...props}
+      persistedUiState={persistedUiResult.value}
+      setPersistedUiState={setPersistedUiState}
+    />
   );
 };
 

@@ -136,7 +136,7 @@ export const Query = Schema.Struct({
     Schema.isBetween({ minimum: 1, maximum: 100 }),
   ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
   globalFilter: Schema.optional(Schema.String),
-  sort: Schema.optional(SortParamsFromString),
+  sort: Schema.optional(Schema.Array(SortParam)),
 }).annotate({
   identifier: "Query",
   title: "Query",

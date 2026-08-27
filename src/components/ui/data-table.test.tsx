@@ -28,7 +28,10 @@ import {
   type DataTablePublicState,
 } from "./data-table";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 type Row = {
   id: string;
@@ -55,12 +58,6 @@ const HookCell = ({ value }: DataTableCellRendererParams<Row>) => {
 const state: DataTablePublicState = {
   page: 0,
   pageSize: 2,
-  columnVisibility: {},
-  columnSizing: {},
-  rowSelection: {},
-  grouping: [],
-  collapsedGroups: {},
-  view: "table",
 };
 
 describe("DataTable model", () => {
@@ -194,7 +191,7 @@ describe("DataTable model", () => {
     expect(await screen.findByText("Open row")).toBeTruthy();
   });
 
-  it("controls API-ready query and UI state through one state callback", () => {
+  it("controls API-ready query state while keeping UI state internal", () => {
     const onStateChange = vi.fn();
     render(
       <DataTable
@@ -217,14 +214,7 @@ describe("DataTable model", () => {
     fireEvent.click(
       screen.getAllByRole("checkbox", { name: "Select row" })[0]!,
     );
-    expect(onStateChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        page: 0,
-        pageSize: 10,
-        rowSelection: { one: true },
-      }),
-    );
-    onStateChange.mockClear();
+    expect(onStateChange).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByDisplayValue("Alpha"), {
       target: { value: "Beta" },
@@ -237,6 +227,66 @@ describe("DataTable model", () => {
         sort: [{ id: "name", direction: "desc" }],
       }),
     );
+  });
+
+  it("persists internal UI state by route and column identity", async () => {
+    const storageKey = "data-table:/:name,score:table:ui";
+    const { unmount } = render(
+      <DataTable
+        columnDefs={columns}
+        features={{ pagination: false }}
+        getRowId={(row) => row.id}
+        rowData={data}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Columns" }));
+    fireEvent.click(
+      await screen.findByRole("menuitemcheckbox", { name: "Name" }),
+    );
+    expect(screen.queryByText("Alpha")).toBeNull();
+    await waitFor(() =>
+      expect(localStorage.getItem(storageKey)).not.toBeNull(),
+    );
+    unmount();
+
+    render(
+      <DataTable
+        columnDefs={columns}
+        features={{ pagination: false }}
+        getRowId={(row) => row.id}
+        rowData={data}
+      />,
+    );
+    await waitFor(() => expect(screen.queryByText("Alpha")).toBeNull());
+  });
+
+  it("hides default columns while persisted UI state hydrates", async () => {
+    localStorage.setItem(
+      "data-table:/:name,score:table:ui",
+      JSON.stringify({
+        columnVisibility: { name: false },
+        columnSizing: {},
+        view: "table",
+      }),
+    );
+
+    render(
+      <DataTable
+        columnDefs={columns}
+        features={{ pagination: false }}
+        getRowId={(row) => row.id}
+        rowData={data}
+      />,
+    );
+
+    const root = document.querySelector<HTMLElement>("[data-table-root]");
+    expect(
+      root?.classList.contains("invisible") ||
+        screen.queryByText("Alpha") === null,
+    ).toBe(true);
+    await waitFor(() => expect(root?.className).not.toContain("invisible"));
+    expect(screen.queryByText("Alpha")).toBeNull();
   });
 
   it("highlights group drop targets and moves the dropped row", () => {
@@ -424,33 +474,7 @@ describe("DataTable model", () => {
     );
   });
 
-  it("uses visible columns in gallery mode and includes utility widths", () => {
-    const { unmount } = render(
-      <DataTable
-        columnDefs={columns}
-        features={{ gallery: { name: "name" } }}
-        getRowId={(row) => row.id}
-        initialState={{ columnVisibility: { name: false }, view: "gallery" }}
-        rowData={data}
-      />,
-    );
-    expect(screen.queryByText("Alpha")).toBeNull();
-    unmount();
-
-    render(
-      <DataTable
-        columnDefs={columns}
-        features={{
-          pagination: false,
-          reordering: { onReorder: vi.fn() },
-          rowActions: { items: [{ name: "Open", onClick: vi.fn() }] },
-          selection: {},
-        }}
-        getRowId={(row) => row.id}
-        initialState={{ view: "table" }}
-        rowData={data}
-      />,
-    );
+  it("includes utility column widths", () => {
     expect(getDataTableWidth(normalizeDataTableColumns(columns), 3)).toBe(536);
   });
 
@@ -470,11 +494,10 @@ describe("DataTable model", () => {
         rowData={data}
       />,
     );
-    expect(
-      screen
-        .getByRole("button", { name: /Alpha/ })
-        .getAttribute("aria-expanded"),
-    ).toBe("true");
+    const groupButton = screen.getByRole("button", { name: /Alpha/ });
+    expect(groupButton.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(groupButton.closest("tr")!);
+    expect(groupButton.getAttribute("aria-expanded")).toBe("false");
 
     rerender(
       <DataTableListSummary

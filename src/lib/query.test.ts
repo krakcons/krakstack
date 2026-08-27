@@ -11,13 +11,16 @@ describe("Query", () => {
     });
   });
 
-  it("decodes compact sorting into structured parameters", () => {
+  it("validates structured sorting", () => {
     expect(
       Schema.decodeUnknownSync(Query)({
         page: 2,
         pageSize: 25,
         globalFilter: "active",
-        sort: "-name,createdAt",
+        sort: [
+          { id: "name", direction: "desc" },
+          { id: "createdAt", direction: "asc" },
+        ],
       }),
     ).toEqual({
       page: 2,
@@ -30,7 +33,7 @@ describe("Query", () => {
     });
   });
 
-  it("encodes structured sorting for the wire", () => {
+  it("keeps structured sorting when encoded", () => {
     expect(
       Schema.encodeSync(Query)({
         page: 2,
@@ -40,6 +43,13 @@ describe("Query", () => {
           { id: "createdAt", direction: "asc" },
         ],
       }),
-    ).toEqual({ page: 2, pageSize: 25, sort: "-name,createdAt" });
+    ).toEqual({
+      page: 2,
+      pageSize: 25,
+      sort: [
+        { id: "name", direction: "desc" },
+        { id: "createdAt", direction: "asc" },
+      ],
+    });
   });
 });
