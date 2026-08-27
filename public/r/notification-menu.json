@@ -3,10 +3,7 @@
   "name": "notification-menu",
   "title": "Notification Menu",
   "description": "A controlled, bilingual notification popover with unread state, inbox and archive views, loading and error states, and composable item rendering.",
-  "dependencies": [
-    "lucide-react",
-    "react"
-  ],
+  "dependencies": ["lucide-react", "react"],
   "registryDependencies": [
     "badge",
     "button",

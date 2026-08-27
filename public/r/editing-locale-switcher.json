@@ -3,14 +3,8 @@
   "name": "editing-locale-switcher",
   "title": "Editing Locale Switcher",
   "description": "A compact localized select for choosing which locale is being edited in multilingual forms.",
-  "dependencies": [
-    "lucide-react",
-    "react"
-  ],
-  "registryDependencies": [
-    "label",
-    "select"
-  ],
+  "dependencies": ["lucide-react", "react"],
+  "registryDependencies": ["label", "select"],
   "files": [
     {
       "path": "src/components/ui/editing-locale-switcher.tsx",

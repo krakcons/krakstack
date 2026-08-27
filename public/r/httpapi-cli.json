@@ -3,12 +3,8 @@
   "name": "httpapi-cli",
   "title": "HttpApi CLI",
   "description": "An Effect CLI generator driven by OpenAPI metadata that executes selected HttpApi operations and prints stream responses incrementally as NDJSON.",
-  "dependencies": [
-    "effect@beta"
-  ],
-  "registryDependencies": [
-    "@krak-stack/httpapi-client"
-  ],
+  "dependencies": ["effect@beta"],
+  "registryDependencies": ["@krak-stack/httpapi-client"],
   "files": [
     {
       "path": "src/lib/httpapi-cli.ts",

@@ -15,7 +15,7 @@
     "preview": "bun --bun vite preview",
     "test": "bun --bun vitest run",
     "type:check": "tsc --noEmit",
-    "registry:build": "bun -e 'import { readdirSync, readFileSync, rmSync } from \"node:fs\"; const names = new Set(JSON.parse(readFileSync(\"registry.json\", \"utf8\")).items.map((item) => item.name)); for (const file of readdirSync(\"public/r\")) { if (file === \"registry.json\" || !file.endsWith(\".json\")) continue; const item = JSON.parse(readFileSync(`public/r/${file}`, \"utf8\")); if (!names.has(item.name)) rmSync(`public/r/${file}`); }' && shadcn build",
+    "registry:build": "bun -e 'import { readdirSync, readFileSync, rmSync } from \"node:fs\"; const names = new Set(JSON.parse(readFileSync(\"registry.json\", \"utf8\")).items.map((item) => item.name)); for (const file of readdirSync(\"public/r\")) { if (file === \"registry.json\" || !file.endsWith(\".json\")) continue; const item = JSON.parse(readFileSync(`public/r/${file}`, \"utf8\")); if (!names.has(item.name)) rmSync(`public/r/${file}`); }' && shadcn build && oxfmt public/r/*.json",
     "registry:package:build": "bun run --cwd packages/registry build",
     "registry:package:pack": "bun pm --cwd packages/registry pack",
     "lint": "oxlint",

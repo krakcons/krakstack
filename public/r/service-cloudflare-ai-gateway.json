@@ -3,10 +3,7 @@
   "name": "service-cloudflare-ai-gateway",
   "title": "Cloudflare AI Gateway",
   "description": "An Effect service that configures the OpenAI client for Cloudflare AI Gateway with optional per-request metadata.",
-  "dependencies": [
-    "@effect/ai-openai@beta",
-    "effect@beta"
-  ],
+  "dependencies": ["@effect/ai-openai@beta", "effect@beta"],
   "files": [
     {
       "path": "src/services/cloudflare-ai-gateway/index.ts",

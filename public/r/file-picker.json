@@ -3,15 +3,8 @@
   "name": "file-picker",
   "title": "File Picker",
   "description": "An accessible controlled file picker with drag-and-drop, attachment metadata, image previews, and replace and delete actions.",
-  "dependencies": [
-    "lucide-react",
-    "react"
-  ],
-  "registryDependencies": [
-    "attachment",
-    "button",
-    "input"
-  ],
+  "dependencies": ["lucide-react", "react"],
+  "registryDependencies": ["attachment", "button", "input"],
   "files": [
     {
       "path": "src/components/ui/file-picker.tsx",
