@@ -1,6 +1,6 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
-import { ThemeProvider } from "@/components/ui/theme-switcher";
+import { ThemeProvider } from "@krak-stack/registry/theme-switcher";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";

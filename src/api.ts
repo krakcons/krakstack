@@ -1,6 +1,6 @@
 import { HttpApi, OpenApi } from "effect/unstable/httpapi";
 
-import { HealthApiGroup } from "@/services/health";
+import { HealthApiGroup } from "@krak-stack/registry/service-health";
 
 export const Api = HttpApi.make("KrakStackSiteApi")
   .annotateMerge(

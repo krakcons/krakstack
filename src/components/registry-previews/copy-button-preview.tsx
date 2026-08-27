@@ -1,4 +1,4 @@
-import { CopyButton } from "@/components/ui/copy-button";
+import { CopyButton } from "@krak-stack/registry/copy-button";
 import {
   Card,
   CardContent,

@@ -2,7 +2,7 @@ import {
   DataTable,
   type DataTableColDef,
   type DataTableRowAction,
-} from "@/components/ui/data-table";
+} from "@krak-stack/registry/data-table";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

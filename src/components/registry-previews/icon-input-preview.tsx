@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { IconInput } from "@/components/ui/icon-input";
+import { IconInput } from "@krak-stack/registry/icon-input";
 import {
   Card,
   CardContent,

@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FilePicker } from "@/components/ui/file-picker";
+import { FilePicker } from "@krak-stack/registry/file-picker";
 import { m } from "@/paraglide/messages";
 
 export const FilePickerPreview = () => {

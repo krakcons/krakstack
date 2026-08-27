@@ -1,7 +1,11 @@
 import { Schema } from "effect";
 
 import { compileDocsMarkdown, loadMdxDocsDirectory } from "@/lib/docs.server";
-import { DocsPageSchema, type DocsPage, type DocsSection } from "@/lib/docs";
+import {
+  DocsPageSchema,
+  type DocsPage,
+  type DocsSection,
+} from "@krak-stack/registry/docs";
 import { compileMarkdown } from "@/lib/markdown/server";
 import {
   getRegistryGroup,

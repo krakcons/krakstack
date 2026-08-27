@@ -1,7 +1,7 @@
 import { Blocks } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
 
-import { createDocsSource, makeDocs } from "@/lib/docs";
+import { createDocsSource, makeDocs } from "@krak-stack/registry/docs";
 import { krakstackRepositories } from "@/lib/krakstack-repositories";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";

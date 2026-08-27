@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loading } from "@/components/ui/loading";
+import { Loading } from "@krak-stack/registry/loading";
 
 export function LoadingPreview() {
   return (

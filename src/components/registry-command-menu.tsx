@@ -1,6 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { SearchMenu, type SearchMenuGroup } from "@/components/ui/search-menu";
+import {
+  SearchMenu,
+  type SearchMenuGroup,
+} from "@krak-stack/registry/search-menu";
 import { krakstackSites } from "@/lib/krakstack-sites";
 import { getRegistryGroup, registryItems } from "@/lib/registry";
 import { cn } from "@/lib/utils";

@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CodeBlock } from "@/components/ui/code-block";
+import { CodeBlock } from "@krak-stack/registry/code-block";
 import oxfmtConfig from "../../../.oxfmtrc.json?raw";
 import oxlintConfig from "../../../.oxlintrc.json?raw";
 

@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination } from "@krak-stack/registry/pagination";
 import { m } from "@/paraglide/messages";
 
 const totalRows = 137;

@@ -1,6 +1,6 @@
-import { CodeBlock } from "@/components/ui/code-block";
+import { CodeBlock } from "@krak-stack/registry/code-block";
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
-import { SidebarPageHeader } from "@/components/ui/sidebar-layout";
+import { SidebarPageHeader } from "@krak-stack/registry/sidebar-layout";
 import { getRegistryDocsPages, makeRegistryDocs } from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { createFileRoute } from "@tanstack/react-router";

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { LocaleSwitcher } from "@/components/ui/locale-switcher";
-import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
-import { DocsLayout, type DocsCatalog } from "@/lib/docs";
+import { LocaleSwitcher } from "@krak-stack/registry/locale-switcher";
+import { ThemeSwitcher, useTheme } from "@krak-stack/registry/theme-switcher";
+import { DocsLayout, type DocsCatalog } from "@krak-stack/registry/docs";
 import { getLocale } from "@/paraglide/runtime";
 
 export const RegistryDocsLayout = ({

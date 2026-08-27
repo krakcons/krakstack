@@ -3,14 +3,12 @@ import { BookOpenIcon, FileTextIcon } from "lucide-react";
 
 import * as m from "@/paraglide/messages";
 import {
+  AgentWidget,
+  type AgentWidgetReference,
   initialAgentState,
   type AgentState,
   type AgentSubmitAction,
-} from "@/services/agent/client/atom";
-import {
-  AgentWidget,
-  type AgentWidgetReference,
-} from "@/services/agent/client/widget";
+} from "@krak-stack/registry/agent/client";
 
 type PreviewResource = {
   readonly id: string;

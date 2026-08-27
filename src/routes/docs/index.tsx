@@ -1,5 +1,10 @@
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
-import { DocsContent, DocsFooter, DocsHeader, DocsPage } from "@/lib/docs";
+import {
+  DocsContent,
+  DocsFooter,
+  DocsHeader,
+  DocsPage,
+} from "@krak-stack/registry/docs";
 import { getRegistryDocsPages, makeRegistryDocs } from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { createFileRoute, notFound } from "@tanstack/react-router";

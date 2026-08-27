@@ -1,4 +1,4 @@
-import { AppBrand } from "@/components/ui/app-brand";
+import { AppBrand } from "@krak-stack/registry/app-brand";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -7,8 +7,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LocaleSwitcher } from "@/components/ui/locale-switcher";
-import { ThemeSwitcher, useTheme } from "@/components/ui/theme-switcher";
+import { LocaleSwitcher } from "@krak-stack/registry/locale-switcher";
+import { ThemeSwitcher, useTheme } from "@krak-stack/registry/theme-switcher";
 import { RegistryCommandMenu } from "@/components/registry-command-menu";
 import { krakstackRepositories } from "@/lib/krakstack-repositories";
 import { krakstackSites } from "@/lib/krakstack-sites";
@@ -17,7 +17,7 @@ import {
   isRegistryItemNew,
   registryItems,
 } from "@/lib/registry";
-import { createSeo } from "@/lib/seo";
+import { createSeo } from "@krak-stack/registry/seo";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 import { Link, createFileRoute } from "@tanstack/react-router";

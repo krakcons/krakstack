@@ -15,7 +15,7 @@ import {
   SubmitError,
   TextAreaField,
   TextField,
-} from "@/components/ui/effect-form";
+} from "@krak-stack/registry/effect-form";
 import {
   Card,
   CardContent,

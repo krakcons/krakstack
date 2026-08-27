@@ -14,8 +14,8 @@ import {
   DocsHeader,
   DocsNotFound,
   DocsPage,
-} from "@/lib/docs";
-import { QueryStandard } from "@/lib/query";
+} from "@krak-stack/registry/docs";
+import { QueryStandard } from "@krak-stack/registry/query";
 import {
   getAgentsPreviewMarkdown,
   getRegistryDocsPages,

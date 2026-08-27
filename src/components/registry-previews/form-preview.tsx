@@ -1,4 +1,4 @@
-import { useAppForm } from "@/components/ui/form";
+import { useAppForm } from "@krak-stack/registry/form";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CodeBlock } from "@/components/ui/code-block";
+import { CodeBlock } from "@krak-stack/registry/code-block";
 import { useState } from "react";
 
 const interestOptions = [

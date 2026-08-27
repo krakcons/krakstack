@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   VirtualizedCombobox,
   type VirtualizedComboboxOption,
-} from "@/components/ui/virtualized-combobox";
+} from "@krak-stack/registry/virtualized-combobox";
 import {
   Card,
   CardContent,
