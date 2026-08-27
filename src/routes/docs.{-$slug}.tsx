@@ -1,6 +1,5 @@
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
 import { AgentsPreview } from "@/components/registry-previews/agents-preview";
-import { TableSearchSchemaStandard } from "@/lib/table-search";
 import {
   Card,
   CardDescription,
@@ -16,6 +15,7 @@ import {
   DocsNotFound,
   DocsPage,
 } from "@/lib/docs";
+import { QueryStandard } from "@/lib/query";
 import {
   getAgentsPreviewMarkdown,
   getRegistryDocsPages,
@@ -125,7 +125,7 @@ const registryPreviews = new Map<string, LazyExoticComponent<ComponentType>>([
 ]);
 
 export const Route = createFileRoute("/docs/{-$slug}")({
-  validateSearch: TableSearchSchemaStandard,
+  validateSearch: QueryStandard,
   loader: async ({ params }) => {
     const pages = await getRegistryDocsPages();
     const docs = makeRegistryDocs(pages);

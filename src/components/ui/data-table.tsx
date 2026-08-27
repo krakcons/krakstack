@@ -89,6 +89,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
+import { SortParamsFromString, type QueryType } from "@/lib/query";
 import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
 
@@ -345,6 +346,8 @@ export interface DataTableProps<TData extends RowData> {
   state?: Partial<DataTablePublicState>;
   initialState?: Partial<DataTablePublicState>;
   onStateChange?: (state: DataTablePublicState) => void;
+  query?: QueryType;
+  onQueryChange?: (query: QueryType) => void;
   status?: DataTableStatus;
   features?: DataTableFeatures<TData>;
   onRowClicked?: (row: TData) => void;
@@ -579,6 +582,7 @@ export const reorderDataTableRows = <TData extends RowData>(
 
 type ResolvedConfig<TData extends RowData> = {
   getRowId?: ((row: TData) => string) | undefined;
+  onQueryChange?: ((query: QueryType) => void) | undefined;
   onStateChange?: ((state: DataTablePublicState) => void) | undefined;
   status: DataTableStatus;
   features: DataTableFeatures<TData>;
@@ -667,6 +671,7 @@ const resolveConfig = <TData extends RowData>(
   }
   return {
     getRowId,
+    onQueryChange: props.onQueryChange,
     onStateChange: props.onStateChange,
     status: props.status ?? {},
     features,
@@ -674,6 +679,52 @@ const resolveConfig = <TData extends RowData>(
     labels: dataTableMessages(props.messages),
   };
 };
+
+const dataTableStateFromQuery = (
+  query?: QueryType,
+): Partial<DataTablePublicState> =>
+  query
+    ? {
+        globalFilter: query.globalFilter ?? "",
+        sorting: query.sort
+          ? Schema.decodeSync(SortParamsFromString)(query.sort).map(
+              ({ id, direction }) => ({
+                id,
+                desc: direction === "desc",
+              }),
+            )
+          : [],
+        pagination: { pageIndex: query.page, pageSize: query.pageSize },
+      }
+    : {};
+
+const queryFromDataTableState = (state: DataTablePublicState): QueryType => ({
+  page: state.pagination.pageIndex,
+  pageSize: state.pagination.pageSize,
+  globalFilter: state.globalFilter || undefined,
+  sort: state.sorting.length
+    ? Schema.encodeSync(SortParamsFromString)(
+        state.sorting.map(({ id, desc }) => ({
+          id,
+          direction: desc ? "desc" : "asc",
+        })),
+      )
+    : undefined,
+});
+
+const sameQuery = (left: QueryType, right: QueryType) =>
+  left.page === right.page &&
+  left.pageSize === right.pageSize &&
+  left.globalFilter === right.globalFilter &&
+  left.sort === right.sort;
+
+const controlledStateFromProps = (
+  query: QueryType | undefined,
+  state: Partial<DataTablePublicState> | undefined,
+): Partial<DataTablePublicState> => ({
+  ...dataTableStateFromQuery(query),
+  ...state,
+});
 
 const initialPublicState = <TData extends RowData>(
   props: DataTableProps<TData>,
@@ -684,7 +735,7 @@ const initialPublicState = <TData extends RowData>(
     ...DEFAULT_STATE,
     grouping: groupingInitial,
     ...props.initialState,
-    ...props.state,
+    ...controlledStateFromProps(props.query, props.state),
   };
 };
 
@@ -745,6 +796,11 @@ const changeState = <TData extends RowData>(
 ) => {
   setStore((store) => {
     const proposed = update(store.state);
+    const previousQuery = queryFromDataTableState(store.state);
+    const nextQuery = queryFromDataTableState(proposed);
+    if (!sameQuery(previousQuery, nextQuery)) {
+      store.config.onQueryChange?.(nextQuery);
+    }
     store.config.onStateChange?.(proposed);
     const state = mergeDataTableState(proposed, store.controlledState);
     if (sameDataTableState(state, store.state)) return store;
@@ -2345,7 +2401,7 @@ export const DataTable = <TData extends RowData>(
       columnDefs: props.columnDefs,
       config: validatedConfig,
       state: initialPublicState(props),
-      controlledState: props.state ?? {},
+      controlledState: controlledStateFromProps(props.query, props.state),
     };
     atomRef.current = Atom.make<DataTableStore<TData>>({
       ...initial,
@@ -2362,13 +2418,18 @@ export const DataTable = <TData extends RowData>(
       const config: ResolvedConfig<TData> = {
         getRowId:
           (selection && selection.getRowId) || props.getRowId || undefined,
+        onQueryChange: props.onQueryChange,
         onStateChange: props.onStateChange,
         status: props.status ?? {},
         features,
         onRowClicked: props.onRowClicked,
         labels: dataTableMessages(props.messages),
       };
-      const state = mergeDataTableState(store.state, props.state);
+      const controlledState = controlledStateFromProps(
+        props.query,
+        props.state,
+      );
+      const state = mergeDataTableState(store.state, controlledState);
       const modelChanged =
         store.rowData !== props.rowData ||
         store.columnDefs !== props.columnDefs ||
@@ -2380,7 +2441,7 @@ export const DataTable = <TData extends RowData>(
         rowData: props.rowData,
         columnDefs: props.columnDefs,
         config,
-        controlledState: props.state ?? {},
+        controlledState,
         state,
       };
       return modelChanged
@@ -2393,7 +2454,9 @@ export const DataTable = <TData extends RowData>(
     props.getRowId,
     props.messages,
     props.onRowClicked,
+    props.onQueryChange,
     props.onStateChange,
+    props.query,
     props.rowData,
     props.state,
     props.status,

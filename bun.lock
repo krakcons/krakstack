@@ -70,7 +70,7 @@
     },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.1.19",
+      "version": "0.1.21",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
       },

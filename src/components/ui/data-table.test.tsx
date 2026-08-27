@@ -196,6 +196,41 @@ describe("DataTable model", () => {
     expect(await screen.findByText("Open row")).toBeTruthy();
   });
 
+  it("controls request state with Query and emits API-ready query changes", () => {
+    const onQueryChange = vi.fn();
+    render(
+      <DataTable
+        columnDefs={columns}
+        features={{ pagination: false, selection: {} }}
+        getRowId={(row) => row.id}
+        onQueryChange={onQueryChange}
+        query={{
+          page: 0,
+          pageSize: 10,
+          globalFilter: "Alpha",
+          sort: "-name",
+        }}
+        rowData={data}
+      />,
+    );
+
+    expect(screen.getByDisplayValue("Alpha")).toBeTruthy();
+    fireEvent.click(
+      screen.getAllByRole("checkbox", { name: "Select row" })[0]!,
+    );
+    expect(onQueryChange).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByDisplayValue("Alpha"), {
+      target: { value: "Beta" },
+    });
+    expect(onQueryChange).toHaveBeenCalledWith({
+      page: 0,
+      pageSize: 10,
+      globalFilter: "Beta",
+      sort: "-name",
+    });
+  });
+
   it("highlights group drop targets and moves the dropped row", () => {
     const onMoveToGroup = vi.fn();
     render(

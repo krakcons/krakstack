@@ -146,8 +146,12 @@ const SortParamSearch = SortParamsFromString.pipe(
 );
 
 export const Query = Schema.Struct({
-  page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  pageSize: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+  page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(0)),
+  ),
+  pageSize: Schema.Int.check(
+    Schema.isBetween({ minimum: 1, maximum: 100 }),
+  ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
   globalFilter: Schema.optional(Schema.String),
   sort: Schema.optional(SortParamSearch),
 }).annotate({
@@ -166,6 +170,10 @@ export const Query = Schema.Struct({
 });
 
 export type QueryType = typeof Query.Type;
+
+export const QueryStandard: ReturnType<
+  typeof Schema.toStandardSchemaV1<typeof Query>
+> = Schema.toStandardSchemaV1(Query);
 
 export const PaginationMeta = Schema.Struct({
   page: Schema.Int,
