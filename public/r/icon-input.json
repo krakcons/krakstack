@@ -10,7 +10,10 @@
     "lucide-react",
     "react"
   ],
-  "registryDependencies": ["button", "@krak-stack/virtualized-combobox"],
+  "registryDependencies": [
+    "button",
+    "@krak-stack/virtualized-combobox"
+  ],
   "files": [
     {
       "path": "src/components/ui/icon-input.tsx",

@@ -3,7 +3,9 @@
   "name": "service-health",
   "title": "Health Service",
   "description": "A configurable Effect service and HTTP API contract for aggregate, liveness, readiness, and startup checks.",
-  "dependencies": ["effect@beta"],
+  "dependencies": [
+    "effect@beta"
+  ],
   "files": [
     {
       "path": "src/services/health/index.ts",

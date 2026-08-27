@@ -3,8 +3,12 @@
   "name": "webfetch-toolkit",
   "title": "Web Fetch Toolkit",
   "description": "An Effect AI toolkit for safely fetching known public web pages and extracting bounded Markdown with Xberg.",
-  "dependencies": ["effect@4.0.0-beta.99"],
-  "registryDependencies": ["@krak-stack/service-file-extraction"],
+  "dependencies": [
+    "effect@4.0.0-beta.99"
+  ],
+  "registryDependencies": [
+    "@krak-stack/service-file-extraction"
+  ],
   "files": [
     {
       "path": "src/lib/webfetch-toolkit.ts",

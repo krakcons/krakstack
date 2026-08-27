@@ -3,7 +3,10 @@
   "name": "google-map",
   "title": "Google Map",
   "description": "A reusable Google Maps renderer with centered markers, radius circles, interaction controls, shared script loading, and localized states.",
-  "dependencies": ["lucide-react", "react"],
+  "dependencies": [
+    "lucide-react",
+    "react"
+  ],
   "files": [
     {
       "path": "src/components/ui/google-map.tsx",

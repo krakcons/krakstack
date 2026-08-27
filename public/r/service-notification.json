@@ -3,7 +3,9 @@
   "name": "service-notification",
   "title": "Notification Service",
   "description": "An Effect notification dispatcher with optional persistence-store support for inbox and delivery queue snapshots.",
-  "dependencies": ["effect@beta"],
+  "dependencies": [
+    "effect@beta"
+  ],
   "registryDependencies": [],
   "files": [
     {

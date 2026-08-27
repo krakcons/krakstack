@@ -2,16 +2,21 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "service-opentelemetry",
   "title": "OpenTelemetry",
-  "description": "An Effect service that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's unstable observability and HTTP modules, with Effect Logger bridging so all application logs are sent to the collector.",
-  "dependencies": ["effect@beta"],
+  "description": "An Effect layer that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's standard environment configuration.",
+  "dependencies": [
+    "effect@beta"
+  ],
   "files": [
     {
       "path": "src/services/opentelemetry.ts",
-      "content": "import { FetchHttpClient } from \"effect/unstable/http\";\nimport { Otlp, OtlpSerialization } from \"effect/unstable/observability\";\nimport { Config, Effect, Layer, Context } from \"effect\";\n\nconst OtelLive = Layer.unwrap(\n  Effect.gen(function* () {\n    const serviceName = yield* Config.string(\"OTEL_SERVICE_NAME\").pipe(\n      Config.withDefault(\"app\"),\n    );\n    const otlpEndpoint = yield* Config.string(\n      \"OTEL_EXPORTER_OTLP_ENDPOINT\",\n    ).pipe(Config.withDefault(\"http://localhost:4318\"));\n\n    return Otlp.layer({\n      baseUrl: otlpEndpoint,\n      resource: {\n        serviceName,\n      },\n    }).pipe(\n      Layer.provide(OtlpSerialization.layerJson),\n      Layer.provide(FetchHttpClient.layer),\n    );\n  }),\n);\n\nexport class OpenTelemetry extends Context.Service<OpenTelemetry>()(\n  \"OpenTelemetry\",\n  {\n    make: Effect.log(\"OpenTelemetry initialized\"),\n  },\n) {\n  static readonly layer = Layer.effect(this, this.make).pipe(\n    Layer.provideMerge(OtelLive),\n  );\n}\n",
+      "content": "import { FetchHttpClient } from \"effect/unstable/http\";\nimport { Otlp, OtlpSerialization } from \"effect/unstable/observability\";\nimport { Layer } from \"effect\";\n\nexport const OpenTelemetryLive = Otlp.layerFromConfig().pipe(\n  Layer.provide(OtlpSerialization.layerJson),\n  Layer.provide(FetchHttpClient.layer),\n);\n",
       "type": "registry:file",
       "target": "services/opentelemetry.ts"
     }
   ],
-  "docs": "## Overview\n\n`service-opentelemetry` uses `Otlp` and `OtlpSerialization` from `effect/unstable/observability` with `FetchHttpClient` from `effect/unstable/http` to set up traces, metrics, and log export to an OTLP collector over HTTP/JSON. It bridges Effect's Logger so all application logs are emitted as OpenTelemetry log records.\n\nEnvironment variables are read through `effect/Config` so they integrate with Effect's configuration layer and can be overridden in tests.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { OpenTelemetry } from \"@/services/opentelemetry\";\n\nconst program = Effect.gen(function* () {\n  // Spans, metrics, and logs are automatically exported\n  // to the configured OTLP endpoint.\n});\n\nawait Effect.runPromise(\n  program.pipe(Effect.provide(OpenTelemetry.layer)),\n);\n```\n\n### Environment Variables\n\n- `OTEL_SERVICE_NAME` — Service name used in the OTel resource. Defaults to `\"app\"`\n- `OTEL_EXPORTER_OTLP_ENDPOINT` — Base URL for the OTLP collector. Defaults to `http://localhost:4318`",
+  "meta": {
+    "updatedAt": "2026-08-26"
+  },
+  "docs": "## Overview\n\n`service-opentelemetry` uses `Otlp.layerFromConfig()` from `effect/unstable/observability` with `FetchHttpClient` from `effect/unstable/http` to export traces, metrics, and logs over OTLP/HTTP JSON. Effect reads the standard OpenTelemetry environment variables through its configuration layer.\n\n## Layer\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { Otlp, OtlpSerialization } from \"effect/unstable/observability\";\n\nexport const OpenTelemetryLive = Otlp.layerFromConfig().pipe(\n  Layer.provide(OtlpSerialization.layerJson),\n  Layer.provide(FetchHttpClient.layer),\n);\n```\n\n### Environment Variables\n\n- `OTEL_SERVICE_NAME` - Service name used in the OpenTelemetry resource\n- `OTEL_EXPORTER_OTLP_ENDPOINT` - Base URL for the OTLP collector\n- `OTEL_LOGS_EXPORTER=otlp` - Enables log export\n- `OTEL_METRICS_EXPORTER=otlp` - Enables metric export\n- `OTEL_TRACES_EXPORTER=otlp` - Enables trace export\n\nEffect leaves each exporter disabled when its corresponding exporter variable is omitted.",
   "type": "registry:lib"
 }
