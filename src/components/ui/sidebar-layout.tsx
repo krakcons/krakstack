@@ -38,7 +38,7 @@ const sidebarOpenAtom = Atom.kvs({
 type NavItem = {
   label: () => string;
   href: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   badge?: () => string;
   external?: boolean;
 };
@@ -48,6 +48,8 @@ type NavGroup = {
   items: NavItem[];
 };
 
+export type SidebarCollapsible = "icon" | "offcanvas" | "none";
+
 export type { NavItem, NavGroup };
 
 export const useSidebarLayout = () => {
@@ -56,12 +58,13 @@ export const useSidebarLayout = () => {
 };
 
 type AppSidebarProps = {
+  collapsible: SidebarCollapsible;
   footer?: React.ReactNode;
   groups: NavGroup[];
   header?: React.ReactNode;
 };
 
-function AppSidebar({ footer, groups, header }: AppSidebarProps) {
+function AppSidebar({ collapsible, footer, groups, header }: AppSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -72,9 +75,9 @@ function AppSidebar({ footer, groups, header }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible={collapsible}>
       {header && <SidebarHeader>{header}</SidebarHeader>}
-      <SidebarContent>
+      <SidebarContent className="group-data-[collapsible=icon]:overflow-x-hidden group-data-[collapsible=icon]:overflow-y-auto">
         {groups.map((group) => (
           <SidebarGroup key={group.label()}>
             <SidebarGroupLabel>{group.label()}</SidebarGroupLabel>
@@ -95,7 +98,7 @@ function AppSidebar({ footer, groups, header }: AppSidebarProps) {
                         render={render}
                         tooltip={item.label()}
                       >
-                        <item.icon />
+                        {item.icon ? <item.icon /> : null}
                         <span>{item.label()}</span>
                         {item.badge ? (
                           <Badge className="ml-auto" variant="secondary">
@@ -163,6 +166,7 @@ export function SidebarLayout({
   headerActions,
   contentClassName,
   fullPage = false,
+  sidebarCollapsible = "icon",
 }: {
   groups: NavGroup[];
   children?: React.ReactNode;
@@ -171,6 +175,7 @@ export function SidebarLayout({
   headerActions?: React.ReactNode;
   contentClassName?: string;
   fullPage?: boolean;
+  sidebarCollapsible?: SidebarCollapsible;
 }) {
   const [sidebarOpen, setSidebarOpen] = useAtom(sidebarOpenAtom);
 
@@ -181,6 +186,7 @@ export function SidebarLayout({
       className={cn(fullPage && "xl:h-svh xl:min-h-0 xl:overflow-hidden")}
     >
       <AppSidebar
+        collapsible={sidebarCollapsible}
         footer={sidebarFooter}
         groups={groups}
         header={sidebarHeader}

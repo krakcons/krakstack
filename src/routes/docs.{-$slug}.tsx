@@ -15,7 +15,6 @@ import {
   DocsNotFound,
   DocsPage,
 } from "@krak-stack/registry/docs";
-import { QueryStandard } from "@krak-stack/registry/query";
 import {
   getAgentsPreviewMarkdown,
   getRegistryDocsPages,
@@ -125,7 +124,6 @@ const registryPreviews = new Map<string, LazyExoticComponent<ComponentType>>([
 ]);
 
 export const Route = createFileRoute("/docs/{-$slug}")({
-  validateSearch: QueryStandard,
   loader: async ({ params }) => {
     const pages = await getRegistryDocsPages();
     const docs = makeRegistryDocs(pages);

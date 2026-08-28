@@ -18,6 +18,7 @@ export const RegistryDocsLayout = ({
     <DocsLayout
       docs={docs}
       locale={getLocale()}
+      sidebarCollapsible="offcanvas"
       headerActions={
         <>
           <ThemeSwitcher value={theme} onChange={setTheme} />

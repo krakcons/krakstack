@@ -19,7 +19,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { SearchMenu, type SearchMenuGroup } from "@/components/ui/search-menu";
-import { SidebarLayout, type NavGroup } from "@/components/ui/sidebar-layout";
+import {
+  SidebarLayout,
+  type NavGroup,
+  type SidebarCollapsible,
+} from "@/components/ui/sidebar-layout";
 import { createSeo, type SeoDefaults } from "@/lib/seo";
 
 type DocsIconProps = ComponentPropsWithoutRef<"svg"> & {
@@ -722,12 +726,10 @@ export type DocsResource = {
 
 export type DocsResolution = NonNullable<ReturnType<DocsCatalog["resolve"]>>;
 
-const EmptyIcon = forwardRef<SVGSVGElement, DocsIconProps>(() => null);
-
 const iconFor = (
   icons: Readonly<Record<string, DocsIcon>>,
   name: string | undefined,
-) => (name ? (icons[name] ?? EmptyIcon) : EmptyIcon);
+) => (name ? icons[name] : undefined);
 
 const DocsArticle = ({
   messages,
@@ -924,7 +926,7 @@ const DocsSearch = ({
               };
               if (page.icon) {
                 const PageIcon = iconFor(docs.icons, page.icon);
-                item.icon = <PageIcon className="size-4" />;
+                if (PageIcon) item.icon = <PageIcon className="size-4" />;
               }
               return item;
             })(),
@@ -954,6 +956,7 @@ export type DocsLayoutProps = {
   docs: DocsCatalog;
   headerActions?: ReactNode;
   locale: DocsLocale;
+  sidebarCollapsible?: SidebarCollapsible;
 };
 
 export const DocsLayout = ({
@@ -961,6 +964,7 @@ export const DocsLayout = ({
   docs,
   headerActions,
   locale,
+  sidebarCollapsible = "icon",
 }: DocsLayoutProps) => {
   const { brand, resources, sidebarGroups } = docs;
   const resolvedMessages = docs.getMessages(locale);
@@ -970,8 +974,9 @@ export const DocsLayout = ({
       const navItem: NavGroup["items"][number] = {
         label: () => item.title,
         href: item.path,
-        icon: iconFor(docs.icons, item.icon),
       };
+      const ItemIcon = iconFor(docs.icons, item.icon);
+      if (ItemIcon) navItem.icon = ItemIcon;
       if (isDocsPageNew(item.createdAt)) {
         navItem.badge = () => resolvedMessages.newLabel;
       }
@@ -987,7 +992,6 @@ export const DocsLayout = ({
           badge: item.badge,
           label: item.label,
           href: item.href,
-          icon: EmptyIcon,
           external: item.external,
         })),
       })),
@@ -1002,7 +1006,6 @@ export const DocsLayout = ({
           badge: item.badge,
           label: item.label,
           href: item.href,
-          icon: EmptyIcon,
           external: item.external,
         })),
         ...(docs.githubUrl
@@ -1010,7 +1013,6 @@ export const DocsLayout = ({
               {
                 label: () => docs.githubLabel,
                 href: docs.githubUrl,
-                icon: EmptyIcon,
                 external: true,
               },
             ]
@@ -1022,6 +1024,7 @@ export const DocsLayout = ({
   return (
     <SidebarLayout
       groups={groups}
+      sidebarCollapsible={sidebarCollapsible}
       sidebarHeader={
         <AppBrand
           label={brand.label}
