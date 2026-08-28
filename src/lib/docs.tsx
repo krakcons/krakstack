@@ -1,4 +1,7 @@
-import { Schema } from "effect";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getCookie } from "@tanstack/react-start/server";
+import { Option, Schema } from "effect";
+import { Cookies } from "effect/unstable/http";
 import {
   type ComponentPropsWithoutRef,
   type ForwardRefExoticComponent,
@@ -25,6 +28,25 @@ import {
   type SidebarCollapsible,
 } from "@/components/ui/sidebar-layout";
 import { createSeo, type SeoDefaults } from "@/lib/seo";
+
+const SIDEBAR_COOKIE_NAME = "sidebar_state";
+const SidebarOpenCookie = Schema.Literals(["true", "false"]).annotate({
+  identifier: "SidebarOpenCookie",
+});
+const getSidebarOpenCookie = createIsomorphicFn()
+  .server(() => getCookie(SIDEBAR_COOKIE_NAME))
+  .client(
+    () =>
+      Cookies.parseHeader(globalThis.document?.cookie ?? "")[
+        SIDEBAR_COOKIE_NAME
+      ],
+  );
+
+const getSidebarDefaultOpen = () =>
+  Schema.decodeUnknownOption(SidebarOpenCookie)(getSidebarOpenCookie()).pipe(
+    Option.map((value) => value === "true"),
+    Option.getOrElse(() => true),
+  );
 
 type DocsIconProps = ComponentPropsWithoutRef<"svg"> & {
   absoluteStrokeWidth?: boolean;
@@ -1023,6 +1045,7 @@ export const DocsLayout = ({
 
   return (
     <SidebarLayout
+      defaultOpen={getSidebarDefaultOpen()}
       groups={groups}
       sidebarCollapsible={sidebarCollapsible}
       sidebarHeader={

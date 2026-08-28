@@ -1,9 +1,8 @@
-import { useAtom } from "@effect/atom-react";
-import { BrowserKeyValueStore } from "@effect/platform-browser";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Schema } from "effect";
-import { Atom } from "effect/unstable/reactivity";
+import { Option, Schema } from "effect";
+import { Cookies } from "effect/unstable/http";
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,15 +24,19 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-const sidebarStorageRuntime = Atom.runtime(
-  BrowserKeyValueStore.layerLocalStorage,
-);
-const sidebarOpenAtom = Atom.kvs({
-  runtime: sidebarStorageRuntime,
-  key: "sidebar:open",
-  schema: Schema.Boolean,
-  defaultValue: () => true,
+const SIDEBAR_COOKIE_NAME = "sidebar_state";
+const SidebarOpenCookie = Schema.Literals(["true", "false"]).annotate({
+  identifier: "SidebarOpenCookie",
 });
+
+const getSidebarDefaultOpen = (defaultOpen: boolean) => {
+  return Schema.decodeUnknownOption(SidebarOpenCookie)(
+    Cookies.parseHeader(globalThis.document?.cookie ?? "")[SIDEBAR_COOKIE_NAME],
+  ).pipe(
+    Option.map((value) => value === "true"),
+    Option.getOrElse(() => defaultOpen),
+  );
+};
 
 type NavItem = {
   label: () => string;
@@ -167,6 +170,7 @@ export function SidebarLayout({
   contentClassName,
   fullPage = false,
   sidebarCollapsible = "icon",
+  defaultOpen = true,
 }: {
   groups: NavGroup[];
   children?: React.ReactNode;
@@ -176,8 +180,11 @@ export function SidebarLayout({
   contentClassName?: string;
   fullPage?: boolean;
   sidebarCollapsible?: SidebarCollapsible;
+  defaultOpen?: boolean;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useAtom(sidebarOpenAtom);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    getSidebarDefaultOpen(defaultOpen),
+  );
 
   return (
     <SidebarProvider
