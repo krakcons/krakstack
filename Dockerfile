@@ -9,13 +9,14 @@ ARG VITE_ANALYTICS_WEBSITE_ID
 ENV VITE_SITE_URL=$VITE_SITE_URL
 ENV VITE_ANALYTICS_WEBSITE_ID=$VITE_ANALYTICS_WEBSITE_ID
 
-# Install dependencies
+# Install workspace dependencies without running the root prepare script before
+# its source files are available.
 COPY package.json bun.lock ./
-RUN bun install
+COPY packages/registry/package.json ./packages/registry/package.json
+RUN bun install --frozen-lockfile --ignore-scripts
 
-# Copy source
 COPY . .
-
+RUN bun run prepare
 RUN bun run build
 
 EXPOSE 3000
