@@ -42,6 +42,11 @@ import {
 import { NotificationService } from "@krak-stack/registry/service-notification";
 ```
 
+`@krak-stack/registry/service-notification` is the source-compatible direct
+dispatcher. Use the separate `@krak-stack/notifications` package for a durable
+inbox, package-owned migrations, persisted delivery jobs, retries, workers, and
+one-shot reminders.
+
 Create a configured SEO helper once with site-wide defaults, then use it for each page:
 
 ```tsx

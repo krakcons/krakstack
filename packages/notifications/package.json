@@ -1,0 +1,95 @@
+{
+  "name": "@krak-stack/notifications",
+  "version": "0.1.0",
+  "description": "PostgreSQL-backed Effect notification inbox, delivery, and reminder primitives.",
+  "homepage": "https://krakstack.net/docs/notifications",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krakcons/krakstack.git",
+    "directory": "packages/notifications"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./migrations": {
+      "types": "./dist/migrations.d.ts",
+      "import": "./dist/migrations.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    },
+    "./transport": {
+      "types": "./dist/transport.d.ts",
+      "import": "./dist/transport.js"
+    },
+    "./transport/email": {
+      "types": "./dist/transport/email.d.ts",
+      "import": "./dist/transport/email.js"
+    },
+    "./transport/email-ses": {
+      "types": "./dist/transport/email-ses.d.ts",
+      "import": "./dist/transport/email-ses.js"
+    },
+    "./transport/email-smtp": {
+      "types": "./dist/transport/email-smtp.d.ts",
+      "import": "./dist/transport/email-smtp.js"
+    },
+    "./direct": {
+      "types": "./dist/direct.d.ts",
+      "import": "./dist/direct.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "bun run typecheck && bun run test && bun run build",
+    "check:release": "bun -e 'if (!process.env.TEST_DATABASE_URL) { console.error(\"TEST_DATABASE_URL is required for notification release checks\"); process.exit(1); }' && bun run check",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepack": "bun run check:release"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-sesv2": "^3.1068.0",
+    "@effect/sql-pg": "4.0.0-rc.112",
+    "@effect/vitest": "4.0.0-rc.112",
+    "@types/node": "^22.19.21",
+    "@types/nodemailer": "^8.0.1",
+    "effect": "4.0.0-rc.112",
+    "nodemailer": "^9.0.6",
+    "typescript": "7.0.1-rc",
+    "vitest": "^4.1.9"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-sesv2": "^3.1068.0",
+    "effect": "4.0.0-rc.112",
+    "nodemailer": "^9.0.6"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-sesv2": {
+      "optional": true
+    },
+    "nodemailer": {
+      "optional": true
+    }
+  }
+}

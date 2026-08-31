@@ -2,7 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "notification-menu",
   "title": "Notification Menu",
-  "description": "A controlled, bilingual notification popover with unread state, inbox and archive views, loading and error states, and composable item rendering.",
+  "description": "A backend-neutral, controlled bilingual notification popover with unread state, inbox and archive views, and composable item rendering.",
   "dependencies": ["lucide-react", "react"],
   "registryDependencies": [
     "badge",
@@ -29,8 +29,8 @@
   ],
   "meta": {
     "createdAt": "2026-08-17",
-    "updatedAt": "2026-08-17"
+    "updatedAt": "2026-08-30"
   },
-  "docs": "## Overview\n\n`notification-menu` provides router-neutral notification presentation and interactions. The consumer owns fetching, trusted user and organization scope, mutations, invalidation, and navigation. The component receives already-scoped notifications and reports notification IDs to `onMarkRead` and `onArchive`.\n\nEnglish and French menu chrome is built in and can be overridden with `messages`. Notification content remains consumer-owned.\n\n## Usage\n\n```tsx\nimport { NotificationMenu } from \"@/services/notification/client\";\n\n<NotificationMenu\n  notifications={notifications}\n  onMarkRead={(notificationIds) => client.markRead({ notificationIds })}\n  onArchive={(notificationIds) => client.archive({ notificationIds })}\n  onNavigate={(notification) => navigate({ href: notification.href })}\n/>\n```\n\nEach notification accepts `id`, `title`, optional `description`, `createdAt`, `timestampLabel`, `href`, `readAt`, and `archivedAt`. Opening the menu marks unread inbox IDs as read by default; set `markReadOnOpen={false}` to disable this behavior.\n\nUse `renderItem` for custom item content and `renderTrigger` for custom trigger presentation. The component never accepts a user ID, organization ID, or workspace as trusted authorization input; enforce scope in the consumer's server capability.",
+  "docs": "## Overview\n\n`notification-menu` provides backend-neutral notification presentation and interactions. It can present inbox records from the recommended `@krak-stack/notifications` package or from an application-owned compatibility store. The component itself never fetches, persists, or authorizes records.\n\nThe consumer owns trusted user and tenant scope, HTTP and atom integration, mutations, invalidation, navigation, localized notification content, and branding. The component receives already-authorized notifications and reports IDs to `onMarkRead` and `onArchive`. English and French menu chrome is built in and can be overridden with `messages`.\n\n## Usage\n\n```tsx\nimport { NotificationMenu } from \"@/services/notification/client\";\n\n<NotificationMenu\n  notifications={notifications}\n  onMarkRead={(notificationIds) => client.markRead({ notificationIds })}\n  onArchive={(notificationIds) => client.archive({ notificationIds })}\n  onNavigate={(notification) => navigate({ href: notification.href })}\n/>\n```\n\nMap durable package inbox records to `NotificationItem` only after the server has enforced recipient, organization, and workspace scope. Each item accepts `id`, `title`, optional `description`, `createdAt`, `timestampLabel`, `href`, `readAt`, and `archivedAt`. Opening the menu marks unread inbox IDs as read by default; set `markReadOnOpen={false}` to disable this behavior.\n\nUse `renderItem` for custom item content and `renderTrigger` for custom trigger presentation. Never pass browser-supplied scope directly to backend list or mutation operations.",
   "type": "registry:block"
 }

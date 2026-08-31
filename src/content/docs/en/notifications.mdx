@@ -2,7 +2,7 @@
 slug: notifications
 path: /docs/notifications
 title: Notifications and email setup
-description: Add the notification menu, persist inbox and delivery records, and configure direct or durable email delivery.
+description: Build a durable notification inbox, delivery runtime, and direct authentication email path with the KrakStack notifications package.
 order: 17
 locale: en
 section: notifications
@@ -11,307 +11,302 @@ type: how-to
 
 # Notifications and email setup
 
-KrakStack separates notification presentation, channel dispatch, and delivery infrastructure. The registry supplies a controlled notification menu, an Effect dispatcher, and a direct Amazon SES channel. Your application owns recipients, authorization, persistence, templates, and delivery policy.
+`@krak-stack/notifications` is the default backend for new durable notification systems. It combines package-owned PostgreSQL migrations and CRUD operations with an Effect `PersistedQueue`, delivery and reminder workers, a due-work scheduler, and optional SES or SMTP transports.
 
-## Choose the parts you need
+The older shadcn registry items remain available for compatibility. They vendor editable source into an application, but they are not the recommended durable runtime.
 
-| Need                     | KrakStack item or export                             | Project responsibility                                   |
-| ------------------------ | ---------------------------------------------------- | -------------------------------------------------------- |
-| Bell menu and inbox UI   | `notification-menu` or `service-notification/client` | Fetch scoped records, mutate them, and navigate          |
-| Channel dispatch         | `service-notification`                               | Compose installed channels and decide when to send       |
-| Direct email through SES | `notification-channel-email-ses`                     | Configure AWS, render content, and invoke the dispatcher |
-| Durable persistence      | `notification-persistence`                           | Generate migrations, authorize access, and own retention |
-| Queued email and retries | Delivery table shipped; worker not shipped           | Own the relay, worker, scheduling, and observability     |
+## Responsibility matrix
 
-> Do not trust user, organization, or workspace IDs supplied by the browser. Resolve the current actor and authorize every read or mutation at the server boundary.
+| Concern              | `@krak-stack/notifications` owns                                                                                                 | The application owns                                                                                 |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Storage              | Package migrations; inbox CRUD; preference and suppression CRUD; delivery, attempt, reference, publication, and reminder records | Database provisioning, backups, retention policy, and one shared `PgClient` layer                    |
+| Delivery runtime     | Effect `PersistedQueue` jobs, retries, reconciliation, scheduler, delivery workers, and reminder workers                         | Process topology, transport credentials, monitoring, and operational alerts                          |
+| Security and scope   | Scope-aware service inputs and Effect schemas                                                                                    | Authentication, authorization, trusted recipient/organization/workspace scope, and tenant isolation  |
+| Product policy       | Transactional-versus-notification preference behavior and one-shot reminder execution                                            | Recipient selection, event policy, recurrence, digest membership and cadence, and legal requirements |
+| Content              | Persisted rendered snapshots and provider-neutral email payload validation                                                       | Templates, rendering, localization, links, and branding                                              |
+| Application boundary | Server-side Effect services                                                                                                      | HTTP APIs, handlers, atoms, routes, UI state, and cache invalidation                                 |
+| Providers            | Transport contract plus SESv2 and SMTP adapters                                                                                  | Provider choice, accounts, credentials, sender identities, and deliverability policy                 |
 
-## Install the notification components
+> Never accept a recipient, organization, or workspace identifier from the browser as trusted scope. Derive scope from the authenticated server context before calling the package.
 
-Choose one installation model for the UI.
+## Install the durable package
 
-Install source through the shadcn registry when the component should live in your project:
-
-```bash
-bunx shadcn@latest add @krak-stack/notification-menu
-```
-
-The item installs `NotificationMenu` under `services/notification/client` and adds its standard shadcn dependencies.
-
-Alternatively, install the package:
+Install the package with the Effect PostgreSQL driver:
 
 ```bash
-bun add @krak-stack/registry
+bun add @krak-stack/notifications@0.1.0 @effect/sql-pg@4.0.0-rc.112 effect@4.0.0-rc.112
 ```
 
-Use the client-only subpath in browser code:
+Install only the optional email provider used by the application:
 
-```tsx
+```bash
+# Amazon SESv2
+bun add @aws-sdk/client-sesv2
+
+# Or SMTP through Nodemailer
+bun add nodemailer
+```
+
+The package exports its service from `@krak-stack/notifications`, runtime from `/runtime`, transport contract from `/transport`, provider-free email schema from `/transport/email`, and provider adapters from `/transport/email-ses` and `/transport/email-smtp`.
+
+## Compose one shared PostgreSQL client
+
+Use the same `PgClient` layer and pool for `NotificationService`, `NotificationRuntime`, and the queue. Immediate publication allocates the ledger row, attempt row, and queue job in one contextual SQL transaction; a second client layer would break that atomic boundary.
+
+This complete SES composition runs package migrations, supplies the transport registry, and starts the delivery worker, reminder worker, and built-in scheduler:
+
+```ts
+import { PgClient } from "@effect/sql-pg";
+import { Config, Effect, Layer } from "effect";
+import { NotificationService } from "@krak-stack/notifications";
 import {
-  NotificationMenu,
-  type NotificationItem,
-} from "@krak-stack/registry/service-notification/client";
-```
+  NotificationRuntime,
+  ReminderHandlerRegistry,
+  notificationWorkersLayer,
+} from "@krak-stack/notifications/runtime";
+import { sesEmailTransportRegistryLayer } from "@krak-stack/notifications/transport/email-ses";
 
-The umbrella export is also available when a module needs the UI and dispatcher together:
+const pgClientLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const url = yield* Config.redacted("DATABASE_URL");
+    return PgClient.layer({ url });
+  }),
+);
 
-```ts
-import {
-  NotificationMenu,
-  NotificationService,
-} from "@krak-stack/registry/notifications";
-```
+// This adapter layer supplies NotificationTransportRegistry for "email".
+const transportRegistryLayer = sesEmailTransportRegistryLayer;
 
-If package components are rendered in your application, include the package Tailwind source:
+const runtimeLayer = NotificationRuntime.makeLayer({
+  schedulerIntervalMillis: 10_000,
+}).pipe(
+  Layer.provide(transportRegistryLayer),
+  Layer.provide(ReminderHandlerRegistry.emptyLayer),
+);
 
-```css
-@import "@krak-stack/registry/tailwind.css";
-```
-
-## Connect the menu to project data
-
-`NotificationMenu` is controlled by data and callbacks. It does not fetch, cache, or authorize records.
-
-```tsx
-import { NotificationMenu } from "@krak-stack/registry/service-notification/client";
-
-export function WorkspaceNotifications({ notifications }) {
-  return (
-    <NotificationMenu
-      notifications={notifications}
-      onMarkRead={(notificationIds) =>
-        notificationClient.markRead({ notificationIds })
-      }
-      onArchive={(notificationIds) =>
-        notificationClient.archive({ notificationIds })
-      }
-      onNavigate={(notification) => {
-        if (notification.href) window.location.assign(notification.href);
-      }}
-    />
-  );
-}
-```
-
-Each item supports:
-
-- `id` and `title`
-- optional `description`, `href`, `createdAt`, and `timestampLabel`
-- `readAt` for unread presentation
-- `archivedAt` for inbox/archive placement
-
-Opening the menu reports all unread inbox IDs to `onMarkRead`. Set `markReadOnOpen={false}` if your product uses item-level read behavior. `onArchive` receives either one item ID or every current inbox ID.
-
-Use `renderItem` or `renderTrigger` to change presentation without coupling the registry component to your router or domain. Pass `locale` or `messages` to override the built-in English and French menu chrome.
-
-## Define the trusted server contract
-
-The browser should submit only record IDs and intent. The server derives actor and scope from the authenticated request.
-
-```ts
-type NotificationClient = {
-  list: (input: {
-    state: "inbox" | "archive";
-  }) => Promise<readonly NotificationItem[]>;
-  markRead: (input: { notificationIds: readonly string[] }) => Promise<void>;
-  archive: (input: { notificationIds: readonly string[] }) => Promise<void>;
-};
-```
-
-For every operation, the server should:
-
-1. Resolve the authenticated actor.
-2. Resolve the active organization and workspace from trusted session context.
-3. Verify that every requested notification belongs to that recipient and scope.
-4. Apply the mutation and return only authorized records.
-5. Invalidate or refresh the matching client query.
-
-## Add the notification dispatcher
-
-Install the Effect service through source:
-
-```bash
-bunx shadcn@latest add @krak-stack/service-notification
-```
-
-Or import it from the package:
-
-```ts
-import { NotificationService } from "@krak-stack/registry/service-notification";
-import { NotificationChannelRegistry } from "@krak-stack/registry/service-notification/channels";
-```
-
-`NotificationService` dispatches each top-level message key to every installed channel with the same key. This keeps event policy separate from providers.
-
-```ts
-import { Effect, Layer } from "effect";
-import { NotificationService } from "@krak-stack/registry/service-notification";
-import { NotificationChannelRegistry } from "@krak-stack/registry/service-notification/channels";
-
-const channels = NotificationChannelRegistry.layer([
-  {
-    key: "inApp",
-    send: (payload) => persistInboxNotification(payload),
-  },
-]);
-
-const notificationLayer = NotificationService.layer.pipe(
-  Layer.provide(channels),
+export const notificationsLayer = notificationWorkersLayer.pipe(
+  Layer.provideMerge(runtimeLayer),
+  // Acquire the migrated service before any worker loop starts.
+  Layer.provideMerge(NotificationService.layer),
+  Layer.provide(pgClientLayer),
 );
 ```
 
-Project channels can augment `NotificationChannels` so `send` remains typed. Keep event definitions in project source, because event names and payloads are domain policy rather than registry policy.
+Keep `notificationsLayer` alive in a scoped server or worker runtime. `Layer.provideMerge(NotificationService.layer)` completes package migrations before acquiring the worker layer. `notificationWorkersLayer` then forks all three built-in loops: delivery, reminders, and scheduling. Register application reminder handlers with `ReminderHandlerRegistry.layer([...])` instead of `emptyLayer` when one-shot reminders are used.
 
-## Configure direct SES email
+Custom providers implement `NotificationTransport` and are collected by channel in a registry:
 
-Install both registry items:
+```ts
+import { NotificationTransportRegistry } from "@krak-stack/notifications/transport";
 
-```bash
-bunx shadcn@latest add \
-  @krak-stack/service-notification \
-  @krak-stack/notification-channel-email-ses
+const transportRegistryLayer = NotificationTransportRegistry.layer([
+  emailTransport,
+  smsTransport,
+]);
 ```
 
-Set the required server environment variables:
+Only one transport can be registered for a channel. Do not register SES and SMTP together under `email`.
+
+## Publish a durable notification
+
+The application selects the recipient, resolves trusted scope and locale, renders the content, and passes immutable snapshots to `publish`:
+
+```ts
+import { Effect } from "effect";
+import { NotificationService } from "@krak-stack/notifications";
+
+const publishApplicationApproved = Effect.gen(function* () {
+  const notifications = yield* NotificationService;
+
+  return yield* notifications.publish({
+    idempotencyKey: `application:${applicationId}:approved:v1`,
+    scope: {
+      recipientUserId: user.id,
+      organizationId: organization.id,
+      workspaceId: workspace.id,
+    },
+    eventKey: "application.approved",
+    eventVersion: 1,
+    inbox: {
+      locale: user.locale,
+      title: rendered.inboxTitle,
+      description: rendered.inboxDescription,
+      href: `/applications/${applicationId}`,
+      metadata: { applicationId },
+    },
+    deliveries: [
+      {
+        key: "email",
+        channel: "email",
+        purpose: "notification",
+        template: "application-approved@1",
+        recipientAddress: user.email,
+        recipientName: user.name,
+        payloadVersion: 1,
+        payload: {
+          subject: rendered.emailSubject,
+          text: rendered.emailText,
+          html: rendered.emailHtml,
+        },
+        references: [{ namespace: "application", value: applicationId }],
+      },
+    ],
+  });
+});
+```
+
+One delivery row represents one recipient. The email adapter derives the destination from `recipientAddress` and `recipientName`; `EmailPayloadV1` deliberately has no `to`, `cc`, or `bcc`. Use one publication delivery per recipient.
+
+`purpose: "notification"` applies preferences and active endpoint suppressions. `purpose: "transactional"` bypasses preferences, but endpoint suppressions still apply. The application decides which events are legally or operationally transactional.
+
+## Configure SES or SMTP
+
+The SES adapter reads these server variables:
 
 ```dotenv
 SES_REGION=ca-central-1
 SES_ACCESS_KEY_ID=...
 SES_SECRET_ACCESS_KEY=...
-NOTIFICATION_EMAIL_FROM=Example <no-reply@example.com>
+NOTIFICATION_EMAIL_FROM=no-reply@example.com
 ```
 
-Compose the SES channel into the dispatcher:
+Use `sesEmailTransportRegistryLayer` from `@krak-stack/notifications/transport/email-ses`. This release supports explicit SES access keys; AWS default-chain credentials and session tokens are not yet supported.
+
+For SMTP, replace the registry layer in the composition example:
+
+```ts
+import { smtpEmailTransportRegistryLayer } from "@krak-stack/notifications/transport/email-smtp";
+
+const transportRegistryLayer = smtpEmailTransportRegistryLayer;
+```
+
+The SMTP adapter reads the following variables, requires TLS, and verifies the connection when its layer starts:
+
+```dotenv
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=...
+SMTP_PASSWORD=...
+EMAIL_SENDER_ADDRESS=no-reply@example.com
+```
+
+Both adapters accept rendered `subject`, `text`, optional `html`, optional `from`, and optional `replyTo` through email payload version 1. At least one of `text` or `html` is required.
+
+## Scheduled delivery, retries, and reminders
+
+Future deliveries and retries remain in the package ledger until `NotificationRuntime.enqueueDue` runs. Scheduled delivery therefore requires the built-in scheduler, either through `notificationWorkersLayer` as shown above or by running `NotificationRuntime.runScheduler` yourself. Starting only the delivery worker does not enqueue future work.
+
+Provider and reminder-handler side effects are **at least once**. A process can crash after a provider accepts a message but before the success transaction commits, so the same dispatch generation can run again. Use the stable dispatch or queue job ID for provider idempotency when the provider supports it.
+
+One-shot reminders persist a versioned handler key and payload, then run through the reminder queue. The package owns scheduling, retry, rescheduling, cancellation, and worker execution for that one invocation. The application chooses recurrence rules, creates the next occurrence, and decides which events belong in a digest.
+
+## Database and migration ownership
+
+`NotificationService.layer` runs package domain migrations before exposing the service. The package owns:
+
+- `notifications`
+- `notification_settings`
+- `notification_deliveries`
+- `notification_delivery_attempts`
+- `notification_delivery_references`
+- `notification_suppressions`
+- `notification_reminders`
+- `notification_publications`
+- `krakstack_notification_migrations`
+
+Effect `PersistedQueue` owns `krakstack_notification_jobs` and `krakstack_notification_jobs_migrations`.
+
+Queue startup currently runs Effect DDL when the service or runtime layer constructs its persisted queue. `NotificationService.layerWithoutMigrations` skips the package's domain migration runner, but it does not disable this queue startup DDL. If deployment roles cannot run DDL, pre-provision both domain and queue objects and validate this behavior against the installed Effect version.
+
+Exclude all package-owned domain, queue, and migration tables from the application's Drizzle migration input and generation. If the application defines read-only mappings for those tables, configure Drizzle Kit so it does not manage them. Do not let two migration systems alter the same tables.
+
+## Adopt legacy notification tables
+
+The package migrations are designed to adopt the three tables previously installed by `notification-persistence` without discarding their data. Use this cutover sequence:
+
+1. Back up and preserve `notifications`, `notification_settings`, and `notification_deliveries`; do not drop or recreate them.
+2. Stop every application-owned notification relay and worker before starting the package runtime. Old and new workers must never claim the same deliveries concurrently.
+3. Remove package-owned tables from the application's Drizzle migration input. Keep the existing rows in PostgreSQL, but let the package own their future schema history.
+4. Start `NotificationService.layer` with the shared `PgClient` so its additive migrations can adopt the existing schema before package workers start.
+5. Move application-specific delivery correlations to `notification_delivery_references` with stable namespaces. The migration imports compatible `notification_delivery_correlations` columns for `application`, `opportunity`, and `organization`; migrate any other correlation shape explicitly.
+6. Validate counts and statuses, then start `notificationWorkersLayer` and monitor the first scheduler and worker passes.
+
+During adoption, legacy `processing` deliveries that have no current Effect queue job become due `retrying` rows when attempt budget remains, or `failed` rows when it is exhausted. Legacy claims are cleared. Disabled rows from a compatible `email_preferences` table are imported as email suppressions for `purpose: "notification"`; enabled rows do not need an override because notification delivery defaults to enabled.
+
+## Use direct mode for authentication mail
+
+KrakAuth-like OTP, verification, and password-reset email often needs a simple inline provider call rather than an inbox or durable ledger. Direct mode reuses the same transport registry without PostgreSQL or a queue:
 
 ```ts
 import { Effect, Layer } from "effect";
-import { NotificationService } from "@krak-stack/registry/service-notification";
-import { NotificationChannelRegistry } from "@krak-stack/registry/service-notification/channels";
-import { SesNotificationChannel } from "@krak-stack/registry/notification-channel-email-ses";
+import {
+  DirectNotificationDispatcher,
+  dispatchDirect,
+} from "@krak-stack/notifications/direct";
+import { sesEmailTransportRegistryLayer } from "@krak-stack/notifications/transport/email-ses";
 
-const channels = Layer.effect(
-  NotificationChannelRegistry,
-  Effect.gen(function* () {
-    const email = yield* SesNotificationChannel;
-    return NotificationChannelRegistry.make(email);
-  }),
-).pipe(Layer.provide(SesNotificationChannel.layer));
-
-export const notificationLayer = NotificationService.layer.pipe(
-  Layer.provide(channels),
+const directEmailLayer = DirectNotificationDispatcher.layer.pipe(
+  Layer.provide(sesEmailTransportRegistryLayer),
 );
+
+const sendPasswordReset = dispatchDirect({
+  scope: {
+    recipientUserId: user.id,
+    organizationId: null,
+    workspaceId: null,
+  },
+  eventKey: "auth.password-reset",
+  eventVersion: 1,
+  channel: "email",
+  template: "password-reset@1",
+  recipientAddress: user.email,
+  recipientName: user.name,
+  payloadVersion: 1,
+  payload: {
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+  },
+}).pipe(Effect.provide(directEmailLayer));
 ```
 
-Send rendered text or HTML:
+Direct mode has no persistence, retry scheduling, inbox record, delivery history, preference lookup, or suppression lookup. The calling authentication flow must decide how a provider failure affects the request and must avoid claiming durable delivery guarantees.
 
-```ts
-const program = Effect.gen(function* () {
-  const notifications = yield* NotificationService;
+## Keep application APIs and UI scoped
 
-  yield* notifications.send({
-    email: {
-      to: "volunteer@example.com",
-      subject: "Application approved",
-      text: "Your volunteer application was approved.",
-      html: "<p>Your volunteer application was approved.</p>",
-    },
-  });
-});
-```
+The package intentionally ships no HTTP group, handlers, atoms, routes, or UI. Wrap `NotificationService` methods in application APIs that derive the actor and scope from trusted authentication context. Return only records authorized for that scope, and invalidate the matching client query after mutations.
 
-The SES payload also supports `from`, `cc`, `bcc`, and `replyTo`. At least one of `text` or `html` is required. A payload-level `from` overrides `NOTIFICATION_EMAIL_FROM`.
-
-Direct SES delivery is appropriate for simple or non-critical messages. It runs inline in the calling process and does not provide a durable outbox, application-level scheduled retries, or an administrative delivery log.
-
-## Install durable notification persistence
-
-Install editable source from the shadcn registry:
+For a source-installed UI, use the backend-neutral menu:
 
 ```bash
-bunx shadcn@latest add @krak-stack/notification-persistence
+bunx shadcn@latest add @krak-stack/notification-menu
 ```
 
-Or import the server-only npm module:
+`NotificationMenu` receives already-authorized records and reports IDs through controlled callbacks. The application maps package inbox records to the component, owns navigation, and supplies localized notification content and product branding.
 
-```ts
-import {
-  notificationDeliveries,
-  notificationSettings,
-  notifications,
-} from "@krak-stack/registry/service-notification/persistence/drizzle";
-import { decodeNotificationDeliveryPayload } from "@krak-stack/registry/service-notification/persistence/schema";
-```
+## Legacy source-vendored options
 
-The module ships three PostgreSQL tables:
+- `service-notification` is a direct compatibility dispatcher for applications already using top-level channel messages. Its optional application store hook does not provide package migrations, a persisted queue, reconciliation, or workers.
+- `notification-channel-email-ses` is the matching legacy SES channel. New package users import `@krak-stack/notifications/transport/email-ses` instead.
+- `notification-persistence` installs the legacy three-table Drizzle definitions and codecs as editable application source. New durable applications should not install it; use `@krak-stack/notifications` and its migrations.
+- `notification-menu` remains a supported, backend-neutral presentation component.
 
-| Table                     | Purpose                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------- |
-| `notifications`           | Recipient-specific inbox snapshots with read and archive timestamps              |
-| `notification_settings`   | Channel preferences scoped by recipient, organization, workspace, and event      |
-| `notification_deliveries` | Channel-neutral outbox snapshots, scheduling, claims, retries, and final results |
-
-Re-export installed source from your project's Drizzle schema entry:
-
-```ts
-export * from "@/services/notification/persistence/drizzle";
-```
-
-Then generate and commit a migration in the receiving project. KrakStack distributes reusable definitions rather than shared migration history, so each project controls rollout and future schema changes.
-
-Store external identity and organization IDs as text unless the identity tables are in the same database. Do not add cross-database foreign keys.
-
-Persist the following scope on each inbox record:
-
-- recipient user ID
-- organization ID when applicable
-- workspace or audience
-- event key and version
-- title, description, and destination snapshot
-- created, read, and archived timestamps
-
-For delivery records, store one row per channel with a stable idempotency key and a versioned payload snapshot. Email payload version 1 stores SES-compatible recipients, subject, text, and HTML. Keep template implementations in source control. Retrying a delivery should send the persisted snapshot instead of rendering a potentially changed template.
-
-The Effect codec rejects unsupported channel and payload-version combinations. Add a new codec variant before writing a new payload version, and retain old variants while historical rows remain.
-
-> KrakStack ships table definitions and codecs, not authorization queries, CRUD operations, migrations, an outbox relay, a worker, or an administrative delivery UI. Effect workflow and persisted-queue tables remain Effect-owned infrastructure.
-
-## Queue email safely
-
-The persistence store implementation is application-owned, but `NotificationService.send` can orchestrate the persist step. When email must survive process crashes:
-
-1. In the same database transaction as the domain change, call `NotificationService.send({ persist })` with a store that inserts the in-app notification and queued `notification_deliveries` record.
-2. Commit the transaction before offering work to the queue.
-3. Let an outbox relay recover committed deliveries that were not offered because the process crashed.
-4. Queue a versioned job containing only `{ deliveryId }`.
-5. Have the worker lease the delivery record, decode and send its persisted snapshot, and store the provider result.
-6. Schedule application retries through `scheduledFor`; reserve queue retries for infrastructure failures.
-
-Do not compose both a direct SES channel and a queued email channel under the same `email` key in the web process. `NotificationService` invokes every matching channel when `message` is present, so that composition would send duplicates. The web process should persist/queue; only the worker should invoke the SES transport.
-
-## Apply preferences and localization
-
-Decide preferences before creating optional channel work:
-
-- Persist in-app notifications only when the in-app channel is enabled.
-- Enqueue optional email only when the email channel is enabled.
-- Do not allow preferences to suppress transactional or legally required messages unless product policy explicitly permits it.
-
-Resolve the recipient locale at publication time. Render source-defined email templates in that locale, then persist the rendered snapshot. Notification menu chrome is localized independently through the component's `locale` and `messages` props.
+Do not compose the legacy dispatcher or application-owned worker with the new package runtime for the same event. Choose one delivery owner during migration to avoid duplicate sends.
 
 ## Production checklist
 
-- Authorize list, read, and archive operations on the server.
-- Include recipient, organization, and workspace scope in every query and mutation.
-- Keep browser exports separate from database, AWS, and worker modules.
-- Verify SES identities, sandbox status, sending limits, and least-privilege credentials.
-- Make event keys and queue payloads versioned.
-- Make worker claims concurrency-safe and idempotent.
-- Record attempts, provider IDs, failures, and final delivery status.
-- Test English and French menu copy and email snapshots.
-- Test process crashes between database commit, queue offer, and provider response.
+- Use one shared `PgClient` pool for service, runtime, and queues.
+- Run package migrations before package workers and exclude package tables from Drizzle migrations.
+- Run the built-in scheduler wherever scheduled delivery or retries are enabled.
+- Treat provider and reminder side effects as at-least-once.
+- Authorize every inbox, preference, suppression, delivery, and reminder operation at the server boundary.
+- Render and localize snapshots before publication; keep template versions in application source.
+- Monitor terminal failures, stale-job reconciliation, queue depth, provider limits, and sender reputation.
+- Test English and French content, migration adoption, and crashes around provider acceptance.
 - Never log credentials or sensitive message bodies.
 
 ## Related references
 
 - [Notification menu](/docs/notification-menu)
-- [Notification service](/docs/service-notification)
-- [Amazon SES notification channel](/docs/notification-channel-email-ses)
+- [Notification service compatibility item](/docs/service-notification)
+- [Legacy Amazon SES notification channel](/docs/notification-channel-email-ses)
+- [Package README](https://github.com/krakcons/krakstack/tree/main/packages/notifications#readme)

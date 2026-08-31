@@ -1,11 +1,11 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/krakcons/krakstack-site.git",
+    "url": "git+https://github.com/krakcons/krakstack.git",
     "directory": "packages/registry"
   },
   "files": [

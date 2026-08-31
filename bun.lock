@@ -66,9 +66,33 @@
         "vitest": "^4.1.9",
       },
     },
+    "packages/notifications": {
+      "name": "@krak-stack/notifications",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@aws-sdk/client-sesv2": "^3.1068.0",
+        "@effect/sql-pg": "4.0.0-rc.112",
+        "@effect/vitest": "4.0.0-rc.112",
+        "@types/node": "^22.19.21",
+        "@types/nodemailer": "^8.0.1",
+        "effect": "4.0.0-rc.112",
+        "nodemailer": "^9.0.6",
+        "typescript": "7.0.1-rc",
+        "vitest": "^4.1.9",
+      },
+      "peerDependencies": {
+        "@aws-sdk/client-sesv2": "^3.1068.0",
+        "effect": "4.0.0-rc.112",
+        "nodemailer": "^9.0.6",
+      },
+      "optionalPeers": [
+        "@aws-sdk/client-sesv2",
+        "nodemailer",
+      ],
+    },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.1.26",
+      "version": "0.1.27",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
       },
@@ -391,6 +415,8 @@
     "@js-temporal/polyfill": ["@js-temporal/polyfill@0.5.1", "", { "dependencies": { "jsbi": "^4.3.0" } }, "sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ=="],
 
     "@krak-stack/auth": ["@krak-stack/auth@0.1.65", "", { "dependencies": { "react-qr-code": "^2.2.0" }, "peerDependencies": { "@better-auth/api-key": "^1.6.14", "@tanstack/react-router": "^1.170.15", "@tanstack/react-table": "^8.21.3", "better-auth": "^1.6.14", "effect": "^4.0.0-beta.78", "input-otp": "^1.4.2", "lucide-react": "^1.17.0", "react": "^19.2.7" } }, "sha512-JHAHl1Ak+A1twXt0olknXgU+TLpX0JPz7aYoyYOdbV8uu/1brFk3lAGXlDMNFKa81rWgEF7B9Q4ZM/+DGJ8+Fg=="],
+
+    "@krak-stack/notifications": ["@krak-stack/notifications@workspace:packages/notifications"],
 
     "@krak-stack/registry": ["@krak-stack/registry@workspace:packages/registry"],
 
@@ -719,6 +745,8 @@
     "@types/estree": ["@types/estree@1.0.9", "", {}, "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg=="],
 
     "@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
+
+    "@types/nodemailer": ["@types/nodemailer@8.0.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-PxpaInm8V1JQDd4j0ds5HfvWQk8JupS1C0Picb96QJsrrRDjBH+DlK7L4ZdNSqNULhiZRQHc40nLVShaGxXAMw=="],
 
     "@types/pg": ["@types/pg@8.20.0", "", { "dependencies": { "@types/node": "*", "pg-protocol": "*", "pg-types": "^2.2.0" } }, "sha512-bEPFOaMAHTEP1EzpvHTbmwR8UsFyHSKsRisLIHVMXnpNefSbGA1bD6CVy+qKjGSqmZqNqBDV2azOBo8TgkcVow=="],
 
@@ -1267,6 +1295,8 @@
     "node-gyp-build-optional-packages": ["node-gyp-build-optional-packages@5.2.2", "", { "dependencies": { "detect-libc": "^2.0.1" }, "bin": { "node-gyp-build-optional-packages": "bin.js", "node-gyp-build-optional-packages-optional": "optional.js", "node-gyp-build-optional-packages-test": "build-test.js" } }, "sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw=="],
 
     "node-releases": ["node-releases@2.0.48", "", {}, "sha512-1uz8041X6LoI6ZSdZacM9lVY28vuzDlSKitnpbSNK0RfKoIJkX29NBPVEFXhnuSuEOA9Ww0xnPJ+ILWbGAv8DA=="],
+
+    "nodemailer": ["nodemailer@9.0.6", "", {}, "sha512-IQUGFdhdGwI9+AWX+FpUt4DLmvFaOjTMEoneTIWX/RXxuy1TdenPwWrvFMSfLkPKl+HQEXWuSAxEMMbPYXtBmg=="],
 
     "npm-run-path": ["npm-run-path@6.0.0", "", { "dependencies": { "path-key": "^4.0.0", "unicorn-magic": "^0.3.0" } }, "sha512-9qny7Z9DsQU8Ou39ERsPU4OZQlSTP47ShQzuKZ6PRXpYLtIFgl/DEBYEXKlvcEa+9tHVcK8CF81Y2V72qaZhWA=="],
 

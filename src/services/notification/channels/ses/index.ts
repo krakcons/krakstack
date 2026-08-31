@@ -9,12 +9,15 @@ import { Config, Context, Effect, Layer, Redacted, Schema } from "effect";
 
 import type { Json } from "effect/Schema";
 
-import { type NotificationChannel, type NotificationMessage } from "..";
-import { NotificationSendError } from "../../schema";
+import {
+  type NotificationChannel,
+  type NotificationMessage,
+} from "../index.js";
+import { NotificationSendError } from "../../schema.js";
 
-import { SesEmailNotification } from "./schema";
+import { SesEmailNotification } from "./schema.js";
 
-declare module ".." {
+declare module "../index.js" {
   interface NotificationChannels {
     readonly email: SesEmailNotification;
   }
