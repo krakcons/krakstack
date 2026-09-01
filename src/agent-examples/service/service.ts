@@ -1,122 +1,78 @@
 import { Context, Effect, Layer } from "effect";
+import { SqlClient, SqlSchema } from "effect/unstable/sql";
 
-import type {
-  CreateExamplePayload,
-  Example,
-  UpdateExamplePayload,
+import {
+  CreateExampleRequest,
+  ExampleSchema,
+  FindExampleRequest,
+  FindExamplesRequest,
+  UpdateExampleRequest,
 } from "./schema";
 
-export interface ExamplesService {
-  readonly list: (input: {
-    userId: string;
-  }) => Effect.Effect<ReadonlyArray<Example>>;
-  readonly get: (input: {
-    userId: string;
-    id: string;
-  }) => Effect.Effect<Example | undefined>;
-  readonly create: (input: {
-    userId: string;
-    payload: CreateExamplePayload;
-  }) => Effect.Effect<Example>;
-  readonly update: (input: {
-    userId: string;
-    id: string;
-    payload: UpdateExamplePayload;
-  }) => Effect.Effect<Example | undefined>;
-  readonly delete: (input: {
-    userId: string;
-    id: string;
-  }) => Effect.Effect<Example | undefined>;
-}
-
-export class Examples extends Context.Service<Examples, ExamplesService>()(
+export class Examples extends Context.Service<Examples>()(
   "agent-examples/Examples",
   {
     make: Effect.gen(function* () {
-      const records = new Map<string, Example>();
+      const sql = yield* SqlClient.SqlClient;
 
-      const list = Effect.fn("Examples.list")(function* ({
-        userId,
-      }: {
-        userId: string;
-      }) {
-        return Array.from(records.values()).filter(
-          (example) => example.userId === userId,
-        );
+      const find = SqlSchema.findAll({
+        Request: FindExamplesRequest,
+        Result: ExampleSchema,
+        execute: ({ userId }) => sql`
+          SELECT id, user_id, name, description, active, created_at, updated_at
+          FROM examples
+          WHERE user_id = ${userId}
+          ORDER BY created_at
+        `,
       });
 
-      const get = Effect.fn("Examples.get")(function* ({
-        userId,
-        id,
-      }: {
-        userId: string;
-        id: string;
-      }) {
-        const example = records.get(id);
-        return example?.userId === userId ? example : undefined;
+      const findOne = SqlSchema.findOneOption({
+        Request: FindExampleRequest,
+        Result: ExampleSchema,
+        execute: ({ userId, id }) => sql`
+          SELECT id, user_id, name, description, active, created_at, updated_at
+          FROM examples
+          WHERE id = ${id} AND user_id = ${userId}
+          LIMIT 1
+        `,
       });
 
-      const create = Effect.fn("Examples.create")(function* ({
-        userId,
-        payload,
-      }: {
-        userId: string;
-        payload: CreateExamplePayload;
-      }) {
-        const now = new Date();
-        const example: Example = {
-          id: crypto.randomUUID(),
-          userId,
-          name: payload.name,
-          description: payload.description ?? null,
-          active: true,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        records.set(example.id, example);
-        return example;
+      const create = SqlSchema.findOne({
+        Request: CreateExampleRequest,
+        Result: ExampleSchema,
+        execute: ({ userId, payload }) => sql`
+          INSERT INTO examples (user_id, name, description)
+          VALUES (${userId}, ${payload.name}, ${payload.description ?? null})
+          RETURNING id, user_id, name, description, active, created_at, updated_at
+        `,
       });
 
-      const update = Effect.fn("Examples.update")(function* ({
-        userId,
-        id,
-        payload,
-      }: {
-        userId: string;
-        id: string;
-        payload: UpdateExamplePayload;
-      }) {
-        const example = records.get(id);
-        if (!example || example.userId !== userId) return undefined;
-
-        const updated: Example = {
-          ...example,
-          ...payload,
-          description: payload.description ?? example.description,
-          updatedAt: new Date(),
-        };
-        records.set(id, updated);
-        return updated;
+      const update = SqlSchema.findOneOption({
+        Request: UpdateExampleRequest,
+        Result: ExampleSchema,
+        execute: ({ userId, id, payload }) => sql`
+          UPDATE examples
+          SET ${sql.update({ ...payload, updatedAt: new Date() })}
+          WHERE id = ${id} AND user_id = ${userId}
+          RETURNING id, user_id, name, description, active, created_at, updated_at
+        `,
       });
 
-      const deleteExample = Effect.fn("Examples.delete")(function* ({
-        userId,
-        id,
-      }: {
-        userId: string;
-        id: string;
-      }) {
-        const example = records.get(id);
-        if (!example || example.userId !== userId) return undefined;
-
-        records.delete(id);
-        return example;
+      const remove = SqlSchema.findOneOption({
+        Request: FindExampleRequest,
+        Result: ExampleSchema,
+        execute: ({ userId, id }) => sql`
+          DELETE FROM examples
+          WHERE id = ${id} AND user_id = ${userId}
+          RETURNING id, user_id, name, description, active, created_at, updated_at
+        `,
       });
 
-      return { list, get, create, update, delete: deleteExample };
+      return { find, findOne, create, update, delete: remove };
     }),
   },
 ) {
-  static readonly layer = Layer.effect(this, this.make);
+  static readonly baseLayer = Layer.effect(this, this.make);
+
+  static readonly layer = this.baseLayer;
 }

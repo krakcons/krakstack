@@ -41,7 +41,7 @@ The application is divided into two areas: frontend and backend.
 ### Backend
 
 - Effect application services.
-- Effect Postgres and Drizzle ORM for database access.
+- Effect Postgres with `SqlClient` and `SqlSchema` for database access.
 - Effect HttpApi, HttpServer, OpenAPI, and OpenTelemetry for API and runtime concerns.
 - Effect durable workflows for long-running, retryable, or resumable orchestration.
 
@@ -52,7 +52,7 @@ The application is divided into two areas: frontend and backend.
 - `tmp/` contains local temporary files that should not be committed.
 - `src/components/` contains React components.
 - `src/components/ui/` contains shadcn-managed primitives. Do not edit directly.
-- `src/db/` contains Drizzle schema definitions.
+- `src/db/` contains the Effect SQL migrator and versioned SQL migrations.
 - `src/hooks/` contains shared React hooks.
 - `src/lib/` contains shared utilities.
 - `src/messages/` contains i18n source files.
@@ -72,6 +72,7 @@ The application is divided into two areas: frontend and backend.
 - Annotate schemas with `.annotate({ identifier: "Name" })`.
 - Use `Schema.toStandardSchemaV1(...)` when integrating Effect schemas with form validators.
 - Use `Effect.fn` for service methods when practical.
+- Expose `SqlSchema` operations directly when they already provide the complete service method; do not add pass-through `Effect.fn` wrappers.
 - Add OpenTelemetry through Effect runtime patterns where relevant.
 
 ## Schema
@@ -100,6 +101,18 @@ A typical service should use this structure:
 - `src/services/<name>/client/table.tsx` defines data tables and row actions.
 
 Service methods should accept object inputs, scope by the current user or tenant where applicable, and avoid exposing cross-tenant data.
+
+## Database
+
+- Depend directly on `SqlClient.SqlClient` in persistence services instead of wrapping it in an application database service.
+- Define reusable SQL request and result schemas in the service's `schema.ts`, then use `SqlSchema.findAll`, `findOne`, or `findOneOption` for request encoding, result decoding, and row cardinality.
+- Prefer explicit Effect schemas for straightforward select, create, and update representations. Introduce `Model.Class` only when database, insert, update, and JSON variants differ enough to justify it.
+- Write parameterized SQL explicitly and include the current user or tenant in every applicable read, update, and delete predicate.
+- Do not use an ID-only generated repository for tenant-owned records when it cannot enforce the tenant predicate.
+- Define database-agnostic migration loaders with `Migrator.fromRecord(...)` and write their effects against `SqlClient.SqlClient`.
+- Prefer the generic `Migrator` and `SqlClient` APIs when no PostgreSQL-specific capability is needed. Use `PgMigrator`, `PgClient`, or another dialect module only for its runner, layer, or dialect-specific behavior.
+- Run PostgreSQL migration loaders through `PgMigrator.run(...)` during application layer acquisition before dependent services are exposed.
+- Treat migration names and completed migrations as compatibility boundaries. Add a new migration instead of editing one that may have run in another environment.
 
 ## Workflows
 
@@ -141,10 +154,9 @@ Use Effect durable workflows for operations that must survive interruption, retr
 - Backend and service tests must use the real Postgres test database through `TEST_DATABASE_URL`.
 - Never point tests at `DATABASE_URL`.
 - The test database is provided externally. Set `TEST_DATABASE_URL` in `.env` or the shell before DB tests.
-- Expose service `testLayer`s for tests, backed by `DB.testLayer` where database access is needed.
+- Provide services with a PostgreSQL client layer configured from `TEST_DATABASE_URL`.
 - Run migrations against the test database before DB tests and reset affected tables between tests.
-- Use Drizzle queries for test setup and cleanup where possible.
-- Avoid raw SQL unless a migration or lifecycle task requires it.
+- Use the same `SqlClient` and parameterized SQL for test setup and cleanup.
 
 ## End-to-End Testing
 
@@ -180,6 +192,7 @@ Before implementing or substantially refactoring one of the areas below, read th
 | --------------------- | ------------------------------------------- |
 | Effect service        | `src/agent-examples/service/service.ts`     |
 | Effect schemas        | `src/agent-examples/service/schema.ts`      |
+| Effect SQL migrations | `src/agent-examples/database/migrations.ts` |
 | Durable workflows     | `src/agent-examples/service/workflows.ts`   |
 | Workflow engine layer | `src/services/workflow.ts`                  |
 | HttpApi contract      | `src/agent-examples/service/api.group.ts`   |

@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 import { Activity, Workflow } from "effect/unstable/workflow";
 
-import { ExampleSchema } from "./schema";
+import { ExamplePersistenceError, ExampleSchema } from "./schema";
 import { Examples } from "./service";
 
 export const CreateExampleV1 = Workflow.make("CreateExampleV1", {
@@ -12,6 +12,7 @@ export const CreateExampleV1 = Workflow.make("CreateExampleV1", {
     description: Schema.optional(Schema.String),
   },
   success: ExampleSchema,
+  error: ExamplePersistenceError,
   idempotencyKey: ({ requestId }) => requestId,
 });
 
@@ -23,10 +24,13 @@ export const examplesWorkflowLayer = CreateExampleV1.toLayer(
       return yield* Activity.make({
         name: "PersistExampleV1",
         success: ExampleSchema,
-        execute: examples.create({
-          userId,
-          payload: { name, description },
-        }),
+        error: ExamplePersistenceError,
+        execute: examples
+          .create({
+            userId,
+            payload: { name, description },
+          })
+          .pipe(Effect.mapError((error) => ({ message: String(error) }))),
       });
     }),
 );

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
 import { AuthService } from "@krak-stack/auth/server";
 
@@ -18,7 +18,7 @@ export const examplesHandler = HttpApiBuilder.group(
           const auth = yield* AuthService;
           const session = yield* auth.requireUser();
           return yield* examples
-            .list({ userId: session.user.id })
+            .find({ userId: session.user.id })
             .pipe(Effect.mapError(internalServerError));
         }),
       )
@@ -28,12 +28,14 @@ export const examplesHandler = HttpApiBuilder.group(
           const auth = yield* AuthService;
           const session = yield* auth.requireUser();
           const example = yield* examples
-            .get({ userId: session.user.id, id: params.id })
+            .findOne({ userId: session.user.id, id: params.id })
             .pipe(Effect.mapError(internalServerError));
 
-          if (!example) return yield* new HttpApiError.NotFound({});
+          if (Option.isNone(example)) {
+            return yield* new HttpApiError.NotFound({});
+          }
 
-          return example;
+          return example.value;
         }),
       )
       .handle("createExample", ({ payload }) =>
@@ -55,9 +57,11 @@ export const examplesHandler = HttpApiBuilder.group(
             .update({ userId: session.user.id, id: params.id, payload })
             .pipe(Effect.mapError(internalServerError));
 
-          if (!example) return yield* new HttpApiError.NotFound({});
+          if (Option.isNone(example)) {
+            return yield* new HttpApiError.NotFound({});
+          }
 
-          return example;
+          return example.value;
         }),
       )
       .handle("deleteExample", ({ params }) =>
@@ -69,9 +73,11 @@ export const examplesHandler = HttpApiBuilder.group(
             .delete({ userId: session.user.id, id: params.id })
             .pipe(Effect.mapError(internalServerError));
 
-          if (!example) return yield* new HttpApiError.NotFound({});
+          if (Option.isNone(example)) {
+            return yield* new HttpApiError.NotFound({});
+          }
 
-          return example;
+          return example.value;
         }),
       ),
 );
