@@ -52,7 +52,8 @@ The application is divided into two areas: frontend and backend.
 - `tmp/` contains local temporary files that should not be committed.
 - `src/components/` contains React components.
 - `src/components/ui/` contains shadcn-managed primitives. Do not edit directly.
-- `src/db/` contains the Effect SQL migrator and versioned SQL migrations.
+- `src/db/` contains the Effect SQL migration runner.
+- `src/db/migrations/` contains versioned SQL migrations.
 - `src/hooks/` contains shared React hooks.
 - `src/lib/` contains shared utilities.
 - `src/messages/` contains i18n source files.
