@@ -14,6 +14,7 @@ import { afterEach, vi } from "vitest";
 import {
   DataTable,
   DataTableListSummary,
+  DataTableRelationshipCell,
   buildDataTableRows,
   filterDataTableRows,
   getDataTableWidth,
@@ -30,6 +31,7 @@ import {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   localStorage.clear();
 });
 
@@ -61,6 +63,50 @@ const state: DataTablePublicState = {
 };
 
 describe("DataTable model", () => {
+  it("edits relationships without activating the containing row", async () => {
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
+    const onRowClicked = vi.fn();
+    const onAdd = vi.fn();
+    const onRemove = vi.fn();
+    render(
+      <DataTable
+        columnDefs={[
+          { field: "name", headerName: "Name" },
+          {
+            colId: "relationships",
+            headerName: "Collections",
+            cellRenderer: () => (
+              <DataTableRelationshipCell
+                emptyLabel="No collections"
+                manageLabel="Manage collections"
+                onAdd={onAdd}
+                onRemove={onRemove}
+                options={[{ value: "collection", label: "Collection" }]}
+                value={[]}
+              />
+            ),
+          },
+        ]}
+        rowData={[data[0]]}
+        onRowClicked={onRowClicked}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("combobox", { name: "" }));
+    const option = await screen.findByRole("option", { name: "Collection" });
+    expect(onRowClicked).not.toHaveBeenCalled();
+    fireEvent.click(option);
+    expect(onAdd).toHaveBeenCalledWith("collection");
+    expect(onRowClicked).not.toHaveBeenCalled();
+    fireEvent.click(option);
+    expect(onRemove).toHaveBeenCalledWith("collection");
+    expect(onRowClicked).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("Alpha"));
+    expect(onRowClicked).toHaveBeenCalledWith(data[0]);
+  });
+
   it("requires stable row IDs for stateful row features", () => {
     expect(() =>
       render(

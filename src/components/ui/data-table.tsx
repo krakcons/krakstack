@@ -1766,7 +1766,7 @@ const TableDataRow = <TData extends RowData>({
       {model.visibleColumns.map((column) => (
         <TableCell
           className={cn(
-            "min-w-24 overflow-hidden",
+            "min-w-24 overflow-hidden has-[[data-slot=data-table-relationship-cell]]:relative has-[[data-slot=data-table-relationship-cell]]:p-0",
             column.colDef.truncate ? "whitespace-nowrap" : "whitespace-normal",
           )}
           key={column.id}
@@ -2601,43 +2601,50 @@ export const DataTableRelationshipCell = ({
   useLayoutEffect(() => setSelected([...value]), [value]);
   const selectedValues = new Set(selected.map((item) => item.value));
   return (
-    <VirtualizedCombobox
-      ariaLabel={manageLabel}
-      emptyLabel={emptyLabel}
-      items={[...options].sort(
-        (left, right) =>
-          Number(selectedValues.has(right.value)) -
-          Number(selectedValues.has(left.value)),
-      )}
-      messages={{ search: manageLabel }}
-      multiple
-      onValueChange={(next) => {
-        const nextValues = new Set(next.map((item) => item.value));
-        selected.forEach(
-          (item) => !nextValues.has(item.value) && onRemove?.(item.value),
-        );
-        next.forEach(
-          (item) => !selectedValues.has(item.value) && onAdd?.(item.value),
-        );
-        setSelected(next);
-      }}
-      placeholder={emptyLabel}
-      trigger={
-        <Button
-          className="h-full min-h-16 w-full justify-between rounded-none"
-          variant="ghost"
-        >
-          <DataTableListSummary
-            emptyLabel={emptyLabel}
-            expandable={false}
-            items={selected}
-            variant={selected.some((item) => item.icon) ? "icon" : "text"}
-          />
-          <ChevronDown />
-        </Button>
-      }
-      value={selected}
-    />
+    <div
+      data-slot="data-table-relationship-cell"
+      className="h-full in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <VirtualizedCombobox
+        ariaLabel={manageLabel}
+        emptyLabel={emptyLabel}
+        items={[...options].sort(
+          (left, right) =>
+            Number(selectedValues.has(right.value)) -
+            Number(selectedValues.has(left.value)),
+        )}
+        messages={{ search: manageLabel }}
+        multiple
+        onValueChange={(next) => {
+          const nextValues = new Set(next.map((item) => item.value));
+          selected.forEach(
+            (item) => !nextValues.has(item.value) && onRemove?.(item.value),
+          );
+          next.forEach(
+            (item) => !selectedValues.has(item.value) && onAdd?.(item.value),
+          );
+          setSelected(next);
+        }}
+        placeholder={emptyLabel}
+        trigger={
+          <Button
+            className="h-full min-h-16 w-full justify-between rounded-none"
+            variant="ghost"
+          >
+            <DataTableListSummary
+              emptyLabel={emptyLabel}
+              expandable={false}
+              items={selected}
+              variant={selected.some((item) => item.icon) ? "icon" : "text"}
+            />
+            <ChevronDown />
+          </Button>
+        }
+        value={selected}
+      />
+    </div>
   );
 };
 
