@@ -82,6 +82,7 @@ export const SortParamsFromString = Schema.String.pipe(
     Schema.Array(SortParam),
     SchemaTransformation.transformOrFail<ReadonlyArray<SortParam>, string>({
       decode: (sort) => {
+        if (sort === "") return Effect.succeed([]);
         const parts = sort.split(",");
         const sortParams: SortParam[] = [];
 
@@ -124,6 +125,22 @@ export const SortParamsFromString = Schema.String.pipe(
   }),
 );
 
+const SortParamsArray = Schema.Array(SortParam);
+
+export const SortParams = Schema.declare(Schema.is(SortParamsArray), {
+  identifier: "SortParams",
+  toCodec: () =>
+    Schema.link<ReadonlyArray<SortParam>>()(
+      SortParamsArray,
+      SchemaTransformation.passthrough(),
+    ),
+  toCodecStringTree: () =>
+    Schema.link<ReadonlyArray<SortParam>>()(
+      SortParamsFromString,
+      SchemaTransformation.passthrough(),
+    ),
+});
+
 export const Query = Schema.Struct({
   page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(0)),
@@ -132,7 +149,7 @@ export const Query = Schema.Struct({
     Schema.isBetween({ minimum: 1, maximum: 100 }),
   ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
   globalFilter: Schema.optional(Schema.String),
-  sort: Schema.optional(Schema.Array(SortParam)),
+  sort: Schema.optional(SortParams),
 }).annotate({
   identifier: "Query",
   title: "Query",
@@ -174,7 +191,7 @@ export const PaginationMeta = Schema.Struct({
 
 export type PaginationMetaType = typeof PaginationMeta.Type;
 
-export const PaginatedResponse = <A>(items: Schema.Schema<A>) =>
+export const PaginatedResponse = <A extends Schema.Top>(items: A) =>
   Schema.Struct({
     data: Schema.Array(items),
     meta: PaginationMeta,
