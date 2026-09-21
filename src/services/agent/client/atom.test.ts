@@ -16,6 +16,10 @@ const initial: AgentState = {
 };
 
 describe("agent client state", () => {
+  it("ignores heartbeats without changing conversation or pending state", () => {
+    expect(reduceAgentEvent(initial, { type: "heartbeat" })).toBe(initial);
+  });
+
   it("reduces streamed message and approval events", () => {
     const started = reduceAgentEvent(initial, {
       type: "message-start",

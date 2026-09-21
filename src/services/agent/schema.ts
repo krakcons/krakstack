@@ -84,6 +84,7 @@ export const AgentMarkdownCodeBlock = Schema.Struct({
 }).annotate({ identifier: "AgentMarkdownCodeBlock" });
 
 export const AgentEvent = Schema.Union([
+  Schema.Struct({ type: Schema.Literal("heartbeat") }),
   Schema.Struct({
     type: Schema.Literal("message-start"),
     messageId: Schema.String,

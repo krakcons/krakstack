@@ -168,6 +168,7 @@ export const reduceAgentEvent = <Resource>(
       return { ...state, history: event.value };
     case "error":
       return failAgentState(state, event.code);
+    case "heartbeat":
     case "finish":
       return state;
   }

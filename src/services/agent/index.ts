@@ -340,6 +340,17 @@ export class AgentService extends Context.Service<AgentService>()(
         return Stream.concat(
           Stream.succeed<AgentEvent>({ type: "message-start", messageId }),
           response,
+        ).pipe(
+          // Keep the HTTP connection active while the model or tools are quiet.
+          // The timer is cancelled when the response ends, fails, or is interrupted.
+          Stream.merge(
+            Stream.tick("5 seconds").pipe(
+              Stream.drop(1),
+              Stream.map((): AgentEvent => ({ type: "heartbeat" })),
+            ),
+            { haltStrategy: "left" },
+          ),
+          Stream.takeUntil((event) => event.type === "finish"),
         );
       });
 
