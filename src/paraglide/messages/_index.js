@@ -2,6 +2,9 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Error_Preview_TitleInputs */
+/** @typedef {{}} Error_Preview_DescriptionInputs */
+/** @typedef {{}} Error_Preview_MessageInputs */
 /** @typedef {{}} Home_PageInputs */
 /** @typedef {{}} About_PageInputs */
 /** @typedef {{}} Example_MessageInputs */
@@ -119,6 +122,48 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Error Component" |
+*
+* @param {Error_Preview_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const error_preview_title = /** @type {((inputs?: Error_Preview_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Error_Preview_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.error_preview_title(inputs)
+	return __fr.error_preview_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Copy a sample error report or try a full page refresh. The home link returns to the site homepage." |
+*
+* @param {Error_Preview_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const error_preview_description = /** @type {((inputs?: Error_Preview_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Error_Preview_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.error_preview_description(inputs)
+	return __fr.error_preview_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "We couldn't load this example. Try refreshing the page, or copy the error details to share with support." |
+*
+* @param {Error_Preview_MessageInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const error_preview_message = /** @type {((inputs?: Error_Preview_MessageInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Error_Preview_MessageInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.error_preview_message(inputs)
+	return __fr.error_preview_message(inputs)
+});
 /**
 * | output |
 * | --- |

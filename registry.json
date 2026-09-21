@@ -4,6 +4,32 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "error-component",
+      "type": "registry:component",
+      "title": "Error Component",
+      "description": "A shared TanStack Router error page with localized messages, hard refresh, home navigation, and copyable error details.",
+      "meta": { "createdAt": "2026-09-21", "updatedAt": "2026-09-21" },
+      "docs": "## Overview\n\n`ErrorComponent` is a domain-neutral TanStack Router error page for standard and Effect errors. Domain code owns error classification and localized messages. English and French defaults use Paraglide's `getLocale`; no application wrapper is required. Optional partial `messages` override individual labels.\n\n## Setup\n\n```tsx\nimport { ErrorComponent } from \"@/components/ui/error-component\";\n\nconst router = createRouter({ routeTree, defaultErrorComponent: ErrorComponent });\nexport const Route = createRootRoute({ errorComponent: ErrorComponent });\n```\n\nRetry calls `window.location.reload()` for a full document refresh. Home navigation uses TanStack Router's `/` link, including locale rewrites. Set `retryable={false}` to hide retry. Blank messages use the localized fallback description.\n\n## Copy Error Details\n\nThe copy action includes the error name, displayed message, page pathname, capture timestamp, and locale. Clipboard failures reveal selectable text. Raw causes, request headers, URL query strings, fragments, and stack traces are not appended. Error messages are application-owned text and should be suitable for sharing.\n\nFor Effect HTTP errors, `Reference` is automatically extracted from the failed request's existing trace headers using `HttpTraceContext.fromHeaders`. W3C `traceparent`, compact `b3`, and multi-header B3 are supported. Wrapped errors are followed through their standard `cause` chain, with cycle protection. Missing or invalid trace IDs are omitted. The component never generates a new ID.\n\nOptional `diagnostics` fields add app name and release version. An explicit `reference` overrides automatic trace extraction:\n\n```tsx\n<ErrorComponent {...props} diagnostics={{ app: \"Kokobi\", version: releaseVersion }} />\n```\n\nUsers can paste the report into their support channel and the reference can be searched in tracing tools.\n\n## Effect Boundaries\n\nMap transport failures to meaningful localized domain errors while preserving the original error in `cause`. This retains the HTTP request and its automatically propagated trace ID. At promise-based router boundaries, use `Effect.runPromiseExit` and throw `Cause.squash(exit.cause)` on failure. No custom display-error class is required. Errors that discard the original HTTP error cannot supply its trace ID automatically.\n\nThe package exports `ErrorComponent`, `ErrorComponentProps`, and `ErrorComponentMessages` from `@krak-stack/registry/error-component`.",
+      "files": [
+        {
+          "path": "src/components/ui/error-component.tsx",
+          "type": "registry:component",
+          "target": "components/ui/error-component.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "button",
+        "empty",
+        "textarea",
+        "@krak-stack/copy-button"
+      ],
+      "dependencies": [
+        "@tanstack/react-router",
+        "effect@4.0.0-rc.112",
+        "lucide-react"
+      ]
+    },
+    {
       "name": "search-menu",
       "type": "registry:block",
       "title": "Search Menu",

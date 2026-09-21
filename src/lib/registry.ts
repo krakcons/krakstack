@@ -72,6 +72,7 @@ export function getRegistryGroup(item: RegistryItem) {
   if (
     [
       "copy-button",
+      "error-component",
       "file-picker",
       "google-map",
       "icon-input",

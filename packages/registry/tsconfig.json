@@ -28,6 +28,7 @@
     "../../src/components/ui/search-menu.tsx",
     "../../src/components/ui/app-brand.tsx",
     "../../src/components/ui/copy-button.tsx",
+    "../../src/components/ui/error-component.tsx",
     "../../src/components/ui/loading.tsx",
     "../../src/components/ui/google-map.tsx",
     "../../src/components/ui/icon-input.tsx",

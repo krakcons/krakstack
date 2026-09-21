@@ -1,5 +1,8 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "error_preview_title": "Composant d'erreur",
+  "error_preview_description": "Copiez un exemple de rapport d'erreur ou actualisez complètement la page. Le lien d'accueil retourne à la page d'accueil du site.",
+  "error_preview_message": "Nous n'avons pas pu charger cet exemple. Actualisez la page ou copiez les détails de l'erreur pour les transmettre au support.",
   "home_page": "Page d'accueil",
   "about_page": "Page À propos",
   "example_message": "Bienvenue dans votre application i18n.",

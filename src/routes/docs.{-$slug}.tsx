@@ -32,6 +32,14 @@ import {
 
 const registryPreviews = new Map<string, LazyExoticComponent<ComponentType>>([
   [
+    "error-component",
+    lazy(() =>
+      import("@/components/registry-previews/error-component-preview").then(
+        ({ ErrorComponentPreview }) => ({ default: ErrorComponentPreview }),
+      ),
+    ),
+  ],
+  [
     "data-table",
     lazy(() =>
       import("@/components/registry-previews/data-table-preview").then(

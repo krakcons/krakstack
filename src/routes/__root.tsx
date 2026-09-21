@@ -6,10 +6,12 @@ import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 
 import appCss from "../styles.css?url";
+import { ErrorComponent } from "@/components/ui/error-component";
 
 const analyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
 
 export const Route = createRootRoute({
+  errorComponent: ErrorComponent,
   head: () => ({
     meta: [
       {

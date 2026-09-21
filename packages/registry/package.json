@@ -99,6 +99,10 @@
       "types": "./dist/components/ui/effect-form.d.ts",
       "import": "./dist/components/ui/effect-form.js"
     },
+    "./error-component": {
+      "types": "./dist/components/ui/error-component.d.ts",
+      "import": "./dist/components/ui/error-component.js"
+    },
     "./file-picker": {
       "types": "./dist/components/ui/file-picker.d.ts",
       "import": "./dist/components/ui/file-picker.js"

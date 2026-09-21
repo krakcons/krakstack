@@ -1,5 +1,8 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "error_preview_title": "Error Component",
+  "error_preview_description": "Copy a sample error report or try a full page refresh. The home link returns to the site homepage.",
+  "error_preview_message": "We couldn't load this example. Try refreshing the page, or copy the error details to share with support.",
   "home_page": "Home page",
   "about_page": "About page",
   "example_message": "Welcome to your i18n app.",
