@@ -235,14 +235,13 @@
     "@tanstack/react-virtual": "^3.14.5",
     "@xberg-io/xberg": "1.0.14",
     "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "cn": "^0.3.0",
     "drizzle-orm": "^1.0.0-rc.4-5d5b77c",
     "effect": "4.0.0-rc.112",
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "tailwind-merge": "^3.6.0"
+    "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-sesv2": {
