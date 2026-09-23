@@ -14,7 +14,7 @@ import { afterEach, vi } from "vitest";
 import {
   DataTable,
   DataTableListSummary,
-  DataTableRelationshipCell,
+  DataTableListCell,
   buildDataTableRows,
   filterDataTableRows,
   getDataTableWidth,
@@ -104,7 +104,7 @@ describe("DataTable model", () => {
         ]}
       />,
     );
-    expect(screen.getByText("$1,234.50")).toBeTruthy();
+    expect(screen.getByText("$1,234.50").className).toContain("text-left");
     expect(screen.getByText("12.5%")).toBeTruthy();
     expect(screen.getByText("0,00")).toBeTruthy();
   });
@@ -236,6 +236,10 @@ describe("DataTable model", () => {
       />,
     );
     const editable = screen.getByRole("checkbox", { name: "Toggle editable" });
+    const toggleCell = editable.closest("[data-slot=data-table-boolean-cell]");
+    expect(toggleCell?.className).toContain("focus-within:ring-3");
+    expect(toggleCell?.className).toContain("focus-within:ring-inset");
+    expect(toggleCell?.className).not.toContain("focus-within:outline-2");
     fireEvent.click(editable);
     expect(onChange).toHaveBeenCalledExactlyOnceWith({
       value: true,
@@ -508,8 +512,7 @@ describe("DataTable model", () => {
     expect(screen.getByText("Custom cell")).toBeTruthy();
   });
 
-  it("runs list actions with item and row context without activating the row", async () => {
-    const onClick = vi.fn();
+  it("displays list icons without per-item buttons or action menus", () => {
     const onRowClicked = vi.fn();
     const member = { value: "ada", label: "Ada", imageSrc: "/ada.png" };
     render(
@@ -521,13 +524,8 @@ describe("DataTable model", () => {
             type: "list",
             typeOptions: {
               emptyLabel: "No members",
-              variant: "icon",
+              display: "icon",
               getItems: () => [member],
-              actions: [
-                { name: "Impersonate", onClick },
-                { name: "Hidden", onClick, visible: () => false },
-                { name: "Unavailable", onClick, disabled: () => true },
-              ],
             },
           },
         ]}
@@ -535,75 +533,202 @@ describe("DataTable model", () => {
         onRowClicked={onRowClicked}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Ada" }));
-    const action = await screen.findByRole("menuitem", { name: "Impersonate" });
-    expect(screen.queryByRole("menuitem", { name: "Hidden" })).toBeNull();
-    const disabled = screen.getByRole("menuitem", { name: "Unavailable" });
-    expect(disabled.getAttribute("aria-disabled")).toBe("true");
-    fireEvent.click(disabled);
-    expect(onClick).not.toHaveBeenCalled();
-    fireEvent.click(action);
-    expect(onClick).toHaveBeenCalledWith({ item: member, row: data[0] });
-    expect(onRowClicked).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Ada" })).toBeNull();
+    expect(
+      screen.getByLabelText("Ada").querySelector("[aria-hidden=true]")
+        ?.className,
+    ).toContain("text-secondary-foreground");
+    fireEvent.click(screen.getByLabelText("Ada"));
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(onRowClicked).toHaveBeenCalledWith(data[0]);
   });
 
-  it("offers item actions in the overflow list", async () => {
-    const onClick = vi.fn();
-    render(
-      <DataTableListSummary
-        emptyLabel="Empty"
-        variant="icon"
-        visibleCount={1}
-        items={[
-          { value: "ada", label: "Ada" },
-          { value: "grace", label: "Grace" },
-        ]}
-        itemActions={[{ name: "Open", onClick }]}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "and 1 other" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Grace" }));
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Open" }));
-    expect(onClick).toHaveBeenCalledWith({ value: "grace", label: "Grace" });
-  });
-
-  it("keeps relationship item actions separate from the relationship picker", async () => {
-    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
-    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
-    const onAdd = vi.fn();
-    const onClick = vi.fn();
+  it("opens item actions from an explicit roster without activating the row", async () => {
+    const onAction = vi.fn();
     const onRowClicked = vi.fn();
-    const ada = { value: "ada", label: "Ada" };
-    const grace = { value: "grace", label: "Grace" };
+    const member = { value: "ada", label: "Ada" };
     render(
       <DataTable
         columnDefs={[
           {
             colId: "members",
             headerName: "Members",
-            type: "relationship",
+            type: "list",
             typeOptions: {
-              emptyLabel: "Empty",
-              manageLabel: "Manage members",
-              getItems: () => [ada],
-              getOptions: () => [ada, grace],
-              onAdd,
-              actions: [{ name: "Open", onClick }],
+              actionsLabel: "Member actions",
+              display: "icon",
+              emptyLabel: "No members",
+              getItems: () => [member],
+              itemActions: [
+                { name: "Impersonate", onClick: onAction },
+                { name: "Hidden", onClick: onAction, visible: () => false },
+                {
+                  name: "Ban",
+                  onClick: onAction,
+                  disabled: () => true,
+                  variant: "destructive",
+                },
+              ],
             },
           },
         ]}
+        onRowClicked={onRowClicked}
+        rowData={[data[0]]}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Ada" })).toBeNull();
+    const listTrigger = screen.getByRole("button", { name: "Member actions" });
+    expect(listTrigger.className).toContain("h-full");
+    expect(listTrigger.className).toContain("w-full");
+    expect(listTrigger.querySelector(".lucide-chevron-down")).toBeTruthy();
+    fireEvent.click(listTrigger);
+    expect(screen.queryByRole("menuitem", { name: "Impersonate" })).toBeNull();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Ada" }));
+    expect(screen.queryByRole("menuitem", { name: "Hidden" })).toBeNull();
+    expect(
+      screen
+        .getByRole("menuitem", { name: "Ban" })
+        .getAttribute("aria-disabled"),
+    ).toBe("true");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Impersonate" }));
+    expect(onAction).toHaveBeenCalledWith({ item: member, row: data[0] });
+    expect(onRowClicked).not.toHaveBeenCalled();
+  });
+
+  it("expands overflow into a read-only list", async () => {
+    render(
+      <DataTableListSummary
+        emptyLabel="Empty"
+        display="icon"
+        visibleCount={1}
+        items={[
+          { value: "ada", label: "Ada" },
+          { value: "grace", label: "Grace" },
+        ]}
+      />,
+    );
+    expect(screen.getByText("+1")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "View all items" }));
+    fireEvent.click(await screen.findByText("Grace"));
+    expect(screen.queryByRole("button", { name: "Grace" })).toBeNull();
+    expect(screen.getByRole("menu")).toBeTruthy();
+  });
+
+  it("edits an icon list through the cell picker with row context", async () => {
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
+    const onAdd = vi.fn();
+    const onAction = vi.fn();
+    const onRowAction = vi.fn();
+    const onRowClicked = vi.fn();
+    const ada = { value: "ada", label: "Ada" };
+    const grace = { value: "grace", label: "Grace" };
+    const hopper = { value: "hopper", label: "Hopper" };
+    render(
+      <DataTable
+        columnDefs={[
+          {
+            colId: "members",
+            headerName: "Members",
+            type: "list",
+            typeOptions: {
+              emptyLabel: "Empty",
+              actionsLabel: "Member actions",
+              display: "icon",
+              manageLabel: "Manage members",
+              getItems: () => [ada],
+              getOptions: () => [ada, grace, hopper],
+              onAdd,
+              itemActions: [{ name: "Impersonate", onClick: onAction }],
+            },
+          },
+        ]}
+        features={{
+          rowActions: {
+            items: [{ name: "Open row", onClick: onRowAction }],
+          },
+        }}
         rowData={[data[0]]}
         onRowClicked={onRowClicked}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Ada" }));
+    expect(screen.queryByRole("button", { name: "Ada" })).toBeNull();
+    const listTrigger = screen.getByRole("button", { name: "Manage members" });
+    expect(listTrigger.className).toContain("h-full");
+    expect(listTrigger.className).toContain("w-full");
+    expect(listTrigger.querySelector(".lucide-chevron-down")).toBeTruthy();
+    fireEvent.click(listTrigger);
     expect(screen.queryByRole("option")).toBeNull();
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Open" }));
-    expect(onClick).toHaveBeenCalledWith({ item: ada, row: data[0] });
-    fireEvent.click(screen.getByRole("combobox", { name: "Manage members" }));
-    fireEvent.click(await screen.findByRole("option", { name: "Grace" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Ada" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Impersonate" }));
+    expect(onAction).toHaveBeenCalledWith({ item: ada, row: data[0] });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open row" }));
+    expect(onRowAction).toHaveBeenCalledWith(data[0]);
+    expect(
+      screen.queryByRole("combobox", { name: "Manage members" }),
+    ).toBeNull();
+    fireEvent.click(listTrigger);
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Add item..." }),
+    );
+    const search = await screen.findByRole("textbox", {
+      name: "Manage members",
+    });
+    fireEvent.change(search, { target: { value: "gra" } });
+    expect(screen.queryByRole("menuitem", { name: "Hopper" })).toBeNull();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Grace" }));
     expect(onAdd).toHaveBeenCalledWith({ value: "grace", row: data[0] });
+    expect(listTrigger.getAttribute("aria-expanded")).toBe("true");
+    expect(
+      screen.getByRole("textbox", { name: "Manage members" }),
+    ).toBeTruthy();
     expect(onRowClicked).not.toHaveBeenCalled();
+  });
+
+  it("keeps lists read-only when no editing callbacks are supplied", () => {
+    render(
+      <DataTableListCell
+        emptyLabel="Empty"
+        manageLabel="Manage members"
+        items={[{ value: "ada", label: "Ada" }]}
+        options={[{ value: "ada", label: "Ada" }]}
+      />,
+    );
+    expect(screen.getByText("Ada")).toBeTruthy();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("supports add-only lists without removing existing selections", async () => {
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
+    const onAdd = vi.fn();
+    render(
+      <DataTableListCell
+        emptyLabel="Empty"
+        manageLabel="Manage members"
+        items={[{ value: "ada", label: "Ada" }]}
+        options={[
+          { value: "ada", label: "Ada" },
+          { value: "grace", label: "Grace" },
+        ]}
+        onAdd={onAdd}
+      />,
+    );
+    expect(
+      screen.queryByRole("combobox", { name: "Manage members" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Manage members" }));
+    expect(screen.getAllByText("Ada")).toHaveLength(2);
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Add item..." }),
+    );
+    expect(
+      await screen.findByRole("textbox", { name: "Manage members" }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Grace" }));
+    expect(onAdd).toHaveBeenCalledWith("grace");
   });
 
   it("uses list labels for searchable and sortable model values", () => {
@@ -631,7 +756,7 @@ describe("DataTable model", () => {
       ]).map((row) => row.data.id),
     ).toEqual(["two", "one"]);
   });
-  it("edits relationships without activating the containing row", async () => {
+  it("edits a standalone list without activating the containing row", async () => {
     vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
     const onRowClicked = vi.fn();
@@ -645,13 +770,13 @@ describe("DataTable model", () => {
             colId: "relationships",
             headerName: "Collections",
             cellRenderer: () => (
-              <DataTableRelationshipCell
+              <DataTableListCell
                 emptyLabel="No collections"
                 manageLabel="Manage collections"
                 onAdd={onAdd}
                 onRemove={onRemove}
                 options={[{ value: "collection", label: "Collection" }]}
-                value={[]}
+                items={[]}
               />
             ),
           },
@@ -661,16 +786,30 @@ describe("DataTable model", () => {
       />,
     );
 
+    const listTrigger = screen.getByRole("button", {
+      name: "Manage collections",
+    });
+    fireEvent.click(listTrigger);
+    expect(
+      screen
+        .getByRole("menu")
+        .querySelectorAll("[data-slot=dropdown-menu-separator]"),
+    ).toHaveLength(1);
     fireEvent.click(
-      screen.getByRole("combobox", { name: "Manage collections" }),
+      await screen.findByRole("menuitem", { name: "Add item..." }),
     );
-    const option = await screen.findByRole("option", { name: "Collection" });
+    const option = await screen.findByRole("menuitem", { name: "Collection" });
+    expect(option.querySelector(".rounded-full")).toBeNull();
     expect(onRowClicked).not.toHaveBeenCalled();
     fireEvent.click(option);
     expect(onAdd).toHaveBeenCalledWith("collection");
     expect(onRowClicked).not.toHaveBeenCalled();
-    fireEvent.click(option);
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Collection" }),
+    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
     expect(onRemove).toHaveBeenCalledWith("collection");
+    expect(listTrigger.getAttribute("aria-expanded")).toBe("true");
     expect(onRowClicked).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByText("Alpha"));
@@ -1119,10 +1258,11 @@ describe("DataTable model", () => {
       <DataTableListSummary
         emptyLabel="Empty"
         items={["Alpha", "Beta", "Gamma", "Delta"]}
-        variant="icon"
+        display="icon"
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "and 1 other" }));
+    expect(screen.getByText("+1")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "View all items" }));
     expect(await screen.findByText("Delta")).toBeTruthy();
   });
 

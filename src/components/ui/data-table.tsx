@@ -15,10 +15,12 @@ import {
   GripVertical,
   LayoutGrid,
   MoreHorizontal,
+  Plus,
   RefreshCw,
   Rows3,
   Search,
   Settings2,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -31,6 +33,7 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
+  type ReactElement,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -46,6 +49,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -71,11 +77,6 @@ import {
   paginationMessages,
   type PaginationMessages,
 } from "@/components/ui/pagination";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -91,7 +92,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
 import type { QueryType, SortDirection } from "@/lib/query";
 import { cn } from "@/lib/utils";
 import { getLocale } from "@/paraglide/runtime";
@@ -153,42 +153,79 @@ export interface DataTableListItem {
   value?: string;
 }
 
+export interface DataTableListOption extends DataTableListItem {
+  value: string;
+}
+
 export type DataTableItemAction<TItem> = DataTableRowAction<TItem> & {
+  closeOnClick?: boolean;
   disabled?: (item: TItem) => boolean;
 };
 
+export interface DataTableListItemContext<TData> {
+  item: DataTableListItem;
+  row: TData;
+}
+
 export interface DataTableListOptions {
   emptyLabel: ReactNode;
-  variant?: "icon" | "text";
+  display?: "list" | "icon";
   visibleCount?: number;
-  overflowLabel?: (remaining: number) => ReactNode;
 }
 
-export interface DataTableListColumn<TData> extends DataTableListOptions {
-  /** Map domain records to labels, stable values, and optional icons or image URLs. */
-  getItems: (row: TData) => readonly DataTableListItem[];
-  /** Includes items not loaded in the preview; the popover only shows supplied items. */
+export type DataTableListColumn<TData> = DataTableListOptions & {
+  /** Includes items not loaded in the preview; the dropdown only shows supplied items. */
   getTotalCount?: (row: TData) => number;
-  actions?: readonly DataTableItemAction<{
-    item: DataTableListItem;
-    row: TData;
-  }>[];
+  /** Actions open from an explicit roster button; list items remain passive. */
+  itemActions?: readonly DataTableItemAction<DataTableListItemContext<TData>>[];
+  actionsLabel?: string;
+} & (
+    | {
+        getItems: (row: TData) => readonly DataTableListItem[];
+        getOptions?: never;
+        manageLabel?: never;
+        onAdd?: never;
+        onRemove?: never;
+      }
+    | {
+        /** Editable lists require stable values for selected and available items. */
+        getItems: (row: TData) => readonly DataTableListOption[];
+        getOptions: (row: TData) => readonly DataTableListOption[];
+        manageLabel: string;
+        onAdd?: (input: { value: string; row: TData }) => void;
+        onRemove?: (input: { value: string; row: TData }) => void;
+      }
+  );
+
+export interface DataTableListSummaryProps extends DataTableListOptions {
+  items: readonly (string | DataTableListItem)[];
+  totalCount?: number | undefined;
 }
 
-export interface DataTableRelationshipColumn<
-  TData,
-> extends DataTableListOptions {
-  emptyLabel: string;
+interface EditableDataTableListCellProps extends DataTableListOptions {
   manageLabel: string;
-  getItems: (row: TData) => readonly DataTableRelationshipOption[];
-  getOptions: (row: TData) => readonly DataTableRelationshipOption[];
-  onAdd?: (input: { value: string; row: TData }) => void;
-  onRemove?: (input: { value: string; row: TData }) => void;
-  actions?: readonly DataTableItemAction<{
-    item: DataTableListItem;
-    row: TData;
-  }>[];
+  onAdd?: ((value: string) => void) | undefined;
+  onRemove?: ((value: string) => void) | undefined;
+  options: readonly DataTableListOption[];
+  items: readonly DataTableListOption[];
+  totalCount?: number | undefined;
 }
+
+interface DataTableListCellActionsProps {
+  actionsLabel?: string;
+  itemActions?: readonly DataTableItemAction<DataTableListItem>[];
+}
+
+export type DataTableListCellProps = DataTableListCellActionsProps &
+  (
+    | EditableDataTableListCellProps
+    | (DataTableListSummaryProps & {
+        options?: never;
+        manageLabel?: never;
+        onAdd?: never;
+        onRemove?: never;
+      })
+  );
 
 export interface DataTableDateOptions {
   /** Defaults to the current Paraglide locale. */
@@ -238,25 +275,21 @@ export interface DataTableBooleanOptions<TData> {
   disabled?: (row: TData) => boolean;
 }
 
+type DataTableColumnType<TData> =
+  | { type?: undefined; typeOptions?: never }
+  | DataTableDateType
+  | { type: "number"; typeOptions?: DataTableNumberOptions }
+  | { type: "boolean"; typeOptions?: DataTableBooleanOptions<TData> }
+  | { type: "list"; typeOptions: DataTableListColumn<TData> };
+
 export type DataTableColDef<TData extends RowData> =
-  DataTableBaseColDef<TData> &
-    (
-      | { type?: undefined; typeOptions?: never }
-      | DataTableDateType
-      | { type: "number"; typeOptions?: DataTableNumberOptions }
-      | { type: "boolean"; typeOptions?: DataTableBooleanOptions<TData> }
-      | { type: "list"; typeOptions: DataTableListColumn<TData> }
-      | {
-          type: "relationship";
-          typeOptions: DataTableRelationshipColumn<TData>;
-        }
-    );
+  DataTableBaseColDef<TData> & DataTableColumnType<TData>;
 
 export interface DataTableBaseColDef<TData extends RowData> {
   field?: keyof TData & string;
   colId?: string;
   headerName: ReactNode;
-  // List/relationship columns default to comma-separated labels for search,
+  // List columns default to comma-separated labels for search,
   // sorting, and export. Use comparator for count sorting while retaining labels.
   // A valueGetter explicitly overrides that model value; cellRenderer overrides display.
   // Cell value types are intentionally owned and narrowed by each consumer.
@@ -297,22 +330,9 @@ export type DataTableRowAction<TData> = {
   visible?: (data: TData) => boolean;
 };
 
-export type DataTableBulkAction<TData> = {
-  id?: string;
-  name: string;
-  icon?: ReactNode;
-  variant?: "default" | "destructive";
-  onClick: (rows: TData[]) => void;
-  visible?: (rows: TData[]) => boolean;
-};
+export type DataTableBulkAction<TData> = DataTableRowAction<TData[]>;
 
-export type DataTableGroupAction = {
-  name: string;
-  icon?: ReactNode;
-  variant?: "default" | "destructive";
-  onClick: (groupId: string) => void;
-  visible?: (groupId: string) => boolean;
-};
+export type DataTableGroupAction = Omit<DataTableRowAction<string>, "id">;
 
 export interface DataTableGroupingField<TData> {
   id: string;
@@ -373,6 +393,7 @@ export interface DataTableFeatures<TData> {
 
 export type DataTableMessages = PaginationMessages & {
   actions: string;
+  addItem: string;
   empty: string;
   loading: string;
   filter: string;
@@ -391,10 +412,11 @@ export type DataTableMessages = PaginationMessages & {
   sortBy: string;
   hideColumn: string;
   reorder: string;
+  removeItem: string;
   moveUp: string;
   moveDown: string;
   resizeColumn: (column: string) => string;
-  listOthers: (count: number) => string;
+  listDetails: string;
   selectAllRows: string;
   selectRow: string;
   selected: string;
@@ -406,6 +428,7 @@ const messages = {
   en: {
     ...paginationMessages("en"),
     actions: "Actions",
+    addItem: "Add item...",
     empty: "No results.",
     loading: "Loading...",
     filter: "Filter results...",
@@ -424,11 +447,11 @@ const messages = {
     sortBy: "Sort by",
     hideColumn: "Hide column",
     reorder: "Drag to reorder",
+    removeItem: "Remove",
     moveUp: "Move up",
     moveDown: "Move down",
     resizeColumn: (column: string) => `Resize ${column} column`,
-    listOthers: (count: number) =>
-      count === 1 ? "and 1 other" : `and ${count} others`,
+    listDetails: "View all items",
     selectAllRows: "Select all rows on this page",
     selectRow: "Select row",
     selected: "Selected",
@@ -436,6 +459,7 @@ const messages = {
   fr: {
     ...paginationMessages("fr"),
     actions: "Actions",
+    addItem: "Ajouter un élément...",
     empty: "Aucun résultat.",
     loading: "Chargement...",
     filter: "Filtrer les résultats...",
@@ -454,11 +478,11 @@ const messages = {
     sortBy: "Trier par",
     hideColumn: "Masquer la colonne",
     reorder: "Glisser pour réordonner",
+    removeItem: "Retirer",
     moveUp: "Déplacer vers le haut",
     moveDown: "Déplacer vers le bas",
     resizeColumn: (column: string) => `Redimensionner la colonne ${column}`,
-    listOthers: (count: number) =>
-      count === 1 ? "et 1 autre" : `et ${count} autres`,
+    listDetails: "Afficher tous les éléments",
     selectAllRows: "Sélectionner toutes les lignes de cette page",
     selectRow: "Sélectionner la ligne",
     selected: "Sélectionnés",
@@ -600,7 +624,7 @@ export const buildDataTableRows = <TData extends RowData>(
           const { colDef } = column;
           const value = colDef.valueGetter
             ? colDef.valueGetter({ data, rowId: id, rowIndex: index, colDef })
-            : colDef.type === "list" || colDef.type === "relationship"
+            : colDef.type === "list"
               ? colDef.typeOptions
                   .getItems(data)
                   .map((item) => item.label)
@@ -1231,7 +1255,7 @@ const renderCell = <TData extends RowData>(
     if (colDef.valueFormatter) return colDef.valueFormatter(params);
     const number = Option.getOrUndefined(decodeNumberValue(value));
     return (
-      <span className="block text-right tabular-nums">
+      <span className="block text-left tabular-nums">
         {number === undefined
           ? (colDef.typeOptions?.emptyLabel ?? "—")
           : formatNumberValue(number, colDef.typeOptions)}
@@ -1247,7 +1271,7 @@ const renderCell = <TData extends RowData>(
       <label
         data-slot="data-table-boolean-cell"
         className={cn(
-          "flex h-full min-h-16 w-full items-center justify-start px-2 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-ring in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0",
+          "flex min-h-16 w-full items-center justify-start border border-transparent px-2 outline-none focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 focus-within:ring-inset in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0 in-[[data-slot=table-cell]]:min-h-0",
           options?.onChange &&
             !options.disabled?.(row.data) &&
             "cursor-pointer hover:bg-muted/50",
@@ -1277,9 +1301,9 @@ const renderCell = <TData extends RowData>(
       (colDef.typeOptions?.emptyLabel ?? "—")
     );
   }
-  if (colDef.type === "list" || colDef.type === "relationship") {
+  if (colDef.type === "list") {
     const config = colDef.typeOptions;
-    const itemActions = config.actions?.map((action) => ({
+    const itemActions = config.itemActions?.map((action) => ({
       ...action,
       onClick: (item: DataTableListItem) =>
         action.onClick({ item, row: row.data }),
@@ -1288,27 +1312,33 @@ const renderCell = <TData extends RowData>(
       disabled: (item: DataTableListItem) =>
         action.disabled?.({ item, row: row.data }) ?? false,
     }));
-    if (colDef.type === "relationship") {
-      const relationship = colDef.typeOptions;
+    if (config.getOptions) {
       return (
-        <DataTableRelationshipCell
-          {...relationship}
+        <DataTableListCell
+          {...config}
           itemActions={itemActions}
-          value={relationship.getItems(row.data)}
-          options={relationship.getOptions(row.data)}
-          onAdd={(value) => relationship.onAdd?.({ value, row: row.data })}
-          onRemove={(value) =>
-            relationship.onRemove?.({ value, row: row.data })
+          items={config.getItems(row.data)}
+          options={config.getOptions(row.data)}
+          totalCount={config.getTotalCount?.(row.data)}
+          onAdd={
+            config.onAdd
+              ? (value: string) => config.onAdd?.({ value, row: row.data })
+              : undefined
+          }
+          onRemove={
+            config.onRemove
+              ? (value: string) => config.onRemove?.({ value, row: row.data })
+              : undefined
           }
         />
       );
     }
     return (
-      <DataTableListSummary
-        {...colDef.typeOptions}
-        items={colDef.typeOptions.getItems(row.data)}
+      <DataTableListCell
+        {...config}
         itemActions={itemActions}
-        totalCount={colDef.typeOptions.getTotalCount?.(row.data)}
+        items={config.getItems(row.data)}
+        totalCount={config.getTotalCount?.(row.data)}
       />
     );
   }
@@ -1845,6 +1875,11 @@ const ResizeHandle = <TData extends RowData>({
 }) => {
   const [store, setStore] = useTableAtom(tableAtom);
   const columnId = useRequiredId(ColumnIdContext);
+  const resizeRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
   const column = deriveModel(store).columns.find(({ id }) => id === columnId);
   if (!column || column.colDef.resizable === false) return null;
   const resize = (width: number) =>
@@ -1856,16 +1891,22 @@ const ResizeHandle = <TData extends RowData>({
       },
     }));
   const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    event.currentTarget.dataset.startX = String(event.clientX);
-    event.currentTarget.dataset.startWidth = String(column.width);
+    resizeRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startWidth: column.width,
+    };
   };
   const onPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    const startX = Number(event.currentTarget.dataset.startX);
-    const startWidth = Number(event.currentTarget.dataset.startWidth);
-    resize(startWidth + event.clientX - startX);
+    const drag = resizeRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    resize(drag.startWidth + event.clientX - drag.startX);
+  };
+  const reset = () => {
+    resizeRef.current = null;
   };
   return (
     <button
@@ -1874,7 +1915,7 @@ const ResizeHandle = <TData extends RowData>({
       aria-valuemax={column.colDef.maxWidth ?? DEFAULT_MAX_WIDTH}
       aria-valuemin={column.colDef.minWidth ?? DEFAULT_MIN_WIDTH}
       aria-valuenow={column.width}
-      className="hover:bg-primary/60 absolute inset-y-0 right-0 z-10 w-1 cursor-col-resize touch-none"
+      className="after:bg-border hover:after:bg-primary/60 focus-visible:after:bg-ring absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-3 after:right-0 after:w-px hover:after:w-0.5 focus-visible:after:w-0.5"
       onDoubleClick={() => resize(column.colDef.width ?? DEFAULT_WIDTH)}
       onKeyDown={(event) => {
         const delta =
@@ -1886,6 +1927,9 @@ const ResizeHandle = <TData extends RowData>({
       }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
+      onPointerUp={reset}
+      onPointerCancel={reset}
+      onLostPointerCapture={reset}
       role="separator"
       type="button"
     />
@@ -2150,7 +2194,7 @@ const TableDataRow = <TData extends RowData>({
       {model.visibleColumns.map((column) => (
         <TableCell
           className={cn(
-            "min-w-24 overflow-hidden has-[[data-slot=data-table-relationship-cell]]:relative has-[[data-slot=data-table-relationship-cell]]:p-0 has-[[data-slot=data-table-boolean-cell]]:relative has-[[data-slot=data-table-boolean-cell]]:p-0",
+            "min-w-24 overflow-hidden has-[[data-slot=data-table-list-cell]]:relative has-[[data-slot=data-table-list-cell]]:p-0 has-[[data-slot=data-table-boolean-cell]]:relative has-[[data-slot=data-table-boolean-cell]]:p-0",
             column.colDef.truncate ? "whitespace-nowrap" : "whitespace-normal",
           )}
           key={column.id}
@@ -2343,7 +2387,7 @@ const ColumnHeaderMenu = <TData extends RowData>({
   const label = columnLabel(column);
 
   if (!sortingEnabled && !hidingEnabled) {
-    return <div className="truncate">{column.colDef.headerName}</div>;
+    return <div className="truncate px-2">{column.colDef.headerName}</div>;
   }
 
   return (
@@ -2352,8 +2396,7 @@ const ColumnHeaderMenu = <TData extends RowData>({
         render={
           <Button
             aria-label={label}
-            className="h-8 max-w-full justify-start px-2"
-            size="sm"
+            className="absolute inset-0 h-full w-full min-w-0 justify-start rounded-none px-2 pr-4 focus-visible:ring-inset"
             variant="ghost"
           >
             <span className="truncate">{column.colDef.headerName}</span>
@@ -2363,8 +2406,6 @@ const ColumnHeaderMenu = <TData extends RowData>({
               ) : (
                 <ArrowUp />
               )
-            ) : sortingEnabled ? (
-              <ChevronsUpDown />
             ) : null}
           </Button>
         }
@@ -2464,10 +2505,21 @@ const DataTableHeader = <TData extends RowData>({
         ) : null}
         {draggable ? <TableHead className="w-10" /> : null}
         {model.visibleColumns.map((column) => {
+          const direction = store.state.sort?.find(
+            ({ id }) => id === column.id,
+          )?.direction;
           return (
             <TableHead
-              className="relative h-12"
+              aria-sort={
+                direction === "asc"
+                  ? "ascending"
+                  : direction === "desc"
+                    ? "descending"
+                    : undefined
+              }
+              className="relative h-12 p-0"
               key={column.id}
+              scope="col"
               style={{ width: column.width }}
             >
               <ColumnIdContext.Provider value={column.id}>
@@ -2960,131 +3012,352 @@ const DataTableContent = <TData extends RowData>({
   );
 };
 
-export interface DataTableRelationshipOption extends DataTableListItem {
-  value: string;
-}
-
-export const DataTableRelationshipCell = ({
-  emptyLabel,
-  manageLabel,
-  onAdd,
-  onRemove,
-  options,
-  value,
-  itemActions,
-  variant,
-  visibleCount,
-  overflowLabel,
-}: {
-  emptyLabel: string;
-  manageLabel: string;
-  onAdd?: (value: string) => void;
-  onRemove?: (value: string) => void;
-  options: readonly DataTableRelationshipOption[];
-  value: readonly DataTableRelationshipOption[];
-  itemActions?: readonly DataTableItemAction<DataTableListItem>[] | undefined;
-} & Omit<DataTableListOptions, "emptyLabel">) => {
-  const [selected, setSelected] = useState([...value]);
-  useLayoutEffect(() => setSelected([...value]), [value]);
-  const selectedValues = new Set(selected.map((item) => item.value));
-  const hasItemActions = !!itemActions?.length;
+export const DataTableListCell = (props: DataTableListCellProps) => {
+  if (props.options && (props.onAdd || props.onRemove)) {
+    return <EditableDataTableListCell {...props} />;
+  }
+  const { actionsLabel, itemActions, ...summaryProps } = props;
+  const totalCount = props.totalCount ?? props.items.length;
+  const overflow =
+    totalCount > Math.min(props.items.length, props.visibleCount ?? 3);
+  if (!itemActions?.length && !overflow) {
+    return <DataTableListSummary {...summaryProps} />;
+  }
+  const menuLabel =
+    actionsLabel ??
+    (itemActions?.length
+      ? dataTableMessages().actions
+      : dataTableMessages().listDetails);
   return (
     <div
-      data-slot="data-table-relationship-cell"
-      className={
-        hasItemActions
-          ? "flex items-center gap-2"
-          : "h-full in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0"
-      }
+      className="grid min-h-16 in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0 in-[[data-slot=table-cell]]:min-h-0"
+      data-slot="data-table-list-cell"
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      {hasItemActions ? (
-        <DataTableListSummary
-          emptyLabel={emptyLabel}
-          items={selected}
-          itemActions={itemActions}
-          variant={
-            variant ??
-            (selected.some((item) => item.icon || item.imageSrc)
-              ? "icon"
-              : "text")
-          }
-          visibleCount={visibleCount}
-          overflowLabel={overflowLabel}
-        />
-      ) : null}
-      <VirtualizedCombobox
-        ariaLabel={manageLabel}
-        emptyLabel={emptyLabel}
-        items={[...options].sort(
-          (left, right) =>
-            Number(selectedValues.has(right.value)) -
-            Number(selectedValues.has(left.value)),
-        )}
-        messages={{ search: manageLabel }}
-        multiple
-        onValueChange={(next) => {
-          const nextValues = new Set(next.map((item) => item.value));
-          selected.forEach(
-            (item) => !nextValues.has(item.value) && onRemove?.(item.value),
-          );
-          next.forEach(
-            (item) => !selectedValues.has(item.value) && onAdd?.(item.value),
-          );
-          setSelected(next);
-        }}
-        placeholder={emptyLabel}
+      <DataTableListMenu
+        actions={itemActions ?? []}
+        display={props.display}
+        force={overflow}
+        label={menuLabel}
+        items={props.items}
         trigger={
           <Button
-            aria-label={manageLabel}
-            className={
-              hasItemActions
-                ? "size-8 shrink-0"
-                : "h-full min-h-16 w-full justify-between rounded-none"
-            }
+            aria-label={menuLabel}
+            className="h-full w-full min-w-0 justify-between rounded-none px-2 focus-visible:ring-inset"
             variant="ghost"
           >
-            {hasItemActions ? null : (
-              <DataTableListSummary
-                emptyLabel={emptyLabel}
-                expandable={false}
-                items={selected}
-                variant={
-                  variant ??
-                  (selected.some((item) => item.icon || item.imageSrc)
-                    ? "icon"
-                    : "text")
-                }
-                visibleCount={visibleCount}
-                overflowLabel={overflowLabel}
-              />
-            )}
+            <DataTableListSummaryContent {...summaryProps} showMenu={false} />
             <ChevronDown />
           </Button>
         }
-        value={selected}
       />
     </div>
   );
 };
 
-export const DataTableListSummary = ({
+const EditableDataTableListCell = ({
   emptyLabel,
-  expandable = true,
+  manageLabel,
+  onAdd,
+  onRemove,
+  options,
   items,
-  overflowLabel,
-  totalCount = items.length,
-  variant = "text",
-  visibleCount = 3,
+  display,
+  visibleCount,
+  totalCount,
+  actionsLabel,
   itemActions,
-}: DataTableListOptions & {
-  expandable?: boolean;
-  items: readonly (string | DataTableListItem)[];
-  totalCount?: number | undefined;
-  itemActions?: readonly DataTableItemAction<DataTableListItem>[] | undefined;
-}) => {
+}: EditableDataTableListCellProps & DataTableListCellActionsProps) => {
+  const [selected, setSelected] = useState([...items]);
+  useLayoutEffect(() => setSelected([...items]), [items]);
+  const selectedValues = new Set(selected.map((item) => item.value));
+  const available = options.filter((item) => !selectedValues.has(item.value));
+  const canAdd = !!onAdd && available.length > 0;
+  const selectedTotal =
+    totalCount === undefined
+      ? selected.length
+      : totalCount + selected.length - items.length;
   const labels = dataTableMessages();
+  const actions: DataTableItemAction<DataTableListItem>[] = [
+    ...(itemActions ?? []),
+    ...(onRemove
+      ? [
+          {
+            id: "data-table-list-remove",
+            closeOnClick: false,
+            name: labels.removeItem,
+            icon: <Trash2 />,
+            variant: "destructive" as const,
+            onClick: (item: DataTableListItem) => {
+              if (item.value === undefined) return;
+              onRemove(item.value);
+              setSelected((current) =>
+                current.filter((candidate) => candidate.value !== item.value),
+              );
+            },
+          },
+        ]
+      : []),
+  ];
+  return (
+    <div
+      data-slot="data-table-list-cell"
+      className="grid min-h-16 in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0 in-[[data-slot=table-cell]]:min-h-0"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <DataTableListMenu
+        actions={actions}
+        addEmptyLabel={emptyLabel}
+        addLabel={labels.addItem}
+        addOptions={canAdd ? available : undefined}
+        addSearchLabel={manageLabel}
+        display={display}
+        force
+        items={selected}
+        label={actionsLabel ?? manageLabel}
+        onAdd={
+          canAdd
+            ? (item) => {
+                onAdd(item.value);
+                setSelected((current) => [...current, item]);
+              }
+            : undefined
+        }
+        trigger={
+          <Button
+            aria-label={manageLabel}
+            className="h-full w-full min-w-0 justify-between rounded-none px-2 focus-visible:ring-inset"
+            variant="ghost"
+          >
+            <DataTableListSummaryContent
+              emptyLabel={emptyLabel}
+              items={selected}
+              display={display}
+              showMenu={false}
+              visibleCount={visibleCount}
+              totalCount={selectedTotal}
+            />
+            <ChevronDown />
+          </Button>
+        }
+      />
+    </div>
+  );
+};
+
+const DataTableListMenu = ({
+  actions,
+  addEmptyLabel,
+  addLabel,
+  addOptions,
+  addSearchLabel,
+  className,
+  display = "list",
+  force = false,
+  items,
+  label,
+  onAdd,
+  trigger,
+}: {
+  actions: readonly DataTableItemAction<DataTableListItem>[];
+  addEmptyLabel?: ReactNode;
+  addLabel?: string;
+  addOptions?: readonly DataTableListOption[];
+  addSearchLabel?: string;
+  className?: string;
+  display?: "list" | "icon";
+  force?: boolean;
+  items: readonly (string | DataTableListItem)[];
+  label?: string;
+  onAdd?: (item: DataTableListOption) => void;
+  trigger?: ReactElement;
+}) => {
+  const entries = items.map((item) => {
+    const normalized = Schema.is(Schema.String)(item) ? { label: item } : item;
+    const visibleActions = actions.filter(
+      (action) => action.visible?.(normalized) ?? true,
+    );
+    return { item: normalized, visibleActions };
+  });
+  const hasActions = entries.some(
+    ({ visibleActions }) => visibleActions.length,
+  );
+  if (!force && !hasActions && !onAdd) return null;
+  const resolvedLabel =
+    label ??
+    (hasActions
+      ? dataTableMessages().actions
+      : dataTableMessages().listDetails);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        render={
+          trigger ?? (
+            <Button
+              aria-label={resolvedLabel}
+              className={cn("size-8 shrink-0", className)}
+              size="icon"
+              variant="ghost"
+            >
+              <MoreHorizontal />
+            </Button>
+          )
+        }
+      />
+      <DropdownMenuContent
+        align="end"
+        className="max-h-72 w-72"
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{resolvedLabel}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {entries.map(({ item, visibleActions }, index) =>
+            visibleActions.length ? (
+              <DropdownMenuSub key={item.value ?? `${item.label}-${index}`}>
+                <DropdownMenuSubTrigger>
+                  <DataTableListEntry
+                    item={item}
+                    appearance={display === "icon" ? "detail" : "list"}
+                  />
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-max">
+                  {visibleActions.map((action) => (
+                    <DropdownMenuItem
+                      closeOnClick={action.closeOnClick}
+                      disabled={action.disabled?.(item)}
+                      key={action.id ?? action.name}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        action.onClick(item);
+                      }}
+                      variant={action.variant}
+                    >
+                      {action.icon}
+                      {action.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ) : (
+              <div
+                className="px-2 py-1.5"
+                key={item.value ?? `${item.label}-${index}`}
+              >
+                <DataTableListEntry
+                  item={item}
+                  appearance={display === "icon" ? "detail" : "list"}
+                />
+              </div>
+            ),
+          )}
+          {onAdd && addOptions?.length ? (
+            <>
+              {entries.length ? <DropdownMenuSeparator /> : null}
+              <DataTableListAddMenu
+                emptyLabel={addEmptyLabel}
+                label={addLabel ?? dataTableMessages().addItem}
+                onAdd={onAdd}
+                options={addOptions}
+                searchLabel={addSearchLabel ?? dataTableMessages().filter}
+                display={display}
+              />
+            </>
+          ) : null}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const DataTableListAddMenu = ({
+  emptyLabel,
+  display,
+  label,
+  onAdd,
+  options,
+  searchLabel,
+}: {
+  emptyLabel?: ReactNode;
+  display: "list" | "icon";
+  label: string;
+  onAdd: (item: DataTableListOption) => void;
+  options: readonly DataTableListOption[];
+  searchLabel: string;
+}) => {
+  const [search, setSearch] = useState("");
+  const focusSearch = useCallback((input: HTMLInputElement | null) => {
+    input?.focus({ preventScroll: true });
+  }, []);
+  const locale = getLocale();
+  const normalizedSearch = search.trim().toLocaleLowerCase(locale);
+  const filtered = normalizedSearch
+    ? options.filter((item) =>
+        item.label.toLocaleLowerCase(locale).includes(normalizedSearch),
+      )
+    : options;
+  return (
+    <DropdownMenuSub
+      onOpenChange={(open) => {
+        if (!open) setSearch("");
+      }}
+    >
+      <DropdownMenuSubTrigger>
+        <Plus />
+        {label}
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="w-64">
+        <div className="relative p-1">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            aria-label={searchLabel}
+            className="h-8 pl-8"
+            onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Escape") event.stopPropagation();
+            }}
+            placeholder={dataTableMessages().filter}
+            ref={focusSearch}
+            value={search}
+          />
+        </div>
+        <DropdownMenuSeparator />
+        {filtered.length ? (
+          filtered.map((item) => (
+            <DropdownMenuItem
+              closeOnClick={false}
+              key={item.value}
+              onClick={() => onAdd(item)}
+            >
+              <DataTableListEntry
+                item={item}
+                appearance={display === "icon" ? "detail" : "list"}
+              />
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+            {emptyLabel}
+          </div>
+        )}
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  );
+};
+
+const DataTableListSummaryContent = ({
+  emptyLabel,
+  items,
+  totalCount = items.length,
+  display = "list",
+  showMenu,
+  visibleCount = 3,
+}: DataTableListSummaryProps & { showMenu: boolean }) => {
   const normalized = items.map((item) =>
     Schema.is(Schema.String)(item) ? { label: item } : item,
   );
@@ -3092,24 +3365,7 @@ export const DataTableListSummary = ({
     return <span className="text-muted-foreground">{emptyLabel}</span>;
   const visible = normalized.slice(0, Math.max(0, visibleCount));
   const remaining = Math.max(totalCount - visible.length, 0);
-  const details = (
-    <PopoverContent
-      align="start"
-      className="max-h-72 w-72 overflow-y-auto p-2"
-      onClick={(event) => event.stopPropagation()}
-      onPointerDown={(event) => event.stopPropagation()}
-    >
-      {normalized.map((item, index) => (
-        <DataTableListEntry
-          key={item.value ?? `${item.label}-${index}`}
-          item={item}
-          actions={itemActions}
-          appearance="detail"
-        />
-      ))}
-    </PopoverContent>
-  );
-  if (variant === "icon") {
+  if (display === "icon") {
     return (
       <TooltipProvider>
         <span className="flex items-center">
@@ -3117,112 +3373,60 @@ export const DataTableListSummary = ({
             <DataTableListEntry
               key={item.value ?? `${item.label}-${index}`}
               item={item}
-              actions={itemActions}
               appearance="icon"
             />
           ))}
-          {remaining && expandable ? (
-            <Popover>
-              <PopoverTrigger
-                onClick={(event) => event.stopPropagation()}
-                onPointerDown={(event) => event.stopPropagation()}
-                render={
-                  <button
-                    aria-label={labels.listOthers(remaining)}
-                    className="bg-muted -ml-1 flex size-8 items-center justify-center rounded-full"
-                    type="button"
-                  >
-                    +{remaining}
-                  </button>
-                }
-              />
-              {details}
-            </Popover>
-          ) : remaining ? (
-            <span className="bg-muted -ml-1 flex size-8 items-center justify-center rounded-full">
+          {remaining ? (
+            <span className="bg-secondary text-secondary-foreground -ml-1 flex size-8 items-center justify-center rounded-full">
               +{remaining}
             </span>
+          ) : null}
+          {remaining && showMenu ? (
+            <DataTableListMenu
+              actions={[]}
+              display={display}
+              force
+              items={normalized}
+            />
           ) : null}
         </span>
       </TooltipProvider>
     );
   }
-  if (itemActions?.length) {
-    return (
-      <span className="inline-flex flex-wrap items-center gap-1 text-sm">
-        {visible.map((item, index) => (
-          <DataTableListEntry
-            key={item.value ?? `${item.label}-${index}`}
-            item={item}
-            actions={itemActions}
-            appearance="text"
-          />
-        ))}
-        {remaining ? (
-          expandable ? (
-            <Popover>
-              <PopoverTrigger
-                onClick={(event) => event.stopPropagation()}
-                onPointerDown={(event) => event.stopPropagation()}
-                render={
-                  <button
-                    type="button"
-                    className="text-muted-foreground underline"
-                  >
-                    {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
-                  </button>
-                }
-              />
-              {details}
-            </Popover>
-          ) : (
-            <span>
-              {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
-            </span>
-          )
-        ) : null}
+  return (
+    <span className="inline-flex min-w-0 items-center gap-2 text-sm">
+      <span className="truncate">
+        {visible.map((item) => item.label).join(", ")}
+        {remaining ? ` +${remaining}` : ""}
       </span>
-    );
-  }
-  const summary = (
-    <>
-      {visible.map((item) => item.label).join(", ")}
-      {remaining
-        ? ` ${overflowLabel?.(remaining) ?? labels.listOthers(remaining)}`
-        : ""}
-    </>
-  );
-  return remaining && expandable ? (
-    <Popover>
-      <PopoverTrigger
-        onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
-        render={
-          <button className="text-left text-sm" type="button">
-            {summary}
-          </button>
-        }
-      />
-      {details}
-    </Popover>
-  ) : (
-    <span className="text-sm">{summary}</span>
+      {remaining && showMenu ? (
+        <DataTableListMenu
+          actions={[]}
+          display={display}
+          force
+          items={normalized}
+        />
+      ) : null}
+    </span>
   );
 };
 
+export const DataTableListSummary = (props: DataTableListSummaryProps) => (
+  <DataTableListSummaryContent {...props} showMenu />
+);
+
 const DataTableListEntry = ({
   item,
-  actions,
   appearance,
 }: {
   item: DataTableListItem;
-  actions: readonly DataTableItemAction<DataTableListItem>[] | undefined;
-  appearance: "icon" | "text" | "detail";
+  appearance: "icon" | "detail" | "list";
 }) => {
-  const visible =
-    actions?.filter((action) => action.visible?.(item) ?? true) ?? [];
   const icon = (
-    <span className="bg-muted flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full">
+    <span
+      aria-hidden="true"
+      className="bg-secondary text-secondary-foreground flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full"
+    >
       {item.imageSrc ? (
         <img alt="" src={item.imageSrc} className="size-full object-cover" />
       ) : (
@@ -3230,79 +3434,27 @@ const DataTableListEntry = ({
       )}
     </span>
   );
-  const content =
-    appearance === "icon" ? (
-      icon
-    ) : appearance === "detail" ? (
-      <>
-        {icon}
-        <span className="truncate">{item.label}</span>
-      </>
-    ) : (
-      item.label
-    );
-  const className =
-    appearance === "icon"
-      ? "-ml-1 rounded-full"
-      : appearance === "detail"
-        ? "flex w-full items-center gap-2 rounded-sm p-2 text-left"
-        : "rounded-sm text-left";
-  const trigger = visible.length ? (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={item.label}
-        onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
+  if (appearance === "list") {
+    return <span className="truncate">{item.label}</span>;
+  }
+  return appearance === "icon" ? (
+    <Tooltip>
+      <TooltipTrigger
         render={
-          <button
-            type="button"
-            className={cn(
-              className,
-              "hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
-            )}
+          <span
+            className="-ml-1 inline-flex rounded-full"
+            aria-label={item.label}
           />
         }
       >
-        {content}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className="w-max"
-        onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
-      >
-        {visible.map((action) => (
-          <DropdownMenuItem
-            key={action.id ?? action.name}
-            disabled={action.disabled?.(item)}
-            variant={action.variant}
-            onClick={(event) => {
-              event.stopPropagation();
-              action.onClick(item);
-            }}
-          >
-            {action.icon}
-            {action.name}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  ) : (
-    <span
-      className={className}
-      aria-label={appearance === "icon" ? item.label : undefined}
-    >
-      {content}
-    </span>
-  );
-  return appearance === "icon" ? (
-    <Tooltip>
-      <TooltipTrigger render={<span className="inline-flex" />}>
-        {trigger}
+        {icon}
       </TooltipTrigger>
       <TooltipContent>{item.label}</TooltipContent>
     </Tooltip>
   ) : (
-    trigger
+    <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
+      {icon}
+      <span className="truncate">{item.label}</span>
+    </span>
   );
 };

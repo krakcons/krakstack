@@ -2,9 +2,7 @@ import {
   DataTable,
   type DataTableColDef,
   type DataTableRowAction,
-  type DataTableRelationshipOption,
-  type DataTableItemAction,
-  type DataTableListItem,
+  type DataTableListOption,
 } from "@krak-stack/registry/data-table";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,7 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
+import {
+  Archive,
+  Ban,
+  CircleDot,
+  ExternalLink,
+  LogIn,
+  Pencil,
+} from "lucide-react";
 import { useState } from "react";
 import * as m from "@/paraglide/messages";
 
@@ -155,16 +160,8 @@ const projectColumns = (): DataTableColDef<Project>[] => [
     type: "list",
     typeOptions: {
       emptyLabel: "—",
-      variant: "icon",
+      display: "icon",
       getItems: (project) => [{ value: project.owner, label: project.owner }],
-      actions: [
-        {
-          name: m.data_table_preview_open_member(),
-          icon: <ExternalLink />,
-          onClick: ({ item, row }) =>
-            window.alert(`${item.label}: ${row.name}`),
-        },
-      ],
     },
   },
   {
@@ -217,7 +214,7 @@ const rowActions: DataTableRowAction<Project>[] = [
   },
 ];
 
-const exampleMembers: DataTableRelationshipOption[] = [
+const exampleMembers: DataTableListOption[] = [
   { value: "ada", label: "Ada" },
   { value: "grace", label: "Grace" },
   { value: "hedy", label: "Hedy" },
@@ -230,8 +227,8 @@ type ColumnTypeExample = {
   boolean: boolean | null;
   date: string | null;
   dateTime: string | null;
-  list: readonly DataTableRelationshipOption[];
-  relationship: readonly DataTableRelationshipOption[];
+  list: readonly DataTableListOption[];
+  members: readonly DataTableListOption[];
 };
 
 const columnTypeExamples: ColumnTypeExample[] = [
@@ -242,7 +239,7 @@ const columnTypeExamples: ColumnTypeExample[] = [
     date: "2026-01-02",
     dateTime: "2026-01-02T09:15:00Z",
     list: exampleMembers,
-    relationship: exampleMembers.slice(0, 1),
+    members: exampleMembers.slice(0, 1),
   },
   {
     id: "example-2",
@@ -251,7 +248,7 @@ const columnTypeExamples: ColumnTypeExample[] = [
     date: "2026-09-23",
     dateTime: "2026-09-23T10:30:00-04:00",
     list: exampleMembers.slice(1, 2),
-    relationship: exampleMembers.slice(1, 3),
+    members: exampleMembers.slice(1, 3),
   },
   {
     id: "example-3",
@@ -260,7 +257,7 @@ const columnTypeExamples: ColumnTypeExample[] = [
     date: null,
     dateTime: null,
     list: [],
-    relationship: [],
+    members: [],
   },
 ];
 
@@ -268,21 +265,11 @@ export function DataTablePreview() {
   const columns = projectColumns();
   const [previewProjects, setPreviewProjects] = useState(projects);
   const [typeExamples, setTypeExamples] = useState(columnTypeExamples);
-  const [selectedItem, setSelectedItem] = useState<{
+  const [memberAction, setMemberAction] = useState<{
+    action: string;
     name: string;
     row: string;
   } | null>(null);
-  const itemActions: DataTableItemAction<{
-    item: DataTableListItem;
-    row: ColumnTypeExample;
-  }>[] = [
-    {
-      name: m.data_table_preview_open_member(),
-      icon: <ExternalLink />,
-      onClick: ({ item, row }) =>
-        setSelectedItem({ name: item.label, row: row.id }),
-    },
-  ];
   const typeColumns: DataTableColDef<ColumnTypeExample>[] = [
     {
       field: "number",
@@ -317,24 +304,48 @@ export function DataTablePreview() {
     },
     {
       field: "list",
-      headerName: "list",
+      headerName: m.data_table_preview_list_icons(),
       type: "list",
       typeOptions: {
+        actionsLabel: m.data_table_preview_member_actions(),
         emptyLabel: m.data_table_preview_no_items(),
-        variant: "icon",
+        display: "icon",
         getItems: (row) => row.list,
-        actions: itemActions,
+        itemActions: [
+          {
+            name: m.data_table_preview_impersonate(),
+            icon: <LogIn />,
+            onClick: ({ item, row }) =>
+              setMemberAction({
+                action: m.data_table_preview_impersonate(),
+                name: item.label,
+                row: row.id,
+              }),
+          },
+          {
+            name: m.data_table_preview_ban(),
+            icon: <Ban />,
+            variant: "destructive",
+            onClick: ({ item, row }) =>
+              setMemberAction({
+                action: m.data_table_preview_ban(),
+                name: item.label,
+                row: row.id,
+              }),
+          },
+        ],
       },
     },
     {
-      field: "relationship",
-      headerName: "relationship",
-      type: "relationship",
+      field: "members",
+      headerName: m.data_table_preview_list_editable(),
+      type: "list",
       width: 280,
       typeOptions: {
         emptyLabel: m.data_table_preview_no_items(),
+        display: "list",
         manageLabel: m.data_table_preview_manage_members(),
-        getItems: (row) => row.relationship,
+        getItems: (row) => row.members,
         getOptions: () => exampleMembers,
         onAdd: ({ value, row }) => {
           const member = exampleMembers.find((item) => item.value === value);
@@ -342,10 +353,10 @@ export function DataTablePreview() {
           setTypeExamples((current) =>
             current.map((example) =>
               example.id === row.id &&
-              !example.relationship.some((item) => item.value === value)
+              !example.members.some((item) => item.value === value)
                 ? {
                     ...example,
-                    relationship: [...example.relationship, member],
+                    members: [...example.members, member],
                   }
                 : example,
             ),
@@ -357,7 +368,7 @@ export function DataTablePreview() {
               example.id === row.id
                 ? {
                     ...example,
-                    relationship: example.relationship.filter(
+                    members: example.members.filter(
                       (item) => item.value !== value,
                     ),
                   }
@@ -465,8 +476,8 @@ export function DataTablePreview() {
             rowData={typeExamples}
           />
           <p role="status" className="text-muted-foreground mt-3 text-sm">
-            {selectedItem
-              ? m.data_table_preview_selected_item(selectedItem)
+            {memberAction
+              ? m.data_table_preview_member_action_status(memberAction)
               : null}
           </p>
         </CardContent>

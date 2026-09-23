@@ -12,9 +12,13 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Data_Table_Preview_Column_Types_DescriptionInputs */
 /** @typedef {{}} Data_Table_Preview_No_ItemsInputs */
 /** @typedef {{}} Data_Table_Preview_Manage_MembersInputs */
-/** @typedef {{ name: NonNullable<unknown>, row: NonNullable<unknown> }} Data_Table_Preview_Selected_ItemInputs */
+/** @typedef {{}} Data_Table_Preview_Member_ActionsInputs */
+/** @typedef {{}} Data_Table_Preview_ImpersonateInputs */
+/** @typedef {{}} Data_Table_Preview_BanInputs */
+/** @typedef {{ action: NonNullable<unknown>, name: NonNullable<unknown>, row: NonNullable<unknown> }} Data_Table_Preview_Member_Action_StatusInputs */
+/** @typedef {{}} Data_Table_Preview_List_IconsInputs */
+/** @typedef {{}} Data_Table_Preview_List_EditableInputs */
 /** @typedef {{}} Data_Table_Preview_Updated_AtInputs */
-/** @typedef {{}} Data_Table_Preview_Open_MemberInputs */
 /** @typedef {{}} Error_Preview_TitleInputs */
 /** @typedef {{}} Error_Preview_DescriptionInputs */
 /** @typedef {{}} Error_Preview_MessageInputs */
@@ -236,7 +240,7 @@ export const data_table_preview_column_types = /** @type {((inputs?: Data_Table_
 /**
 * | output |
 * | --- |
-* | "Each column demonstrates its named type, including empty values. Date-times use UTC. Toggle a boolean, click a member for actions, or use the relationship pi..." |
+* | "Each column demonstrates its named type, including empty values. Date-times use UTC. Lists can display names or icons. Toggle a boolean or open an editable l..." |
 *
 * @param {Data_Table_Preview_Column_Types_DescriptionInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
@@ -278,16 +282,86 @@ export const data_table_preview_manage_members = /** @type {((inputs?: Data_Tabl
 /**
 * | output |
 * | --- |
-* | "Selected {name} in row {row}." |
+* | "Member actions" |
 *
-* @param {Data_Table_Preview_Selected_ItemInputs} inputs
+* @param {Data_Table_Preview_Member_ActionsInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const data_table_preview_selected_item = /** @type {((inputs: Data_Table_Preview_Selected_ItemInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Selected_ItemInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+export const data_table_preview_member_actions = /** @type {((inputs?: Data_Table_Preview_Member_ActionsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Member_ActionsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
-	if (locale === "en") return __en.data_table_preview_selected_item(inputs)
-	return __fr.data_table_preview_selected_item(inputs)
+	if (locale === "en") return __en.data_table_preview_member_actions(inputs)
+	return __fr.data_table_preview_member_actions(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Impersonate" |
+*
+* @param {Data_Table_Preview_ImpersonateInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_impersonate = /** @type {((inputs?: Data_Table_Preview_ImpersonateInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_ImpersonateInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_impersonate(inputs)
+	return __fr.data_table_preview_impersonate(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Ban" |
+*
+* @param {Data_Table_Preview_BanInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_ban = /** @type {((inputs?: Data_Table_Preview_BanInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_BanInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_ban(inputs)
+	return __fr.data_table_preview_ban(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "{action} selected for {name} in row {row}." |
+*
+* @param {Data_Table_Preview_Member_Action_StatusInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_member_action_status = /** @type {((inputs: Data_Table_Preview_Member_Action_StatusInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Member_Action_StatusInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_member_action_status(inputs)
+	return __fr.data_table_preview_member_action_status(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "List (icons)" |
+*
+* @param {Data_Table_Preview_List_IconsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_list_icons = /** @type {((inputs?: Data_Table_Preview_List_IconsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_List_IconsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_list_icons(inputs)
+	return __fr.data_table_preview_list_icons(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "List (editable)" |
+*
+* @param {Data_Table_Preview_List_EditableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_list_editable = /** @type {((inputs?: Data_Table_Preview_List_EditableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_List_EditableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_list_editable(inputs)
+	return __fr.data_table_preview_list_editable(inputs)
 });
 /**
 * | output |
@@ -302,20 +376,6 @@ export const data_table_preview_updated_at = /** @type {((inputs?: Data_Table_Pr
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.data_table_preview_updated_at(inputs)
 	return __fr.data_table_preview_updated_at(inputs)
-});
-/**
-* | output |
-* | --- |
-* | "Open member" |
-*
-* @param {Data_Table_Preview_Open_MemberInputs} inputs
-* @param {{ locale?: "en" | "fr" }} options
-* @returns {LocalizedString}
-*/
-export const data_table_preview_open_member = /** @type {((inputs?: Data_Table_Preview_Open_MemberInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Open_MemberInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
-	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
-	if (locale === "en") return __en.data_table_preview_open_member(inputs)
-	return __fr.data_table_preview_open_member(inputs)
 });
 /**
 * | output |
