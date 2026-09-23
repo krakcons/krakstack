@@ -29,6 +29,7 @@ import {
   type DataTableModel,
   type DataTablePublicState,
 } from "./data-table";
+import { MenubarMenu, MenubarTrigger } from "./menubar";
 
 afterEach(() => {
   cleanup();
@@ -885,6 +886,33 @@ describe("DataTable model", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Group by" }));
 
     expect(await screen.findByText("Name group")).toBeTruthy();
+  });
+
+  it("renders custom controls in the Menubar", async () => {
+    render(
+      <DataTable
+        columnDefs={columns}
+        features={{
+          columnVisibility: false,
+          pagination: false,
+          search: false,
+          sorting: false,
+          toolbar: {
+            items: (
+              <MenubarMenu>
+                <MenubarTrigger>Access status</MenubarTrigger>
+              </MenubarMenu>
+            ),
+          },
+        }}
+        getRowId={(row) => row.id}
+        rowData={data}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Access status" }),
+    ).toBeTruthy();
   });
 
   it("opens nested column sorting controls", async () => {

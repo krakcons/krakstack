@@ -359,6 +359,12 @@ export type DataTablePaginationFeature =
   | { mode: "server"; rowCount: number; pageSizes?: readonly number[] };
 
 export interface DataTableFeatures<TData> {
+  toolbar?:
+    | false
+    | {
+        /** Additional `MenubarMenu` controls rendered at the start of the toolbar. */
+        items: ReactNode;
+      };
   search?: boolean;
   sorting?: boolean;
   pagination?: DataTablePaginationFeature;
@@ -1515,8 +1521,10 @@ const DataTableToolbar = <TData extends RowData>({
   const model = deriveModel(store);
   const selectedRows = getSelectedRows(store, model);
   const grouping = features.grouping;
+  const toolbar = features.toolbar;
   const bulkActions = features.selection && features.selection.bulkActions;
   const hasToolbar =
+    !!toolbar ||
     features.search !== false ||
     features.sorting !== false ||
     features.columnVisibility !== false ||
@@ -1577,6 +1585,7 @@ const DataTableToolbar = <TData extends RowData>({
       ) : null}
       <div className="-m-1 flex overflow-x-auto p-1">
         <Menubar className="h-auto w-max min-w-full justify-start bg-transparent shadow-none [&_[data-slot=menubar-trigger]]:gap-2 [&_[data-slot=menubar-trigger]_svg]:size-4">
+          {toolbar && toolbar.items}
           {visibleBulkActions.length ? (
             <MenubarMenu>
               <MenubarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary/90">
