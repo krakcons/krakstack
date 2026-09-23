@@ -1,6 +1,6 @@
 import { useAtom, useAtomSet } from "@effect/atom-react";
 import { BrowserKeyValueStore } from "@effect/platform-browser";
-import { Schema } from "effect";
+import { DateTime, Option, Schema } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import {
   ArrowDown,
@@ -146,10 +146,119 @@ export interface DataTableCellRendererParams<
   value: unknown;
 }
 
-export interface DataTableColDef<TData extends RowData> {
+export interface DataTableListItem {
+  icon?: ReactNode;
+  imageSrc?: string;
+  label: string;
+  value?: string;
+}
+
+export type DataTableItemAction<TItem> = DataTableRowAction<TItem> & {
+  disabled?: (item: TItem) => boolean;
+};
+
+export interface DataTableListOptions {
+  emptyLabel: ReactNode;
+  variant?: "icon" | "text";
+  visibleCount?: number;
+  overflowLabel?: (remaining: number) => ReactNode;
+}
+
+export interface DataTableListColumn<TData> extends DataTableListOptions {
+  /** Map domain records to labels, stable values, and optional icons or image URLs. */
+  getItems: (row: TData) => readonly DataTableListItem[];
+  /** Includes items not loaded in the preview; the popover only shows supplied items. */
+  getTotalCount?: (row: TData) => number;
+  actions?: readonly DataTableItemAction<{
+    item: DataTableListItem;
+    row: TData;
+  }>[];
+}
+
+export interface DataTableRelationshipColumn<
+  TData,
+> extends DataTableListOptions {
+  emptyLabel: string;
+  manageLabel: string;
+  getItems: (row: TData) => readonly DataTableRelationshipOption[];
+  getOptions: (row: TData) => readonly DataTableRelationshipOption[];
+  onAdd?: (input: { value: string; row: TData }) => void;
+  onRemove?: (input: { value: string; row: TData }) => void;
+  actions?: readonly DataTableItemAction<{
+    item: DataTableListItem;
+    row: TData;
+  }>[];
+}
+
+export interface DataTableDateOptions {
+  /** Defaults to the current Paraglide locale. */
+  locale?: string;
+  /** Defaults to UTC. Calendar-only strings retain their date in every zone. */
+  timeZone?: string;
+  dateStyle?: Intl.DateTimeFormatOptions["dateStyle"];
+  emptyLabel?: ReactNode;
+  /** Placement of missing or invalid dates, independent of sort direction. */
+  nulls?: "first" | "last";
+  /** ISO by default; applies to both CSV and JSON exports. */
+  exportFormat?: "iso" | "formatted";
+}
+
+export interface DataTableDateTimeOptions extends DataTableDateOptions {
+  timeStyle?: Intl.DateTimeFormatOptions["timeStyle"];
+  hour12?: boolean;
+}
+
+type DataTableDateType =
+  | { type: "date"; typeOptions?: DataTableDateOptions }
+  | { type: "dateTime"; typeOptions?: DataTableDateTimeOptions };
+
+export type DataTableNumberOptions = Omit<
+  Intl.NumberFormatOptions,
+  "style" | "currency"
+> & {
+  locale?: string;
+  emptyLabel?: ReactNode;
+  nulls?: "first" | "last";
+  exportFormat?: "raw" | "formatted";
+} & (
+    | { style?: "decimal" | "percent"; currency?: never }
+    | { style: "currency"; currency: string }
+  );
+
+export interface DataTableBooleanOptions<TData> {
+  /** Optional localized labels for search and formatted exports. */
+  trueLabel?: string;
+  falseLabel?: string;
+  emptyLabel?: ReactNode;
+  nulls?: "first" | "last";
+  exportFormat?: "raw" | "formatted";
+  getAriaLabel?: (row: TData) => string;
+  /** Without a callback, the checkbox is read-only. Updates remain caller-owned. */
+  onChange?: (input: { value: boolean; row: TData }) => void;
+  disabled?: (row: TData) => boolean;
+}
+
+export type DataTableColDef<TData extends RowData> =
+  DataTableBaseColDef<TData> &
+    (
+      | { type?: undefined; typeOptions?: never }
+      | DataTableDateType
+      | { type: "number"; typeOptions?: DataTableNumberOptions }
+      | { type: "boolean"; typeOptions?: DataTableBooleanOptions<TData> }
+      | { type: "list"; typeOptions: DataTableListColumn<TData> }
+      | {
+          type: "relationship";
+          typeOptions: DataTableRelationshipColumn<TData>;
+        }
+    );
+
+export interface DataTableBaseColDef<TData extends RowData> {
   field?: keyof TData & string;
   colId?: string;
   headerName: ReactNode;
+  // List/relationship columns default to comma-separated labels for search,
+  // sorting, and export. Use comparator for count sorting while retaining labels.
+  // A valueGetter explicitly overrides that model value; cellRenderer overrides display.
   // Cell value types are intentionally owned and narrowed by each consumer.
   // oxlint-disable-next-line anti-slop/no-unknown-returns
   valueGetter?: (params: DataTableValueGetterParams<TData>) => unknown;
@@ -491,14 +600,139 @@ export const buildDataTableRows = <TData extends RowData>(
           const { colDef } = column;
           const value = colDef.valueGetter
             ? colDef.valueGetter({ data, rowId: id, rowIndex: index, colDef })
-            : colDef.field
-              ? data[colDef.field]
-              : undefined;
+            : colDef.type === "list" || colDef.type === "relationship"
+              ? colDef.typeOptions
+                  .getItems(data)
+                  .map((item) => item.label)
+                  .join(", ")
+              : colDef.field
+                ? data[colDef.field]
+                : undefined;
           return [column.id, value];
         }),
       ),
     };
   });
+};
+
+const CalendarDate = Schema.String.check(
+  Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/),
+  Schema.makeFilter((value) =>
+    Option.exists(
+      DateTime.make(value),
+      (date) => DateTime.formatIsoDateUtc(date) === value,
+    ),
+  ),
+).annotate({ identifier: "DataTableCalendarDate" });
+
+const InstantString = Schema.String.check(
+  Schema.isPattern(
+    /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/,
+  ),
+  Schema.makeFilter((value) => Schema.is(CalendarDate)(value.slice(0, 10))),
+).annotate({ identifier: "DataTableInstantString" });
+
+const DateInput = Schema.Union([
+  Schema.Date,
+  Schema.Int,
+  CalendarDate,
+  InstantString,
+]).annotate({ identifier: "DataTableDateInput" });
+const decodeDateInput = Schema.decodeUnknownOption(DateInput);
+
+// The model deliberately retains the original value for consumer formatters/comparators.
+// This is the schema decoding boundary for untyped column values.
+// oxlint-disable-next-line anti-slop/no-unknown-parameters
+const resolveDate = (value: unknown, type: DataTableDateType["type"]) =>
+  Option.getOrUndefined(
+    Option.flatMap(decodeDateInput(value), (input) => {
+      const calendarOnly = Schema.is(CalendarDate)(input);
+      if (calendarOnly && type === "dateTime") return Option.none();
+      return Option.map(DateTime.make(input), (instant) => ({
+        instant,
+        calendarOnly,
+      }));
+    }),
+  );
+
+const formatDateValue = (
+  date: NonNullable<ReturnType<typeof resolveDate>>,
+  column: DataTableDateType,
+) =>
+  DateTime.format(date.instant, {
+    locale: column.typeOptions?.locale ?? getLocale(),
+    timeZone: date.calendarOnly
+      ? "UTC"
+      : (column.typeOptions?.timeZone ?? "UTC"),
+    dateStyle: column.typeOptions?.dateStyle ?? "medium",
+    timeStyle:
+      column.type === "dateTime"
+        ? (column.typeOptions?.timeStyle ?? "short")
+        : undefined,
+    hour12: column.type === "dateTime" ? column.typeOptions?.hour12 : undefined,
+  });
+
+const dateIsoValue = (date: NonNullable<ReturnType<typeof resolveDate>>) =>
+  date.calendarOnly
+    ? DateTime.formatIsoDateUtc(date.instant)
+    : DateTime.formatIso(date.instant);
+
+const NumberValue = Schema.Finite.annotate({
+  identifier: "DataTableNumberValue",
+});
+const BooleanValue = Schema.Boolean.annotate({
+  identifier: "DataTableBooleanValue",
+});
+const decodeNumberValue = Schema.decodeUnknownOption(NumberValue);
+const decodeBooleanValue = Schema.decodeUnknownOption(BooleanValue);
+
+const formatNumberValue = (
+  value: number,
+  options: DataTableNumberOptions = {},
+) => {
+  const {
+    locale,
+    emptyLabel: _emptyLabel,
+    nulls: _nulls,
+    exportFormat: _exportFormat,
+    ...format
+  } = options;
+  return new Intl.NumberFormat(locale ?? getLocale(), format).format(value);
+};
+
+const booleanLabel = <TData,>(
+  value: boolean,
+  options?: DataTableBooleanOptions<TData>,
+) => (value ? options?.trueLabel : options?.falseLabel);
+
+// Columns without a built-in scalar type retain their original export values.
+// oxlint-disable-next-line anti-slop/no-unknown-returns
+export const getDataTableExportValue = <TData extends RowData>(
+  row: DataTableModelRow<TData>,
+  column: DataTableColumn<TData>,
+) => {
+  const value = row.values.get(column.id);
+  const colDef = column.colDef;
+  if (colDef.type === "number") {
+    const number = Option.getOrUndefined(decodeNumberValue(value));
+    if (number === undefined) return null;
+    return colDef.typeOptions?.exportFormat === "formatted"
+      ? formatNumberValue(number, colDef.typeOptions)
+      : number;
+  }
+  if (colDef.type === "boolean") {
+    const boolean = Option.getOrUndefined(decodeBooleanValue(value));
+    if (boolean === undefined) return null;
+    return colDef.typeOptions?.exportFormat === "formatted"
+      ? (booleanLabel(boolean, colDef.typeOptions) ?? String(boolean))
+      : boolean;
+  }
+  if (colDef.type !== "date" && colDef.type !== "dateTime") return value;
+  const date = resolveDate(value, colDef.type);
+  if (!date) return null;
+  return colDef.typeOptions?.exportFormat === "formatted"
+    ? formatDateValue(date, colDef)
+    : dateIsoValue(date);
 };
 
 export const filterDataTableRows = <TData extends RowData>(
@@ -512,11 +746,30 @@ export const filterDataTableRows = <TData extends RowData>(
     ({ colDef }) => colDef.searchable !== false,
   );
   return rows.filter((row) =>
-    searchable.some((column) =>
-      String(row.values.get(column.id) ?? "")
-        .toLocaleLowerCase()
-        .includes(query),
-    ),
+    searchable.some((column) => {
+      const value = row.values.get(column.id);
+      const colDef = column.colDef;
+      let text = String(value ?? "");
+      if (colDef.type === "date" || colDef.type === "dateTime") {
+        const date = resolveDate(value, colDef.type);
+        text = date
+          ? `${formatDateValue(date, colDef)} ${dateIsoValue(date)}`
+          : "";
+      } else if (colDef.type === "number") {
+        const number = Option.getOrUndefined(decodeNumberValue(value));
+        text =
+          number === undefined
+            ? ""
+            : `${formatNumberValue(number, colDef.typeOptions)} ${number}`;
+      } else if (colDef.type === "boolean") {
+        const boolean = Option.getOrUndefined(decodeBooleanValue(value));
+        text =
+          boolean === undefined
+            ? ""
+            : `${booleanLabel(boolean, colDef.typeOptions) ?? ""} ${boolean}`;
+      }
+      return text.toLocaleLowerCase().includes(query);
+    }),
   );
 };
 
@@ -534,6 +787,51 @@ export const sortDataTableRows = <TData extends RowData>(
         if (!column) continue;
         const leftValue = left.row.values.get(sort.id);
         const rightValue = right.row.values.get(sort.id);
+        const colDef = column.colDef;
+        if (
+          !colDef.comparator &&
+          (colDef.type === "number" || colDef.type === "boolean")
+        ) {
+          const leftScalar =
+            colDef.type === "number"
+              ? Option.getOrUndefined(decodeNumberValue(leftValue))
+              : Option.getOrUndefined(
+                  Option.map(decodeBooleanValue(leftValue), Number),
+                );
+          const rightScalar =
+            colDef.type === "number"
+              ? Option.getOrUndefined(decodeNumberValue(rightValue))
+              : Option.getOrUndefined(
+                  Option.map(decodeBooleanValue(rightValue), Number),
+                );
+          if (leftScalar === undefined || rightScalar === undefined) {
+            if (leftScalar === undefined && rightScalar === undefined) continue;
+            const nullOrder = colDef.typeOptions?.nulls === "first" ? -1 : 1;
+            return leftScalar === undefined ? nullOrder : -nullOrder;
+          }
+          const comparison = leftScalar - rightScalar;
+          if (comparison !== 0)
+            return sort.direction === "desc" ? -comparison : comparison;
+          continue;
+        }
+        if (
+          !colDef.comparator &&
+          (colDef.type === "date" || colDef.type === "dateTime")
+        ) {
+          const leftDate = resolveDate(leftValue, colDef.type);
+          const rightDate = resolveDate(rightValue, colDef.type);
+          if (!leftDate || !rightDate) {
+            if (!leftDate && !rightDate) continue;
+            const nullOrder = colDef.typeOptions?.nulls === "first" ? -1 : 1;
+            return !leftDate ? nullOrder : -nullOrder;
+          }
+          const comparison =
+            DateTime.toEpochMillis(leftDate.instant) -
+            DateTime.toEpochMillis(rightDate.instant);
+          if (comparison !== 0)
+            return sort.direction === "desc" ? -comparison : comparison;
+          continue;
+        }
         const comparison = column.colDef.comparator
           ? column.colDef.comparator(
               leftValue,
@@ -928,6 +1226,92 @@ const renderCell = <TData extends RowData>(
   };
   const CellRenderer = column.colDef.cellRenderer;
   if (CellRenderer) return <CellRenderer {...params} />;
+  const colDef = column.colDef;
+  if (colDef.type === "number") {
+    if (colDef.valueFormatter) return colDef.valueFormatter(params);
+    const number = Option.getOrUndefined(decodeNumberValue(value));
+    return (
+      <span className="block text-right tabular-nums">
+        {number === undefined
+          ? (colDef.typeOptions?.emptyLabel ?? "—")
+          : formatNumberValue(number, colDef.typeOptions)}
+      </span>
+    );
+  }
+  if (colDef.type === "boolean") {
+    if (colDef.valueFormatter) return colDef.valueFormatter(params);
+    const boolean = Option.getOrUndefined(decodeBooleanValue(value));
+    if (boolean === undefined) return colDef.typeOptions?.emptyLabel ?? "—";
+    const options = colDef.typeOptions;
+    return (
+      <label
+        data-slot="data-table-boolean-cell"
+        className={cn(
+          "flex h-full min-h-16 w-full items-center justify-start px-2 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-ring in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0",
+          options?.onChange &&
+            !options.disabled?.(row.data) &&
+            "cursor-pointer hover:bg-muted/50",
+        )}
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <Checkbox
+          aria-label={options?.getAriaLabel?.(row.data) ?? columnLabel(column)}
+          className="focus-visible:ring-0 focus-visible:outline-none"
+          checked={boolean}
+          readOnly={!options?.onChange}
+          disabled={options?.disabled?.(row.data)}
+          onCheckedChange={(checked) =>
+            options?.onChange?.({ value: checked, row: row.data })
+          }
+        />
+      </label>
+    );
+  }
+  if (colDef.type === "date" || colDef.type === "dateTime") {
+    if (colDef.valueFormatter) return colDef.valueFormatter(params);
+    const date = resolveDate(value, colDef.type);
+    return date ? (
+      <time dateTime={dateIsoValue(date)}>{formatDateValue(date, colDef)}</time>
+    ) : (
+      (colDef.typeOptions?.emptyLabel ?? "—")
+    );
+  }
+  if (colDef.type === "list" || colDef.type === "relationship") {
+    const config = colDef.typeOptions;
+    const itemActions = config.actions?.map((action) => ({
+      ...action,
+      onClick: (item: DataTableListItem) =>
+        action.onClick({ item, row: row.data }),
+      visible: (item: DataTableListItem) =>
+        action.visible?.({ item, row: row.data }) ?? true,
+      disabled: (item: DataTableListItem) =>
+        action.disabled?.({ item, row: row.data }) ?? false,
+    }));
+    if (colDef.type === "relationship") {
+      const relationship = colDef.typeOptions;
+      return (
+        <DataTableRelationshipCell
+          {...relationship}
+          itemActions={itemActions}
+          value={relationship.getItems(row.data)}
+          options={relationship.getOptions(row.data)}
+          onAdd={(value) => relationship.onAdd?.({ value, row: row.data })}
+          onRemove={(value) =>
+            relationship.onRemove?.({ value, row: row.data })
+          }
+        />
+      );
+    }
+    return (
+      <DataTableListSummary
+        {...colDef.typeOptions}
+        items={colDef.typeOptions.getItems(row.data)}
+        itemActions={itemActions}
+        totalCount={colDef.typeOptions.getTotalCount?.(row.data)}
+      />
+    );
+  }
   return (
     column.colDef.valueFormatter?.(params) ??
     (value === null || value === undefined ? null : String(value))
@@ -1259,7 +1643,7 @@ const DataTableToolbar = <TData extends RowData>({
                         model.visibleColumns.map(columnLabel),
                         exportRows.map((row) =>
                           model.visibleColumns.map((column) =>
-                            String(row.values.get(column.id) ?? ""),
+                            String(getDataTableExportValue(row, column) ?? ""),
                           ),
                         ),
                         features.export ? features.export.baseName : "table",
@@ -1276,7 +1660,7 @@ const DataTableToolbar = <TData extends RowData>({
                           Object.fromEntries(
                             model.visibleColumns.map((column) => [
                               column.id,
-                              row.values.get(column.id),
+                              getDataTableExportValue(row, column),
                             ]),
                           ),
                         ),
@@ -1766,7 +2150,7 @@ const TableDataRow = <TData extends RowData>({
       {model.visibleColumns.map((column) => (
         <TableCell
           className={cn(
-            "min-w-24 overflow-hidden has-[[data-slot=data-table-relationship-cell]]:relative has-[[data-slot=data-table-relationship-cell]]:p-0",
+            "min-w-24 overflow-hidden has-[[data-slot=data-table-relationship-cell]]:relative has-[[data-slot=data-table-relationship-cell]]:p-0 has-[[data-slot=data-table-boolean-cell]]:relative has-[[data-slot=data-table-boolean-cell]]:p-0",
             column.colDef.truncate ? "whitespace-nowrap" : "whitespace-normal",
           )}
           key={column.id}
@@ -2576,9 +2960,7 @@ const DataTableContent = <TData extends RowData>({
   );
 };
 
-export interface DataTableRelationshipOption {
-  icon?: ReactNode;
-  label: string;
+export interface DataTableRelationshipOption extends DataTableListItem {
   value: string;
 }
 
@@ -2589,6 +2971,10 @@ export const DataTableRelationshipCell = ({
   onRemove,
   options,
   value,
+  itemActions,
+  variant,
+  visibleCount,
+  overflowLabel,
 }: {
   emptyLabel: string;
   manageLabel: string;
@@ -2596,17 +2982,38 @@ export const DataTableRelationshipCell = ({
   onRemove?: (value: string) => void;
   options: readonly DataTableRelationshipOption[];
   value: readonly DataTableRelationshipOption[];
-}) => {
+  itemActions?: readonly DataTableItemAction<DataTableListItem>[] | undefined;
+} & Omit<DataTableListOptions, "emptyLabel">) => {
   const [selected, setSelected] = useState([...value]);
   useLayoutEffect(() => setSelected([...value]), [value]);
   const selectedValues = new Set(selected.map((item) => item.value));
+  const hasItemActions = !!itemActions?.length;
   return (
     <div
       data-slot="data-table-relationship-cell"
-      className="h-full in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0"
+      className={
+        hasItemActions
+          ? "flex items-center gap-2"
+          : "h-full in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0"
+      }
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
     >
+      {hasItemActions ? (
+        <DataTableListSummary
+          emptyLabel={emptyLabel}
+          items={selected}
+          itemActions={itemActions}
+          variant={
+            variant ??
+            (selected.some((item) => item.icon || item.imageSrc)
+              ? "icon"
+              : "text")
+          }
+          visibleCount={visibleCount}
+          overflowLabel={overflowLabel}
+        />
+      ) : null}
       <VirtualizedCombobox
         ariaLabel={manageLabel}
         emptyLabel={emptyLabel}
@@ -2630,15 +3037,29 @@ export const DataTableRelationshipCell = ({
         placeholder={emptyLabel}
         trigger={
           <Button
-            className="h-full min-h-16 w-full justify-between rounded-none"
+            aria-label={manageLabel}
+            className={
+              hasItemActions
+                ? "size-8 shrink-0"
+                : "h-full min-h-16 w-full justify-between rounded-none"
+            }
             variant="ghost"
           >
-            <DataTableListSummary
-              emptyLabel={emptyLabel}
-              expandable={false}
-              items={selected}
-              variant={selected.some((item) => item.icon) ? "icon" : "text"}
-            />
+            {hasItemActions ? null : (
+              <DataTableListSummary
+                emptyLabel={emptyLabel}
+                expandable={false}
+                items={selected}
+                variant={
+                  variant ??
+                  (selected.some((item) => item.icon || item.imageSrc)
+                    ? "icon"
+                    : "text")
+                }
+                visibleCount={visibleCount}
+                overflowLabel={overflowLabel}
+              />
+            )}
             <ChevronDown />
           </Button>
         }
@@ -2656,17 +3077,12 @@ export const DataTableListSummary = ({
   totalCount = items.length,
   variant = "text",
   visibleCount = 3,
-}: {
-  emptyLabel: ReactNode;
+  itemActions,
+}: DataTableListOptions & {
   expandable?: boolean;
-  items: readonly (
-    | string
-    | { icon?: ReactNode; label: string; value?: string }
-  )[];
-  overflowLabel?: (remaining: number) => ReactNode;
-  totalCount?: number;
-  variant?: "icon" | "text";
-  visibleCount?: number;
+  items: readonly (string | DataTableListItem)[];
+  totalCount?: number | undefined;
+  itemActions?: readonly DataTableItemAction<DataTableListItem>[] | undefined;
 }) => {
   const labels = dataTableMessages();
   const normalized = items.map((item) =>
@@ -2674,18 +3090,22 @@ export const DataTableListSummary = ({
   );
   if (!normalized.length)
     return <span className="text-muted-foreground">{emptyLabel}</span>;
-  const visible = normalized.slice(0, visibleCount);
+  const visible = normalized.slice(0, Math.max(0, visibleCount));
   const remaining = Math.max(totalCount - visible.length, 0);
   const details = (
-    <PopoverContent align="start" className="max-h-72 w-72 overflow-y-auto p-2">
+    <PopoverContent
+      align="start"
+      className="max-h-72 w-72 overflow-y-auto p-2"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
       {normalized.map((item, index) => (
-        <div
-          className="flex items-center gap-2 p-2"
+        <DataTableListEntry
           key={item.value ?? `${item.label}-${index}`}
-        >
-          {item.icon}
-          {item.label}
-        </div>
+          item={item}
+          actions={itemActions}
+          appearance="detail"
+        />
       ))}
     </PopoverContent>
   );
@@ -2693,24 +3113,19 @@ export const DataTableListSummary = ({
     return (
       <TooltipProvider>
         <span className="flex items-center">
-          {visible.map((item) => (
-            <Tooltip key={item.value ?? item.label}>
-              <TooltipTrigger
-                render={
-                  <span
-                    aria-label={item.label}
-                    className="bg-muted -ml-1 flex size-8 items-center justify-center rounded-full"
-                  >
-                    {item.icon ?? item.label.slice(0, 2).toUpperCase()}
-                  </span>
-                }
-              />
-              <TooltipContent>{item.label}</TooltipContent>
-            </Tooltip>
+          {visible.map((item, index) => (
+            <DataTableListEntry
+              key={item.value ?? `${item.label}-${index}`}
+              item={item}
+              actions={itemActions}
+              appearance="icon"
+            />
           ))}
           {remaining && expandable ? (
             <Popover>
               <PopoverTrigger
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
                 render={
                   <button
                     aria-label={labels.listOthers(remaining)}
@@ -2732,6 +3147,43 @@ export const DataTableListSummary = ({
       </TooltipProvider>
     );
   }
+  if (itemActions?.length) {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1 text-sm">
+        {visible.map((item, index) => (
+          <DataTableListEntry
+            key={item.value ?? `${item.label}-${index}`}
+            item={item}
+            actions={itemActions}
+            appearance="text"
+          />
+        ))}
+        {remaining ? (
+          expandable ? (
+            <Popover>
+              <PopoverTrigger
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                render={
+                  <button
+                    type="button"
+                    className="text-muted-foreground underline"
+                  >
+                    {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
+                  </button>
+                }
+              />
+              {details}
+            </Popover>
+          ) : (
+            <span>
+              {overflowLabel?.(remaining) ?? labels.listOthers(remaining)}
+            </span>
+          )
+        ) : null}
+      </span>
+    );
+  }
   const summary = (
     <>
       {visible.map((item) => item.label).join(", ")}
@@ -2743,6 +3195,8 @@ export const DataTableListSummary = ({
   return remaining && expandable ? (
     <Popover>
       <PopoverTrigger
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
         render={
           <button className="text-left text-sm" type="button">
             {summary}
@@ -2753,5 +3207,102 @@ export const DataTableListSummary = ({
     </Popover>
   ) : (
     <span className="text-sm">{summary}</span>
+  );
+};
+
+const DataTableListEntry = ({
+  item,
+  actions,
+  appearance,
+}: {
+  item: DataTableListItem;
+  actions: readonly DataTableItemAction<DataTableListItem>[] | undefined;
+  appearance: "icon" | "text" | "detail";
+}) => {
+  const visible =
+    actions?.filter((action) => action.visible?.(item) ?? true) ?? [];
+  const icon = (
+    <span className="bg-muted flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full">
+      {item.imageSrc ? (
+        <img alt="" src={item.imageSrc} className="size-full object-cover" />
+      ) : (
+        (item.icon ?? item.label.slice(0, 2).toUpperCase())
+      )}
+    </span>
+  );
+  const content =
+    appearance === "icon" ? (
+      icon
+    ) : appearance === "detail" ? (
+      <>
+        {icon}
+        <span className="truncate">{item.label}</span>
+      </>
+    ) : (
+      item.label
+    );
+  const className =
+    appearance === "icon"
+      ? "-ml-1 rounded-full"
+      : appearance === "detail"
+        ? "flex w-full items-center gap-2 rounded-sm p-2 text-left"
+        : "rounded-sm text-left";
+  const trigger = visible.length ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={item.label}
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        render={
+          <button
+            type="button"
+            className={cn(
+              className,
+              "hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring",
+            )}
+          />
+        }
+      >
+        {content}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="w-max"
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        {visible.map((action) => (
+          <DropdownMenuItem
+            key={action.id ?? action.name}
+            disabled={action.disabled?.(item)}
+            variant={action.variant}
+            onClick={(event) => {
+              event.stopPropagation();
+              action.onClick(item);
+            }}
+          >
+            {action.icon}
+            {action.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : (
+    <span
+      className={className}
+      aria-label={appearance === "icon" ? item.label : undefined}
+    >
+      {content}
+    </span>
+  );
+  return appearance === "icon" ? (
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex" />}>
+        {trigger}
+      </TooltipTrigger>
+      <TooltipContent>{item.label}</TooltipContent>
+    </Tooltip>
+  ) : (
+    trigger
   );
 };

@@ -18,6 +18,7 @@ import {
   buildDataTableRows,
   filterDataTableRows,
   getDataTableWidth,
+  getDataTableExportValue,
   getDataTableSelectableRows,
   normalizeDataTableColumns,
   paginateDataTableRows,
@@ -63,6 +64,573 @@ const state: DataTablePublicState = {
 };
 
 describe("DataTable model", () => {
+  it("formats numbers as localized decimals, percentages, and currencies without losing zero", () => {
+    render(
+      <DataTable
+        rowData={[{ amount: 1234.5, ratio: 0.125, zero: 0 }]}
+        features={{
+          search: false,
+          sorting: false,
+          columnVisibility: false,
+          pagination: false,
+        }}
+        columnDefs={[
+          {
+            field: "amount",
+            headerName: "Amount",
+            type: "number",
+            typeOptions: {
+              locale: "en-US",
+              style: "currency",
+              currency: "USD",
+            },
+          },
+          {
+            field: "ratio",
+            headerName: "Ratio",
+            type: "number",
+            typeOptions: {
+              locale: "en-US",
+              style: "percent",
+              maximumFractionDigits: 1,
+            },
+          },
+          {
+            field: "zero",
+            headerName: "Zero",
+            type: "number",
+            typeOptions: { locale: "fr", minimumFractionDigits: 2 },
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("$1,234.50")).toBeTruthy();
+    expect(screen.getByText("12.5%")).toBeTruthy();
+    expect(screen.getByText("0,00")).toBeTruthy();
+  });
+
+  it("sorts numbers numerically while treating coercible strings and non-finite inputs as empty", () => {
+    const input = [
+      { n: 10 },
+      { n: -2 },
+      { n: 0 },
+      { n: 1.5 },
+      { n: "2" },
+      { n: Infinity },
+      { n: NaN },
+      { n: null },
+    ];
+    const columns = normalizeDataTableColumns<(typeof input)[number]>([
+      { field: "n", headerName: "Number", type: "number" },
+    ]);
+    const rows = buildDataTableRows(input, columns);
+    expect(
+      sortDataTableRows(rows, columns, [{ id: "n", direction: "asc" }]).map(
+        (row) => row.index,
+      ),
+    ).toEqual([1, 2, 3, 0, 4, 5, 6, 7]);
+    expect(
+      sortDataTableRows(rows, columns, [{ id: "n", direction: "desc" }]).map(
+        (row) => row.index,
+      ),
+    ).toEqual([0, 3, 2, 1, 4, 5, 6, 7]);
+    expect(getDataTableExportValue(rows[2], columns[0])).toBe(0);
+    for (const row of rows.slice(4))
+      expect(getDataTableExportValue(row, columns[0])).toBeNull();
+    expect(filterDataTableRows(rows, columns, "Infinity")).toHaveLength(0);
+  });
+
+  it("searches formatted and raw numbers and keeps raw numbers in exports unless requested otherwise", () => {
+    const input = [{ n: 0.125 }];
+    const columns = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        field: "n",
+        headerName: "Percent",
+        type: "number",
+        typeOptions: {
+          locale: "en-US",
+          style: "percent",
+          maximumFractionDigits: 1,
+        },
+      },
+    ]);
+    const rows = buildDataTableRows(input, columns);
+    expect(filterDataTableRows(rows, columns, "12.5%")).toHaveLength(1);
+    expect(filterDataTableRows(rows, columns, "0.125")).toHaveLength(1);
+    expect(getDataTableExportValue(rows[0], columns[0])).toBe(0.125);
+    const formatted = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        field: "n",
+        headerName: "Percent",
+        type: "number",
+        typeOptions: {
+          locale: "en-US",
+          style: "percent",
+          maximumFractionDigits: 1,
+          exportFormat: "formatted",
+        },
+      },
+    ]);
+    expect(getDataTableExportValue(rows[0], formatted[0])).toBe("12.5%");
+  });
+
+  it("renders read-only booleans and treats string booleans as empty", () => {
+    render(
+      <DataTable
+        rowData={[{ flag: true }, { flag: false }, { flag: "false" }]}
+        features={{
+          search: false,
+          sorting: false,
+          columnVisibility: false,
+          pagination: false,
+        }}
+        columnDefs={[
+          {
+            field: "flag",
+            headerName: "Enabled",
+            type: "boolean",
+            typeOptions: {
+              trueLabel: "Oui",
+              falseLabel: "Non",
+              emptyLabel: "Missing",
+            },
+          },
+        ]}
+      />,
+    );
+    const checkboxes = screen.getAllByRole("checkbox", { name: "Enabled" });
+    expect(checkboxes).toHaveLength(2);
+    expect(checkboxes[0].getAttribute("aria-checked")).toBe("true");
+    expect(checkboxes[1].getAttribute("aria-checked")).toBe("false");
+    for (const checkbox of checkboxes)
+      expect(checkbox.getAttribute("aria-readonly")).toBe("true");
+    expect(screen.queryByText("Oui")).toBeNull();
+    expect(screen.queryByText("Non")).toBeNull();
+    expect(screen.getByText("Missing")).toBeTruthy();
+  });
+
+  it("keeps boolean editing controlled, passes row context, and respects disabled rows without triggering row clicks", () => {
+    const onChange = vi.fn();
+    const onRowClicked = vi.fn();
+    const input = [
+      { id: "editable", flag: false },
+      { id: "locked", flag: true },
+    ];
+    const columns: DataTableColDef<(typeof input)[number]>[] = [
+      {
+        field: "flag",
+        headerName: "Enabled",
+        type: "boolean",
+        typeOptions: {
+          getAriaLabel: (row) => `Toggle ${row.id}`,
+          onChange,
+          disabled: (row) => row.id === "locked",
+        },
+      },
+    ];
+    const { rerender } = render(
+      <DataTable
+        columnDefs={columns}
+        rowData={input}
+        onRowClicked={onRowClicked}
+      />,
+    );
+    const editable = screen.getByRole("checkbox", { name: "Toggle editable" });
+    fireEvent.click(editable);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({
+      value: true,
+      row: input[0],
+    });
+    expect(editable.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle locked" }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onRowClicked).not.toHaveBeenCalled();
+    rerender(
+      <DataTable
+        columnDefs={columns}
+        rowData={input.map((row) => ({ ...row, flag: true }))}
+        onRowClicked={onRowClicked}
+      />,
+    );
+    expect(
+      screen
+        .getByRole("checkbox", { name: "Toggle editable" })
+        .getAttribute("aria-checked"),
+    ).toBe("true");
+  });
+
+  it("sorts and exports actual booleans, preserving false and searching localized labels", () => {
+    const input = [
+      { flag: true },
+      { flag: false },
+      { flag: null },
+      { flag: "false" },
+    ];
+    const columns = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        field: "flag",
+        headerName: "Enabled",
+        type: "boolean",
+        typeOptions: { trueLabel: "Oui", falseLabel: "Non" },
+      },
+    ]);
+    const rows = buildDataTableRows(input, columns);
+    expect(
+      sortDataTableRows(rows, columns, [{ id: "flag", direction: "asc" }]).map(
+        (row) => row.index,
+      ),
+    ).toEqual([1, 0, 2, 3]);
+    expect(
+      sortDataTableRows(rows, columns, [{ id: "flag", direction: "desc" }]).map(
+        (row) => row.index,
+      ),
+    ).toEqual([0, 1, 2, 3]);
+    expect(
+      filterDataTableRows(rows, columns, "Non").map((row) => row.index),
+    ).toEqual([1]);
+    expect(
+      filterDataTableRows(rows, columns, "false").map((row) => row.index),
+    ).toEqual([1]);
+    expect(getDataTableExportValue(rows[1], columns[0])).toBe(false);
+    expect(getDataTableExportValue(rows[3], columns[0])).toBeNull();
+    const formatted = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        field: "flag",
+        headerName: "Enabled",
+        type: "boolean",
+        typeOptions: {
+          falseLabel: "Non",
+          exportFormat: "formatted",
+          nulls: "first",
+        },
+      },
+    ]);
+    expect(getDataTableExportValue(rows[1], formatted[0])).toBe("Non");
+    expect(
+      sortDataTableRows(rows, formatted, [
+        { id: "flag", direction: "asc" },
+      ]).map((row) => row.index),
+    ).toEqual([2, 3, 1, 0]);
+  });
+
+  it("formats calendar dates without shifting them and timestamps in the configured zone", () => {
+    const { container } = render(
+      <DataTable
+        rowData={[{ day: "2026-09-23", instant: "2026-09-23T01:30:00Z" }]}
+        features={{
+          search: false,
+          sorting: false,
+          columnVisibility: false,
+          pagination: false,
+        }}
+        columnDefs={[
+          {
+            field: "day",
+            headerName: "Date",
+            type: "date",
+            typeOptions: {
+              locale: "en-US",
+              timeZone: "America/Los_Angeles",
+              dateStyle: "long",
+            },
+          },
+          {
+            field: "instant",
+            headerName: "Timestamp",
+            type: "dateTime",
+            typeOptions: {
+              locale: "en-US",
+              timeZone: "America/Los_Angeles",
+              hour12: false,
+            },
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("September 23, 2026")).toBeTruthy();
+    const times = container.querySelectorAll("time");
+    expect(times[0].dateTime).toBe("2026-09-23");
+    expect(times[1].dateTime).toBe("2026-09-23T01:30:00.000Z");
+    expect(times[1].textContent).toContain("Sep 22, 2026");
+    expect(times[1].textContent).toContain("18:30");
+  });
+
+  it("sorts mixed timestamp inputs chronologically with invalid and missing values last in both directions", () => {
+    const input = [
+      { id: "late", at: "2026-09-23T01:00:00-04:00" },
+      { id: "early", at: new Date("2026-09-23T03:00:00Z") },
+      { id: "middle", at: "2026-09-23T04:00:00Z" },
+      { id: "epoch", at: 0 },
+      { id: "missing", at: null },
+      { id: "invalid", at: "not a date" },
+    ];
+    const resolved = normalizeDataTableColumns<(typeof input)[number]>([
+      { field: "at", headerName: "At", type: "dateTime" },
+    ]);
+    const rows = buildDataTableRows(input, resolved);
+    expect(
+      sortDataTableRows(rows, resolved, [{ id: "at", direction: "asc" }]).map(
+        (row) => row.data.id,
+      ),
+    ).toEqual(["epoch", "early", "middle", "late", "missing", "invalid"]);
+    expect(
+      sortDataTableRows(rows, resolved, [{ id: "at", direction: "desc" }]).map(
+        (row) => row.data.id,
+      ),
+    ).toEqual(["late", "middle", "early", "epoch", "missing", "invalid"]);
+    const nullsFirst = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        field: "at",
+        headerName: "At",
+        type: "dateTime",
+        typeOptions: { nulls: "first" },
+      },
+    ]);
+    expect(
+      sortDataTableRows(rows, nullsFirst, [{ id: "at", direction: "desc" }])
+        .slice(0, 2)
+        .map((row) => row.data.id),
+    ).toEqual(["missing", "invalid"]);
+  });
+
+  it("searches localized date labels and ISO values and exports canonical or formatted dates", () => {
+    const input = [{ at: "2026-09-23T01:30:00-04:00" }];
+    const resolved = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        field: "at",
+        headerName: "At",
+        type: "dateTime",
+        typeOptions: {
+          locale: "fr",
+          timeZone: "UTC",
+          dateStyle: "long",
+          hour12: false,
+        },
+      },
+    ]);
+    const rows = buildDataTableRows(input, resolved);
+    expect(filterDataTableRows(rows, resolved, "septembre")).toHaveLength(1);
+    expect(filterDataTableRows(rows, resolved, "2026-09-23")).toHaveLength(1);
+    expect(filterDataTableRows(rows, resolved, "05:30")).toHaveLength(1);
+    expect(getDataTableExportValue(rows[0], resolved[0])).toBe(
+      "2026-09-23T05:30:00.000Z",
+    );
+    const formatted = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        field: "at",
+        headerName: "At",
+        type: "date",
+        typeOptions: {
+          locale: "fr",
+          dateStyle: "long",
+          exportFormat: "formatted",
+        },
+      },
+    ]);
+    expect(getDataTableExportValue(rows[0], formatted[0])).toBe(
+      "23 septembre 2026",
+    );
+    expect(rows[0].values.get("at")).toBe(input[0].at);
+  });
+
+  it.each([
+    ["date", "2026-02-30"],
+    ["date", "2025-02-29"],
+    ["date", new Date(NaN)],
+    ["date", Infinity],
+    ["date", "09/23/2026"],
+    ["dateTime", "2026-09-23"],
+    ["dateTime", "2026-09-23T12:00:00"],
+    ["dateTime", "2026-02-30T12:00:00Z"],
+    ["dateTime", "2026-09-23T25:00:00Z"],
+  ] as const)(
+    "treats invalid or ambiguous %s input %s as empty",
+    (type, at) => {
+      const input = [{ at }];
+      const colDefs: DataTableColDef<(typeof input)[number]>[] = [
+        {
+          field: "at",
+          headerName: "At",
+          type,
+          typeOptions: { emptyLabel: "No date" },
+        },
+      ];
+      render(
+        <DataTable
+          rowData={input}
+          columnDefs={colDefs}
+          features={{
+            search: false,
+            sorting: false,
+            columnVisibility: false,
+            pagination: false,
+          }}
+        />,
+      );
+      expect(screen.getByText("No date")).toBeTruthy();
+      const resolved = normalizeDataTableColumns(colDefs);
+      expect(
+        getDataTableExportValue(
+          buildDataTableRows(input, resolved)[0],
+          resolved[0],
+        ),
+      ).toBeNull();
+    },
+  );
+
+  it("exports leap-day calendar values unchanged and preserves date display overrides", () => {
+    const input = [{ at: "2024-02-29" }];
+    const colDefs: DataTableColDef<(typeof input)[number]>[] = [
+      {
+        field: "at",
+        headerName: "At",
+        type: "date",
+        valueFormatter: () => "Custom date",
+      },
+    ];
+    const resolved = normalizeDataTableColumns(colDefs);
+    expect(
+      getDataTableExportValue(
+        buildDataTableRows(input, resolved)[0],
+        resolved[0],
+      ),
+    ).toBe("2024-02-29");
+    const { rerender } = render(
+      <DataTable columnDefs={colDefs} rowData={input} />,
+    );
+    expect(screen.getByText("Custom date")).toBeTruthy();
+    rerender(
+      <DataTable
+        columnDefs={[{ ...colDefs[0], cellRenderer: () => "Custom cell" }]}
+        rowData={input}
+      />,
+    );
+    expect(screen.getByText("Custom cell")).toBeTruthy();
+  });
+
+  it("runs list actions with item and row context without activating the row", async () => {
+    const onClick = vi.fn();
+    const onRowClicked = vi.fn();
+    const member = { value: "ada", label: "Ada", imageSrc: "/ada.png" };
+    render(
+      <DataTable
+        columnDefs={[
+          {
+            colId: "members",
+            headerName: "Members",
+            type: "list",
+            typeOptions: {
+              emptyLabel: "No members",
+              variant: "icon",
+              getItems: () => [member],
+              actions: [
+                { name: "Impersonate", onClick },
+                { name: "Hidden", onClick, visible: () => false },
+                { name: "Unavailable", onClick, disabled: () => true },
+              ],
+            },
+          },
+        ]}
+        rowData={[data[0]]}
+        onRowClicked={onRowClicked}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Ada" }));
+    const action = await screen.findByRole("menuitem", { name: "Impersonate" });
+    expect(screen.queryByRole("menuitem", { name: "Hidden" })).toBeNull();
+    const disabled = screen.getByRole("menuitem", { name: "Unavailable" });
+    expect(disabled.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(disabled);
+    expect(onClick).not.toHaveBeenCalled();
+    fireEvent.click(action);
+    expect(onClick).toHaveBeenCalledWith({ item: member, row: data[0] });
+    expect(onRowClicked).not.toHaveBeenCalled();
+  });
+
+  it("offers item actions in the overflow list", async () => {
+    const onClick = vi.fn();
+    render(
+      <DataTableListSummary
+        emptyLabel="Empty"
+        variant="icon"
+        visibleCount={1}
+        items={[
+          { value: "ada", label: "Ada" },
+          { value: "grace", label: "Grace" },
+        ]}
+        itemActions={[{ name: "Open", onClick }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "and 1 other" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Grace" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open" }));
+    expect(onClick).toHaveBeenCalledWith({ value: "grace", label: "Grace" });
+  });
+
+  it("keeps relationship item actions separate from the relationship picker", async () => {
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
+    const onAdd = vi.fn();
+    const onClick = vi.fn();
+    const onRowClicked = vi.fn();
+    const ada = { value: "ada", label: "Ada" };
+    const grace = { value: "grace", label: "Grace" };
+    render(
+      <DataTable
+        columnDefs={[
+          {
+            colId: "members",
+            headerName: "Members",
+            type: "relationship",
+            typeOptions: {
+              emptyLabel: "Empty",
+              manageLabel: "Manage members",
+              getItems: () => [ada],
+              getOptions: () => [ada, grace],
+              onAdd,
+              actions: [{ name: "Open", onClick }],
+            },
+          },
+        ]}
+        rowData={[data[0]]}
+        onRowClicked={onRowClicked}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Ada" }));
+    expect(screen.queryByRole("option")).toBeNull();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open" }));
+    expect(onClick).toHaveBeenCalledWith({ item: ada, row: data[0] });
+    fireEvent.click(screen.getByRole("combobox", { name: "Manage members" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Grace" }));
+    expect(onAdd).toHaveBeenCalledWith({ value: "grace", row: data[0] });
+    expect(onRowClicked).not.toHaveBeenCalled();
+  });
+
+  it("uses list labels for searchable and sortable model values", () => {
+    const resolved = normalizeDataTableColumns<Row>([
+      {
+        colId: "members",
+        headerName: "Members",
+        type: "list",
+        typeOptions: {
+          emptyLabel: "Empty",
+          getItems: (row) => [
+            { label: row.id === "one" ? "Grace" : "Ada", value: row.id },
+          ],
+        },
+      },
+    ]);
+    const rows = buildDataTableRows(data.slice(0, 2), resolved);
+    expect(rows[0].values.get("members")).toBe("Grace");
+    expect(
+      filterDataTableRows(rows, resolved, "ada").map((row) => row.data.id),
+    ).toEqual(["two"]);
+    expect(
+      sortDataTableRows(rows, resolved, [
+        { id: "members", direction: "asc" },
+      ]).map((row) => row.data.id),
+    ).toEqual(["two", "one"]);
+  });
   it("edits relationships without activating the containing row", async () => {
     vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
@@ -93,7 +661,9 @@ describe("DataTable model", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("combobox", { name: "" }));
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Manage collections" }),
+    );
     const option = await screen.findByRole("option", { name: "Collection" });
     expect(onRowClicked).not.toHaveBeenCalled();
     fireEvent.click(option);

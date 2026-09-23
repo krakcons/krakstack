@@ -2,6 +2,9 @@ import {
   DataTable,
   type DataTableColDef,
   type DataTableRowAction,
+  type DataTableRelationshipOption,
+  type DataTableItemAction,
+  type DataTableListItem,
 } from "@krak-stack/registry/data-table";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Archive, CircleDot, ExternalLink, Pencil } from "lucide-react";
 import { useState } from "react";
+import * as m from "@/paraglide/messages";
 
 type Project = {
   id: string;
@@ -112,7 +116,7 @@ const projects: Project[] = [
   },
 ];
 
-const columns: DataTableColDef<Project>[] = [
+const projectColumns = (): DataTableColDef<Project>[] => [
   {
     field: "name",
     headerName: "Project",
@@ -148,6 +152,20 @@ const columns: DataTableColDef<Project>[] = [
   {
     field: "owner",
     headerName: "Owner",
+    type: "list",
+    typeOptions: {
+      emptyLabel: "—",
+      variant: "icon",
+      getItems: (project) => [{ value: project.owner, label: project.owner }],
+      actions: [
+        {
+          name: m.data_table_preview_open_member(),
+          icon: <ExternalLink />,
+          onClick: ({ item, row }) =>
+            window.alert(`${item.label}: ${row.name}`),
+        },
+      ],
+    },
   },
   {
     field: "category",
@@ -156,13 +174,26 @@ const columns: DataTableColDef<Project>[] = [
   {
     field: "score",
     headerName: "Score",
-    cellRenderer: ({ data }) => (
-      <span className="tabular-nums">{data.score}</span>
-    ),
+    type: "number",
+  },
+  {
+    colId: "shipped",
+    headerName: m.data_table_preview_shipped(),
+    valueGetter: ({ data }) => data.status === "Shipped",
+    type: "boolean",
   },
   {
     field: "updated",
     headerName: "Updated",
+    type: "date",
+    typeOptions: { dateStyle: "medium" },
+  },
+  {
+    colId: "updatedAt",
+    headerName: m.data_table_preview_updated_at(),
+    valueGetter: ({ data }) => `${data.updated}T14:30:00Z`,
+    type: "dateTime",
+    typeOptions: { timeZone: "UTC", hour12: false },
   },
 ];
 
@@ -186,24 +217,175 @@ const rowActions: DataTableRowAction<Project>[] = [
   },
 ];
 
+const exampleMembers: DataTableRelationshipOption[] = [
+  { value: "ada", label: "Ada" },
+  { value: "grace", label: "Grace" },
+  { value: "hedy", label: "Hedy" },
+  { value: "linus", label: "Linus" },
+];
+
+type ColumnTypeExample = {
+  id: string;
+  number: number | null;
+  boolean: boolean | null;
+  date: string | null;
+  dateTime: string | null;
+  list: readonly DataTableRelationshipOption[];
+  relationship: readonly DataTableRelationshipOption[];
+};
+
+const columnTypeExamples: ColumnTypeExample[] = [
+  {
+    id: "example-1",
+    number: 1234.5,
+    boolean: true,
+    date: "2026-01-02",
+    dateTime: "2026-01-02T09:15:00Z",
+    list: exampleMembers,
+    relationship: exampleMembers.slice(0, 1),
+  },
+  {
+    id: "example-2",
+    number: 0,
+    boolean: false,
+    date: "2026-09-23",
+    dateTime: "2026-09-23T10:30:00-04:00",
+    list: exampleMembers.slice(1, 2),
+    relationship: exampleMembers.slice(1, 3),
+  },
+  {
+    id: "example-3",
+    number: null,
+    boolean: null,
+    date: null,
+    dateTime: null,
+    list: [],
+    relationship: [],
+  },
+];
+
 export function DataTablePreview() {
-  const [sortableProjects, setSortableProjects] = useState(projects);
+  const columns = projectColumns();
+  const [previewProjects, setPreviewProjects] = useState(projects);
+  const [typeExamples, setTypeExamples] = useState(columnTypeExamples);
+  const [selectedItem, setSelectedItem] = useState<{
+    name: string;
+    row: string;
+  } | null>(null);
+  const itemActions: DataTableItemAction<{
+    item: DataTableListItem;
+    row: ColumnTypeExample;
+  }>[] = [
+    {
+      name: m.data_table_preview_open_member(),
+      icon: <ExternalLink />,
+      onClick: ({ item, row }) =>
+        setSelectedItem({ name: item.label, row: row.id }),
+    },
+  ];
+  const typeColumns: DataTableColDef<ColumnTypeExample>[] = [
+    {
+      field: "number",
+      headerName: "number",
+      type: "number",
+      typeOptions: { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+    },
+    {
+      field: "boolean",
+      headerName: "boolean",
+      type: "boolean",
+      typeOptions: {
+        trueLabel: m.data_table_preview_true(),
+        falseLabel: m.data_table_preview_false(),
+        getAriaLabel: (row) =>
+          m.data_table_preview_toggle_boolean({ row: row.id }),
+        onChange: ({ value, row }) =>
+          setTypeExamples((current) =>
+            current.map((example) =>
+              example.id === row.id ? { ...example, boolean: value } : example,
+            ),
+          ),
+      },
+    },
+    { field: "date", headerName: "date", type: "date" },
+    {
+      field: "dateTime",
+      headerName: "dateTime",
+      type: "dateTime",
+      width: 260,
+      typeOptions: { timeZone: "UTC", hour12: false },
+    },
+    {
+      field: "list",
+      headerName: "list",
+      type: "list",
+      typeOptions: {
+        emptyLabel: m.data_table_preview_no_items(),
+        variant: "icon",
+        getItems: (row) => row.list,
+        actions: itemActions,
+      },
+    },
+    {
+      field: "relationship",
+      headerName: "relationship",
+      type: "relationship",
+      width: 280,
+      typeOptions: {
+        emptyLabel: m.data_table_preview_no_items(),
+        manageLabel: m.data_table_preview_manage_members(),
+        getItems: (row) => row.relationship,
+        getOptions: () => exampleMembers,
+        onAdd: ({ value, row }) => {
+          const member = exampleMembers.find((item) => item.value === value);
+          if (!member) return;
+          setTypeExamples((current) =>
+            current.map((example) =>
+              example.id === row.id &&
+              !example.relationship.some((item) => item.value === value)
+                ? {
+                    ...example,
+                    relationship: [...example.relationship, member],
+                  }
+                : example,
+            ),
+          );
+        },
+        onRemove: ({ value, row }) =>
+          setTypeExamples((current) =>
+            current.map((example) =>
+              example.id === row.id
+                ? {
+                    ...example,
+                    relationship: example.relationship.filter(
+                      (item) => item.value !== value,
+                    ),
+                  }
+                : example,
+            ),
+          ),
+      },
+    },
+  ];
   return (
     <div className="grid gap-6">
       <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
         <CardHeader>
-          <CardTitle>Project Queue</CardTitle>
+          <CardTitle>{m.data_table_preview_kitchen_sink()}</CardTitle>
           <CardDescription>
-            This demo uses the exported `DataTable`, custom cells, and row
-            actions.
+            {m.data_table_preview_kitchen_sink_description()}
           </CardDescription>
         </CardHeader>
         <CardContent className="max-w-full min-w-0">
           <DataTable
             columnDefs={columns}
             getRowId={(project) => project.id}
-            rowData={projects}
+            rowData={previewProjects}
             features={{
+              reordering: {
+                getRowLabel: (project) => project.name,
+                onReorder: setPreviewProjects,
+              },
               export: { baseName: "projects", scope: "filteredRows" },
               gallery: {
                 name: "name",
@@ -266,19 +448,27 @@ export function DataTablePreview() {
         </CardContent>
       </Card>
       <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
-        <CardContent className="max-w-full min-w-0 pt-6">
+        <CardHeader>
+          <CardTitle>{m.data_table_preview_column_types()}</CardTitle>
+          <CardDescription>
+            {m.data_table_preview_column_types_description()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="max-w-full min-w-0">
           <DataTable
-            columnDefs={columns}
+            columnDefs={typeColumns}
             features={{
               pagination: false,
-              reordering: {
-                getRowLabel: (project) => project.name,
-                onReorder: setSortableProjects,
-              },
+              export: { baseName: "column-types" },
             }}
-            getRowId={(project) => project.id}
-            rowData={sortableProjects}
+            getRowId={(row) => row.id}
+            rowData={typeExamples}
           />
+          <p role="status" className="text-muted-foreground mt-3 text-sm">
+            {selectedItem
+              ? m.data_table_preview_selected_item(selectedItem)
+              : null}
+          </p>
         </CardContent>
       </Card>
     </div>

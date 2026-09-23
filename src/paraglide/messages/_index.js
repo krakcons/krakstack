@@ -2,6 +2,19 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Data_Table_Preview_TrueInputs */
+/** @typedef {{}} Data_Table_Preview_FalseInputs */
+/** @typedef {{}} Data_Table_Preview_ShippedInputs */
+/** @typedef {{ row: NonNullable<unknown> }} Data_Table_Preview_Toggle_BooleanInputs */
+/** @typedef {{}} Data_Table_Preview_Kitchen_SinkInputs */
+/** @typedef {{}} Data_Table_Preview_Kitchen_Sink_DescriptionInputs */
+/** @typedef {{}} Data_Table_Preview_Column_TypesInputs */
+/** @typedef {{}} Data_Table_Preview_Column_Types_DescriptionInputs */
+/** @typedef {{}} Data_Table_Preview_No_ItemsInputs */
+/** @typedef {{}} Data_Table_Preview_Manage_MembersInputs */
+/** @typedef {{ name: NonNullable<unknown>, row: NonNullable<unknown> }} Data_Table_Preview_Selected_ItemInputs */
+/** @typedef {{}} Data_Table_Preview_Updated_AtInputs */
+/** @typedef {{}} Data_Table_Preview_Open_MemberInputs */
 /** @typedef {{}} Error_Preview_TitleInputs */
 /** @typedef {{}} Error_Preview_DescriptionInputs */
 /** @typedef {{}} Error_Preview_MessageInputs */
@@ -122,6 +135,188 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Yes" |
+*
+* @param {Data_Table_Preview_TrueInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_true = /** @type {((inputs?: Data_Table_Preview_TrueInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_TrueInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_true(inputs)
+	return __fr.data_table_preview_true(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No" |
+*
+* @param {Data_Table_Preview_FalseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_false = /** @type {((inputs?: Data_Table_Preview_FalseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_FalseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_false(inputs)
+	return __fr.data_table_preview_false(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Shipped" |
+*
+* @param {Data_Table_Preview_ShippedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_shipped = /** @type {((inputs?: Data_Table_Preview_ShippedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_ShippedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_shipped(inputs)
+	return __fr.data_table_preview_shipped(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Toggle boolean for {row}" |
+*
+* @param {Data_Table_Preview_Toggle_BooleanInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_toggle_boolean = /** @type {((inputs: Data_Table_Preview_Toggle_BooleanInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Toggle_BooleanInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_toggle_boolean(inputs)
+	return __fr.data_table_preview_toggle_boolean(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Kitchen sink" |
+*
+* @param {Data_Table_Preview_Kitchen_SinkInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_kitchen_sink = /** @type {((inputs?: Data_Table_Preview_Kitchen_SinkInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Kitchen_SinkInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_kitchen_sink(inputs)
+	return __fr.data_table_preview_kitchen_sink(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Custom cells, grouping, selection, row actions, reordering, gallery view, and export in one table." |
+*
+* @param {Data_Table_Preview_Kitchen_Sink_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_kitchen_sink_description = /** @type {((inputs?: Data_Table_Preview_Kitchen_Sink_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Kitchen_Sink_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_kitchen_sink_description(inputs)
+	return __fr.data_table_preview_kitchen_sink_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Column types" |
+*
+* @param {Data_Table_Preview_Column_TypesInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_column_types = /** @type {((inputs?: Data_Table_Preview_Column_TypesInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Column_TypesInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_column_types(inputs)
+	return __fr.data_table_preview_column_types(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Each column demonstrates its named type, including empty values. Date-times use UTC. Toggle a boolean, click a member for actions, or use the relationship pi..." |
+*
+* @param {Data_Table_Preview_Column_Types_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_column_types_description = /** @type {((inputs?: Data_Table_Preview_Column_Types_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Column_Types_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_column_types_description(inputs)
+	return __fr.data_table_preview_column_types_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No items" |
+*
+* @param {Data_Table_Preview_No_ItemsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_no_items = /** @type {((inputs?: Data_Table_Preview_No_ItemsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_No_ItemsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_no_items(inputs)
+	return __fr.data_table_preview_no_items(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Manage members" |
+*
+* @param {Data_Table_Preview_Manage_MembersInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_manage_members = /** @type {((inputs?: Data_Table_Preview_Manage_MembersInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Manage_MembersInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_manage_members(inputs)
+	return __fr.data_table_preview_manage_members(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Selected {name} in row {row}." |
+*
+* @param {Data_Table_Preview_Selected_ItemInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_selected_item = /** @type {((inputs: Data_Table_Preview_Selected_ItemInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Selected_ItemInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_selected_item(inputs)
+	return __fr.data_table_preview_selected_item(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Updated at (UTC)" |
+*
+* @param {Data_Table_Preview_Updated_AtInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_updated_at = /** @type {((inputs?: Data_Table_Preview_Updated_AtInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Updated_AtInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_updated_at(inputs)
+	return __fr.data_table_preview_updated_at(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Open member" |
+*
+* @param {Data_Table_Preview_Open_MemberInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_open_member = /** @type {((inputs?: Data_Table_Preview_Open_MemberInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_Open_MemberInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_open_member(inputs)
+	return __fr.data_table_preview_open_member(inputs)
+});
 /**
 * | output |
 * | --- |
