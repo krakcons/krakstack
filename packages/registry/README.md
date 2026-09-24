@@ -20,6 +20,8 @@ import {
 } from "@krak-stack/registry/httpapi-toolkit";
 import { ApiClient } from "@krak-stack/registry/httpapi/client";
 import { HttpApiSpec } from "@krak-stack/registry/httpapi/helpers";
+import { HttpApiOtlp } from "@krak-stack/registry/opentelemetry/api";
+import { BrowserOtlp } from "@krak-stack/registry/opentelemetry/browser";
 import { createDocsSource, makeDocs } from "@krak-stack/registry/docs";
 import { loadMdxDocsDirectory } from "@krak-stack/registry/docs/server";
 import {
@@ -40,6 +42,25 @@ import {
   HealthService,
 } from "@krak-stack/registry/service-health";
 import { NotificationService } from "@krak-stack/registry/service-notification";
+```
+
+Inject API telemetry and browser proxy routes into the application HTTP layer:
+
+```ts
+const appLayer = appRoutes.pipe(Layer.provideMerge(HttpApiOtlp.layer));
+```
+
+Install browser telemetry globally on the Atom runtime used by the API client:
+
+```ts
+import { Atom } from "effect/unstable/reactivity";
+import { BrowserOtlp } from "@krak-stack/registry/opentelemetry/browser";
+
+const apiRuntime = Atom.context();
+
+if (!import.meta.env.SSR) {
+  apiRuntime.addGlobalLayer(BrowserOtlp.layer({ serviceName: "my-app-web" }));
+}
 ```
 
 `@krak-stack/registry/service-notification` is the source-compatible direct

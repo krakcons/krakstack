@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.31",
+  "version": "0.1.32",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -47,6 +47,14 @@
     "./httpapi/mcp": {
       "types": "./dist/lib/httpapi-mcp.d.ts",
       "import": "./dist/lib/httpapi-mcp.js"
+    },
+    "./opentelemetry/api": {
+      "types": "./dist/services/opentelemetry/api.d.ts",
+      "import": "./dist/services/opentelemetry/api.js"
+    },
+    "./opentelemetry/browser": {
+      "types": "./dist/services/opentelemetry/browser.d.ts",
+      "import": "./dist/services/opentelemetry/browser.js"
     },
     "./docs": {
       "types": "./dist/lib/docs.d.ts",

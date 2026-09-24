@@ -813,16 +813,21 @@
     {
       "name": "service-opentelemetry",
       "title": "OpenTelemetry",
-      "description": "An Effect layer that sets up OpenTelemetry traces, metrics, and log export via OTLP using Effect's standard environment configuration.",
+      "description": "Effect OpenTelemetry layers for server and browser export, same-origin OTLP proxying, distributed traces, and browser exception capture.",
       "type": "registry:lib",
-      "docs": "## Overview\n\n`service-opentelemetry` uses `Otlp.layerFromConfig()` from `effect/unstable/observability` with `FetchHttpClient` from `effect/unstable/http` to export traces, metrics, and logs over OTLP/HTTP JSON. Effect reads the standard OpenTelemetry environment variables through its configuration layer.\n\n## Layer\n\n```ts\nimport { Layer } from \"effect\";\nimport { FetchHttpClient } from \"effect/unstable/http\";\nimport { Otlp, OtlpSerialization } from \"effect/unstable/observability\";\n\nexport const OpenTelemetryLive = Otlp.layerFromConfig().pipe(\n  Layer.provide(OtlpSerialization.layerJson),\n  Layer.provide(FetchHttpClient.layer),\n);\n```\n\n### Environment Variables\n\n- `OTEL_SERVICE_NAME` - Service name used in the OpenTelemetry resource\n- `OTEL_EXPORTER_OTLP_ENDPOINT` - Base URL for the OTLP collector\n- `OTEL_LOGS_EXPORTER=otlp` - Enables log export\n- `OTEL_METRICS_EXPORTER=otlp` - Enables metric export\n- `OTEL_TRACES_EXPORTER=otlp` - Enables trace export\n\nEffect leaves each exporter disabled when its corresponding exporter variable is omitted.",
-      "meta": { "updatedAt": "2026-08-27" },
+      "docs": "## Overview\n\n`service-opentelemetry` provides two focused modules:\n\n- `services/opentelemetry/api.ts` configures server-side OTLP/HTTP JSON export and same-origin proxy routes for browser traces, metrics, and logs.\n- `services/opentelemetry/browser.ts` configures browser OTLP export and captures global errors and unhandled promise rejections as failed spans.\n\nThe browser exporter posts to `/api/otel/v1/traces`, `/api/otel/v1/metrics`, and `/api/otel/v1/logs`. The API proxy forwards those requests to `OTEL_COLLECTOR_PROXY_URL`, avoiding browser CORS and collector exposure.\n\n## Server Setup\n\nMerge the application-owned routes, then inject `HttpApiOtlp.layer`. It provides the server OTLP exporter, browser proxy routes, HTTP server services, and tracer suppression for OTLP ingestion:\n\n```ts\nimport { Layer } from \"effect\";\n\nimport { HttpApiOtlp } from \"@/services/opentelemetry/api\";\n\nconst appRoutes = Layer.mergeAll(apiLayer, docsLayer, mcpLayer);\nconst appLayer = appRoutes.pipe(\n  Layer.provideMerge(HttpApiOtlp.layer),\n);\n```\n\n## Browser Setup\n\nInstall the configured browser layer globally on the Atom runtime used by the application API client. Runtime-level installation is required so browser-only spans are exported as well as propagated to API requests:\n\n```ts\nimport { Atom } from \"effect/unstable/reactivity\";\n\nimport { BrowserOtlp } from \"@/services/opentelemetry/browser\";\n\nconst apiRuntime = Atom.context();\n\nif (!import.meta.env.SSR) {\n  apiRuntime.addGlobalLayer(\n    BrowserOtlp.layer({ serviceName: \"my-app-web\" }),\n  );\n}\n\nexport class ApiClient extends AtomHttpApi.Service<ApiClient>()(\"ApiClient\", {\n  api: Api,\n  httpClient: FetchHttpClient.layer,\n  baseUrl: import.meta.env.VITE_SITE_URL,\n  runtime: apiRuntime,\n}) {}\n```\n\n`BrowserOtlp.layer` accepts optional `serviceVersion`, resource `attributes`, `baseUrl`, and the remaining `Otlp.layerJson` options. The base URL defaults to `/api/otel` and exporter intervals have browser-friendly defaults.\n\nThe layer starts when the API runtime atom is read. To start global exception capture during hydration, read it once in the root component:\n\n```tsx\nuseAtomValue(ApiClient.runtime);\n```\n\n## Server Environment Variables\n\n- `OTEL_COLLECTOR_PROXY_URL` - collector base URL used by the browser telemetry proxy\n- `OTEL_SERVICE_NAME` - server service name\n- `OTEL_EXPORTER_OTLP_ENDPOINT` - server OTLP collector base URL\n- `OTEL_LOGS_EXPORTER=otlp`\n- `OTEL_METRICS_EXPORTER=otlp`\n- `OTEL_TRACES_EXPORTER=otlp`\n- `OTEL_RESOURCE_ATTRIBUTES` - optional server resource attributes",
+      "meta": { "updatedAt": "2026-09-24" },
       "dependencies": ["effect@rc"],
       "files": [
         {
-          "path": "src/services/opentelemetry.ts",
+          "path": "src/services/opentelemetry/api.ts",
           "type": "registry:file",
-          "target": "services/opentelemetry.ts"
+          "target": "services/opentelemetry/api.ts"
+        },
+        {
+          "path": "src/services/opentelemetry/browser.ts",
+          "type": "registry:file",
+          "target": "services/opentelemetry/browser.ts"
         }
       ]
     },
