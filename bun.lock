@@ -44,7 +44,7 @@
         "@effect/tsgo": "0.14.6",
         "@effect/vitest": "4.0.0-rc.112",
         "@inlang/paraglide-js": "^2.19.0",
-        "@krak-stack/auth": "0.2.9",
+        "@krak-stack/auth": "0.2.12",
         "@oxlint/plugins": "1.78.0",
         "@tailwindcss/typography": "^0.5.20",
         "@testing-library/dom": "^10.4.1",
@@ -412,7 +412,7 @@
 
     "@js-temporal/polyfill": ["@js-temporal/polyfill@0.5.1", "", { "dependencies": { "jsbi": "^4.3.0" } }, "sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ=="],
 
-    "@krak-stack/auth": ["@krak-stack/auth@0.2.9", "", { "dependencies": { "@effect/atom-react": "4.0.0-rc.112", "@krak-stack/registry": "^0.1.25", "@lucas-barake/effect-form-react": "^0.26.0-beta.5", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@tanstack/react-router": "^1.170.15", "effect": "4.0.0-rc.112", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-sqt/gQetXaD8haHyvMZGaFEsrlGqjYaLtYXWkTWhUKl2izl/oHDoPizkKE8XNOeNN7C2MWpgMp0ZJAWCQMmz8A=="],
+    "@krak-stack/auth": ["@krak-stack/auth@0.2.12", "", { "dependencies": { "@effect/atom-react": "4.0.0-rc.112", "@krak-stack/registry": "^0.1.31", "@lucas-barake/effect-form-react": "^0.26.0-beta.5", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@tanstack/react-router": "^1.170.15", "effect": "4.0.0-rc.112", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-90/6kRIgV8avG3uo1wl9JpcB31A2QriJd4NUeuFb92/SNBIIXgTftMs/av4WDujQSqG4lGymZc5axYntcTDURQ=="],
 
     "@krak-stack/notifications": ["@krak-stack/notifications@workspace:packages/notifications"],
 
