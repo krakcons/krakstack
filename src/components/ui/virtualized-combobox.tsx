@@ -16,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 export interface VirtualizedComboboxMessages {
   clear: string;
@@ -27,6 +26,9 @@ export interface VirtualizedComboboxMessages {
 
 export type VirtualizedComboboxMessageOverrides =
   Partial<VirtualizedComboboxMessages>;
+export type VirtualizedComboboxMessageTranslations = Partial<
+  Record<string, VirtualizedComboboxMessageOverrides>
+>;
 
 const messages = {
   en: {
@@ -44,10 +46,12 @@ const messages = {
 } as const satisfies Record<"en" | "fr", VirtualizedComboboxMessages>;
 
 export const virtualizedComboboxMessages = (
-  overrides?: VirtualizedComboboxMessageOverrides,
+  locale: string,
+  translations?: VirtualizedComboboxMessageTranslations,
 ) => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 export interface VirtualizedComboboxOption<TData = never> {
@@ -67,7 +71,8 @@ interface VirtualizedComboboxSharedProps<TData> {
   disabled?: boolean;
   emptyLabel: ReactNode;
   items: readonly VirtualizedComboboxOption<TData>[];
-  messages?: VirtualizedComboboxMessageOverrides;
+  locale?: string;
+  messages?: VirtualizedComboboxMessageTranslations;
   onOpenChange?: (open: boolean) => void;
   onSearchValueChange?: (value: string) => void;
   open?: boolean;
@@ -106,6 +111,7 @@ const VirtualizedComboboxList = <TData,>({
   emptyLabel,
   groupSelections,
   itemIndexRef,
+  locale = "en",
   messages: messageOverrides,
   renderItem,
   selectedValues,
@@ -114,7 +120,8 @@ const VirtualizedComboboxList = <TData,>({
   emptyLabel: ReactNode;
   groupSelections: boolean;
   itemIndexRef: RefObject<ReadonlyMap<number, number>>;
-  messages?: VirtualizedComboboxMessageOverrides | undefined;
+  locale?: string | undefined;
+  messages?: VirtualizedComboboxMessageTranslations | undefined;
   renderItem?:
     | ((item: VirtualizedComboboxOption<TData>) => ReactNode)
     | undefined;
@@ -123,7 +130,7 @@ const VirtualizedComboboxList = <TData,>({
 }) => {
   const filteredItems =
     ComboboxPrimitive.useFilteredItems<VirtualizedComboboxOption<TData>>();
-  const labels = virtualizedComboboxMessages(messageOverrides);
+  const labels = virtualizedComboboxMessages(locale, messageOverrides);
   const itemEntries = filteredItems.map((item, index) => ({
     kind: "item" as const,
     item,
@@ -264,20 +271,21 @@ const VirtualizedComboboxContent = <TData,>({
   emptyLabel,
   groupSelections,
   itemIndexRef,
+  locale = "en",
   messages: messageOverrides,
   renderItem,
   selectedValues,
   virtualizerRef,
 }: Pick<
   VirtualizedComboboxSharedProps<TData>,
-  "contentClassName" | "emptyLabel" | "messages" | "renderItem"
+  "contentClassName" | "emptyLabel" | "locale" | "messages" | "renderItem"
 > & {
   groupSelections: boolean;
   itemIndexRef: RefObject<ReadonlyMap<number, number>>;
   selectedValues: ReadonlySet<string>;
   virtualizerRef: RefObject<VirtualizedComboboxVirtualizer | null>;
 }) => {
-  const labels = virtualizedComboboxMessages(messageOverrides);
+  const labels = virtualizedComboboxMessages(locale, messageOverrides);
 
   return (
     <ComboboxPrimitive.Portal>
@@ -305,6 +313,7 @@ const VirtualizedComboboxContent = <TData,>({
             emptyLabel={emptyLabel}
             groupSelections={groupSelections}
             itemIndexRef={itemIndexRef}
+            locale={locale}
             messages={messageOverrides}
             renderItem={renderItem}
             selectedValues={selectedValues}
@@ -374,7 +383,10 @@ const VirtualizedComboboxSingle = <TData,>(
 ) => {
   const virtualizerRef = useComboboxVirtualizerRef(props.virtualizerRef);
   const itemIndexRef = useRef<ReadonlyMap<number, number>>(new Map());
-  const labels = virtualizedComboboxMessages(props.messages);
+  const labels = virtualizedComboboxMessages(
+    props.locale ?? "en",
+    props.messages,
+  );
   return (
     <ComboboxPrimitive.Root<VirtualizedComboboxOption<TData>>
       disabled={props.disabled}
@@ -428,7 +440,10 @@ const VirtualizedComboboxMultiple = <TData,>(
 ) => {
   const virtualizerRef = useComboboxVirtualizerRef(props.virtualizerRef);
   const itemIndexRef = useRef<ReadonlyMap<number, number>>(new Map());
-  const labels = virtualizedComboboxMessages(props.messages);
+  const labels = virtualizedComboboxMessages(
+    props.locale ?? "en",
+    props.messages,
+  );
   return (
     <ComboboxPrimitive.Root<VirtualizedComboboxOption<TData>, true>
       disabled={props.disabled}

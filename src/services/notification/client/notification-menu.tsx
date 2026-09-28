@@ -29,7 +29,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 export type NotificationMenuTab = "inbox" | "archive";
 
@@ -99,12 +98,17 @@ const defaultMessages = {
   },
 } as const satisfies Record<"en" | "fr", NotificationMenuMessages>;
 
+export type NotificationMenuMessageTranslations = Partial<
+  Record<string, Partial<NotificationMenuMessages>>
+>;
+
 export const notificationMenuMessages = (
-  locale: string = getLocale(),
-  overrides?: Partial<NotificationMenuMessages>,
+  locale = "en",
+  translations?: NotificationMenuMessageTranslations,
 ): NotificationMenuMessages => ({
   ...(locale.startsWith("fr") ? defaultMessages.fr : defaultMessages.en),
-  ...overrides,
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 export type NotificationMenuState = {
@@ -124,7 +128,7 @@ export type NotificationMenuProps<ActionResult = ErrorOptions["cause"]> = {
   isLoading?: boolean | undefined;
   locale?: string | undefined;
   markReadOnOpen?: boolean | undefined;
-  messages?: Partial<NotificationMenuMessages> | undefined;
+  messages?: NotificationMenuMessageTranslations | undefined;
   notifications: readonly NotificationItem[];
   onArchive?: NotificationAction<ActionResult> | undefined;
   onMarkRead?: NotificationAction<ActionResult> | undefined;
@@ -140,7 +144,7 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
   defaultOpen = false,
   error = false,
   isLoading = false,
-  locale = getLocale(),
+  locale = "en",
   markReadOnOpen = true,
   messages: messageOverrides,
   notifications,
@@ -248,12 +252,17 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
 }
 
 export function NotificationMenuTrigger({
-  labels = notificationMenuMessages(),
+  labels: providedLabels,
+  locale = "en",
+  messages,
   unreadCount,
 }: {
   labels?: NotificationMenuMessages | undefined;
+  locale?: string | undefined;
+  messages?: NotificationMenuMessageTranslations | undefined;
   unreadCount: number;
 }) {
+  const labels = providedLabels ?? notificationMenuMessages(locale, messages);
   return (
     <PopoverTrigger
       aria-label={

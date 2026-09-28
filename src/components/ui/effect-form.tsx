@@ -16,7 +16,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FilePicker } from "@/components/ui/file-picker";
+import {
+  FilePicker,
+  type FilePickerMessageTranslations,
+} from "@/components/ui/file-picker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,10 +44,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   VirtualizedCombobox,
   virtualizedComboboxMessages,
-  type VirtualizedComboboxMessageOverrides,
+  type VirtualizedComboboxMessageTranslations,
   type VirtualizedComboboxOption,
 } from "@/components/ui/virtualized-combobox";
-import { getLocale } from "@/paraglide/runtime";
 
 export type EffectFormMessages = {
   add: string;
@@ -106,12 +108,17 @@ const messages = {
 } as const satisfies Record<"en" | "fr", EffectFormMessages>;
 
 export type EffectFormMessageOverrides = Partial<EffectFormMessages>;
+export type EffectFormMessageTranslations = Partial<
+  Record<string, EffectFormMessageOverrides>
+>;
 
 export const effectFormMessages = (
-  overrides?: EffectFormMessageOverrides,
+  locale = "en",
+  translations?: EffectFormMessageTranslations,
 ): EffectFormMessages => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 const getCauseErrorMessage = (cause: Cause.Cause<unknown>) => {
@@ -189,10 +196,14 @@ export type SubmitForm<A, E> = {
 export const SubmitButton = <A, E>({
   children,
   form,
+  locale = "en",
+  messages,
   onSubmit,
 }: {
   children?: ReactNode;
   form: SubmitForm<A, E>;
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
   onSubmit?: () => void;
 }) => {
   const submit = useAtomSet(form.submit);
@@ -217,7 +228,7 @@ export const SubmitButton = <A, E>({
       {submitResult.waiting && (
         <Loader2 data-icon="inline-start" className="animate-spin" />
       )}
-      {children ?? effectFormMessages().submit}
+      {children ?? effectFormMessages(locale, messages).submit}
     </Button>
   );
 };
@@ -273,21 +284,28 @@ export const TextField: FormReact.FieldComponent<string, TextFieldOptions> = ({
   );
 };
 
-type NameFieldOptions = Omit<TextFieldOptions, "label">;
+type NameFieldOptions = Omit<TextFieldOptions, "label"> & {
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
+};
 
 export const NameField: FormReact.FieldComponent<string, NameFieldOptions> = ({
   field,
   props,
-}) => (
-  <TextField
-    field={field}
-    props={{
-      ...props,
-      label: effectFormMessages().name,
-      errorMessage: props.errorMessage ?? effectFormMessages().nameRequired,
-    }}
-  />
-);
+}) => {
+  const { locale = "en", messages, ...fieldProps } = props;
+  const labels = effectFormMessages(locale, messages);
+  return (
+    <TextField
+      field={field}
+      props={{
+        ...fieldProps,
+        label: labels.name,
+        errorMessage: props.errorMessage ?? labels.nameRequired,
+      }}
+    />
+  );
+};
 
 type TextAreaFieldOptions = FieldOptions &
   Omit<
@@ -330,21 +348,32 @@ export const TextAreaField: FormReact.FieldComponent<
   );
 };
 
-type DescriptionFieldOptions = Omit<TextAreaFieldOptions, "label">;
+type DescriptionFieldOptions = Omit<TextAreaFieldOptions, "label"> & {
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
+};
 
 export const DescriptionField: FormReact.FieldComponent<
   string,
   DescriptionFieldOptions
-> = ({ field, props }) => (
-  <TextAreaField
-    field={field}
-    props={{ ...props, label: effectFormMessages().description }}
-  />
-);
+> = ({ field, props }) => {
+  const { locale = "en", messages, ...fieldProps } = props;
+  return (
+    <TextAreaField
+      field={field}
+      props={{
+        ...fieldProps,
+        label: effectFormMessages(locale, messages).description,
+      }}
+    />
+  );
+};
 
 type FileFieldOptions = FieldOptions & {
   accept: ComponentProps<"input">["accept"];
+  messages?: FilePickerMessageTranslations;
   onFileChange?: (file: File | undefined) => void;
+  locale?: string;
   required?: boolean;
 };
 
@@ -363,6 +392,8 @@ export const FileField: FormReact.FieldComponent<
         {...(field.value ? { file: field.value } : {})}
         id={field.path}
         invalid={invalid}
+        locale={props.locale}
+        messages={props.messages}
         name={field.path}
         onBlur={field.onBlur}
         onChange={(file) => {
@@ -478,7 +509,7 @@ export const SelectField = <T extends string>({
 type FolderFieldOptions<T extends string> = Omit<
   SelectFieldOptions<T>,
   "label"
->;
+> & { locale?: string; messages?: EffectFormMessageTranslations };
 
 export const FolderField = <T extends string>({
   field,
@@ -486,7 +517,10 @@ export const FolderField = <T extends string>({
 }: FormReact.FieldComponentProps<T, FolderFieldOptions<T>>) => (
   <SelectField
     field={field}
-    props={{ ...props, label: effectFormMessages().folder }}
+    props={{
+      ...props,
+      label: effectFormMessages(props.locale, props.messages).folder,
+    }}
   />
 );
 
@@ -579,7 +613,8 @@ type SearchableSelectFieldSharedOptions<TData> = FieldOptions & {
   emptyLabel: ReactNode;
   initialItems?: readonly VirtualizedComboboxOption<TData>[];
   items: readonly VirtualizedComboboxOption<TData>[];
-  messages?: VirtualizedComboboxMessageOverrides;
+  locale?: string;
+  messages?: VirtualizedComboboxMessageTranslations;
   onSearchValueChange?: (value: string) => void;
   placeholder: ReactNode;
   renderItem?: (item: VirtualizedComboboxOption<TData>) => ReactNode;
@@ -621,7 +656,10 @@ export const SearchableSelectField = <TData,>({
     props.items,
   );
   const invalid = Option.isSome(field.error);
-  const labels = virtualizedComboboxMessages(props.messages);
+  const labels = virtualizedComboboxMessages(
+    props.locale ?? "en",
+    props.messages,
+  );
   const ariaLabel = Schema.is(Schema.String)(props.label)
     ? props.label
     : labels.search;
@@ -634,6 +672,7 @@ export const SearchableSelectField = <TData,>({
         ariaLabel={ariaLabel}
         emptyLabel={props.emptyLabel}
         items={mergedItems}
+        locale={props.locale}
         {...(props.messages ? { messages: props.messages } : {})}
         multiple
         {...(props.onSearchValueChange
@@ -671,7 +710,10 @@ export const SingleSearchableSelectField = <TData,>({
     props.items,
   );
   const invalid = Option.isSome(field.error);
-  const labels = virtualizedComboboxMessages(props.messages);
+  const labels = virtualizedComboboxMessages(
+    props.locale ?? "en",
+    props.messages,
+  );
   const ariaLabel = Schema.is(Schema.String)(props.label)
     ? props.label
     : labels.search;
@@ -684,6 +726,7 @@ export const SingleSearchableSelectField = <TData,>({
         ariaLabel={ariaLabel}
         emptyLabel={props.emptyLabel}
         items={mergedItems}
+        locale={props.locale}
         {...(props.messages ? { messages: props.messages } : {})}
         {...(props.onSearchValueChange
           ? { onSearchValueChange: props.onSearchValueChange }
@@ -710,8 +753,12 @@ export const NullableKeyValueField = ({
   props,
 }: FormReact.FieldComponentProps<
   Readonly<Record<string, string>> | null,
-  FieldOptions
+  FieldOptions & {
+    locale?: string;
+    messages?: EffectFormMessageTranslations;
+  }
 >) => {
+  const labels = effectFormMessages(props.locale, props.messages);
   const entries = Object.entries(field.value ?? {});
 
   const updateEntry = (index: number, key: string, value: string) =>
@@ -731,7 +778,7 @@ export const NullableKeyValueField = ({
             name={`${field.path}.${index}.key`}
             type="text"
             className="w-auto"
-            placeholder={effectFormMessages().key}
+            placeholder={labels.key}
             value={key}
             onBlur={field.onBlur}
             onChange={(event) =>
@@ -744,7 +791,7 @@ export const NullableKeyValueField = ({
             name={`${field.path}.${index}.value`}
             type="text"
             className="w-auto flex-1"
-            placeholder={effectFormMessages().value}
+            placeholder={labels.value}
             value={value}
             onBlur={field.onBlur}
             onChange={(event) =>
@@ -764,7 +811,7 @@ export const NullableKeyValueField = ({
             }
           >
             <Trash data-icon="inline-start" />
-            {effectFormMessages().delete}
+            {labels.delete}
           </Button>
         </div>
       ))}
@@ -775,7 +822,7 @@ export const NullableKeyValueField = ({
         onClick={() => field.onChange({ ...field.value, "": "" })}
       >
         <Plus data-icon="inline-start" />
-        {effectFormMessages().add}
+        {labels.add}
       </Button>
       {props.description && (
         <FieldDescription>{props.description}</FieldDescription>
@@ -790,8 +837,12 @@ export const KeyValueField = ({
   props,
 }: FormReact.FieldComponentProps<
   Readonly<Record<string, string>>,
-  FieldOptions
+  FieldOptions & {
+    locale?: string;
+    messages?: EffectFormMessageTranslations;
+  }
 >) => {
+  const labels = effectFormMessages(props.locale, props.messages);
   const entries = Object.entries(field.value);
   const updateEntry = (index: number, key: string, value: string) =>
     Object.fromEntries(
@@ -810,7 +861,7 @@ export const KeyValueField = ({
             name={`${field.path}.${index}.key`}
             type="text"
             className="w-auto"
-            placeholder={effectFormMessages().key}
+            placeholder={labels.key}
             value={key}
             onBlur={field.onBlur}
             onChange={(event) =>
@@ -823,7 +874,7 @@ export const KeyValueField = ({
             name={`${field.path}.${index}.value`}
             type="text"
             className="w-auto flex-1"
-            placeholder={effectFormMessages().value}
+            placeholder={labels.value}
             value={value}
             onBlur={field.onBlur}
             onChange={(event) =>
@@ -843,7 +894,7 @@ export const KeyValueField = ({
             }
           >
             <Trash data-icon="inline-start" />
-            {effectFormMessages().delete}
+            {labels.delete}
           </Button>
         </div>
       ))}
@@ -854,7 +905,7 @@ export const KeyValueField = ({
         onClick={() => field.onChange({ ...field.value, "": "" })}
       >
         <Plus data-icon="inline-start" />
-        {effectFormMessages().add}
+        {labels.add}
       </Button>
       {props.description && (
         <FieldDescription>{props.description}</FieldDescription>
@@ -869,7 +920,11 @@ export const RevertButton = ({
   props,
 }: {
   field: { value: string; onChange: (value: string) => void };
-  props: { original: string };
+  props: {
+    locale?: string;
+    messages?: EffectFormMessageTranslations;
+    original: string;
+  };
 }) =>
   field.value === props.original ? null : (
     <div className="flex flex-1 justify-end">
@@ -879,13 +934,16 @@ export const RevertButton = ({
         className="-mr-4 h-auto py-0"
         onClick={() => field.onChange(props.original)}
       >
-        {effectFormMessages().revert}
+        {effectFormMessages(props.locale, props.messages).revert}
       </Button>
     </div>
   );
 
 type ImageFieldOptions = {
   label: string;
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
+  filePickerMessages?: FilePickerMessageTranslations;
   size: {
     width: number;
     height: number;
@@ -923,6 +981,8 @@ export const ImageField: FormReact.FieldComponent<
           : {})}
         id={field.path}
         invalid={invalid}
+        locale={props.locale}
+        messages={props.filePickerMessages}
         name={field.path}
         onChange={field.onChange}
         onClear={() => field.onChange(null)}
@@ -930,7 +990,7 @@ export const ImageField: FormReact.FieldComponent<
       />
       {props.size.suggestedWidth && props.size.suggestedHeight ? (
         <FieldDescription>
-          {effectFormMessages().suggestedImageSize(
+          {effectFormMessages(props.locale, props.messages).suggestedImageSize(
             String(props.size.suggestedWidth),
             String(props.size.suggestedHeight),
           )}
@@ -941,38 +1001,55 @@ export const ImageField: FormReact.FieldComponent<
   );
 };
 
-const NavigationBlock = ({ shouldBlock }: { shouldBlock: boolean }) => (
-  <Block
-    enableBeforeUnload={() => shouldBlock}
-    shouldBlockFn={() => shouldBlock}
-    withResolver
-  >
-    {({ status, proceed, reset }) => (
-      <AlertDialog open={status === "blocked"}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {effectFormMessages().blockNavigationTitle}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {effectFormMessages().blockNavigationDescription}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={reset}>
-              {effectFormMessages().blockNavigationCancel}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={proceed}>
-              {effectFormMessages().blockNavigationConfirm}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    )}
-  </Block>
-);
+const NavigationBlock = ({
+  locale = "en",
+  messages,
+  shouldBlock,
+}: {
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
+  shouldBlock: boolean;
+}) => {
+  const labels = effectFormMessages(locale, messages);
+  return (
+    <Block
+      enableBeforeUnload={() => shouldBlock}
+      shouldBlockFn={() => shouldBlock}
+      withResolver
+    >
+      {({ status, proceed, reset }) => (
+        <AlertDialog open={status === "blocked"}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{labels.blockNavigationTitle}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {labels.blockNavigationDescription}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={reset}>
+                {labels.blockNavigationCancel}
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={proceed}>
+                {labels.blockNavigationConfirm}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </Block>
+  );
+};
 
-const FormBlockNavigation = <A, E>({ form }: { form: SubmitForm<A, E> }) => {
+const FormBlockNavigation = <A, E>({
+  form,
+  locale,
+  messages,
+}: {
+  form: SubmitForm<A, E>;
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
+}) => {
   const submitResult = useAtomValue(form.submit);
   const isDirty = useAtomValue(form.isDirty);
   const hasChangedSinceSubmit = useAtomValue(form.hasChangedSinceSubmit);
@@ -981,9 +1058,17 @@ const FormBlockNavigation = <A, E>({ form }: { form: SubmitForm<A, E> }) => {
     !submitResult.waiting &&
     (Option.isNone(lastSubmittedValues) ? isDirty : hasChangedSinceSubmit);
 
-  return <NavigationBlock shouldBlock={shouldBlock} />;
+  return (
+    <NavigationBlock
+      locale={locale}
+      messages={messages}
+      shouldBlock={shouldBlock}
+    />
+  );
 };
 
-export const BlockNavigation = <A, E>({ form }: { form: SubmitForm<A, E> }) => (
-  <FormBlockNavigation form={form} />
-);
+export const BlockNavigation = <A, E>(props: {
+  form: SubmitForm<A, E>;
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
+}) => <FormBlockNavigation {...props} />;

@@ -82,7 +82,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 import type {
   AgentMessage,
   AgentState,
@@ -104,6 +103,7 @@ export type AgentWidgetMessages = {
   approvalRequired: string;
   cancel: string;
   close: string;
+  codeDescription: (language: string) => string;
   copied: string;
   copy: string;
   description: string;
@@ -141,6 +141,7 @@ const messages = {
       "The assistant needs your confirmation before making this change.",
     cancel: "Cancel",
     close: "Close",
+    codeDescription: (language: string) => `${language} code`,
     copied: "Copied",
     copy: "Copy",
     description: "Ask questions and use available tools to get things done.",
@@ -178,6 +179,7 @@ const messages = {
       "L'assistant a besoin de votre confirmation avant d'effectuer cette modification.",
     cancel: "Annuler",
     close: "Fermer",
+    codeDescription: (language: string) => `code ${language}`,
     copied: "Copié",
     copy: "Copier",
     description:
@@ -209,12 +211,17 @@ const messages = {
   },
 } as const satisfies Record<"en" | "fr", AgentWidgetMessages>;
 
+export type AgentWidgetMessageTranslations = Partial<
+  Record<string, Partial<AgentWidgetMessages>>
+>;
+
 export const agentWidgetMessages = (
-  locale = getLocale(),
-  overrides?: Partial<AgentWidgetMessages>,
+  locale = "en",
+  translations?: AgentWidgetMessageTranslations,
 ): AgentWidgetMessages => ({
   ...(locale.startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 const errorMessage = (code: AgentErrorCode, labels: AgentWidgetMessages) => {
@@ -337,11 +344,13 @@ const ToolLabel = ({
 function ToolActivityCard({
   disabled,
   labels,
+  locale,
   onApproval,
   tool,
 }: {
   readonly disabled: boolean;
   readonly labels: AgentWidgetMessages;
+  readonly locale: string;
   readonly onApproval: (tool: AgentToolActivity, approved: boolean) => void;
   readonly tool: AgentToolActivity;
 }) {
@@ -398,7 +407,14 @@ function ToolActivityCard({
             <CodeBlock
               code={inputCode(tool.input)}
               language="json"
-              messages={{ copied: labels.copied, copy: labels.copy }}
+              locale={locale}
+              messages={{
+                [locale]: {
+                  codeDescription: labels.codeDescription,
+                  copied: labels.copied,
+                  copy: labels.copy,
+                },
+              }}
             />
           </CardContent>
         </CollapsibleContent>
@@ -442,6 +458,7 @@ function ToolActivityCard({
 function ToolActivityLog({
   disabled,
   labels,
+  locale,
   onApproval,
   pending,
   tools,
@@ -449,6 +466,7 @@ function ToolActivityLog({
 }: {
   readonly disabled: boolean;
   readonly labels: AgentWidgetMessages;
+  readonly locale: string;
   readonly onApproval: (tool: AgentToolActivity, approved: boolean) => void;
   readonly pending: boolean;
   readonly tools: ReadonlyArray<AgentToolActivity>;
@@ -498,6 +516,7 @@ function ToolActivityLog({
                   key={tool.toolCallId}
                   disabled={disabled}
                   labels={labels}
+                  locale={locale}
                   onApproval={onApproval}
                   tool={tool}
                 />
@@ -508,6 +527,7 @@ function ToolActivityLog({
         <ToolActivityCard
           disabled={disabled}
           labels={labels}
+          locale={locale}
           onApproval={onApproval}
           tool={currentTool}
         />
@@ -555,6 +575,7 @@ function ToolActivityLog({
             key={tool.toolCallId}
             disabled={disabled}
             labels={labels}
+            locale={locale}
             onApproval={onApproval}
             tool={tool}
           />
@@ -567,12 +588,14 @@ function ToolActivityLog({
 function AgentMessageRow({
   disabled,
   labels,
+  locale,
   message,
   onApproval,
   pending,
 }: {
   readonly disabled: boolean;
   readonly labels: AgentWidgetMessages;
+  readonly locale: string;
   readonly message: AgentMessage;
   readonly onApproval: (tool: AgentToolActivity, approved: boolean) => void;
   readonly pending: boolean;
@@ -628,6 +651,7 @@ function AgentMessageRow({
           <ToolActivityLog
             disabled={disabled}
             labels={labels}
+            locale={locale}
             onApproval={onApproval}
             pending={pending}
             tools={message.tools}
@@ -646,7 +670,14 @@ function AgentMessageRow({
               className="w-full"
               codeBlocks={message.markdown.codeBlocks}
               html={message.markdown.html}
-              messages={{ copied: labels.copied, copy: labels.copy }}
+              messages={{
+                [locale]: {
+                  codeDescription: labels.codeDescription,
+                  copied: labels.copied,
+                  copy: labels.copy,
+                },
+              }}
+              locale={locale}
             />
           ) : (
             <div className="w-full whitespace-pre-wrap">{message.text}</div>
@@ -660,6 +691,7 @@ function AgentMessageRow({
 export function AgentWidget<Resource = never>({
   availableReferences = [],
   context,
+  locale = "en",
   messages: messageOverrides,
   onInterrupt,
   onRemoveContext,
@@ -669,14 +701,15 @@ export function AgentWidget<Resource = never>({
 }: {
   readonly availableReferences?: ReadonlyArray<AgentWidgetReference<Resource>>;
   readonly context?: AgentWidgetReference<Resource>;
-  readonly messages?: Partial<AgentWidgetMessages>;
+  readonly locale?: string;
+  readonly messages?: AgentWidgetMessageTranslations;
   readonly onInterrupt: () => void;
   readonly onRemoveContext?: () => void;
   readonly onReset: () => void;
   readonly onSubmit: (action: AgentSubmitAction<Resource>) => void;
   readonly state: AgentState<Resource>;
 }) {
-  const labels = agentWidgetMessages(getLocale(), messageOverrides);
+  const labels = agentWidgetMessages(locale, messageOverrides);
   const referenceInputId = useId();
   const referenceListId = `${referenceInputId}-list`;
   const [open, setOpen] = useState(false);
@@ -888,6 +921,7 @@ export function AgentWidget<Resource = never>({
                           <AgentMessageRow
                             disabled={state.pending}
                             labels={labels}
+                            locale={locale}
                             message={message}
                             onApproval={respondToApproval}
                             pending={

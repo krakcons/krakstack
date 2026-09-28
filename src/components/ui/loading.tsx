@@ -1,7 +1,6 @@
 import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 type LoadingVariant = "centered" | "inline";
 
@@ -14,16 +13,27 @@ const labels = {
   },
 } as const;
 
-const loadingLabel = () =>
-  getLocale().startsWith("fr") ? labels.fr.loading : labels.en.loading;
+export type LoadingMessages = { loading: string };
+export type LoadingMessageTranslations = Partial<
+  Record<string, Partial<LoadingMessages>>
+>;
+
+const loadingLabel = (locale: string, messages?: LoadingMessageTranslations) =>
+  messages?.[locale]?.loading ??
+  messages?.[locale.split("-")[0] ?? locale]?.loading ??
+  (locale.startsWith("fr") ? labels.fr.loading : labels.en.loading);
 
 export function Loading({
   className,
   label,
+  locale = "en",
+  messages,
   variant = "inline",
 }: {
   className?: string | undefined;
   label?: string | undefined;
+  locale?: string | undefined;
+  messages?: LoadingMessageTranslations | undefined;
   variant?: LoadingVariant | undefined;
 }) {
   return (
@@ -35,7 +45,7 @@ export function Loading({
       )}
     >
       <Loader2 className="size-4 animate-spin" />
-      {label ?? loadingLabel()}
+      {label ?? loadingLabel(locale, messages)}
     </div>
   );
 }

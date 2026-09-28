@@ -1,9 +1,3 @@
-import {
-  setLocale,
-  getLocale,
-  locales,
-  type Locale,
-} from "@/paraglide/runtime";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,9 +11,7 @@ import {
 import { Languages } from "lucide-react";
 import { Option, Schema } from "effect";
 
-const LocaleSchema = Schema.Literals(locales).annotate({
-  identifier: "Locale",
-});
+export const locales = ["en", "fr"] as const;
 
 const messages = {
   en: {
@@ -29,25 +21,49 @@ const messages = {
   },
   fr: {
     title: "Changer de langue",
-    en: "English",
+    en: "Anglais",
     fr: "Français",
   },
-} as const satisfies Record<Locale, Record<Locale | "title", string>>;
+} as const;
 
-type LocaleSwitcherMessages = Partial<Record<Locale | "title", string>>;
+export type LocaleSwitcherMessages = Partial<Record<string, string>>;
+export type LocaleSwitcherMessageTranslations = Partial<
+  Record<string, LocaleSwitcherMessages>
+>;
 
 type LocaleSwitcherProps = {
-  messages?: LocaleSwitcherMessages;
+  locale: string;
+  locales?: readonly string[];
+  messages?: LocaleSwitcherMessageTranslations;
+  onLocaleChange: (locale: string) => void;
 };
 
-const localeMessages = (overrides?: LocaleSwitcherMessages) => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
-});
+const localeMessages = (
+  locale: string,
+  translations?: LocaleSwitcherMessageTranslations,
+) => {
+  const defaults = locale.startsWith("fr") ? messages.fr : messages.en;
+  const base = translations?.[locale.split("-")[0] ?? locale];
+  const exact = translations?.[locale];
+  return {
+    title: exact?.title ?? base?.title ?? defaults.title,
+    localeName: (option: string) =>
+      exact?.[option] ??
+      base?.[option] ??
+      (option === "en" ? defaults.en : option === "fr" ? defaults.fr : option),
+  };
+};
 
-export const LocaleSwitcher = ({ messages }: LocaleSwitcherProps) => {
-  const locale = getLocale();
-  const labels = localeMessages(messages);
+export const LocaleSwitcher = ({
+  locale,
+  locales: localeOptions = locales,
+  messages,
+  onLocaleChange,
+}: LocaleSwitcherProps) => {
+  const labels = localeMessages(locale, messages);
+  const LocaleSchema = Schema.String.check(
+    Schema.makeFilter((value) => localeOptions.includes(value)),
+  ).annotate({ identifier: "Locale" });
 
   return (
     <DropdownMenu>
@@ -67,13 +83,16 @@ export const LocaleSwitcher = ({ messages }: LocaleSwitcherProps) => {
             value={locale}
             onValueChange={(value) =>
               Schema.decodeUnknownOption(LocaleSchema)(value).pipe(
-                Option.match({ onNone: () => undefined, onSome: setLocale }),
+                Option.match({
+                  onNone: () => undefined,
+                  onSome: onLocaleChange,
+                }),
               )
             }
           >
-            {locales.map((l) => (
+            {localeOptions.map((l) => (
               <DropdownMenuRadioItem key={l} value={l}>
-                {labels[l]}
+                {labels.localeName(l)}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>

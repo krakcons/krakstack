@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/attachment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getLocale } from "@/paraglide/runtime";
 
 export type FilePickerMessages = {
   accepts: (accepts: string) => string;
@@ -36,6 +35,9 @@ export type FilePickerMessages = {
 };
 
 export type FilePickerMessageOverrides = Partial<FilePickerMessages>;
+export type FilePickerMessageTranslations = Partial<
+  Record<string, FilePickerMessageOverrides>
+>;
 
 const messages = {
   en: {
@@ -59,27 +61,39 @@ const messages = {
 } as const satisfies Record<"en" | "fr", FilePickerMessages>;
 
 const filePickerMessages = (
-  overrides?: FilePickerMessageOverrides,
+  locale: string,
+  translations?: FilePickerMessageTranslations,
 ): FilePickerMessages => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
-const formatBytes = (bytes: number) => {
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-  if (bytes === 0) return "0 Bytes";
+const formatBytes = (bytes: number, locale: string) => {
+  const units = [
+    "byte",
+    "kilobyte",
+    "megabyte",
+    "gigabyte",
+    "terabyte",
+  ] as const;
   const index = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    sizes.length - 1,
+    bytes === 0 ? 0 : Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
   );
-  if (index === 0) return `${bytes} ${sizes[index]}`;
-  return `${(bytes / 1024 ** index).toFixed(1)} ${sizes[index]}`;
+  const value =
+    index === 0 ? bytes : Number((bytes / 1024 ** index).toFixed(1));
+  return new Intl.NumberFormat(locale, {
+    style: "unit",
+    unit: units[index],
+    unitDisplay: "short",
+  }).format(value);
 };
 
-const fileDescription = (file: File) =>
+const fileDescription = (file: File, locale: string) =>
   [
     file.type || file.name.split(".").pop()?.toUpperCase(),
-    formatBytes(file.size),
+    formatBytes(file.size, locale),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -97,7 +111,8 @@ export type FilePickerProps = {
     width: number;
   };
   invalid?: boolean;
-  messages?: FilePickerMessageOverrides;
+  locale?: string;
+  messages?: FilePickerMessageTranslations;
   multiple?: boolean;
   name: string;
   onBlur?: () => void;
@@ -116,6 +131,7 @@ export const FilePicker = ({
   id,
   image,
   invalid = false,
+  locale = "en",
   messages,
   multiple = false,
   name,
@@ -126,7 +142,7 @@ export const FilePicker = ({
   required,
   title,
 }: FilePickerProps) => {
-  const labels = filePickerMessages(messages);
+  const labels = filePickerMessages(locale, messages);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
   const [dragging, setDragging] = useState(false);
@@ -245,7 +261,7 @@ export const FilePicker = ({
                 <AttachmentContent>
                   <AttachmentTitle>{selectedFile.name}</AttachmentTitle>
                   <AttachmentDescription>
-                    {fileDescription(selectedFile)}
+                    {fileDescription(selectedFile, locale)}
                   </AttachmentDescription>
                 </AttachmentContent>
                 <AttachmentActions>
@@ -342,7 +358,7 @@ export const FilePicker = ({
           <AttachmentTitle>{title}</AttachmentTitle>
           {file ? (
             <AttachmentDescription>
-              {fileDescription(file)}
+              {fileDescription(file, locale)}
             </AttachmentDescription>
           ) : null}
         </AttachmentContent>

@@ -16,12 +16,9 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach } from "vitest";
 
 import { ErrorComponent, type ErrorComponentProps } from "./error-component";
-import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
-
-const originalGetLocale = getLocale;
 const renderError = async (props: ErrorComponentProps, initialEntry = "/") => {
   const routeTree = createRootRoute({
     component: () => <ErrorComponent {...props} />,
@@ -52,10 +49,8 @@ const setClipboard = (clipboard: Pick<Clipboard, "writeText">) => {
   });
 };
 
-beforeEach(() => overwriteGetLocale(() => "en"));
 afterEach(() => {
   cleanup();
-  overwriteGetLocale(originalGetLocale);
   if (originalClipboard)
     Object.defineProperty(navigator, "clipboard", originalClipboard);
   else Reflect.deleteProperty(navigator, "clipboard");
@@ -174,7 +169,6 @@ describe("ErrorComponent", () => {
   });
 
   it("offers selectable localized details when clipboard access fails", async () => {
-    overwriteGetLocale(() => "fr");
     let attempted = "";
     setClipboard({
       writeText: async (value) => {
@@ -184,6 +178,7 @@ describe("ErrorComponent", () => {
     });
     await renderError({
       error: new Error("Contactez le support."),
+      locale: "fr",
       reset: () => {},
     });
     fireEvent.click(
@@ -215,11 +210,11 @@ describe("ErrorComponent", () => {
   });
 
   it("provides French defaults and permits individual message overrides", async () => {
-    overwriteGetLocale(() => "fr");
     await renderError({
       error: new Error(""),
+      locale: "fr",
       reset: () => {},
-      messages: { title: "Erreur personnalisée" },
+      messages: { fr: { title: "Erreur personnalisée" } },
     });
     expect(screen.getByRole("heading").textContent).toBe(
       "Erreur personnalisée",
@@ -235,11 +230,37 @@ describe("ErrorComponent", () => {
     ).toBeDefined();
   });
 
+  it("supports message packs for additional locales", async () => {
+    await renderError({
+      error: new Error(""),
+      locale: "es-MX",
+      messages: {
+        es: {
+          title: "No se puede cargar esta página",
+          description: "Inténtalo de nuevo.",
+          retry: "Reintentar",
+        },
+      },
+      reset: () => {},
+    });
+
+    expect(screen.getByRole("heading").textContent).toBe(
+      "No se puede cargar esta página",
+    );
+    expect(screen.getByRole("button", { name: "Reintentar" })).toBeDefined();
+    expect(screen.getByText("Inténtalo de nuevo.")).toBeDefined();
+  });
+
   it("displays a standard error message without its cause and respects retry configuration", async () => {
     const error = new Error("Contactez votre administrateur.", {
       cause: new Error("private diagnostic"),
     });
-    await renderError({ error, reset: () => {}, messages, retryable: false });
+    await renderError({
+      error,
+      reset: () => {},
+      messages: { en: messages },
+      retryable: false,
+    });
     expect(screen.getByRole("heading").textContent).toBe(messages.title);
     expect(screen.getByText(error.message)).toBeDefined();
     expect(screen.queryByRole("button", { name: messages.retry })).toBeNull();
@@ -257,7 +278,7 @@ describe("ErrorComponent", () => {
           new ServiceUnavailable({ message: "Try later" }),
         );
         yield* Effect.promise(() =>
-          renderError({ error, reset: () => {}, messages }),
+          renderError({ error, reset: () => {}, messages: { en: messages } }),
         );
         expect(screen.getByText("Try later")).toBeDefined();
       }),

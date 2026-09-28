@@ -20,7 +20,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 const TraceId = Schema.String.check(
   Schema.isPattern(/^(?!0+$)(?:[a-f0-9]{16}|[a-f0-9]{32})$/i),
@@ -61,6 +60,10 @@ export type ErrorComponentMessages = {
   versionLabel: string;
   referenceLabel: string;
 };
+
+export type ErrorComponentMessageTranslations = Partial<
+  Record<string, Partial<ErrorComponentMessages>>
+>;
 
 const defaultMessages = {
   en: {
@@ -105,7 +108,8 @@ const defaultMessages = {
 } satisfies Record<"en" | "fr", ErrorComponentMessages>;
 
 export type ErrorComponentProps = RouterErrorComponentProps & {
-  messages?: Partial<ErrorComponentMessages>;
+  locale?: string;
+  messages?: ErrorComponentMessageTranslations;
   retryable?: boolean;
   className?: string;
   diagnostics?: {
@@ -117,19 +121,20 @@ export type ErrorComponentProps = RouterErrorComponentProps & {
 
 export const ErrorComponent = ({
   error,
+  locale = "en",
   messages,
   retryable = true,
   className,
   diagnostics,
 }: ErrorComponentProps) => {
-  const locale = getLocale();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
   const labels = useMemo(
     () => ({
       ...defaultMessages[locale.startsWith("fr") ? "fr" : "en"],
-      ...messages,
+      ...messages?.[locale.split("-")[0] ?? locale],
+      ...messages?.[locale],
     }),
     [locale, messages],
   );
@@ -200,11 +205,14 @@ export const ErrorComponent = ({
           <CopyButton
             value={report}
             copyVariant="large"
+            locale={locale}
             variant="link"
             messages={{
-              copy: labels.copy,
-              copied: labels.copied,
-              copyFailed: labels.copyFailed,
+              [locale]: {
+                copy: labels.copy,
+                copied: labels.copied,
+                copyFailed: labels.copyFailed,
+              },
             }}
             onCopied={() => setCopyResult({ report, status: "copied" })}
             onCopyError={() => setCopyResult({ report, status: "failed" })}

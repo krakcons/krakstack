@@ -28,7 +28,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { FilePicker } from "@/components/ui/file-picker";
+import {
+  FilePicker,
+  type FilePickerMessageTranslations,
+} from "@/components/ui/file-picker";
 import {
   Field,
   FieldDescription,
@@ -39,11 +42,10 @@ import {
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { getLocale } from "@/paraglide/runtime";
 import {
   VirtualizedCombobox,
   virtualizedComboboxMessages,
-  type VirtualizedComboboxMessageOverrides,
+  type VirtualizedComboboxMessageTranslations,
   type VirtualizedComboboxOption,
 } from "@/components/ui/virtualized-combobox";
 
@@ -101,10 +103,17 @@ const messages = {
 } as const satisfies Record<"en" | "fr", FormMessages>;
 
 export type FormMessageOverrides = Partial<FormMessages>;
+export type FormMessageTranslations = Partial<
+  Record<string, FormMessageOverrides>
+>;
 
-export const formMessages = (overrides?: FormMessageOverrides) => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+export const formMessages = (
+  locale = "en",
+  translations?: FormMessageTranslations,
+) => ({
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 export const ErrorMessage = ({ text }: { text: string }) => {
@@ -334,9 +343,12 @@ const SelectField = ({
 };
 
 const KeyValueField = (
-  props: DefaultOptions & { messages?: FormMessageOverrides },
+  props: DefaultOptions & {
+    locale?: string;
+    messages?: FormMessageTranslations;
+  },
 ) => {
-  const labels = formMessages(props.messages);
+  const labels = formMessages(props.locale, props.messages);
   const field = useFieldContext<Record<string, string>>();
   const invalid = !field.state.meta.isValid;
 
@@ -437,7 +449,8 @@ type SearchableSelectFieldSharedProps<TData> = DefaultOptions & {
   emptyLabel: React.ReactNode;
   initialItems?: readonly VirtualizedComboboxOption<TData>[];
   items: readonly VirtualizedComboboxOption<TData>[];
-  messages?: VirtualizedComboboxMessageOverrides;
+  locale?: string;
+  messages?: VirtualizedComboboxMessageTranslations;
   onSearchValueChange?: (value: string) => void;
   placeholder: React.ReactNode;
   renderItem?: (item: VirtualizedComboboxOption<TData>) => React.ReactNode;
@@ -485,6 +498,7 @@ const SingleSearchableSelectControl = <TData,>({
   initialItems = [],
   invalid,
   items,
+  locale,
   messages,
   name,
   onSearchValueChange,
@@ -505,6 +519,7 @@ const SingleSearchableSelectControl = <TData,>({
       ariaLabel={ariaLabel}
       emptyLabel={emptyLabel}
       items={mergedItems}
+      locale={locale}
       {...(messages ? { messages } : {})}
       onValueChange={(option) => field.handleChange(option?.value ?? "")}
       placeholder={placeholder}
@@ -523,6 +538,7 @@ const MultipleSearchableSelectControl = <TData,>({
   initialItems = [],
   invalid,
   items,
+  locale,
   messages,
   name,
   onSearchValueChange,
@@ -543,6 +559,7 @@ const MultipleSearchableSelectControl = <TData,>({
       ariaLabel={ariaLabel}
       emptyLabel={emptyLabel}
       items={mergedItems}
+      locale={locale}
       {...(messages ? { messages } : {})}
       multiple
       onValueChange={(options) =>
@@ -565,7 +582,10 @@ const SearchableSelectField = <TData,>({
   ...props
 }: SearchableSelectFieldProps<TData>) => {
   const field = useFieldContext<unknown>();
-  const labels = virtualizedComboboxMessages(props.messages);
+  const labels = virtualizedComboboxMessages(
+    props.locale ?? "en",
+    props.messages,
+  );
   const invalid = !field.state.meta.isValid;
   const ariaLabel = Schema.is(Schema.String)(label) ? label : labels.search;
   const controlProps = {
@@ -592,16 +612,20 @@ const SearchableSelectField = <TData,>({
 const FileField = ({
   label,
   accept,
+  filePickerMessages,
+  locale = "en",
   messages,
   onFileChange,
   required = false,
 }: Omit<DefaultOptions, "description"> & {
   accept: InputHTMLAttributes<HTMLInputElement>["accept"];
-  messages?: FormMessageOverrides;
+  filePickerMessages?: FilePickerMessageTranslations;
+  locale?: string;
+  messages?: FormMessageTranslations;
   onFileChange?: (file: File | "") => void;
   required?: boolean;
 }) => {
-  const labels = formMessages(messages);
+  const labels = formMessages(locale, messages);
   const field = useFieldContext<File | "">();
   const invalid = !field.state.meta.isValid;
 
@@ -616,7 +640,16 @@ const FileField = ({
           : {})}
         id={field.name}
         invalid={invalid}
-        messages={{ accepts: labels.accepts, deleteFile: labels.delete }}
+        locale={locale}
+        messages={{
+          ...filePickerMessages,
+          [locale]: {
+            ...filePickerMessages?.[locale.split("-")[0] ?? locale],
+            ...filePickerMessages?.[locale],
+            accepts: labels.accepts,
+            deleteFile: labels.delete,
+          },
+        }}
         name={field.name}
         onBlur={field.handleBlur}
         onChange={(file) => {
@@ -638,12 +671,16 @@ const FileField = ({
 };
 
 const ImageField = ({
+  filePickerMessages,
   label,
+  locale = "en",
   messages,
   size,
 }: {
+  filePickerMessages?: FilePickerMessageTranslations;
   label: string;
-  messages?: FormMessageOverrides;
+  locale?: string;
+  messages?: FormMessageTranslations;
   size: {
     width: number;
     height: number;
@@ -651,7 +688,7 @@ const ImageField = ({
     suggestedHeight?: number;
   };
 }) => {
-  const labels = formMessages(messages);
+  const labels = formMessages(locale, messages);
   const field = useFieldContext<File | string | null>();
   const invalid = !field.state.meta.isValid;
 
@@ -677,7 +714,16 @@ const ImageField = ({
         id={field.name}
         image={image}
         invalid={invalid}
-        messages={{ accepts: labels.accepts, deleteFile: labels.delete }}
+        locale={locale}
+        messages={{
+          ...filePickerMessages,
+          [locale]: {
+            ...filePickerMessages?.[locale.split("-")[0] ?? locale],
+            ...filePickerMessages?.[locale],
+            accepts: labels.accepts,
+            deleteFile: labels.delete,
+          },
+        }}
         name={field.name}
         onBlur={field.handleBlur}
         onChange={field.handleChange}
@@ -700,11 +746,13 @@ const ImageField = ({
 };
 
 export const BlockNavigation = ({
+  locale = "en",
   messages,
 }: {
-  messages?: FormMessageOverrides;
+  locale?: string;
+  messages?: FormMessageTranslations;
 }) => {
-  const labels = formMessages(messages);
+  const labels = formMessages(locale, messages);
   const form = useFormContext();
   const shouldBlock = useStore(
     form.store,
@@ -744,12 +792,14 @@ export const BlockNavigation = ({
 
 const SubmitButton = ({
   children,
+  locale = "en",
   messages,
 }: {
   children?: React.ReactNode;
-  messages?: FormMessageOverrides;
+  locale?: string;
+  messages?: FormMessageTranslations;
 }) => {
-  const labels = formMessages(messages);
+  const labels = formMessages(locale, messages);
   const form = useFormContext();
   return (
     <form.Subscribe selector={(formState) => [formState.isSubmitting]}>
@@ -823,13 +873,15 @@ export const FieldWrapper = ({
 };
 
 const RevertButton = ({
+  locale = "en",
   messages,
   original,
 }: {
-  messages?: FormMessageOverrides;
+  locale?: string;
+  messages?: FormMessageTranslations;
   original: string;
 }) => {
-  const labels = formMessages(messages);
+  const labels = formMessages(locale, messages);
   const field = useFieldContext<string>();
 
   if (field.state.value !== original) {

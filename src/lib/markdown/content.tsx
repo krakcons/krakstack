@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 
-import { CodeBlock } from "@/components/ui/code-block";
+import {
+  CodeBlock,
+  type CodeBlockMessageTranslations,
+} from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
 
 export type MarkdownContentProps = {
@@ -10,16 +13,15 @@ export type MarkdownContentProps = {
     readonly language: string;
   }>;
   readonly html: string;
-  readonly messages?: {
-    readonly copied?: string;
-    readonly copy?: string;
-  };
+  readonly locale?: string;
+  readonly messages?: CodeBlockMessageTranslations;
 };
 
 export const MarkdownContent = ({
   className,
   codeBlocks,
   html,
+  locale = "en",
   messages,
 }: MarkdownContentProps) => {
   const content: ReactNode[] = [];
@@ -41,7 +43,8 @@ export const MarkdownContent = ({
         <CodeBlock
           code={block.code}
           language={block.language}
-          messages={{ copy: messages?.copy, copied: messages?.copied }}
+          locale={locale}
+          messages={messages}
         />
       </div>,
     );

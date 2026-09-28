@@ -94,7 +94,6 @@ import {
 } from "@/components/ui/tooltip";
 import type { QueryType, SortDirection } from "@/lib/query";
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 type RowData = object;
 
@@ -170,6 +169,8 @@ export interface DataTableListItemContext<TData> {
 export interface DataTableListOptions {
   emptyLabel: ReactNode;
   display?: "list" | "icon";
+  locale?: string;
+  messages?: DataTableMessageTranslations;
   visibleCount?: number;
 }
 
@@ -228,7 +229,7 @@ export type DataTableListCellProps = DataTableListCellActionsProps &
   );
 
 export interface DataTableDateOptions {
-  /** Defaults to the current Paraglide locale. */
+  /** Defaults to the DataTable locale, or English outside a DataTable. */
   locale?: string;
   /** Defaults to UTC. Calendar-only strings retain their date in every zone. */
   timeZone?: string;
@@ -429,6 +430,9 @@ export type DataTableMessages = PaginationMessages & {
 };
 
 export type DataTableMessageOverrides = Partial<DataTableMessages>;
+export type DataTableMessageTranslations = Partial<
+  Record<string, DataTableMessageOverrides>
+>;
 
 const messages = {
   en: {
@@ -495,9 +499,13 @@ const messages = {
   },
 } as const satisfies Record<"en" | "fr", DataTableMessages>;
 
-export const dataTableMessages = (overrides?: DataTableMessageOverrides) => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+export const dataTableMessages = (
+  locale = "en",
+  translations?: DataTableMessageTranslations,
+) => ({
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 export interface DataTableProps<TData extends RowData> {
@@ -506,11 +514,12 @@ export interface DataTableProps<TData extends RowData> {
   getRowId?: (row: TData) => string;
   state?: DataTablePublicState;
   initialState?: Partial<DataTablePublicState>;
+  locale?: string;
   onStateChange?: (state: DataTablePublicState) => void;
   status?: DataTableStatus;
   features?: DataTableFeatures<TData>;
   onRowClicked?: (row: TData) => void;
-  messages?: DataTableMessageOverrides;
+  messages?: DataTableMessageTranslations;
 }
 
 export interface DataTableColumn<TData extends RowData> {
@@ -688,9 +697,10 @@ const resolveDate = (value: unknown, type: DataTableDateType["type"]) =>
 const formatDateValue = (
   date: NonNullable<ReturnType<typeof resolveDate>>,
   column: DataTableDateType,
+  locale = "en",
 ) =>
   DateTime.format(date.instant, {
-    locale: column.typeOptions?.locale ?? getLocale(),
+    locale: column.typeOptions?.locale ?? locale,
     timeZone: date.calendarOnly
       ? "UTC"
       : (column.typeOptions?.timeZone ?? "UTC"),
@@ -719,6 +729,7 @@ const decodeBooleanValue = Schema.decodeUnknownOption(BooleanValue);
 const formatNumberValue = (
   value: number,
   options: DataTableNumberOptions = {},
+  defaultLocale = "en",
 ) => {
   const {
     locale,
@@ -727,7 +738,7 @@ const formatNumberValue = (
     exportFormat: _exportFormat,
     ...format
   } = options;
-  return new Intl.NumberFormat(locale ?? getLocale(), format).format(value);
+  return new Intl.NumberFormat(locale ?? defaultLocale, format).format(value);
 };
 
 const booleanLabel = <TData,>(
@@ -740,6 +751,7 @@ const booleanLabel = <TData,>(
 export const getDataTableExportValue = <TData extends RowData>(
   row: DataTableModelRow<TData>,
   column: DataTableColumn<TData>,
+  locale = "en",
 ) => {
   const value = row.values.get(column.id);
   const colDef = column.colDef;
@@ -747,7 +759,7 @@ export const getDataTableExportValue = <TData extends RowData>(
     const number = Option.getOrUndefined(decodeNumberValue(value));
     if (number === undefined) return null;
     return colDef.typeOptions?.exportFormat === "formatted"
-      ? formatNumberValue(number, colDef.typeOptions)
+      ? formatNumberValue(number, colDef.typeOptions, locale)
       : number;
   }
   if (colDef.type === "boolean") {
@@ -761,7 +773,7 @@ export const getDataTableExportValue = <TData extends RowData>(
   const date = resolveDate(value, colDef.type);
   if (!date) return null;
   return colDef.typeOptions?.exportFormat === "formatted"
-    ? formatDateValue(date, colDef)
+    ? formatDateValue(date, colDef, locale)
     : dateIsoValue(date);
 };
 
@@ -769,6 +781,7 @@ export const filterDataTableRows = <TData extends RowData>(
   rows: readonly DataTableModelRow<TData>[],
   columns: readonly DataTableColumn<TData>[],
   globalFilter: string,
+  locale = "en",
 ): DataTableModelRow<TData>[] => {
   const query = globalFilter.trim().toLocaleLowerCase();
   if (!query) return [...rows];
@@ -783,14 +796,14 @@ export const filterDataTableRows = <TData extends RowData>(
       if (colDef.type === "date" || colDef.type === "dateTime") {
         const date = resolveDate(value, colDef.type);
         text = date
-          ? `${formatDateValue(date, colDef)} ${dateIsoValue(date)}`
+          ? `${formatDateValue(date, colDef, locale)} ${dateIsoValue(date)}`
           : "";
       } else if (colDef.type === "number") {
         const number = Option.getOrUndefined(decodeNumberValue(value));
         text =
           number === undefined
             ? ""
-            : `${formatNumberValue(number, colDef.typeOptions)} ${number}`;
+            : `${formatNumberValue(number, colDef.typeOptions, locale)} ${number}`;
       } else if (colDef.type === "boolean") {
         const boolean = Option.getOrUndefined(decodeBooleanValue(value));
         text =
@@ -938,6 +951,7 @@ type ResolvedConfig<TData extends RowData> = {
   features: DataTableFeatures<TData>;
   onRowClicked?: ((row: TData) => void) | undefined;
   labels: DataTableMessages;
+  locale: string;
 };
 
 type PointerDragState = {
@@ -1027,7 +1041,8 @@ const resolveConfig = <TData extends RowData>(
     status: props.status ?? {},
     features,
     onRowClicked: props.onRowClicked,
-    labels: dataTableMessages(props.messages),
+    labels: dataTableMessages(props.locale, props.messages),
+    locale: props.locale ?? "en",
   };
 };
 
@@ -1091,7 +1106,12 @@ const buildDataTableModel = <TData extends RowData>(
   const server = pagination !== false && pagination.mode === "server";
   const filteredRows = server
     ? [...rows]
-    : filterDataTableRows(rows, columns, store.state.globalFilter ?? "");
+    : filterDataTableRows(
+        rows,
+        columns,
+        store.state.globalFilter ?? "",
+        store.config.locale,
+      );
   const sortedRows = server
     ? filteredRows
     : sortDataTableRows(filteredRows, columns, store.state.sort ?? []);
@@ -1245,6 +1265,8 @@ const getSelectedRows = <TData extends RowData>(
 const renderCell = <TData extends RowData>(
   row: DataTableModelRow<TData>,
   column: DataTableColumn<TData>,
+  locale = "en",
+  labels = dataTableMessages(locale),
 ) => {
   const value = row.values.get(column.id);
   const params = {
@@ -1264,7 +1286,7 @@ const renderCell = <TData extends RowData>(
       <span className="block text-left tabular-nums">
         {number === undefined
           ? (colDef.typeOptions?.emptyLabel ?? "—")
-          : formatNumberValue(number, colDef.typeOptions)}
+          : formatNumberValue(number, colDef.typeOptions, locale)}
       </span>
     );
   }
@@ -1302,7 +1324,9 @@ const renderCell = <TData extends RowData>(
     if (colDef.valueFormatter) return colDef.valueFormatter(params);
     const date = resolveDate(value, colDef.type);
     return date ? (
-      <time dateTime={dateIsoValue(date)}>{formatDateValue(date, colDef)}</time>
+      <time dateTime={dateIsoValue(date)}>
+        {formatDateValue(date, colDef, locale)}
+      </time>
     ) : (
       (colDef.typeOptions?.emptyLabel ?? "—")
     );
@@ -1324,6 +1348,8 @@ const renderCell = <TData extends RowData>(
           {...config}
           itemActions={itemActions}
           items={config.getItems(row.data)}
+          locale={locale}
+          messages={{ [locale]: labels }}
           options={config.getOptions(row.data)}
           totalCount={config.getTotalCount?.(row.data)}
           onAdd={
@@ -1344,6 +1370,8 @@ const renderCell = <TData extends RowData>(
         {...config}
         itemActions={itemActions}
         items={config.getItems(row.data)}
+        locale={locale}
+        messages={{ [locale]: labels }}
         totalCount={config.getTotalCount?.(row.data)}
       />
     );
@@ -1682,7 +1710,13 @@ const DataTableToolbar = <TData extends RowData>({
                         model.visibleColumns.map(columnLabel),
                         exportRows.map((row) =>
                           model.visibleColumns.map((column) =>
-                            String(getDataTableExportValue(row, column) ?? ""),
+                            String(
+                              getDataTableExportValue(
+                                row,
+                                column,
+                                store.config.locale,
+                              ) ?? "",
+                            ),
                           ),
                         ),
                         features.export ? features.export.baseName : "table",
@@ -1699,7 +1733,11 @@ const DataTableToolbar = <TData extends RowData>({
                           Object.fromEntries(
                             model.visibleColumns.map((column) => [
                               column.id,
-                              getDataTableExportValue(row, column),
+                              getDataTableExportValue(
+                                row,
+                                column,
+                                store.config.locale,
+                              ),
                             ]),
                           ),
                         ),
@@ -2210,7 +2248,7 @@ const TableDataRow = <TData extends RowData>({
           style={{ width: column.width }}
         >
           <div className={cn("min-w-0", column.colDef.truncate && "truncate")}>
-            {renderCell(row, column)}
+            {renderCell(row, column, store.config.locale, store.config.labels)}
           </div>
         </TableCell>
       ))}
@@ -2652,14 +2690,23 @@ const GalleryCard = <TData extends RowData>({
           {tag ? (
             <Badge variant="secondary">
               {gallery.tagIcon}
-              {renderCell(row, tag)}
+              {renderCell(row, tag, store.config.locale, store.config.labels)}
             </Badge>
           ) : null}
         </div>
-        <CardTitle>{name ? renderCell(row, name) : row.id}</CardTitle>
+        <CardTitle>
+          {name
+            ? renderCell(row, name, store.config.locale, store.config.labels)
+            : row.id}
+        </CardTitle>
         {description ? (
           <div className="text-muted-foreground line-clamp-3 text-sm">
-            {renderCell(row, description)}
+            {renderCell(
+              row,
+              description,
+              store.config.locale,
+              store.config.labels,
+            )}
           </div>
         ) : null}
         {hasRowActionMenu(store) ? (
@@ -2825,7 +2872,8 @@ const DataTablePagination = <TData extends RowData>({
   return (
     <div className="pt-4">
       <Pagination
-        messages={store.config.labels}
+        locale={store.config.locale}
+        messages={{ [store.config.locale]: store.config.labels }}
         onPageChange={(page) =>
           setPagination({ page, pageSize: store.state.pageSize })
         }
@@ -2904,7 +2952,8 @@ const HydratedDataTable = <TData extends RowData>({
         status: props.status ?? {},
         features,
         onRowClicked: props.onRowClicked,
-        labels: dataTableMessages(props.messages),
+        labels: dataTableMessages(props.locale, props.messages),
+        locale: props.locale ?? "en",
       };
       const state = { ...store.state, ...uiState, ...props.state };
       const modelChanged =
@@ -2929,6 +2978,7 @@ const HydratedDataTable = <TData extends RowData>({
     props.columnDefs,
     props.features,
     props.getRowId,
+    props.locale,
     props.messages,
     props.onRowClicked,
     props.onStateChange,
@@ -3026,6 +3076,7 @@ export const DataTableListCell = (props: DataTableListCellProps) => {
     return <EditableDataTableListCell {...props} />;
   }
   const { actionsLabel, itemActions, ...summaryProps } = props;
+  const labels = dataTableMessages(props.locale, props.messages);
   const totalCount = props.totalCount ?? props.items.length;
   const overflow =
     totalCount > Math.min(props.items.length, props.visibleCount ?? 3);
@@ -3033,10 +3084,7 @@ export const DataTableListCell = (props: DataTableListCellProps) => {
     return <DataTableListSummary {...summaryProps} />;
   }
   const menuLabel =
-    actionsLabel ??
-    (itemActions?.length
-      ? dataTableMessages().actions
-      : dataTableMessages().listDetails);
+    actionsLabel ?? (itemActions?.length ? labels.actions : labels.listDetails);
   return (
     <div
       className="grid min-h-16 in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0 in-[[data-slot=table-cell]]:min-h-0"
@@ -3050,6 +3098,8 @@ export const DataTableListCell = (props: DataTableListCellProps) => {
         force={overflow}
         label={menuLabel}
         items={props.items}
+        locale={props.locale}
+        messages={props.messages}
         trigger={
           <Button
             aria-label={menuLabel}
@@ -3077,6 +3127,8 @@ const EditableDataTableListCell = ({
   totalCount,
   actionsLabel,
   itemActions,
+  locale = "en",
+  messages,
 }: EditableDataTableListCellProps & DataTableListCellActionsProps) => {
   const [selected, setSelected] = useState([...items]);
   useLayoutEffect(() => setSelected([...items]), [items]);
@@ -3087,7 +3139,7 @@ const EditableDataTableListCell = ({
     totalCount === undefined
       ? selected.length
       : totalCount + selected.length - items.length;
-  const labels = dataTableMessages();
+  const labels = dataTableMessages(locale, messages);
   const actions: DataTableItemAction<DataTableListItem>[] = [
     ...(itemActions ?? []),
     ...(onRemove
@@ -3126,6 +3178,8 @@ const EditableDataTableListCell = ({
         force
         items={selected}
         label={actionsLabel ?? manageLabel}
+        locale={locale}
+        messages={messages}
         onAdd={
           canAdd
             ? (item) => {
@@ -3167,6 +3221,8 @@ const DataTableListMenu = ({
   force = false,
   items,
   label,
+  locale = "en",
+  messages,
   onAdd,
   trigger,
 }: {
@@ -3180,6 +3236,8 @@ const DataTableListMenu = ({
   force?: boolean;
   items: readonly (string | DataTableListItem)[];
   label?: string;
+  locale?: string;
+  messages?: DataTableMessageTranslations;
   onAdd?: (item: DataTableListOption) => void;
   trigger?: ReactElement;
 }) => {
@@ -3194,11 +3252,9 @@ const DataTableListMenu = ({
     ({ visibleActions }) => visibleActions.length,
   );
   if (!force && !hasActions && !onAdd) return null;
+  const labels = dataTableMessages(locale, messages);
   const resolvedLabel =
-    label ??
-    (hasActions
-      ? dataTableMessages().actions
-      : dataTableMessages().listDetails);
+    label ?? (hasActions ? labels.actions : labels.listDetails);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -3270,10 +3326,12 @@ const DataTableListMenu = ({
               {entries.length ? <DropdownMenuSeparator /> : null}
               <DataTableListAddMenu
                 emptyLabel={addEmptyLabel}
-                label={addLabel ?? dataTableMessages().addItem}
+                label={addLabel ?? labels.addItem}
+                locale={locale}
+                messages={messages}
                 onAdd={onAdd}
                 options={addOptions}
-                searchLabel={addSearchLabel ?? dataTableMessages().filter}
+                searchLabel={addSearchLabel ?? labels.filter}
                 display={display}
               />
             </>
@@ -3288,6 +3346,8 @@ const DataTableListAddMenu = ({
   emptyLabel,
   display,
   label,
+  locale = "en",
+  messages,
   onAdd,
   options,
   searchLabel,
@@ -3295,6 +3355,8 @@ const DataTableListAddMenu = ({
   emptyLabel?: ReactNode;
   display: "list" | "icon";
   label: string;
+  locale?: string;
+  messages?: DataTableMessageTranslations;
   onAdd: (item: DataTableListOption) => void;
   options: readonly DataTableListOption[];
   searchLabel: string;
@@ -3303,7 +3365,7 @@ const DataTableListAddMenu = ({
   const focusSearch = useCallback((input: HTMLInputElement | null) => {
     input?.focus({ preventScroll: true });
   }, []);
-  const locale = getLocale();
+  const labels = dataTableMessages(locale, messages);
   const normalizedSearch = search.trim().toLocaleLowerCase(locale);
   const filtered = normalizedSearch
     ? options.filter((item) =>
@@ -3330,7 +3392,7 @@ const DataTableListAddMenu = ({
             onKeyDown={(event) => {
               if (event.key !== "Escape") event.stopPropagation();
             }}
-            placeholder={dataTableMessages().filter}
+            placeholder={labels.filter}
             ref={focusSearch}
             value={search}
           />
@@ -3362,6 +3424,8 @@ const DataTableListAddMenu = ({
 const DataTableListSummaryContent = ({
   emptyLabel,
   items,
+  locale,
+  messages,
   totalCount = items.length,
   display = "list",
   showMenu,
@@ -3396,6 +3460,8 @@ const DataTableListSummaryContent = ({
               display={display}
               force
               items={normalized}
+              locale={locale}
+              messages={messages}
             />
           ) : null}
         </span>
@@ -3414,6 +3480,8 @@ const DataTableListSummaryContent = ({
           display={display}
           force
           items={normalized}
+          locale={locale}
+          messages={messages}
         />
       ) : null}
     </span>

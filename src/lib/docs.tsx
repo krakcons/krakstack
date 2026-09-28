@@ -593,6 +593,8 @@ export type DocsRouteMessages = {
   description: string;
   copied: string;
   copyCode: string;
+  copyCodeDescription: (language: string) => string;
+  copyFailed: string;
   copyLink: string;
   copyTable: string;
   downloadTable: string;
@@ -672,7 +674,9 @@ const messages = {
     title: "Documentation",
     description: "Guides and technical reference.",
     copied: "Copied",
-    copyCode: "Copy code",
+    copyCode: "Copy",
+    copyCodeDescription: (language) => `${language} code`,
+    copyFailed: "Copy failed",
     copyLink: "Copy link",
     copyTable: "Copy table",
     downloadTable: "Download table",
@@ -702,7 +706,9 @@ const messages = {
     title: "Documentation",
     description: "Guides et référence technique.",
     copied: "Copié",
-    copyCode: "Copier le code",
+    copyCode: "Copier",
+    copyCodeDescription: (language) => `code ${language}`,
+    copyFailed: "Échec de la copie",
     copyLink: "Copier le lien",
     copyTable: "Copier le tableau",
     downloadTable: "Télécharger le tableau",
@@ -754,9 +760,11 @@ const iconFor = (
 ) => (name ? icons[name] : undefined);
 
 const DocsArticle = ({
+  locale,
   messages,
   page,
 }: {
+  locale: DocsLocale;
   messages: DocsRouteMessages;
   page: DocsPage;
 }) => {
@@ -764,7 +772,15 @@ const DocsArticle = ({
     <MarkdownContent
       codeBlocks={page.codeBlocks}
       html={page.html}
-      messages={{ copy: messages.copyCode, copied: messages.copied }}
+      locale={locale}
+      messages={{
+        [locale]: {
+          codeDescription: messages.copyCodeDescription,
+          copy: messages.copyCode,
+          copied: messages.copied,
+          copyFailed: messages.copyFailed,
+        },
+      }}
     />
   );
 };
@@ -959,12 +975,15 @@ const DocsSearch = ({
   return (
     <SearchMenu
       groups={groups}
+      locale={locale}
       messages={{
-        title: messages.searchTitle,
-        description: messages.searchDescription,
-        placeholder: messages.searchPlaceholder,
-        inputPlaceholder: messages.searchInputPlaceholder,
-        emptyMessage: messages.searchEmpty,
+        [locale]: {
+          title: messages.searchTitle,
+          description: messages.searchDescription,
+          placeholder: messages.searchPlaceholder,
+          inputPlaceholder: messages.searchInputPlaceholder,
+          emptyMessage: messages.searchEmpty,
+        },
       }}
       query={query}
       onQueryChange={setQuery}
@@ -1130,7 +1149,11 @@ export const DocsContent = ({ docs, resolution }: DocsPageSectionProps) => {
         headings={page.headings}
         label={resolvedMessages.onThisPage}
       />
-      <DocsArticle messages={resolvedMessages} page={page} />
+      <DocsArticle
+        locale={page.locale}
+        messages={resolvedMessages}
+        page={page}
+      />
     </>
   );
 };

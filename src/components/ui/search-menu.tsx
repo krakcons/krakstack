@@ -14,7 +14,6 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 const messages = {
   en: {
@@ -44,9 +43,17 @@ export type SearchMenuMessages = Partial<
   >
 >;
 
-const searchMenuMessages = (overrides?: SearchMenuMessages) => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+export type SearchMenuMessageTranslations = Partial<
+  Record<string, SearchMenuMessages>
+>;
+
+const searchMenuMessages = (
+  locale: string,
+  translations?: SearchMenuMessageTranslations,
+) => ({
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 export type SearchMenuItem = {
@@ -67,12 +74,13 @@ export type SearchMenuGroup = {
 
 export type SearchMenuProps = {
   groups: SearchMenuGroup[];
+  locale?: string;
   title?: string;
   description?: string;
   placeholder?: string;
   inputPlaceholder?: string;
   emptyMessage?: string;
-  messages?: SearchMenuMessages;
+  messages?: SearchMenuMessageTranslations;
   shortcutLabel?: string;
   className?: string;
   open?: boolean;
@@ -85,6 +93,7 @@ export type SearchMenuProps = {
 
 export function SearchMenu({
   groups,
+  locale = "en",
   title,
   description,
   placeholder,
@@ -100,7 +109,7 @@ export function SearchMenu({
   onQueryChange,
   shouldFilter,
 }: SearchMenuProps) {
-  const labels = searchMenuMessages(messages);
+  const labels = searchMenuMessages(locale, messages);
   const resolvedTitle = title ?? labels.title;
   const resolvedDescription = description ?? labels.description;
   const resolvedPlaceholder = placeholder ?? labels.placeholder;

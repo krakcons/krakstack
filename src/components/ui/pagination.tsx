@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 export type PaginationMessages = {
   pageSize: string;
@@ -28,6 +27,10 @@ export type PaginationMessages = {
   goToNextPage: string;
   goToLastPage: string;
 };
+
+export type PaginationMessageTranslations = Partial<
+  Record<string, Partial<PaginationMessages>>
+>;
 
 const messages = {
   en: {
@@ -53,16 +56,18 @@ const messages = {
 } as const satisfies Record<"en" | "fr", PaginationMessages>;
 
 export const paginationMessages = (
-  locale = getLocale(),
-  overrides?: Partial<PaginationMessages>,
+  locale = "en",
+  translations?: PaginationMessageTranslations,
 ) => ({
   ...(locale.startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 export type PaginationProps = {
   compact?: boolean | undefined;
-  messages?: Partial<PaginationMessages> | undefined;
+  locale?: string | undefined;
+  messages?: PaginationMessageTranslations | undefined;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   page: number;
@@ -76,6 +81,7 @@ export type PaginationProps = {
 
 export function Pagination({
   compact = false,
+  locale = "en",
   messages: messageOverrides,
   onPageChange,
   onPageSizeChange,
@@ -87,7 +93,7 @@ export function Pagination({
   showResults = true,
   totalRows,
 }: PaginationProps) {
-  const labels = paginationMessages(getLocale(), messageOverrides);
+  const labels = paginationMessages(locale, messageOverrides);
   const pageSizeId = useId();
   const canGoBack = page > 0;
   const canGoForward = page + 1 < pageCount;

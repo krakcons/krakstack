@@ -3,11 +3,29 @@ import { Check, Copy, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ComponentProps } from "react";
 
-type CopyButtonMessages = {
-  copy?: string;
-  copied?: string;
-  copyFailed?: string;
+export type CopyButtonMessages = {
+  copy: string;
+  copied: string;
+  copyFailed: string;
 };
+
+export type CopyButtonMessageTranslations = Partial<
+  Record<string, Partial<CopyButtonMessages>>
+>;
+
+const messages = {
+  en: { copy: "Copy", copied: "Copied", copyFailed: "Copy failed" },
+  fr: { copy: "Copier", copied: "Copié", copyFailed: "Échec de la copie" },
+} as const satisfies Record<"en" | "fr", CopyButtonMessages>;
+
+export const copyButtonMessages = (
+  locale = "en",
+  translations?: CopyButtonMessageTranslations,
+): CopyButtonMessages => ({
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
+});
 
 type CopyButtonProps = Omit<
   ComponentProps<typeof Button>,
@@ -16,7 +34,8 @@ type CopyButtonProps = Omit<
   value: string;
   valueDescription?: string;
   copyVariant?: "default" | "sm" | "large";
-  messages?: CopyButtonMessages;
+  locale?: string;
+  messages?: CopyButtonMessageTranslations;
   onCopied?: () => void;
   onCopyError?: (error: Error) => void;
   resetDelay?: number;
@@ -28,6 +47,7 @@ export function CopyButton({
   value,
   valueDescription,
   copyVariant = "default",
+  locale = "en",
   messages,
   onCopied,
   onCopyError,
@@ -42,11 +62,7 @@ export function CopyButton({
     undefined,
   );
 
-  const labels = {
-    copy: messages?.copy ?? "Copy",
-    copied: messages?.copied ?? "Copied",
-    copyFailed: messages?.copyFailed ?? "Copy failed",
-  };
+  const labels = copyButtonMessages(locale, messages);
 
   const accessibleLabel =
     ariaLabel ??
@@ -76,7 +92,7 @@ export function CopyButton({
       onCopyError?.(
         error instanceof Error
           ? error
-          : new Error("Copy failed", { cause: error }),
+          : new Error(labels.copyFailed, { cause: error }),
       );
     }
 

@@ -19,7 +19,7 @@ import {
 } from "@/lib/registry";
 import { createSeo } from "@krak-stack/registry/seo";
 import { m } from "@/paraglide/messages";
-import { getLocale } from "@/paraglide/runtime";
+import { getLocale, setLocale } from "@/paraglide/runtime";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -98,6 +98,7 @@ const GitHubIcon = ({ className }: { className?: string }) => (
 
 function Home() {
   const { theme, setTheme } = useTheme();
+  const locale = getLocale();
   const capabilities = [
     {
       icon: PackagePlus,
@@ -168,8 +169,16 @@ function Home() {
             </a>
             <RegistryCommandMenu className="sm:!size-9 sm:!justify-center sm:!px-0 lg:!h-9 lg:!w-64 lg:!justify-start lg:!gap-2.5 lg:!px-2.5 sm:[&>kbd]:!hidden lg:[&>kbd]:!inline-flex sm:[&>span]:!hidden lg:[&>span]:!block" />
             <MobileHeaderMenu />
-            <ThemeSwitcher value={theme} onChange={setTheme} />
-            <LocaleSwitcher />
+            <ThemeSwitcher locale={locale} value={theme} onChange={setTheme} />
+            <LocaleSwitcher
+              locale={locale}
+              locales={["en", "fr"]}
+              onLocaleChange={(nextLocale) => {
+                if (nextLocale === "en" || nextLocale === "fr") {
+                  setLocale(nextLocale);
+                }
+              }}
+            />
           </div>
         </nav>
       </header>

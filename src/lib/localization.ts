@@ -1,19 +1,17 @@
-import {
-  extractLocaleFromHeader,
-  locales as paraglideLocales,
-} from "@/paraglide/runtime";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { Cookies, HttpServerRequest } from "effect/unstable/http";
 import { HttpApiMiddleware } from "effect/unstable/httpapi";
 
-export type Locale = (typeof paraglideLocales)[number];
-
-export const LocaleSchema = Schema.Literals(paraglideLocales).annotate({
+export const LocaleSchema = Schema.String.check(
+  Schema.isPattern(/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i),
+).annotate({
   identifier: "Locale",
   title: "Locale",
-  description: "A supported application locale.",
+  description: "A BCP 47 language tag.",
   examples: ["en", "fr"],
 });
+
+export type Locale = typeof LocaleSchema.Type;
 
 const LocaleOrNone = Schema.Union([LocaleSchema, Schema.Literal("none")]);
 
@@ -31,13 +29,33 @@ export const LocalizedInputSchema = Schema.Struct({
 export type LocalizedInputType = typeof LocalizedInputSchema.Type;
 
 const decodeLocale = Schema.decodeUnknownOption(LocaleSchema);
+const AcceptLanguageQuality = Schema.NumberFromString.check(
+  Schema.makeFilter((quality) => quality >= 0 && quality <= 1),
+).annotate({ identifier: "AcceptLanguageQuality" });
+const decodeAcceptLanguageQuality = Schema.decodeUnknownOption(
+  AcceptLanguageQuality,
+);
 
 const parseAcceptLanguage = (input?: string | null): Locale | undefined => {
   if (!input) return undefined;
-  const request = new Request("https://dummy.com", {
-    headers: { "accept-language": input },
-  });
-  return extractLocaleFromHeader(request);
+  return input
+    .split(",")
+    .flatMap((entry, index) => {
+      const [languageRange = "", ...parameters] = entry.split(";");
+      const locale = Option.getOrUndefined(decodeLocale(languageRange.trim()));
+      if (!locale) return [];
+      const qualityInput = parameters
+        .map((parameter) => parameter.trim().match(/^q=(.+)$/i)?.[1])
+        .find((value) => value !== undefined);
+      const quality = qualityInput
+        ? Option.getOrElse(decodeAcceptLanguageQuality(qualityInput), () => 0)
+        : 1;
+      return [{ index, locale, quality }];
+    })
+    .sort(
+      (left, right) => right.quality - left.quality || left.index - right.index,
+    )
+    .find(({ quality }) => quality > 0)?.locale;
 };
 
 const localeContextFromHeaders = (
@@ -111,15 +129,28 @@ export function localize<
 >(context: TVariables, obj: TBase, customLocale?: Locale) {
   const locale = customLocale ?? context.locale;
   const fallbackLocale = context.fallbackLocale;
+  const findTranslation = (candidate: Locale) => {
+    const normalized = candidate.toLowerCase();
+    const exact = obj.translations.find(
+      (item) => item.locale.toLowerCase() === normalized,
+    );
+    if (exact) return exact;
+    const base = normalized.split("-")[0];
+    return base
+      ? obj.translations.find(
+          (item) => item.locale.toLowerCase().split("-")[0] === base,
+        )
+      : undefined;
+  };
 
   let translation: TBase["translations"][number] | undefined;
   if (fallbackLocale === "none") {
-    translation = obj.translations.find((item) => item.locale === locale);
+    translation = findTranslation(locale);
   } else {
-    translation = obj.translations.find((item) => item.locale === locale);
+    translation = findTranslation(locale);
     if (!translation) {
       translation = fallbackLocale
-        ? obj.translations.find((item) => item.locale === fallbackLocale)
+        ? findTranslation(fallbackLocale)
         : obj.translations[0];
       translation ??= obj.translations[0];
     }

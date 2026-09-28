@@ -16,4 +16,26 @@ describe("CodeBlock", () => {
     expect(html).toContain("background: transparent");
     expect(html).toContain("answer");
   });
+
+  it("uses bilingual defaults and custom base-language messages", () => {
+    const french = renderToStaticMarkup(
+      <CodeBlock code="const answer = 42;" language="typescript" locale="fr" />,
+    );
+    const spanish = renderToStaticMarkup(
+      <CodeBlock
+        code="const answer = 42;"
+        language="typescript"
+        locale="es-MX"
+        messages={{
+          es: {
+            codeDescription: (language) => `código ${language}`,
+            copy: "Copiar",
+          },
+        }}
+      />,
+    );
+
+    expect(french).toContain('aria-label="Copier code ts"');
+    expect(spanish).toContain('aria-label="Copiar código ts"');
+  });
 });

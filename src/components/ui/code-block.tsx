@@ -1,4 +1,7 @@
-import { CopyButton } from "@/components/ui/copy-button";
+import {
+  CopyButton,
+  type CopyButtonMessages,
+} from "@/components/ui/copy-button";
 import { highlight } from "@tanstack/highlight";
 import { createThemeCss } from "@tanstack/highlight/theme";
 import { githubDarkTheme } from "@tanstack/highlight/themes/github-dark";
@@ -21,31 +24,54 @@ const themeCss = `${createThemeCss({
 }
 [data-code-theme] pre.th-code code { font: inherit; }`;
 
-type CodeBlockMessages = {
-  copy?: string;
-  copied?: string;
-  copyFailed?: string;
+export type CodeBlockMessages = CopyButtonMessages & {
+  codeDescription: (language: string) => string;
 };
+export type CodeBlockMessageTranslations = Partial<
+  Record<string, Partial<CodeBlockMessages>>
+>;
+
+const messages = {
+  en: {
+    codeDescription: (language: string) => `${language} code`,
+    copy: "Copy",
+    copied: "Copied",
+    copyFailed: "Copy failed",
+  },
+  fr: {
+    codeDescription: (language: string) => `code ${language}`,
+    copy: "Copier",
+    copied: "Copié",
+    copyFailed: "Échec de la copie",
+  },
+} as const satisfies Record<"en" | "fr", CodeBlockMessages>;
+
+export const codeBlockMessages = (
+  locale = "en",
+  translations?: CodeBlockMessageTranslations,
+): CodeBlockMessages => ({
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
+});
+
 type CodeBlockProps = {
   code: string;
   language?: string;
-  messages?: CodeBlockMessages;
+  locale?: string;
+  messages?: CodeBlockMessageTranslations;
 };
 
 export function CodeBlock({
   code,
   language = "text",
+  locale = "en",
   messages,
 }: CodeBlockProps) {
   const normalizedLanguage = language.toLowerCase() || "text";
   const highlighted = highlight(code, { lang: normalizedLanguage });
 
-  const copyMessages: CodeBlockMessages = {};
-  if (messages?.copy !== undefined) copyMessages.copy = messages.copy;
-  if (messages?.copied !== undefined) copyMessages.copied = messages.copied;
-  if (messages?.copyFailed !== undefined) {
-    copyMessages.copyFailed = messages.copyFailed;
-  }
+  const labels = codeBlockMessages(locale, messages);
 
   return (
     <div
@@ -59,9 +85,10 @@ export function CodeBlock({
         </span>
         <CopyButton
           value={code}
-          valueDescription={`${highlighted.lang} code`}
+          valueDescription={labels.codeDescription(highlighted.lang)}
           variant="secondary"
-          messages={copyMessages}
+          locale={locale}
+          messages={{ [locale]: labels }}
         />
       </div>
       <div

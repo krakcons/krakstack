@@ -3,7 +3,6 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Schema } from "effect";
 
 import { cn } from "@/lib/utils";
-import { getLocale } from "@/paraglide/runtime";
 
 export type GoogleMapPoint = {
   lat: number;
@@ -34,6 +33,10 @@ export type GoogleMapMessages = {
   zoomOut: string;
 };
 
+export type GoogleMapMessageTranslations = Partial<
+  Record<string, Partial<GoogleMapMessages>>
+>;
+
 export type GoogleMapProps = {
   apiKey: string;
   center: GoogleMapPoint;
@@ -45,7 +48,7 @@ export type GoogleMapProps = {
   minZoom?: number | undefined;
   maxZoom?: number | undefined;
   className?: string | undefined;
-  messages?: Partial<GoogleMapMessages> | undefined;
+  messages?: GoogleMapMessageTranslations | undefined;
   locale?: string | undefined;
 };
 
@@ -164,10 +167,11 @@ const defaultMessages = {
 
 const googleMapMessages = (
   locale: string,
-  overrides?: Partial<GoogleMapMessages>,
+  translations?: GoogleMapMessageTranslations,
 ) => ({
   ...(locale.startsWith("fr") ? defaultMessages.fr : defaultMessages.en),
-  ...overrides,
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 const isGoogleMapsReady = (
@@ -258,7 +262,7 @@ export function GoogleMap({
   maxZoom = 20,
   className,
   messages: messageOverrides,
-  locale = getLocale(),
+  locale = "en",
 }: GoogleMapProps) {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<GoogleMapsApi | null>(null);

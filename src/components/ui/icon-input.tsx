@@ -12,8 +12,11 @@ import { Icon } from "@iconify/react";
 import { ExternalLink, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
-import { getLocale } from "@/paraglide/runtime";
+import {
+  VirtualizedCombobox,
+  virtualizedComboboxMessages,
+  type VirtualizedComboboxMessages,
+} from "@/components/ui/virtualized-combobox";
 
 const IconifySearchResponse = Schema.Struct({
   icons: Schema.Array(Schema.String),
@@ -54,6 +57,7 @@ const useIconSearchAtom = (collection: string, query: string) =>
 
 const labels = {
   en: {
+    ...virtualizedComboboxMessages("en"),
     browse: "Browse Iconify",
     empty: "No icons found.",
     searchPlaceholder: "Search icons",
@@ -61,6 +65,7 @@ const labels = {
     select: "Select icon",
   },
   fr: {
+    ...virtualizedComboboxMessages("fr"),
     browse: "Parcourir Iconify",
     empty: "Aucune icône trouvée.",
     searchPlaceholder: "Rechercher des icônes",
@@ -69,13 +74,30 @@ const labels = {
   },
 } as const;
 
-const iconInputLabels = () =>
-  getLocale().startsWith("fr") ? labels.fr : labels.en;
+export type IconInputMessages = Omit<
+  Record<keyof (typeof labels)["en"], string>,
+  "selected"
+> &
+  Pick<VirtualizedComboboxMessages, "selected">;
+export type IconInputMessageTranslations = Partial<
+  Record<string, Partial<IconInputMessages>>
+>;
+
+const iconInputLabels = (
+  locale: string,
+  messages?: IconInputMessageTranslations,
+) => ({
+  ...(locale.startsWith("fr") ? labels.fr : labels.en),
+  ...messages?.[locale.split("-")[0] ?? locale],
+  ...messages?.[locale],
+});
 
 type IconInputProps = {
   collection?: string;
   disabled?: boolean;
   id?: string;
+  locale?: string;
+  messages?: IconInputMessageTranslations;
   onValueChange: (value: string) => void;
   value: string;
 };
@@ -87,6 +109,8 @@ export function IconInput({
   collection = "lucide",
   disabled,
   id,
+  locale = "en",
+  messages,
   onValueChange,
   value,
 }: IconInputProps) {
@@ -97,7 +121,7 @@ export function IconInput({
   const icons = AsyncResult.isSuccess(iconSearchResult)
     ? iconSearchResult.value
     : [];
-  const copy = iconInputLabels();
+  const copy = iconInputLabels(locale, messages);
   const isWaiting =
     deferredQuery.trim() !== "" && AsyncResult.isWaiting(iconSearchResult);
 
@@ -130,7 +154,15 @@ export function IconInput({
         )
       }
       items={items}
-      messages={{ search: copy.searchPlaceholder }}
+      locale={locale}
+      messages={{
+        [locale]: {
+          clear: copy.clear,
+          search: copy.searchPlaceholder,
+          selected: copy.selected,
+          selectMore: copy.selectMore,
+        },
+      }}
       onOpenChange={(open) => {
         setIsOpen(open);
         if (open) setQuery("");

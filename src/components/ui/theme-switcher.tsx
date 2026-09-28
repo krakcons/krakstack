@@ -20,7 +20,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getLocale } from "@/paraglide/runtime";
 
 const messages = {
   en: {
@@ -37,11 +36,18 @@ const messages = {
   },
 } as const satisfies Record<"en" | "fr", Record<Theme | "title", string>>;
 
-type ThemeSwitcherMessages = Partial<Record<Theme | "title", string>>;
+export type ThemeSwitcherMessages = Partial<Record<Theme | "title", string>>;
+export type ThemeSwitcherMessageTranslations = Partial<
+  Record<string, ThemeSwitcherMessages>
+>;
 
-const themeMessages = (overrides?: ThemeSwitcherMessages) => ({
-  ...(getLocale().startsWith("fr") ? messages.fr : messages.en),
-  ...overrides,
+const themeMessages = (
+  locale: string,
+  translations?: ThemeSwitcherMessageTranslations,
+) => ({
+  ...(locale.startsWith("fr") ? messages.fr : messages.en),
+  ...translations?.[locale.split("-")[0] ?? locale],
+  ...translations?.[locale],
 });
 
 const DEFAULT_THEME: Theme = "system";
@@ -70,7 +76,8 @@ type ThemeProviderProps = {
 };
 
 type ThemeSwitcherProps = {
-  messages?: ThemeSwitcherMessages;
+  locale?: string;
+  messages?: ThemeSwitcherMessageTranslations;
   options?: ReadonlyArray<Theme>;
   value: Theme;
   onChange: (value: Theme) => void;
@@ -195,12 +202,13 @@ export const useTheme = () => {
 };
 
 export const ThemeSwitcher = ({
+  locale = "en",
   messages,
   options = themes,
   value,
   onChange,
 }: ThemeSwitcherProps) => {
-  const labels = themeMessages(messages);
+  const labels = themeMessages(locale, messages);
 
   return (
     <DropdownMenu>

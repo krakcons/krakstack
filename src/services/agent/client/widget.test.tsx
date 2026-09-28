@@ -11,7 +11,7 @@ import {
 import { afterEach, beforeEach, vi } from "vitest";
 
 import { initialAgentState } from "./atom";
-import { AgentWidget } from "./widget";
+import { AgentWidget, agentWidgetMessages } from "./widget";
 
 beforeEach(() => {
   Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
@@ -35,6 +35,17 @@ afterEach(() => {
     value: undefined,
   });
   vi.unstubAllGlobals();
+});
+
+describe("agentWidgetMessages", () => {
+  it("uses French defaults and supports custom base-language packs", () => {
+    expect(agentWidgetMessages("fr-CA").send).toBe("Envoyer le message");
+    expect(
+      agentWidgetMessages("es-MX", {
+        es: { send: "Enviar mensaje" },
+      }).send,
+    ).toBe("Enviar mensaje");
+  });
 });
 
 const renderWidget = () => {
