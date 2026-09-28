@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export interface VirtualizedComboboxMessages {
   clear: string;
   search: string;
@@ -496,9 +497,10 @@ const VirtualizedComboboxMultiple = <TData,>(
 export function VirtualizedCombobox<TData = never>(
   props: VirtualizedComboboxProps<TData>,
 ) {
+  const locale = useKrakstackLocale(props.locale);
   return props.multiple ? (
-    <VirtualizedComboboxMultiple {...props} />
+    <VirtualizedComboboxMultiple {...props} locale={locale} />
   ) : (
-    <VirtualizedComboboxSingle {...props} />
+    <VirtualizedComboboxSingle {...props} locale={locale} />
   );
 }

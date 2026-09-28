@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export type PaginationMessages = {
   pageSize: string;
   results: (count: number) => string;
@@ -81,7 +82,7 @@ export type PaginationProps = {
 
 export function Pagination({
   compact = false,
-  locale = "en",
+  locale: localeOverride,
   messages: messageOverrides,
   onPageChange,
   onPageSizeChange,
@@ -93,6 +94,7 @@ export function Pagination({
   showResults = true,
   totalRows,
 }: PaginationProps) {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = paginationMessages(locale, messageOverrides);
   const pageSizeId = useId();
   const canGoBack = page > 0;

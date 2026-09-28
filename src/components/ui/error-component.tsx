@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 const TraceId = Schema.String.check(
   Schema.isPattern(/^(?!0+$)(?:[a-f0-9]{16}|[a-f0-9]{32})$/i),
 ).annotate({ identifier: "ErrorTraceId" });
@@ -121,12 +122,13 @@ export type ErrorComponentProps = RouterErrorComponentProps & {
 
 export const ErrorComponent = ({
   error,
-  locale = "en",
+  locale: localeOverride,
   messages,
   retryable = true,
   className,
   diagnostics,
 }: ErrorComponentProps) => {
+  const locale = useKrakstackLocale(localeOverride);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });

@@ -49,6 +49,7 @@ import {
   type VirtualizedComboboxOption,
 } from "@/components/ui/virtualized-combobox";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export type FormMessages = {
   keyValueKey: string;
   keyValueValue: string;
@@ -115,6 +116,11 @@ export const formMessages = (
   ...translations?.[locale.split("-")[0] ?? locale],
   ...translations?.[locale],
 });
+
+const useFormMessages = (
+  locale?: string,
+  translations?: FormMessageTranslations,
+) => formMessages(useKrakstackLocale(locale), translations);
 
 export const ErrorMessage = ({ text }: { text: string }) => {
   return (
@@ -348,7 +354,7 @@ const KeyValueField = (
     messages?: FormMessageTranslations;
   },
 ) => {
-  const labels = formMessages(props.locale, props.messages);
+  const labels = useFormMessages(props.locale, props.messages);
   const field = useFieldContext<Record<string, string>>();
   const invalid = !field.state.meta.isValid;
 
@@ -581,15 +587,14 @@ const SearchableSelectField = <TData,>({
   multiple,
   ...props
 }: SearchableSelectFieldProps<TData>) => {
+  const locale = useKrakstackLocale(props.locale);
   const field = useFieldContext<unknown>();
-  const labels = virtualizedComboboxMessages(
-    props.locale ?? "en",
-    props.messages,
-  );
+  const labels = virtualizedComboboxMessages(locale, props.messages);
   const invalid = !field.state.meta.isValid;
   const ariaLabel = Schema.is(Schema.String)(label) ? label : labels.search;
   const controlProps = {
     ...props,
+    locale,
     ariaLabel,
     invalid,
     name: field.name,
@@ -613,7 +618,7 @@ const FileField = ({
   label,
   accept,
   filePickerMessages,
-  locale = "en",
+  locale: localeOverride,
   messages,
   onFileChange,
   required = false,
@@ -625,6 +630,7 @@ const FileField = ({
   onFileChange?: (file: File | "") => void;
   required?: boolean;
 }) => {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = formMessages(locale, messages);
   const field = useFieldContext<File | "">();
   const invalid = !field.state.meta.isValid;
@@ -673,7 +679,7 @@ const FileField = ({
 const ImageField = ({
   filePickerMessages,
   label,
-  locale = "en",
+  locale: localeOverride,
   messages,
   size,
 }: {
@@ -688,6 +694,7 @@ const ImageField = ({
     suggestedHeight?: number;
   };
 }) => {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = formMessages(locale, messages);
   const field = useFieldContext<File | string | null>();
   const invalid = !field.state.meta.isValid;
@@ -746,13 +753,13 @@ const ImageField = ({
 };
 
 export const BlockNavigation = ({
-  locale = "en",
+  locale,
   messages,
 }: {
   locale?: string;
   messages?: FormMessageTranslations;
 }) => {
-  const labels = formMessages(locale, messages);
+  const labels = useFormMessages(locale, messages);
   const form = useFormContext();
   const shouldBlock = useStore(
     form.store,
@@ -792,14 +799,14 @@ export const BlockNavigation = ({
 
 const SubmitButton = ({
   children,
-  locale = "en",
+  locale,
   messages,
 }: {
   children?: React.ReactNode;
   locale?: string;
   messages?: FormMessageTranslations;
 }) => {
-  const labels = formMessages(locale, messages);
+  const labels = useFormMessages(locale, messages);
   const form = useFormContext();
   return (
     <form.Subscribe selector={(formState) => [formState.isSubmitting]}>
@@ -873,7 +880,7 @@ export const FieldWrapper = ({
 };
 
 const RevertButton = ({
-  locale = "en",
+  locale,
   messages,
   original,
 }: {
@@ -881,7 +888,7 @@ const RevertButton = ({
   messages?: FormMessageTranslations;
   original: string;
 }) => {
-  const labels = formMessages(locale, messages);
+  const labels = useFormMessages(locale, messages);
   const field = useFieldContext<string>();
 
   if (field.state.value !== original) {

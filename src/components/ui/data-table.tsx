@@ -95,6 +95,7 @@ import {
 import type { QueryType, SortDirection } from "@/lib/query";
 import { cn } from "@/lib/utils";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 type RowData = object;
 
 export type DataTableView = "table" | "gallery";
@@ -3002,6 +3003,7 @@ const HydratedDataTable = <TData extends RowData>({
 export const DataTable = <TData extends RowData>(
   props: DataTableProps<TData>,
 ) => {
+  const locale = useKrakstackLocale(props.locale);
   const persistedUiAtomRef = useRef<Atom.Writable<
     AsyncResult.AsyncResult<DataTablePersistedUiState>,
     DataTablePersistedUiState
@@ -3038,6 +3040,7 @@ export const DataTable = <TData extends RowData>(
   return (
     <HydratedDataTable
       {...props}
+      locale={locale}
       persistedUiState={persistedUiResult.value}
       setPersistedUiState={setPersistedUiState}
     />
@@ -3072,14 +3075,20 @@ const DataTableContent = <TData extends RowData>({
 };
 
 export const DataTableListCell = (props: DataTableListCellProps) => {
-  if (props.options && (props.onAdd || props.onRemove)) {
-    return <EditableDataTableListCell {...props} />;
+  const locale = useKrakstackLocale(props.locale);
+  const resolvedProps = { ...props, locale };
+  if (
+    resolvedProps.options &&
+    (resolvedProps.onAdd || resolvedProps.onRemove)
+  ) {
+    return <EditableDataTableListCell {...resolvedProps} />;
   }
-  const { actionsLabel, itemActions, ...summaryProps } = props;
-  const labels = dataTableMessages(props.locale, props.messages);
-  const totalCount = props.totalCount ?? props.items.length;
+  const { actionsLabel, itemActions, ...summaryProps } = resolvedProps;
+  const labels = dataTableMessages(locale, resolvedProps.messages);
+  const totalCount = resolvedProps.totalCount ?? resolvedProps.items.length;
   const overflow =
-    totalCount > Math.min(props.items.length, props.visibleCount ?? 3);
+    totalCount >
+    Math.min(resolvedProps.items.length, resolvedProps.visibleCount ?? 3);
   if (!itemActions?.length && !overflow) {
     return <DataTableListSummary {...summaryProps} />;
   }
@@ -3094,12 +3103,12 @@ export const DataTableListCell = (props: DataTableListCellProps) => {
     >
       <DataTableListMenu
         actions={itemActions ?? []}
-        display={props.display}
+        display={resolvedProps.display}
         force={overflow}
         label={menuLabel}
-        items={props.items}
-        locale={props.locale}
-        messages={props.messages}
+        items={resolvedProps.items}
+        locale={locale}
+        messages={resolvedProps.messages}
         trigger={
           <Button
             aria-label={menuLabel}

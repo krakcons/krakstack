@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 
 type LoadingVariant = "centered" | "inline";
 
@@ -26,7 +27,7 @@ const loadingLabel = (locale: string, messages?: LoadingMessageTranslations) =>
 export function Loading({
   className,
   label,
-  locale = "en",
+  locale: localeOverride,
   messages,
   variant = "inline",
 }: {
@@ -36,6 +37,7 @@ export function Loading({
   messages?: LoadingMessageTranslations | undefined;
   variant?: LoadingVariant | undefined;
 }) {
+  const locale = useKrakstackLocale(localeOverride);
   return (
     <div
       className={cn(

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 const messages = {
   en: {
     title: "Switch theme",
@@ -202,12 +203,13 @@ export const useTheme = () => {
 };
 
 export const ThemeSwitcher = ({
-  locale = "en",
+  locale: localeOverride,
   messages,
   options = themes,
   value,
   onChange,
 }: ThemeSwitcherProps) => {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = themeMessages(locale, messages);
 
   return (

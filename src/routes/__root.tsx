@@ -1,9 +1,10 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
 import { ThemeProvider } from "@krak-stack/registry/theme-switcher";
+import { KrakstackProvider } from "@krak-stack/registry/krakstack-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { m } from "@/paraglide/messages";
-import { getLocale } from "@/paraglide/runtime";
+import { getLocale, locales } from "@/paraglide/runtime";
 
 import appCss from "../styles.css?url";
 import { ErrorComponent } from "@/components/ui/error-component";
@@ -76,9 +77,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-        </ThemeProvider>
+        <KrakstackProvider locale={getLocale()} locales={locales}>
+          <ThemeProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ThemeProvider>
+        </KrakstackProvider>
 
         <Scripts />
       </body>

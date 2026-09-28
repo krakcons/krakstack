@@ -18,6 +18,7 @@ import {
   type VirtualizedComboboxMessages,
 } from "@/components/ui/virtualized-combobox";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 const IconifySearchResponse = Schema.Struct({
   icons: Schema.Array(Schema.String),
 }).pipe(Schema.annotate({ identifier: "IconifySearchResponse" }));
@@ -109,11 +110,12 @@ export function IconInput({
   collection = "lucide",
   disabled,
   id,
-  locale = "en",
+  locale: localeOverride,
   messages,
   onValueChange,
   value,
 }: IconInputProps) {
+  const locale = useKrakstackLocale(localeOverride);
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);

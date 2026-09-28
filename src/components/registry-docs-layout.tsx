@@ -22,10 +22,8 @@ export const RegistryDocsLayout = ({
       sidebarCollapsible="offcanvas"
       headerActions={
         <>
-          <ThemeSwitcher locale={locale} value={theme} onChange={setTheme} />
+          <ThemeSwitcher value={theme} onChange={setTheme} />
           <LocaleSwitcher
-            locale={locale}
-            locales={["en", "fr"]}
             onLocaleChange={(nextLocale) => {
               if (nextLocale === "en" || nextLocale === "fr") {
                 setLocale(nextLocale);

@@ -56,6 +56,27 @@ const sourceAliasPlugin: Bun.BunPlugin = {
     });
   },
 };
+const providerExternalPlugin: Bun.BunPlugin = {
+  name: "provider-external",
+  setup(build) {
+    build.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, ({ path }) => {
+      const contents = readFileSync(path, "utf8").replaceAll(
+        '"@/components/ui/krakstack-provider"',
+        '"@krak-stack/registry/krakstack-provider"',
+      );
+      const extension = extname(path);
+      const loader =
+        extension === ".tsx"
+          ? "tsx"
+          : extension === ".ts"
+            ? "ts"
+            : extension === ".jsx"
+              ? "jsx"
+              : "js";
+      return { contents, loader };
+    });
+  },
+};
 const entries = Object.values(packageJson.exports)
   .filter(Schema.is(RegistryPackageExport))
   .map(({ import: output }) => {
@@ -80,7 +101,7 @@ for (const entry of entries) {
     naming: "[name].js",
     outdir: dirname(entry.output),
     packages: "external",
-    plugins: [sourceAliasPlugin],
+    plugins: [providerExternalPlugin, sourceAliasPlugin],
     target: entry.output.endsWith(".server.js")
       ? "bun"
       : entry.output.includes("/oxlint/")

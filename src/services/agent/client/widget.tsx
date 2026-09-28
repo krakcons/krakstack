@@ -91,6 +91,7 @@ import type {
 import type { AgentErrorCode, AgentReference } from "@/services/agent/schema";
 import { AGENT_REFERENCE_LIMIT } from "@/services/agent/schema";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export type AgentWidgetReference<Resource> = AgentReference<Resource> & {
   readonly icon?: ReactNode;
   readonly key: string;
@@ -691,7 +692,7 @@ function AgentMessageRow({
 export function AgentWidget<Resource = never>({
   availableReferences = [],
   context,
-  locale = "en",
+  locale: localeOverride,
   messages: messageOverrides,
   onInterrupt,
   onRemoveContext,
@@ -709,6 +710,7 @@ export function AgentWidget<Resource = never>({
   readonly onSubmit: (action: AgentSubmitAction<Resource>) => void;
   readonly state: AgentState<Resource>;
 }) {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = agentWidgetMessages(locale, messageOverrides);
   const referenceInputId = useId();
   const referenceListId = `${referenceInputId}-list`;

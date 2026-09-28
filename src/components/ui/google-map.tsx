@@ -4,6 +4,7 @@ import { Schema } from "effect";
 
 import { cn } from "@/lib/utils";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export type GoogleMapPoint = {
   lat: number;
   lng: number;
@@ -262,8 +263,9 @@ export function GoogleMap({
   maxZoom = 20,
   className,
   messages: messageOverrides,
-  locale = "en",
+  locale: localeOverride,
 }: GoogleMapProps) {
+  const locale = useKrakstackLocale(localeOverride);
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<GoogleMapsApi | null>(null);
   const mapRef = useRef<GoogleMapInstance | null>(null);

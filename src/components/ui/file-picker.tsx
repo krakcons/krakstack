@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export type FilePickerMessages = {
   accepts: (accepts: string) => string;
   chooseFile: string;
@@ -131,7 +132,7 @@ export const FilePicker = ({
   id,
   image,
   invalid = false,
-  locale = "en",
+  locale: localeOverride,
   messages,
   multiple = false,
   name,
@@ -142,6 +143,7 @@ export const FilePicker = ({
   required,
   title,
 }: FilePickerProps) => {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = filePickerMessages(locale, messages);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);

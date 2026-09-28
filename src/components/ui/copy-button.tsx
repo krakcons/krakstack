@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Copy, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ComponentProps } from "react";
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 
 export type CopyButtonMessages = {
   copy: string;
@@ -47,7 +48,7 @@ export function CopyButton({
   value,
   valueDescription,
   copyVariant = "default",
-  locale = "en",
+  locale: localeOverride,
   messages,
   onCopied,
   onCopyError,
@@ -57,6 +58,7 @@ export function CopyButton({
   "aria-label": ariaLabel,
   ...props
 }: CopyButtonProps) {
+  const locale = useKrakstackLocale(localeOverride);
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const copyTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,

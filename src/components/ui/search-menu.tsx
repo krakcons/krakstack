@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 const messages = {
   en: {
     title: "Search",
@@ -93,7 +94,7 @@ export type SearchMenuProps = {
 
 export function SearchMenu({
   groups,
-  locale = "en",
+  locale: localeOverride,
   title,
   description,
   placeholder,
@@ -109,6 +110,7 @@ export function SearchMenu({
   onQueryChange,
   shouldFilter,
 }: SearchMenuProps) {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = searchMenuMessages(locale, messages);
   const resolvedTitle = title ?? labels.title;
   const resolvedDescription = description ?? labels.description;

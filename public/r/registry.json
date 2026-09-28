@@ -12,7 +12,7 @@
         "createdAt": "2026-09-21",
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`ErrorComponent` is a domain-neutral TanStack Router error page for standard and Effect errors. Domain code owns error classification and localized messages. English and French defaults are selected from the explicit `locale` prop. The optional `messages` map adds or overrides labels by locale, including additional languages.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Setup\n\n```tsx\nimport { ErrorComponent } from \"@/components/ui/error-component\";\n\nconst router = createRouter({ routeTree, defaultErrorComponent: ErrorComponent });\nexport const Route = createRootRoute({ errorComponent: ErrorComponent });\n```\n\nRetry calls `window.location.reload()` for a full document refresh. Home navigation uses TanStack Router's `/` link, including locale rewrites. Set `retryable={false}` to hide retry. Blank messages use the localized fallback description.\n\n## Copy Error Details\n\nThe copy action includes the error name, displayed message, page pathname, capture timestamp, and locale. Clipboard failures reveal selectable text. Raw causes, request headers, URL query strings, fragments, and stack traces are not appended. Error messages are application-owned text and should be suitable for sharing.\n\nFor Effect HTTP errors, `Reference` is automatically extracted from the failed request's existing trace headers using `HttpTraceContext.fromHeaders`. W3C `traceparent`, compact `b3`, and multi-header B3 are supported. Wrapped errors are followed through their standard `cause` chain, with cycle protection. Missing or invalid trace IDs are omitted. The component never generates a new ID.\n\nOptional `diagnostics` fields add app name and release version. An explicit `reference` overrides automatic trace extraction:\n\n```tsx\n<ErrorComponent {...props} diagnostics={{ app: \"Kokobi\", version: releaseVersion }} />\n```\n\nUsers can paste the report into their support channel and the reference can be searched in tracing tools.\n\n## Effect Boundaries\n\nMap transport failures to meaningful localized domain errors while preserving the original error in `cause`. This retains the HTTP request and its automatically propagated trace ID. At promise-based router boundaries, use `Effect.runPromiseExit` and throw `Cause.squash(exit.cause)` on failure. No custom display-error class is required. Errors that discard the original HTTP error cannot supply its trace ID automatically.\n\nThe package exports `ErrorComponent`, `ErrorComponentProps`, and `ErrorComponentMessages` from `@krak-stack/registry/error-component`.",
+      "docs": "## Overview\n\n`ErrorComponent` is a domain-neutral TanStack Router error page for standard and Effect errors. Domain code owns error classification and localized messages. English and French defaults are selected from the explicit `locale` prop. The optional `messages` map adds or overrides labels by locale, including additional languages.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Setup\n\n```tsx\nimport { ErrorComponent } from \"@/components/ui/error-component\";\n\nconst router = createRouter({ routeTree, defaultErrorComponent: ErrorComponent });\nexport const Route = createRootRoute({ errorComponent: ErrorComponent });\n```\n\nRetry calls `window.location.reload()` for a full document refresh. Home navigation uses TanStack Router's `/` link, including locale rewrites. Set `retryable={false}` to hide retry. Blank messages use the localized fallback description.\n\n## Copy Error Details\n\nThe copy action includes the error name, displayed message, page pathname, capture timestamp, and locale. Clipboard failures reveal selectable text. Raw causes, request headers, URL query strings, fragments, and stack traces are not appended. Error messages are application-owned text and should be suitable for sharing.\n\nFor Effect HTTP errors, `Reference` is automatically extracted from the failed request's existing trace headers using `HttpTraceContext.fromHeaders`. W3C `traceparent`, compact `b3`, and multi-header B3 are supported. Wrapped errors are followed through their standard `cause` chain, with cycle protection. Missing or invalid trace IDs are omitted. The component never generates a new ID.\n\nOptional `diagnostics` fields add app name and release version. An explicit `reference` overrides automatic trace extraction:\n\n```tsx\n<ErrorComponent {...props} diagnostics={{ app: \"Kokobi\", version: releaseVersion }} />\n```\n\nUsers can paste the report into their support channel and the reference can be searched in tracing tools.\n\n## Effect Boundaries\n\nMap transport failures to meaningful localized domain errors while preserving the original error in `cause`. This retains the HTTP request and its automatically propagated trace ID. At promise-based router boundaries, use `Effect.runPromiseExit` and throw `Cause.squash(exit.cause)` on failure. No custom display-error class is required. Errors that discard the original HTTP error cannot supply its trace ID automatically.\n\nThe package exports `ErrorComponent`, `ErrorComponentProps`, and `ErrorComponentMessages` from `@krak-stack/registry/error-component`.",
       "files": [
         {
           "path": "src/components/ui/error-component.tsx",
@@ -21,6 +21,7 @@
         }
       ],
       "registryDependencies": [
+        "@krak-stack/krakstack-provider",
         "button",
         "empty",
         "textarea",
@@ -37,7 +38,7 @@
       "type": "registry:block",
       "title": "Search Menu",
       "description": "A reusable command-palette search menu with grouped items, icons, descriptions, keyboard shortcut support, and a responsive search trigger.",
-      "docs": "## Overview\n\n`SearchMenu` is a reusable command-palette component built on shadcn's `Command` primitive. Pass it grouped items and it renders a responsive search trigger, `⌘K`/`Ctrl+K` shortcut handling, searchable groups, optional item icons, descriptions, and shortcuts. Labels are stored in the component file and can be overridden with props or the `messages` prop.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Generic grouped item input\n- Optional item icons, descriptions, keywords, disabled state, and shortcuts\n- Per-item `onSelect` handlers plus a top-level `onSelect` callback\n- Controlled or uncontrolled open state\n- Mobile icon-only trigger and desktop search-bar trigger\n\n## Usage\n\n```tsx\nimport { SearchMenu, type SearchMenuGroup } from \"@/components/ui/search-menu\";\nimport { FileText, Settings } from \"lucide-react\";\n\nconst groups: SearchMenuGroup[] = [\n  {\n    heading: \"Pages\",\n    items: [\n      {\n        id: \"docs\",\n        label: \"Docs\",\n        description: \"Open documentation\",\n        icon: <FileText className=\"size-4\" />,\n        onSelect: () => navigate({ to: \"/docs\" }),\n      },\n    ],\n  },\n  {\n    heading: \"Settings\",\n    items: [\n      {\n        id: \"profile\",\n        label: \"Profile\",\n        icon: <Settings className=\"size-4\" />,\n      },\n    ],\n  },\n];\n\n<SearchMenu\n  groups={groups}\n  locale={locale}\n  messages={{ [locale]: { title: \"Search\", description: \"Search pages and actions.\" } }}\n/>\n```",
+      "docs": "## Overview\n\n`SearchMenu` is a reusable command-palette component built on shadcn's `Command` primitive. Pass it grouped items and it renders a responsive search trigger, `⌘K`/`Ctrl+K` shortcut handling, searchable groups, optional item icons, descriptions, and shortcuts. Labels are stored in the component file and can be overridden with props or the `messages` prop.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Generic grouped item input\n- Optional item icons, descriptions, keywords, disabled state, and shortcuts\n- Per-item `onSelect` handlers plus a top-level `onSelect` callback\n- Controlled or uncontrolled open state\n- Mobile icon-only trigger and desktop search-bar trigger\n\n## Usage\n\n```tsx\nimport { SearchMenu, type SearchMenuGroup } from \"@/components/ui/search-menu\";\nimport { FileText, Settings } from \"lucide-react\";\n\nconst groups: SearchMenuGroup[] = [\n  {\n    heading: \"Pages\",\n    items: [\n      {\n        id: \"docs\",\n        label: \"Docs\",\n        description: \"Open documentation\",\n        icon: <FileText className=\"size-4\" />,\n        onSelect: () => navigate({ to: \"/docs\" }),\n      },\n    ],\n  },\n  {\n    heading: \"Settings\",\n    items: [\n      {\n        id: \"profile\",\n        label: \"Profile\",\n        icon: <Settings className=\"size-4\" />,\n      },\n    ],\n  },\n];\n\n<SearchMenu\n  groups={groups}\n  locale={locale}\n  messages={{ [locale]: { title: \"Search\", description: \"Search pages and actions.\" } }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/search-menu.tsx",
@@ -45,7 +46,11 @@
           "target": "components/ui/search-menu.tsx"
         }
       ],
-      "registryDependencies": ["button", "command"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "button",
+        "command"
+      ],
       "dependencies": ["lucide-react", "react"],
       "meta": {
         "updatedAt": "2026-09-28"
@@ -70,6 +75,25 @@
       "dependencies": ["@tanstack/react-router", "lucide-react"]
     },
     {
+      "name": "krakstack-provider",
+      "type": "registry:component",
+      "title": "KrakStack Provider",
+      "description": "Provides shared KrakStack component configuration, including the active locale.",
+      "meta": {
+        "createdAt": "2026-09-28",
+        "updatedAt": "2026-09-28"
+      },
+      "docs": "## Overview\n\n`KrakstackProvider` supplies shared configuration to KrakStack components without requiring repetitive props. Pass the active application locale once near the root. Explicit component props still take precedence over provider values. The provider is SSR-safe and does not create a client-only rendering boundary.\n\n## Usage\n\n```tsx\nimport { KrakstackProvider } from \"@/components/ui/krakstack-provider\";\n\n<KrakstackProvider locale={getLocale()} locales={locales}>\n  <App />\n</KrakstackProvider>\n```",
+      "files": [
+        {
+          "path": "src/components/ui/krakstack-provider.tsx",
+          "type": "registry:component",
+          "target": "components/ui/krakstack-provider.tsx"
+        }
+      ],
+      "dependencies": ["react"]
+    },
+    {
       "name": "copy-button",
       "type": "registry:component",
       "title": "Copy Button",
@@ -77,7 +101,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`CopyButton` copies a string to the clipboard and announces copy results with an `aria-live` status region. It keeps the accessible name stable while the icon changes after a successful copy. Pass `valueDescription` for concise context, such as `install command` or `tsx code`; avoid passing the full copied value when it may be long or sensitive.\n\nPass the active locale through `locale`. English and French defaults are built in, and `messages` accepts arbitrary locale keys with exact-locale, base-language, then English fallback.\n\n## Variants\n\n- Omit `copyVariant` for the default icon-only size.\n- `copyVariant=\"sm\"` renders a smaller compact icon-only button.\n- `copyVariant=\"large\"` renders the copy label next to the icon.\n\n## Usage\n\n```tsx\nimport { CopyButton } from \"@/components/ui/copy-button\";\n\n<CopyButton\n  value=\"bun run dev\"\n  valueDescription=\"install command\"\n  copyVariant=\"large\"\n  variant=\"secondary\"\n  locale={locale}\n  messages={{ [locale]: { copy: \"Copy\", copied: \"Copied\" } }}\n/>\n```",
+      "docs": "## Overview\n\n`CopyButton` copies a string to the clipboard and announces copy results with an `aria-live` status region. It keeps the accessible name stable while the icon changes after a successful copy. Pass `valueDescription` for concise context, such as `install command` or `tsx code`; avoid passing the full copied value when it may be long or sensitive.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. English and French defaults are built in, and `messages` accepts arbitrary locale keys with exact-locale, base-language, then English fallback.\n\n## Variants\n\n- Omit `copyVariant` for the default icon-only size.\n- `copyVariant=\"sm\"` renders a smaller compact icon-only button.\n- `copyVariant=\"large\"` renders the copy label next to the icon.\n\n## Usage\n\n```tsx\nimport { CopyButton } from \"@/components/ui/copy-button\";\n\n<CopyButton\n  value=\"bun run dev\"\n  valueDescription=\"install command\"\n  copyVariant=\"large\"\n  variant=\"secondary\"\n  locale={locale}\n  messages={{ [locale]: { copy: \"Copy\", copied: \"Copied\" } }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/copy-button.tsx",
@@ -85,7 +109,7 @@
           "target": "components/ui/copy-button.tsx"
         }
       ],
-      "registryDependencies": ["button"],
+      "registryDependencies": ["@krak-stack/krakstack-provider", "button"],
       "dependencies": ["lucide-react", "react"]
     },
     {
@@ -93,7 +117,7 @@
       "type": "registry:component",
       "title": "Loading",
       "description": "A compact loading indicator with a spinner and accessible label text.",
-      "docs": "## Overview\n\n`Loading` renders a small spinner next to localized loading text. Use it inside pending pages, empty table states, cards, and inline loading regions. It defaults to the inline variant. Pass `variant=\"centered\"` for route-level pending states and `label` to override the built-in English and French default.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nimport { Loading } from \"@/components/ui/loading\";\n\n<Loading />\n<Loading variant=\"centered\" />\n<Loading label=\"Refreshing records...\" />\n```",
+      "docs": "## Overview\n\n`Loading` renders a small spinner next to localized loading text. Use it inside pending pages, empty table states, cards, and inline loading regions. It defaults to the inline variant. Pass `variant=\"centered\"` for route-level pending states and `label` to override the built-in English and French default.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nimport { Loading } from \"@/components/ui/loading\";\n\n<Loading />\n<Loading variant=\"centered\" />\n<Loading label=\"Refreshing records...\" />\n```",
       "files": [
         {
           "path": "src/components/ui/loading.tsx",
@@ -104,7 +128,8 @@
       "dependencies": ["lucide-react"],
       "meta": {
         "updatedAt": "2026-09-28"
-      }
+      },
+      "registryDependencies": ["@krak-stack/krakstack-provider"]
     },
     {
       "name": "google-map",
@@ -114,7 +139,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`GoogleMap` is a product-neutral renderer for the Google Maps JavaScript API. The caller owns the browser API key and controlled map values; the component owns safe shared script loading, map initialization, centered overlays, status presentation, and cleanup. English and French status and accessibility labels are selected from the explicit `locale` prop. The `messages` map can add or override any locale.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Shared Google Maps script loading across component instances\n- SSR-safe loading, missing-key, script failure, and initialization failure states\n- Controlled center and zoom updates without recreating the map\n- Optional centered marker with a custom icon URL\n- Optional centered radius circle with fill and stroke customization\n- Configurable interaction, zoom controls, and minimum and maximum zoom\n- Semantic shadcn/Tailwind styling and localized accessibility labels\n\n## API Key Requirement\n\nPass a browser key with the Google Maps JavaScript API enabled. Restrict the key to the consumer application's allowed HTTP referrers and do not pass a server key or secret. The component does not read environment variables or runtime configuration.\n\n## Usage\n\n```tsx\nimport { GoogleMap } from \"@/components/ui/google-map\";\n\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={{ lat: 45.5019, lng: -73.5674 }}\n  zoom={11}\n  className=\"h-96\"\n  marker\n/>\n```\n\n`center` is a `{ lat, lng }` literal and `zoom` is clamped to `minZoom` and `maxZoom`. Provide a height through `className`; the default minimum height is `16rem`.\n\n## Marker And Radius Customization\n\nA boolean `marker` uses Google's default marker. Pass an object to supply an icon URL. `radiusMeters` is expressed in meters, and the circle always follows `center`.\n\n```tsx\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={position}\n  zoom={9}\n  marker={{ icon: \"/map-marker.svg\" }}\n  radius={{\n    radiusMeters: 25_000,\n    fillColor: \"#2563eb\",\n    fillOpacity: 0.12,\n    strokeColor: \"#1d4ed8\",\n    strokeOpacity: 0.8,\n    strokeWeight: 2,\n  }}\n/>\n```\n\n## Interaction Constraints\n\nSet `interactive={false}` for a static preview. This disables dragging, gestures, scrolling, keyboard shortcuts, and clickable map icons while leaving the optional custom zoom controls available. Set `zoomControls={false}` to hide the component's plus/minus controls independently of direct map interaction. `minZoom` and `maxZoom` constrain both prop updates and custom controls. All map instances on a page share one Google Maps script and should receive the same API key. Remount the component to retry after a script-load failure. Google Maps usage remains subject to Google's API availability, billing, and terms.",
+      "docs": "## Overview\n\n`GoogleMap` is a product-neutral renderer for the Google Maps JavaScript API. The caller owns the browser API key and controlled map values; the component owns safe shared script loading, map initialization, centered overlays, status presentation, and cleanup. English and French status and accessibility labels are selected from the explicit `locale` prop. The `messages` map can add or override any locale.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Shared Google Maps script loading across component instances\n- SSR-safe loading, missing-key, script failure, and initialization failure states\n- Controlled center and zoom updates without recreating the map\n- Optional centered marker with a custom icon URL\n- Optional centered radius circle with fill and stroke customization\n- Configurable interaction, zoom controls, and minimum and maximum zoom\n- Semantic shadcn/Tailwind styling and localized accessibility labels\n\n## API Key Requirement\n\nPass a browser key with the Google Maps JavaScript API enabled. Restrict the key to the consumer application's allowed HTTP referrers and do not pass a server key or secret. The component does not read environment variables or runtime configuration.\n\n## Usage\n\n```tsx\nimport { GoogleMap } from \"@/components/ui/google-map\";\n\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={{ lat: 45.5019, lng: -73.5674 }}\n  zoom={11}\n  className=\"h-96\"\n  marker\n/>\n```\n\n`center` is a `{ lat, lng }` literal and `zoom` is clamped to `minZoom` and `maxZoom`. Provide a height through `className`; the default minimum height is `16rem`.\n\n## Marker And Radius Customization\n\nA boolean `marker` uses Google's default marker. Pass an object to supply an icon URL. `radiusMeters` is expressed in meters, and the circle always follows `center`.\n\n```tsx\n<GoogleMap\n  apiKey={googleMapsBrowserApiKey}\n  center={position}\n  zoom={9}\n  marker={{ icon: \"/map-marker.svg\" }}\n  radius={{\n    radiusMeters: 25_000,\n    fillColor: \"#2563eb\",\n    fillOpacity: 0.12,\n    strokeColor: \"#1d4ed8\",\n    strokeOpacity: 0.8,\n    strokeWeight: 2,\n  }}\n/>\n```\n\n## Interaction Constraints\n\nSet `interactive={false}` for a static preview. This disables dragging, gestures, scrolling, keyboard shortcuts, and clickable map icons while leaving the optional custom zoom controls available. Set `zoomControls={false}` to hide the component's plus/minus controls independently of direct map interaction. `minZoom` and `maxZoom` constrain both prop updates and custom controls. All map instances on a page share one Google Maps script and should receive the same API key. Remount the component to retry after a script-load failure. Google Maps usage remains subject to Google's API availability, billing, and terms.",
       "files": [
         {
           "path": "src/components/ui/google-map.tsx",
@@ -122,7 +147,8 @@
           "target": "components/ui/google-map.tsx"
         }
       ],
-      "dependencies": ["lucide-react", "react"]
+      "dependencies": ["lucide-react", "react"],
+      "registryDependencies": ["@krak-stack/krakstack-provider"]
     },
     {
       "name": "icon-input",
@@ -132,7 +158,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It uses `VirtualizedCombobox` to search and render large result sets efficiently, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\nPass `collection` to use another Iconify collection.",
+      "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It uses `VirtualizedCombobox` to search and render large result sets efficiently, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\nPass `collection` to use another Iconify collection.",
       "files": [
         {
           "path": "src/components/ui/icon-input.tsx",
@@ -140,7 +166,11 @@
           "target": "components/ui/icon-input.tsx"
         }
       ],
-      "registryDependencies": ["button", "@krak-stack/virtualized-combobox"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "button",
+        "@krak-stack/virtualized-combobox"
+      ],
       "dependencies": [
         "@effect/atom-react@rc",
         "@iconify/react",
@@ -154,7 +184,7 @@
       "type": "registry:component",
       "title": "Pagination",
       "description": "Controlled pagination controls with page-size selection, result summaries, compact layouts, and localized labels.",
-      "docs": "## Overview\n\n`Pagination` is a controlled paginator for lists, cards, and tables. It includes a page-size selector, current-page status, first/previous/next/last navigation, optional result and selection summaries, and a compact mode for narrow containers. English and French labels are built in and can be overridden through `messages`.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nimport { Pagination } from \"@/components/ui/pagination\";\n\n<Pagination\n  page={page}\n  pageCount={pageCount}\n  pageSize={pageSize}\n  totalRows={total}\n  onPageChange={setPage}\n  onPageSizeChange={(size) => {\n    setPage(0);\n    setPageSize(size);\n  }}\n/>\n```\n\nUse `compact` in sidebars or narrow result panels, and `showResults={false}` when the surrounding view already displays a result count.",
+      "docs": "## Overview\n\n`Pagination` is a controlled paginator for lists, cards, and tables. It includes a page-size selector, current-page status, first/previous/next/last navigation, optional result and selection summaries, and a compact mode for narrow containers. English and French labels are built in and can be overridden through `messages`.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nimport { Pagination } from \"@/components/ui/pagination\";\n\n<Pagination\n  page={page}\n  pageCount={pageCount}\n  pageSize={pageSize}\n  totalRows={total}\n  onPageChange={setPage}\n  onPageSizeChange={(size) => {\n    setPage(0);\n    setPageSize(size);\n  }}\n/>\n```\n\nUse `compact` in sidebars or narrow result panels, and `showResults={false}` when the surrounding view already displays a result count.",
       "files": [
         {
           "path": "src/components/ui/pagination.tsx",
@@ -162,7 +192,12 @@
           "target": "components/ui/pagination.tsx"
         }
       ],
-      "registryDependencies": ["button", "label", "select"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "button",
+        "label",
+        "select"
+      ],
       "dependencies": ["lucide-react", "react"],
       "meta": {
         "updatedAt": "2026-09-28"
@@ -176,7 +211,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`DataTable` is a typed React table with search, sorting, pagination, selection, actions, grouping, gallery view, export, column sizing, and row reordering.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\nIts public state is `QueryType`, so decoded TanStack Router search state can be shared directly with the table and an Effect Atom request. Column visibility, sizing, and view preferences remain internal and persist with `Atom.kvs`.\n\n## Usage\n\n```tsx\n<DataTable\n  columnDefs={columns}\n  features={{\n    search: true,\n    pagination: { mode: \"client\" },\n    selection: { onSelectionChange: setSelectedAssets },\n  }}\n  getRowId={(asset) => asset.id}\n  rowData={assets}\n/>\n```\n\nUse `field` for a row property, or combine `colId` with `valueGetter` for a derived value. `cellRenderer` replaces the built-in cell UI. Supply stable row IDs when using selection, grouping, or reordering.\n\n## Types\n\nColumns without `type` render their value as text. Built-in column types add formatting, sorting, search, export, and editing behavior:\n\n- `number` — localized decimal, percentage, or currency formatting. Values are left-aligned and sorted numerically.\n- `boolean` — a checkbox cell. Add `onChange` for controlled editing; otherwise it remains read-only.\n- `date` — localized calendar dates, including `YYYY-MM-DD` values that should not shift across timezones.\n- `dateTime` — localized instants from `Date`, epoch milliseconds, or ISO timestamps with an explicit timezone.\n- `list` — labels or avatar-style icons for collections and editable relationships.\n\nInvalid or missing typed values use `emptyLabel`. Number, boolean, and date types support null ordering and raw or formatted export. `valueFormatter`, `cellRenderer`, and `comparator` override built-in behavior.\n\nList columns use `display: \"list\"` for comma-separated labels or `display: \"icon\"` for images, custom icons, or initials. `visibleCount` controls the passive `+N` summary. Overflow and item actions open from the full-cell chevron menu.\n\nProvide `getOptions`, `manageLabel`, and `onAdd` and/or `onRemove` to make a list editable. “Add item…” opens a searchable submenu; Remove appears under each selected item. Both operations keep the shared menu open. The caller owns persistence and row-data reconciliation.\n\n### Column Example\n\n```tsx\nconst columns = [\n  {\n    field: \"name\",\n    headerName: labels.name,\n    width: 240,\n  },\n  {\n    field: \"amount\",\n    headerName: labels.amount,\n    type: \"number\",\n    typeOptions: { style: \"currency\", currency: \"CAD\" },\n  },\n  {\n    field: \"enabled\",\n    headerName: labels.enabled,\n    type: \"boolean\",\n    typeOptions: {\n      getAriaLabel: (row) => labels.toggleEnabled(row.name),\n      onChange: ({ value, row }) => updateEnabled(row.id, value),\n    },\n  },\n  {\n    field: \"createdAt\",\n    headerName: labels.createdAt,\n    type: \"dateTime\",\n    typeOptions: { timeZone: \"America/Toronto\" },\n  },\n  {\n    field: \"members\",\n    headerName: labels.members,\n    type: \"list\",\n    typeOptions: {\n      display: \"list\",\n      emptyLabel: labels.noMembers,\n      manageLabel: labels.manageMembers,\n      getItems: (row) => row.members,\n      getOptions: () => availableMembers,\n      onAdd: ({ value, row }) => addMember(row.id, value),\n      onRemove: ({ value, row }) => removeMember(row.id, value),\n    },\n  },\n] satisfies DataTableColDef<Organization>[];\n```\n\n### Actions Example\n\n```tsx\nconst rowActions = [\n  {\n    name: labels.edit,\n    icon: <Pencil />,\n    onClick: (row) => openEditor(row.id),\n  },\n  {\n    name: labels.archive,\n    icon: <Archive />,\n    variant: \"destructive\",\n    visible: (row) => row.status !== \"archived\",\n    onClick: (row) => archive(row.id),\n  },\n] satisfies DataTableRowAction<Asset>[];\n\n<DataTable\n  columnDefs={columns}\n  features={{ rowActions: { items: rowActions } }}\n  getRowId={(row) => row.id}\n  rowData={assets}\n/>\n```\n\nList `itemActions` use the same action shape and receive `{ item, row }`. Table-level row actions remain in the sticky actions column. Confirm destructive or sensitive operations in the action handler.\n\n## State\n\nPass decoded `QueryStandard` route search to `state`, then navigate with `onStateChange`. Use `initialState` when route search only supplies mount-time defaults.\n\n```tsx\n<DataTable\n  columnDefs={columns}\n  rowData={rows}\n  state={Route.useSearch()}\n  onStateChange={(next) =>\n    void navigate({ replace: true, search: next })\n  }\n/>\n```\n\nClient pagination processes `rowData` locally. Server pagination requires `rowCount`; fetching and page reconciliation remain caller-owned.\n\n## Interaction Notes\n\n- Selection and row operations should use stable IDs.\n- Grouping, gallery view, and reordering share the same row model.\n- Move up and Move down actions provide keyboard-accessible reordering.\n- Application-provided labels remain caller-owned; built-in labels can be selected with `locale` and extended through locale-keyed `messages`.",
+      "docs": "## Overview\n\n`DataTable` is a typed React table with search, sorting, pagination, selection, actions, grouping, gallery view, export, column sizing, and row reordering.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\nIts public state is `QueryType`, so decoded TanStack Router search state can be shared directly with the table and an Effect Atom request. Column visibility, sizing, and view preferences remain internal and persist with `Atom.kvs`.\n\n## Usage\n\n```tsx\n<DataTable\n  columnDefs={columns}\n  features={{\n    search: true,\n    pagination: { mode: \"client\" },\n    selection: { onSelectionChange: setSelectedAssets },\n  }}\n  getRowId={(asset) => asset.id}\n  rowData={assets}\n/>\n```\n\nUse `field` for a row property, or combine `colId` with `valueGetter` for a derived value. `cellRenderer` replaces the built-in cell UI. Supply stable row IDs when using selection, grouping, or reordering.\n\n## Types\n\nColumns without `type` render their value as text. Built-in column types add formatting, sorting, search, export, and editing behavior:\n\n- `number` — localized decimal, percentage, or currency formatting. Values are left-aligned and sorted numerically.\n- `boolean` — a checkbox cell. Add `onChange` for controlled editing; otherwise it remains read-only.\n- `date` — localized calendar dates, including `YYYY-MM-DD` values that should not shift across timezones.\n- `dateTime` — localized instants from `Date`, epoch milliseconds, or ISO timestamps with an explicit timezone.\n- `list` — labels or avatar-style icons for collections and editable relationships.\n\nInvalid or missing typed values use `emptyLabel`. Number, boolean, and date types support null ordering and raw or formatted export. `valueFormatter`, `cellRenderer`, and `comparator` override built-in behavior.\n\nList columns use `display: \"list\"` for comma-separated labels or `display: \"icon\"` for images, custom icons, or initials. `visibleCount` controls the passive `+N` summary. Overflow and item actions open from the full-cell chevron menu.\n\nProvide `getOptions`, `manageLabel`, and `onAdd` and/or `onRemove` to make a list editable. “Add item…” opens a searchable submenu; Remove appears under each selected item. Both operations keep the shared menu open. The caller owns persistence and row-data reconciliation.\n\n### Column Example\n\n```tsx\nconst columns = [\n  {\n    field: \"name\",\n    headerName: labels.name,\n    width: 240,\n  },\n  {\n    field: \"amount\",\n    headerName: labels.amount,\n    type: \"number\",\n    typeOptions: { style: \"currency\", currency: \"CAD\" },\n  },\n  {\n    field: \"enabled\",\n    headerName: labels.enabled,\n    type: \"boolean\",\n    typeOptions: {\n      getAriaLabel: (row) => labels.toggleEnabled(row.name),\n      onChange: ({ value, row }) => updateEnabled(row.id, value),\n    },\n  },\n  {\n    field: \"createdAt\",\n    headerName: labels.createdAt,\n    type: \"dateTime\",\n    typeOptions: { timeZone: \"America/Toronto\" },\n  },\n  {\n    field: \"members\",\n    headerName: labels.members,\n    type: \"list\",\n    typeOptions: {\n      display: \"list\",\n      emptyLabel: labels.noMembers,\n      manageLabel: labels.manageMembers,\n      getItems: (row) => row.members,\n      getOptions: () => availableMembers,\n      onAdd: ({ value, row }) => addMember(row.id, value),\n      onRemove: ({ value, row }) => removeMember(row.id, value),\n    },\n  },\n] satisfies DataTableColDef<Organization>[];\n```\n\n### Actions Example\n\n```tsx\nconst rowActions = [\n  {\n    name: labels.edit,\n    icon: <Pencil />,\n    onClick: (row) => openEditor(row.id),\n  },\n  {\n    name: labels.archive,\n    icon: <Archive />,\n    variant: \"destructive\",\n    visible: (row) => row.status !== \"archived\",\n    onClick: (row) => archive(row.id),\n  },\n] satisfies DataTableRowAction<Asset>[];\n\n<DataTable\n  columnDefs={columns}\n  features={{ rowActions: { items: rowActions } }}\n  getRowId={(row) => row.id}\n  rowData={assets}\n/>\n```\n\nList `itemActions` use the same action shape and receive `{ item, row }`. Table-level row actions remain in the sticky actions column. Confirm destructive or sensitive operations in the action handler.\n\n## State\n\nPass decoded `QueryStandard` route search to `state`, then navigate with `onStateChange`. Use `initialState` when route search only supplies mount-time defaults.\n\n```tsx\n<DataTable\n  columnDefs={columns}\n  rowData={rows}\n  state={Route.useSearch()}\n  onStateChange={(next) =>\n    void navigate({ replace: true, search: next })\n  }\n/>\n```\n\nClient pagination processes `rowData` locally. Server pagination requires `rowCount`; fetching and page reconciliation remain caller-owned.\n\n## Interaction Notes\n\n- Selection and row operations should use stable IDs.\n- Grouping, gallery view, and reordering share the same row model.\n- Move up and Move down actions provide keyboard-accessible reordering.\n- Application-provided labels remain caller-owned; built-in labels can be selected with `locale` and extended through locale-keyed `messages`.",
       "files": [
         {
           "path": "src/components/ui/data-table.tsx",
@@ -185,6 +220,7 @@
         }
       ],
       "registryDependencies": [
+        "@krak-stack/krakstack-provider",
         "@krak-stack/query-helpers",
         "@krak-stack/pagination",
         "badge",
@@ -215,7 +251,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`FilePicker` is a form-library-independent controlled file input. It combines a visually hidden native input with an accessible choose button, drag-and-drop selection, shadcn Attachment presentation, file metadata, image previews, and replace/delete actions. English and French labels are built in and can be overridden through `messages`.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nconst [file, setFile] = useState<File>();\n\n<FilePicker\n  accept=\"application/pdf\"\n  canClear={Boolean(file)}\n  file={file}\n  id=\"document\"\n  name=\"document\"\n  onChange={setFile}\n  onClear={() => setFile(undefined)}\n  title={file?.name ?? \"Document\"}\n/>\n```\n\nPass `image={{ alt, width, height, src }}` to enable image previews. `src` can represent a persisted image while a newly selected `file` is previewed through a managed object URL.",
+      "docs": "## Overview\n\n`FilePicker` is a form-library-independent controlled file input. It combines a visually hidden native input with an accessible choose button, drag-and-drop selection, shadcn Attachment presentation, file metadata, image previews, and replace/delete actions. English and French labels are built in and can be overridden through `messages`.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nconst [file, setFile] = useState<File>();\n\n<FilePicker\n  accept=\"application/pdf\"\n  canClear={Boolean(file)}\n  file={file}\n  id=\"document\"\n  name=\"document\"\n  onChange={setFile}\n  onClear={() => setFile(undefined)}\n  title={file?.name ?? \"Document\"}\n/>\n```\n\nPass `image={{ alt, width, height, src }}` to enable image previews. `src` can represent a persisted image while a newly selected `file` is previewed through a managed object URL.",
       "files": [
         {
           "path": "src/components/ui/file-picker.tsx",
@@ -223,7 +259,12 @@
           "target": "components/ui/file-picker.tsx"
         }
       ],
-      "registryDependencies": ["attachment", "button", "input"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "attachment",
+        "button",
+        "input"
+      ],
       "dependencies": ["lucide-react", "react"]
     },
     {
@@ -234,7 +275,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection. Built-in labels are stored in the component file and can be overridden with message props on the relevant field or form component.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- In-file English and French defaults with override props\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n  <form.SubmitButton locale={locale} messages={{ [locale]: { submit: \"Save\" } }} />\n</form.AppForm>\n```\n\n## File Selection Side Effects\n\n`FileField` accepts `onFileChange` when selecting a file needs to update adjacent UI, upload metadata, or derived form state before submit.\n\n```tsx\n<form.AppField name=\"attachment\">\n  {(field) => (\n    <field.FileField\n      accept=\".pdf,.txt\"\n      label=\"Attachment\"\n      onFileChange={(file) => setSelectedFile(file || null)}\n    />\n  )}\n</form.AppField>\n```",
+      "docs": "## Overview\n\n`form` creates an application form hook with reusable field components for common admin and product workflows. It standardizes labels, descriptions, validation messages, submit state, file inputs, image inputs, and dirty-navigation protection. Built-in labels are stored in the component file and can be overridden with message props on the relevant field or form component.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Typed `useAppForm` hook built on TanStack Form\n- Text, textarea, select, multi-select, checkbox, file, image, and key/value fields\n- Field wrappers for grouped form sections\n- Submit button wired to form submission state\n- Dirty-navigation confirmation through TanStack Router\n- In-file English and French defaults with override props\n\n## Usage\n\n```tsx\nconst form = useAppForm({\n  defaultValues: { name: \"Ada\" },\n  onSubmit: async ({ value }) => save(value),\n});\n\n<form.AppForm>\n  <form.AppField name=\"name\">\n    {(field) => <field.TextField label=\"Name\" />}\n  </form.AppField>\n  <form.SubmitButton locale={locale} messages={{ [locale]: { submit: \"Save\" } }} />\n</form.AppForm>\n```\n\n## File Selection Side Effects\n\n`FileField` accepts `onFileChange` when selecting a file needs to update adjacent UI, upload metadata, or derived form state before submit.\n\n```tsx\n<form.AppField name=\"attachment\">\n  {(field) => (\n    <field.FileField\n      accept=\".pdf,.txt\"\n      label=\"Attachment\"\n      onFileChange={(file) => setSelectedFile(file || null)}\n    />\n  )}\n</form.AppField>\n```",
       "files": [
         {
           "path": "src/components/ui/form.tsx",
@@ -243,6 +284,7 @@
         }
       ],
       "registryDependencies": [
+        "@krak-stack/krakstack-provider",
         "select",
         "alert-dialog",
         "button",
@@ -269,7 +311,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`effect-form` provides reusable field components for `@lucas-barake/effect-form-react`. It includes schema-backed fields, submission errors and state, grouped fields, revert actions, and form-owned dirty-navigation blocking. Built-in English and French labels can be read or overridden with `effectFormMessages`.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Available Fields\n\n- `TextField` and `NameField` — string inputs, with a standard localized name variant\n- `TextAreaField`, `DescriptionField`, and `NullableTextAreaField` — required and nullable multiline values\n- `CheckboxField` — boolean values\n- `SelectField` and `FolderField` — single string selection\n- `MultiSelectField` and `NullableMultiSelectField` — array and nullable array selection\n- `SearchableSelectField` and `SingleSearchableSelectField` — virtualized searchable multiple and single selection\n- `KeyValueField` and `NullableKeyValueField` — record editors\n- `FileField` — clearable native `File` values through the shared `FilePicker`\n- `ImageField` — local file and persisted URL image values with previews\n- `RevertButton` — restores a string field to its original value\n\n## Form Helpers\n\n- `FieldWrapper` groups related fields with a legend and optional locale badge\n- `SubmitButton` observes dirty, changed-since-submit, and waiting state\n- `SubmitError` and `ErrorMessage` present typed failures\n- `BlockNavigation` observes the form and guards unsaved navigation\n\n## Usage\n\n```tsx\nconst builder = FormBuilder.empty.addField(\"name\", Schema.String);\n\nconst form = FormReact.make(builder, {\n  fields: { name: TextField },\n  onSubmit: (_, { decoded }) => save(decoded),\n});\n\n<form.Initialize defaultValues={{ name: \"\" }}>\n  <form.name label=\"Name\" />\n  <SubmitError result={submitResult} />\n  <SubmitButton form={form} />\n  <BlockNavigation form={form} />\n</form.Initialize>\n```",
+      "docs": "## Overview\n\n`effect-form` provides reusable field components for `@lucas-barake/effect-form-react`. It includes schema-backed fields, submission errors and state, grouped fields, revert actions, and form-owned dirty-navigation blocking. Built-in English and French labels can be read or overridden with `effectFormMessages`.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Available Fields\n\n- `TextField` and `NameField` — string inputs, with a standard localized name variant\n- `TextAreaField`, `DescriptionField`, and `NullableTextAreaField` — required and nullable multiline values\n- `CheckboxField` — boolean values\n- `SelectField` and `FolderField` — single string selection\n- `MultiSelectField` and `NullableMultiSelectField` — array and nullable array selection\n- `SearchableSelectField` and `SingleSearchableSelectField` — virtualized searchable multiple and single selection\n- `KeyValueField` and `NullableKeyValueField` — record editors\n- `FileField` — clearable native `File` values through the shared `FilePicker`\n- `ImageField` — local file and persisted URL image values with previews\n- `RevertButton` — restores a string field to its original value\n\n## Form Helpers\n\n- `FieldWrapper` groups related fields with a legend and optional locale badge\n- `SubmitButton` observes dirty, changed-since-submit, and waiting state\n- `SubmitError` and `ErrorMessage` present typed failures\n- `BlockNavigation` observes the form and guards unsaved navigation\n\n## Usage\n\n```tsx\nconst builder = FormBuilder.empty.addField(\"name\", Schema.String);\n\nconst form = FormReact.make(builder, {\n  fields: { name: TextField },\n  onSubmit: (_, { decoded }) => save(decoded),\n});\n\n<form.Initialize defaultValues={{ name: \"\" }}>\n  <form.name label=\"Name\" />\n  <SubmitError result={submitResult} />\n  <SubmitButton form={form} />\n  <BlockNavigation form={form} />\n</form.Initialize>\n```",
       "files": [
         {
           "path": "src/components/ui/effect-form.tsx",
@@ -278,6 +320,7 @@
         }
       ],
       "registryDependencies": [
+        "@krak-stack/krakstack-provider",
         "alert-dialog",
         "badge",
         "button",
@@ -307,7 +350,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`locale-switcher` provides a compact, i18n-library-agnostic language switcher. The caller provides the current locale, available locales, and a change callback.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Accepts any locale strings and delegates locale changes to the caller\n- In-file English and French labels\n- Optional message overrides\n- Icon-only trigger with accessible screen-reader text\n\n## Usage\n\n```tsx\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\n\n<LocaleSwitcher\n  locale={locale}\n  locales={[\"en\", \"fr\", \"es\"]}\n  onLocaleChange={setLocale}\n  messages={{ es: { title: \"Idioma\", es: \"Español\" } }}\n/>\n```",
+      "docs": "## Overview\n\n`locale-switcher` provides a compact, i18n-library-agnostic language switcher. The caller provides the current locale, available locales, and a change callback.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Accepts any locale strings and delegates locale changes to the caller\n- In-file English and French labels\n- Optional message overrides\n- Icon-only trigger with accessible screen-reader text\n\n## Usage\n\n```tsx\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\n\n<LocaleSwitcher\n  locale={locale}\n  locales={[\"en\", \"fr\", \"es\"]}\n  onLocaleChange={setLocale}\n  messages={{ es: { title: \"Idioma\", es: \"Español\" } }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/locale-switcher.tsx",
@@ -315,7 +358,11 @@
           "target": "components/ui/locale-switcher.tsx"
         }
       ],
-      "registryDependencies": ["button", "dropdown-menu"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "button",
+        "dropdown-menu"
+      ],
       "dependencies": ["lucide-react"]
     },
     {
@@ -326,7 +373,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`theme-switcher` provides a compact dropdown for switching between light, dark, and system themes. It persists the selected theme in `localStorage`, applies the resolved theme class to the document element, and renders a `ScriptOnce` startup script from `ThemeProvider` to avoid theme flash. Labels are stored in the component file and can be overridden with the `messages` prop.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\nWrap your app in `ThemeProvider`.\n\n```tsx\nimport { ThemeProvider } from \"@/components/ui/theme-switcher\";\n\n<ThemeProvider>{children}</ThemeProvider>\n```\n\nRender the switcher from a component inside the provider.\n\n```tsx\nimport { ThemeSwitcher, useTheme } from \"@/components/ui/theme-switcher\";\n\nconst { theme, setTheme } = useTheme();\n\n<ThemeSwitcher locale={locale} value={theme} onChange={setTheme} />\n\n<ThemeSwitcher\n  value={theme}\n  onChange={setTheme}\n  locale={locale}\n  messages={{ [locale]: { title: \"Theme\", light: \"Day\", dark: \"Night\" } }}\n/>\n```",
+      "docs": "## Overview\n\n`theme-switcher` provides a compact dropdown for switching between light, dark, and system themes. It persists the selected theme in `localStorage`, applies the resolved theme class to the document element, and renders a `ScriptOnce` startup script from `ThemeProvider` to avoid theme flash. Labels are stored in the component file and can be overridden with the `messages` prop.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\nWrap your app in `ThemeProvider`.\n\n```tsx\nimport { ThemeProvider } from \"@/components/ui/theme-switcher\";\n\n<ThemeProvider>{children}</ThemeProvider>\n```\n\nRender the switcher from a component inside the provider.\n\n```tsx\nimport { ThemeSwitcher, useTheme } from \"@/components/ui/theme-switcher\";\n\nconst { theme, setTheme } = useTheme();\n\n<ThemeSwitcher locale={locale} value={theme} onChange={setTheme} />\n\n<ThemeSwitcher\n  value={theme}\n  onChange={setTheme}\n  locale={locale}\n  messages={{ [locale]: { title: \"Theme\", light: \"Day\", dark: \"Night\" } }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/theme-switcher.tsx",
@@ -334,7 +381,11 @@
           "target": "components/ui/theme-switcher.tsx"
         }
       ],
-      "registryDependencies": ["button", "dropdown-menu"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "button",
+        "dropdown-menu"
+      ],
       "dependencies": ["lucide-react", "react"]
     },
     {
@@ -342,7 +393,7 @@
       "type": "registry:block",
       "title": "Editing Locale Switcher",
       "description": "A compact localized select for choosing which locale is being edited in multilingual forms.",
-      "docs": "## Overview\n\n`editing-locale-switcher` provides a small form control for switching the active editing locale in multilingual forms. It is useful for forms that store localized fields in metadata or translation maps.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Arbitrary editing locale strings with English and French defaults\n- Controlled `value` and `onValueChange` props\n- Mobile-friendly icon label with desktop text\n- In-file English and French labels with optional message overrides\n\n## Usage\n\n```tsx\nimport { EditingLocaleSwitcher, type EditingLocale } from \"@/components/ui/editing-locale-switcher\";\nimport { useState } from \"react\";\n\nconst [locale, setLocale] = useState<EditingLocale>(\"en\");\n\n<EditingLocaleSwitcher locale={uiLocale} value={locale} onValueChange={setLocale} />\n<EditingLocaleSwitcher\n  locale={uiLocale}\n  locales={[\"en\", \"fr\", \"es\"]}\n  value={locale}\n  onValueChange={setLocale}\n  messages={{ en: { label: \"Language\", es: \"Spanish\" } }}\n/>\n```",
+      "docs": "## Overview\n\n`editing-locale-switcher` provides a small form control for switching the active editing locale in multilingual forms. It is useful for forms that store localized fields in metadata or translation maps.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Arbitrary editing locale strings with English and French defaults\n- Controlled `value` and `onValueChange` props\n- Mobile-friendly icon label with desktop text\n- In-file English and French labels with optional message overrides\n\n## Usage\n\n```tsx\nimport { EditingLocaleSwitcher, type EditingLocale } from \"@/components/ui/editing-locale-switcher\";\nimport { useState } from \"react\";\n\nconst [locale, setLocale] = useState<EditingLocale>(\"en\");\n\n<EditingLocaleSwitcher locale={uiLocale} value={locale} onValueChange={setLocale} />\n<EditingLocaleSwitcher\n  locale={uiLocale}\n  locales={[\"en\", \"fr\", \"es\"]}\n  value={locale}\n  onValueChange={setLocale}\n  messages={{ en: { label: \"Language\", es: \"Spanish\" } }}\n/>\n```",
       "files": [
         {
           "path": "src/components/ui/editing-locale-switcher.tsx",
@@ -350,7 +401,11 @@
           "target": "components/ui/editing-locale-switcher.tsx"
         }
       ],
-      "registryDependencies": ["label", "select"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "label",
+        "select"
+      ],
       "dependencies": ["lucide-react", "react"],
       "meta": {
         "updatedAt": "2026-09-28"
@@ -379,6 +434,7 @@
         }
       ],
       "registryDependencies": [
+        "@krak-stack/krakstack-provider",
         "badge",
         "button",
         "empty",
@@ -688,6 +744,7 @@
       "type": "registry:block",
       "docs": "## Overview\n\n`agent` installs a complete generic agent foundation: Effect request and event schemas, a streaming AI service, scoped client atoms, and a controlled React widget. It supports serializable history, multi-round tool execution, approval responses, contextual resources, `@` references, streamed Markdown, tool activity, and English and French labels. Authentication, model selection, toolkit composition, and application-specific resources remain application-owned.\n\n## Included Files\n\n- `services/agent/schema.ts` - generic resource schemas and the `/agent` SSE HttpApi group\n- `services/agent/index.ts` - `AgentService` streaming implementation\n- `services/agent/client/atom.ts` - scoped state, event reduction, submit, reset, and interruption-ready effects\n- `services/agent/client/widget.tsx` - controlled localized assistant widget\n\n## API Setup\n\nCreate the group with your application's resource schema and add it to the root API.\n\n```ts\nexport const AgentApiGroup = makeAgentApiGroup(Resource);\nexport class AppApi extends HttpApi.make(\"app\").add(AgentApiGroup) {}\n```\n\nIn the handler, authenticate the request, build a request-scoped toolkit and system prompt, then return `AgentService.stream`. Provide the selected `LanguageModel` and `AgentService.layer` where the API layers are assembled.\n\n## Client Setup\n\nAdapt your generated SSE client to the atom factory, then bind a scope to the widget.\n\n```tsx\nconst agent = makeAgentAtoms({\n  stream: (get, request) => apiClient.agent.stream({ payload: request }),\n});\n\nconst state = useAtomValue(agent.state(scope));\nconst submit = useAtomSet(agent.submit, { mode: \"promiseExit\" });\n\n<AgentWidget\n  state={state}\n  locale={locale}\n  messages={{ es: { send: \"Enviar mensaje\" } }}\n  onSubmit={(action) => submit({ action, scope })}\n  onInterrupt={() => interrupt()}\n  onReset={() => reset(scope)}\n/>\n```\n\nPass `context` for the resource currently being viewed and `availableReferences` to enable searchable `@reference` mentions. Resource values are generic and validated by the schema supplied to `makeAgentApiGroup`.\n\n## Localization\n\nThe widget receives the active locale through its `locale` prop. English and French defaults are built in, while the locale-keyed `messages` map supports any additional language without requiring an i18n provider.",
       "registryDependencies": [
+        "@krak-stack/krakstack-provider",
         "@krak-stack/markdown",
         "alert",
         "badge",
@@ -770,7 +827,10 @@
       },
       "type": "registry:block",
       "docs": "## Overview\n\n`markdown` provides a server-side `Bun.markdown` compiler and a matching React renderer. The compiler escapes raw HTML, restricts link and image URLs, and extracts fenced code for rendering through the shared `CodeBlock`.\n\n## Usage\n\n```tsx\nconst compiled = compileMarkdown(source);\n\n<MarkdownContent\n  html={compiled.html}\n  codeBlocks={compiled.codeBlocks}\n/>\n```",
-      "registryDependencies": ["@krak-stack/code-block"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/code-block"
+      ],
       "dependencies": ["react"],
       "files": [
         {
@@ -1110,7 +1170,7 @@
       "meta": {
         "updatedAt": "2026-09-28"
       },
-      "docs": "## Overview\n\n`CodeBlock` renders code with synchronous [TanStack Highlight](https://tanstack.com/highlight/latest) syntax highlighting, semantic light and dark token colors, a language label, and a copy action. The bundled all-language registry is compact and falls back to escaped plain text for unknown languages.\n\nPass the active locale through `locale`. English and French defaults are built in, and `messages` accepts arbitrary locale keys with exact-locale, base-language, then English fallback.\n\n## Usage\n\n```tsx\nimport { CodeBlock } from \"@/components/ui/code-block\";\n\nfunction Example({ source }: { source: string }) {\n  return (\n    <CodeBlock\n      code={source}\n      language=\"tsx\"\n      messages={{ copy: \"Copy code\", copied: \"Copied\" }}\n    />\n  );\n}\n```",
+      "docs": "## Overview\n\n`CodeBlock` renders code with synchronous [TanStack Highlight](https://tanstack.com/highlight/latest) syntax highlighting, semantic light and dark token colors, a language label, and a copy action. The bundled all-language registry is compact and falls back to escaped plain text for unknown languages.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. English and French defaults are built in, and `messages` accepts arbitrary locale keys with exact-locale, base-language, then English fallback.\n\n## Usage\n\n```tsx\nimport { CodeBlock } from \"@/components/ui/code-block\";\n\nfunction Example({ source }: { source: string }) {\n  return (\n    <CodeBlock\n      code={source}\n      language=\"tsx\"\n      messages={{ copy: \"Copy code\", copied: \"Copied\" }}\n    />\n  );\n}\n```",
       "files": [
         {
           "path": "src/components/ui/code-block.tsx",
@@ -1118,7 +1178,10 @@
           "target": "components/ui/code-block.tsx"
         }
       ],
-      "registryDependencies": ["@krak-stack/copy-button"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/copy-button"
+      ],
       "dependencies": ["@tanstack/highlight", "react"]
     },
     {
@@ -1142,7 +1205,7 @@
       "type": "registry:component",
       "title": "Virtualized Combobox",
       "description": "A searchable, virtualized Base UI combobox with single and multiple selection, controlled search, custom triggers, and localized labels.",
-      "docs": "## Overview\n\n`VirtualizedCombobox` combines Base UI and TanStack Virtual into a complete searchable selector for large or remotely filtered option sets. It supports single and multiple selection, controlled open and search state, custom item rendering, and custom triggers.\n\nPass the active locale through `locale`. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nconst [value, setValue] = useState(null);\n\n<VirtualizedCombobox\n  ariaLabel=\"Select a city\"\n  emptyLabel=\"No cities found.\"\n  items={cities}\n  onValueChange={setValue}\n  placeholder=\"Select a city\"\n  value={value}\n/>\n```\n\nSet `multiple` and pass an array value for multi-selection. Use `searchValue` and `onSearchValueChange` for remote search.",
+      "docs": "## Overview\n\n`VirtualizedCombobox` combines Base UI and TanStack Virtual into a complete searchable selector for large or remotely filtered option sets. It supports single and multiple selection, controlled open and search state, custom item rendering, and custom triggers.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nconst [value, setValue] = useState(null);\n\n<VirtualizedCombobox\n  ariaLabel=\"Select a city\"\n  emptyLabel=\"No cities found.\"\n  items={cities}\n  onValueChange={setValue}\n  placeholder=\"Select a city\"\n  value={value}\n/>\n```\n\nSet `multiple` and pass an array value for multi-selection. Use `searchValue` and `onSearchValueChange` for remote search.",
       "files": [
         {
           "path": "src/components/ui/virtualized-combobox.tsx",
@@ -1150,7 +1213,11 @@
           "target": "components/ui/virtualized-combobox.tsx"
         }
       ],
-      "registryDependencies": ["button", "input-group"],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "button",
+        "input-group"
+      ],
       "dependencies": [
         "@base-ui/react",
         "@tanstack/react-virtual",

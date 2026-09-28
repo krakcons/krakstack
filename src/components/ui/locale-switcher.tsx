@@ -10,6 +10,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Languages } from "lucide-react";
 import { Option, Schema } from "effect";
+import {
+  useKrakstackLocale,
+  useKrakstackLocales,
+} from "@/components/ui/krakstack-provider";
 
 export const locales = ["en", "fr"] as const;
 
@@ -32,7 +36,7 @@ export type LocaleSwitcherMessageTranslations = Partial<
 >;
 
 type LocaleSwitcherProps = {
-  locale: string;
+  locale?: string;
   locales?: readonly string[];
   messages?: LocaleSwitcherMessageTranslations;
   onLocaleChange: (locale: string) => void;
@@ -55,11 +59,13 @@ const localeMessages = (
 };
 
 export const LocaleSwitcher = ({
-  locale,
-  locales: localeOptions = locales,
+  locale: localeOverride,
+  locales: localeOverrides,
   messages,
   onLocaleChange,
 }: LocaleSwitcherProps) => {
+  const locale = useKrakstackLocale(localeOverride);
+  const localeOptions = useKrakstackLocales(localeOverrides);
   const labels = localeMessages(locale, messages);
   const LocaleSchema = Schema.String.check(
     Schema.makeFilter((value) => localeOptions.includes(value)),

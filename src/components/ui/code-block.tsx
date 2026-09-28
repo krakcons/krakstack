@@ -7,6 +7,7 @@ import { createThemeCss } from "@tanstack/highlight/theme";
 import { githubDarkTheme } from "@tanstack/highlight/themes/github-dark";
 import { githubLightTheme } from "@tanstack/highlight/themes/github-light";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 const themeCss = `${createThemeCss({
   light: githubLightTheme,
   dark: githubDarkTheme,
@@ -65,9 +66,10 @@ type CodeBlockProps = {
 export function CodeBlock({
   code,
   language = "text",
-  locale = "en",
+  locale: localeOverride,
   messages,
 }: CodeBlockProps) {
+  const locale = useKrakstackLocale(localeOverride);
   const normalizedLanguage = language.toLowerCase() || "text";
   const highlighted = highlight(code, { lang: normalizedLanguage });
 

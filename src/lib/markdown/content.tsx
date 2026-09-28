@@ -21,7 +21,7 @@ export const MarkdownContent = ({
   className,
   codeBlocks,
   html,
-  locale = "en",
+  locale,
   messages,
 }: MarkdownContentProps) => {
   const content: ReactNode[] = [];

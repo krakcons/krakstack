@@ -48,6 +48,7 @@ import {
   type VirtualizedComboboxOption,
 } from "@/components/ui/virtualized-combobox";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export type EffectFormMessages = {
   add: string;
   blockNavigationCancel: string;
@@ -120,6 +121,11 @@ export const effectFormMessages = (
   ...translations?.[locale.split("-")[0] ?? locale],
   ...translations?.[locale],
 });
+
+const useEffectFormMessages = (
+  locale?: string,
+  translations?: EffectFormMessageTranslations,
+) => effectFormMessages(useKrakstackLocale(locale), translations);
 
 const getCauseErrorMessage = (cause: Cause.Cause<unknown>) => {
   const error = Cause.squash(cause);
@@ -196,7 +202,7 @@ export type SubmitForm<A, E> = {
 export const SubmitButton = <A, E>({
   children,
   form,
-  locale = "en",
+  locale,
   messages,
   onSubmit,
 }: {
@@ -211,6 +217,7 @@ export const SubmitButton = <A, E>({
   const isDirty = useAtomValue(form.isDirty);
   const hasChangedSinceSubmit = useAtomValue(form.hasChangedSinceSubmit);
   const lastSubmittedValues = useAtomValue(form.lastSubmittedValues);
+  const labels = useEffectFormMessages(locale, messages);
   const hasPendingChanges = Option.isNone(lastSubmittedValues)
     ? isDirty
     : hasChangedSinceSubmit;
@@ -228,7 +235,7 @@ export const SubmitButton = <A, E>({
       {submitResult.waiting && (
         <Loader2 data-icon="inline-start" className="animate-spin" />
       )}
-      {children ?? effectFormMessages(locale, messages).submit}
+      {children ?? labels.submit}
     </Button>
   );
 };
@@ -293,8 +300,8 @@ export const NameField: FormReact.FieldComponent<string, NameFieldOptions> = ({
   field,
   props,
 }) => {
-  const { locale = "en", messages, ...fieldProps } = props;
-  const labels = effectFormMessages(locale, messages);
+  const { locale, messages, ...fieldProps } = props;
+  const labels = useEffectFormMessages(locale, messages);
   return (
     <TextField
       field={field}
@@ -357,13 +364,14 @@ export const DescriptionField: FormReact.FieldComponent<
   string,
   DescriptionFieldOptions
 > = ({ field, props }) => {
-  const { locale = "en", messages, ...fieldProps } = props;
+  const { locale, messages, ...fieldProps } = props;
+  const labels = useEffectFormMessages(locale, messages);
   return (
     <TextAreaField
       field={field}
       props={{
         ...fieldProps,
-        label: effectFormMessages(locale, messages).description,
+        label: labels.description,
       }}
     />
   );
@@ -514,15 +522,12 @@ type FolderFieldOptions<T extends string> = Omit<
 export const FolderField = <T extends string>({
   field,
   props,
-}: FormReact.FieldComponentProps<T, FolderFieldOptions<T>>) => (
-  <SelectField
-    field={field}
-    props={{
-      ...props,
-      label: effectFormMessages(props.locale, props.messages).folder,
-    }}
-  />
-);
+}: FormReact.FieldComponentProps<T, FolderFieldOptions<T>>) => {
+  const labels = useEffectFormMessages(props.locale, props.messages);
+  return (
+    <SelectField field={field} props={{ ...props, label: labels.folder }} />
+  );
+};
 
 type MultiSelectFieldOptions<T extends string> = FieldOptions & {
   options: ReadonlyArray<{ label: string; value: T }>;
@@ -650,16 +655,14 @@ export const SearchableSelectField = <TData,>({
   ReadonlyArray<string>,
   SearchableSelectFieldSharedOptions<TData> & { multiple?: true }
 >) => {
+  const locale = useKrakstackLocale(props.locale);
   const { selectedItems, mergedItems } = getSearchableSelectItems(
     field.value,
     props.initialItems ?? [],
     props.items,
   );
   const invalid = Option.isSome(field.error);
-  const labels = virtualizedComboboxMessages(
-    props.locale ?? "en",
-    props.messages,
-  );
+  const labels = virtualizedComboboxMessages(locale, props.messages);
   const ariaLabel = Schema.is(Schema.String)(props.label)
     ? props.label
     : labels.search;
@@ -672,7 +675,7 @@ export const SearchableSelectField = <TData,>({
         ariaLabel={ariaLabel}
         emptyLabel={props.emptyLabel}
         items={mergedItems}
-        locale={props.locale}
+        locale={locale}
         {...(props.messages ? { messages: props.messages } : {})}
         multiple
         {...(props.onSearchValueChange
@@ -704,16 +707,14 @@ export const SingleSearchableSelectField = <TData,>({
   string,
   SearchableSelectFieldSharedOptions<TData> & { multiple?: false }
 >) => {
+  const locale = useKrakstackLocale(props.locale);
   const { selectedItems, mergedItems } = getSearchableSelectItems(
     field.value ? [field.value] : [],
     props.initialItems ?? [],
     props.items,
   );
   const invalid = Option.isSome(field.error);
-  const labels = virtualizedComboboxMessages(
-    props.locale ?? "en",
-    props.messages,
-  );
+  const labels = virtualizedComboboxMessages(locale, props.messages);
   const ariaLabel = Schema.is(Schema.String)(props.label)
     ? props.label
     : labels.search;
@@ -726,7 +727,7 @@ export const SingleSearchableSelectField = <TData,>({
         ariaLabel={ariaLabel}
         emptyLabel={props.emptyLabel}
         items={mergedItems}
-        locale={props.locale}
+        locale={locale}
         {...(props.messages ? { messages: props.messages } : {})}
         {...(props.onSearchValueChange
           ? { onSearchValueChange: props.onSearchValueChange }
@@ -758,7 +759,7 @@ export const NullableKeyValueField = ({
     messages?: EffectFormMessageTranslations;
   }
 >) => {
-  const labels = effectFormMessages(props.locale, props.messages);
+  const labels = useEffectFormMessages(props.locale, props.messages);
   const entries = Object.entries(field.value ?? {});
 
   const updateEntry = (index: number, key: string, value: string) =>
@@ -842,7 +843,7 @@ export const KeyValueField = ({
     messages?: EffectFormMessageTranslations;
   }
 >) => {
-  const labels = effectFormMessages(props.locale, props.messages);
+  const labels = useEffectFormMessages(props.locale, props.messages);
   const entries = Object.entries(field.value);
   const updateEntry = (index: number, key: string, value: string) =>
     Object.fromEntries(
@@ -925,8 +926,9 @@ export const RevertButton = ({
     messages?: EffectFormMessageTranslations;
     original: string;
   };
-}) =>
-  field.value === props.original ? null : (
+}) => {
+  const labels = useEffectFormMessages(props.locale, props.messages);
+  return field.value === props.original ? null : (
     <div className="flex flex-1 justify-end">
       <Button
         type="button"
@@ -934,10 +936,11 @@ export const RevertButton = ({
         className="-mr-4 h-auto py-0"
         onClick={() => field.onChange(props.original)}
       >
-        {effectFormMessages(props.locale, props.messages).revert}
+        {labels.revert}
       </Button>
     </div>
   );
+};
 
 type ImageFieldOptions = {
   label: string;
@@ -956,6 +959,7 @@ export const ImageField: FormReact.FieldComponent<
   File | string | null | undefined,
   ImageFieldOptions
 > = ({ field, props }) => {
+  const labels = useEffectFormMessages(props.locale, props.messages);
   const imageUrl = Schema.is(Schema.String)(field.value)
     ? field.value
     : undefined;
@@ -990,7 +994,7 @@ export const ImageField: FormReact.FieldComponent<
       />
       {props.size.suggestedWidth && props.size.suggestedHeight ? (
         <FieldDescription>
-          {effectFormMessages(props.locale, props.messages).suggestedImageSize(
+          {labels.suggestedImageSize(
             String(props.size.suggestedWidth),
             String(props.size.suggestedHeight),
           )}
@@ -1002,7 +1006,7 @@ export const ImageField: FormReact.FieldComponent<
 };
 
 const NavigationBlock = ({
-  locale = "en",
+  locale,
   messages,
   shouldBlock,
 }: {
@@ -1010,7 +1014,7 @@ const NavigationBlock = ({
   messages?: EffectFormMessageTranslations;
   shouldBlock: boolean;
 }) => {
-  const labels = effectFormMessages(locale, messages);
+  const labels = useEffectFormMessages(locale, messages);
   return (
     <Block
       enableBeforeUnload={() => shouldBlock}

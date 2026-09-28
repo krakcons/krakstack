@@ -9,6 +9,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import {
+  useKrakstackLocale,
+  useKrakstackLocales,
+} from "@/components/ui/krakstack-provider";
 export type EditingLocale = string;
 export const editingLocales = ["en", "fr"] as const;
 
@@ -39,8 +43,8 @@ const editingLocaleMessages = (
 };
 
 export function EditingLocaleSwitcher({
-  locale = "en",
-  locales = editingLocales,
+  locale: localeOverride,
+  locales: localeOverrides,
   messages,
   value,
   onValueChange,
@@ -51,6 +55,8 @@ export function EditingLocaleSwitcher({
   value: EditingLocale;
   onValueChange: (value: EditingLocale) => void;
 }) {
+  const locale = useKrakstackLocale(localeOverride);
+  const locales = useKrakstackLocales(localeOverrides);
   const labels = editingLocaleMessages(locale, messages);
   const localeOptions = locales.map((value) => ({
     value,

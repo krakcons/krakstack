@@ -30,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
+import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 export type NotificationMenuTab = "inbox" | "archive";
 
 export type NotificationItem = {
@@ -144,7 +145,7 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
   defaultOpen = false,
   error = false,
   isLoading = false,
-  locale = "en",
+  locale: localeOverride,
   markReadOnOpen = true,
   messages: messageOverrides,
   notifications,
@@ -156,6 +157,7 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
   renderItem,
   renderTrigger,
 }: NotificationMenuProps<ActionResult>) {
+  const locale = useKrakstackLocale(localeOverride);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
   const [tab, setTab] = useState<NotificationMenuTab>("inbox");
   const open = controlledOpen ?? uncontrolledOpen;
@@ -253,7 +255,7 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
 
 export function NotificationMenuTrigger({
   labels: providedLabels,
-  locale = "en",
+  locale: localeOverride,
   messages,
   unreadCount,
 }: {
@@ -262,6 +264,7 @@ export function NotificationMenuTrigger({
   messages?: NotificationMenuMessageTranslations | undefined;
   unreadCount: number;
 }) {
+  const locale = useKrakstackLocale(localeOverride);
   const labels = providedLabels ?? notificationMenuMessages(locale, messages);
   return (
     <PopoverTrigger

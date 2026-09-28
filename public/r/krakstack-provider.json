@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "krakstack-provider",
+  "title": "KrakStack Provider",
+  "description": "Provides shared KrakStack component configuration, including the active locale.",
+  "dependencies": ["react"],
+  "files": [
+    {
+      "path": "src/components/ui/krakstack-provider.tsx",
+      "content": "import { createContext, type ReactNode, useContext } from \"react\";\n\ntype KrakstackContextValue = {\n  locale: string;\n  locales: readonly string[];\n};\n\nconst KrakstackContext = createContext<KrakstackContextValue>({\n  locale: \"en\",\n  locales: [\"en\"],\n});\n\nexport type KrakstackProviderProps = {\n  children: ReactNode;\n  locale: string;\n  locales?: readonly string[];\n};\n\nexport const KrakstackProvider = ({\n  children,\n  locale,\n  locales = [locale],\n}: KrakstackProviderProps) => (\n  <KrakstackContext.Provider value={{ locale, locales }}>\n    {children}\n  </KrakstackContext.Provider>\n);\n\nexport const useKrakstackLocale = (locale?: string) => {\n  const context = useContext(KrakstackContext);\n  return locale ?? context.locale;\n};\n\nexport const useKrakstackLocales = (locales?: readonly string[]) => {\n  const context = useContext(KrakstackContext);\n  return locales ?? context.locales;\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/krakstack-provider.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-09-28",
+    "updatedAt": "2026-09-28"
+  },
+  "docs": "## Overview\n\n`KrakstackProvider` supplies shared configuration to KrakStack components without requiring repetitive props. Pass the active application locale once near the root. Explicit component props still take precedence over provider values. The provider is SSR-safe and does not create a client-only rendering boundary.\n\n## Usage\n\n```tsx\nimport { KrakstackProvider } from \"@/components/ui/krakstack-provider\";\n\n<KrakstackProvider locale={getLocale()} locales={locales}>\n  <App />\n</KrakstackProvider>\n```",
+  "type": "registry:component"
+}
