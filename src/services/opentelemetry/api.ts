@@ -1,4 +1,4 @@
-import { Config, Effect, Layer } from "effect";
+import { Config, Effect, Layer, Schema } from "effect";
 import {
   FetchHttpClient,
   HttpClient,
@@ -17,12 +17,21 @@ const OpenTelemetryLive = Otlp.layerFromConfig().pipe(
 );
 
 type OtlpSignal = "traces" | "metrics" | "logs";
+type OtlpSignalConfig = Uppercase<OtlpSignal>;
 
 const otlpProxyPaths = [
   "/api/otel/v1/traces",
   "/api/otel/v1/metrics",
   "/api/otel/v1/logs",
 ] as const;
+
+const exporterConfig = (signal: OtlpSignalConfig) =>
+  Config.schema(Config.Array(Schema.String), `OTEL_${signal}_EXPORTER`).pipe(
+    Config.map((exporters) =>
+      exporters.map((exporter) => exporter.toLowerCase().trim()),
+    ),
+    Config.withDefault<ReadonlyArray<string>>([]),
+  );
 
 const proxyOtlp = (baseUrl: URL, signal: OtlpSignal) =>
   Effect.gen(function* () {
@@ -57,21 +66,34 @@ const proxyOtlp = (baseUrl: URL, signal: OtlpSignal) =>
   );
 
 const otlpProxyLayer = Layer.unwrap(
-  Effect.map(
-    Config.url("OTEL_COLLECTOR_PROXY_URL").pipe(
-      Config.withDefault(new URL("http://localhost:4318")),
-    ),
-    (baseUrl) =>
-      Layer.mergeAll(
-        HttpRouter.add("POST", otlpProxyPaths[0], proxyOtlp(baseUrl, "traces")),
-        HttpRouter.add(
-          "POST",
-          otlpProxyPaths[1],
-          proxyOtlp(baseUrl, "metrics"),
-        ),
-        HttpRouter.add("POST", otlpProxyPaths[2], proxyOtlp(baseUrl, "logs")),
-      ),
-  ),
+  Effect.gen(function* () {
+    const baseUrl = yield* Config.url("OTEL_EXPORTER_OTLP_ENDPOINT");
+    const exporters = yield* Config.all({
+      logs: exporterConfig("LOGS"),
+      metrics: exporterConfig("METRICS"),
+      traces: exporterConfig("TRACES"),
+    });
+
+    return Layer.mergeAll(
+      exporters.traces.includes("otlp")
+        ? HttpRouter.add(
+            "POST",
+            otlpProxyPaths[0],
+            proxyOtlp(baseUrl, "traces"),
+          )
+        : Layer.empty,
+      exporters.metrics.includes("otlp")
+        ? HttpRouter.add(
+            "POST",
+            otlpProxyPaths[1],
+            proxyOtlp(baseUrl, "metrics"),
+          )
+        : Layer.empty,
+      exporters.logs.includes("otlp")
+        ? HttpRouter.add("POST", otlpProxyPaths[2], proxyOtlp(baseUrl, "logs"))
+        : Layer.empty,
+    );
+  }),
 );
 
 const serverServices = HttpServer.layerServices.pipe(
