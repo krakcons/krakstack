@@ -12,6 +12,7 @@
 
 - English and French are required for all public-facing strings.
 - Translate public-facing strings with paraglide.js and the Vite plugin.
+- Let the Paraglide Vite plugin compile translations automatically during development and builds. Do not run manual Paraglide compilation commands (such as `paraglide-js compile`) or rewrite `src/paraglide/`; doing so can conflict with the running Vite server and trigger reload loops.
 - Store translations in `src/messages/en.json` and `src/messages/fr.json`.
 - Import generated messages from `src/paraglide/messages` instead of hardcoding UI copy.
 
