@@ -195,75 +195,76 @@ const VirtualizedComboboxList = <TData,>({
     [virtualizer],
   );
 
-  if (filteredItems.length === 0) {
-    return (
-      <div className="text-muted-foreground py-6 text-center text-sm">
-        {emptyLabel}
-      </div>
-    );
-  }
-
   return (
-    <ComboboxPrimitive.List
-      className="scroll-py-1 overflow-auto overscroll-contain p-1"
-      ref={handleScrollElementRef}
-      style={{
-        height: Math.min(virtualizer.getTotalSize() + 8, 288),
-        maxHeight: "var(--available-height)",
-      }}
-    >
-      <div
-        className="relative w-full"
-        role="presentation"
-        style={{ height: virtualizer.getTotalSize() }}
+    <>
+      {filteredItems.length === 0 && (
+        <div className="text-muted-foreground flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto py-6 text-center text-sm">
+          {emptyLabel}
+        </div>
+      )}
+      {/* Keep the list registered during empty/loading states to preserve input focus. */}
+      <ComboboxPrimitive.List
+        className="min-h-0 flex-1 scroll-py-1 overflow-auto overscroll-contain p-1"
+        hidden={filteredItems.length === 0}
+        ref={handleScrollElementRef}
+        style={{
+          height: Math.min(virtualizer.getTotalSize() + 8, 288),
+          maxHeight: "var(--available-height)",
+        }}
       >
-        {virtualizer.getVirtualItems().map((virtualItem) => {
-          const entry = entries[virtualItem.index];
-          if (!entry) return null;
+        <div
+          className="relative w-full"
+          role="presentation"
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const entry = entries[virtualItem.index];
+            if (!entry) return null;
 
-          const style = {
-            height: virtualItem.size,
-            transform: `translateY(${virtualItem.start}px)`,
-          };
+            const style = {
+              height: virtualItem.size,
+              transform: `translateY(${virtualItem.start}px)`,
+            };
 
-          if (entry.kind === "group") {
+            if (entry.kind === "group") {
+              return (
+                <ComboboxPrimitive.Group className="contents" key={entry.key}>
+                  <ComboboxPrimitive.GroupLabel
+                    className="text-muted-foreground absolute top-0 left-0 w-full px-2 pt-3 pb-1 text-xs"
+                    data-index={virtualItem.index}
+                    ref={virtualizer.measureElement}
+                    style={style}
+                  >
+                    {entry.label}
+                  </ComboboxPrimitive.GroupLabel>
+                </ComboboxPrimitive.Group>
+              );
+            }
+
             return (
-              <ComboboxPrimitive.Group className="contents" key={entry.key}>
-                <ComboboxPrimitive.GroupLabel
-                  className="text-muted-foreground absolute top-0 left-0 w-full px-2 pt-3 pb-1 text-xs"
-                  data-index={virtualItem.index}
-                  ref={virtualizer.measureElement}
-                  style={style}
-                >
-                  {entry.label}
-                </ComboboxPrimitive.GroupLabel>
-              </ComboboxPrimitive.Group>
+              <ComboboxPrimitive.Item
+                aria-posinset={entry.index + 1}
+                aria-setsize={filteredItems.length}
+                className="data-highlighted:bg-accent data-highlighted:text-accent-foreground absolute top-0 left-0 flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50"
+                data-index={virtualItem.index}
+                index={entry.index}
+                key={entry.item.value}
+                ref={virtualizer.measureElement}
+                style={style}
+                value={entry.item}
+              >
+                {renderItem?.(entry.item) ?? (
+                  <span className="min-w-0 truncate">{entry.item.label}</span>
+                )}
+                <ComboboxPrimitive.ItemIndicator className="absolute right-2 flex size-4 items-center justify-center">
+                  <Check />
+                </ComboboxPrimitive.ItemIndicator>
+              </ComboboxPrimitive.Item>
             );
-          }
-
-          return (
-            <ComboboxPrimitive.Item
-              aria-posinset={entry.index + 1}
-              aria-setsize={filteredItems.length}
-              className="data-highlighted:bg-accent data-highlighted:text-accent-foreground absolute top-0 left-0 flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50"
-              data-index={virtualItem.index}
-              index={entry.index}
-              key={entry.item.value}
-              ref={virtualizer.measureElement}
-              style={style}
-              value={entry.item}
-            >
-              {renderItem?.(entry.item) ?? (
-                <span className="min-w-0 truncate">{entry.item.label}</span>
-              )}
-              <ComboboxPrimitive.ItemIndicator className="absolute right-2 flex size-4 items-center justify-center">
-                <Check />
-              </ComboboxPrimitive.ItemIndicator>
-            </ComboboxPrimitive.Item>
-          );
-        })}
-      </div>
-    </ComboboxPrimitive.List>
+          })}
+        </div>
+      </ComboboxPrimitive.List>
+    </>
   );
 };
 
@@ -298,11 +299,11 @@ const VirtualizedComboboxContent = <TData,>({
       >
         <ComboboxPrimitive.Popup
           className={cn(
-            "relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-0 origin-(--transform-origin) overflow-hidden rounded-md bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-in-95",
+            "relative flex max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-0 origin-(--transform-origin) flex-col overflow-hidden rounded-md bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-in-95",
             contentClassName,
           )}
         >
-          <div className="min-w-0 p-1 pb-0">
+          <div className="min-w-0 shrink-0 p-1 pb-0">
             <InputGroup className="border-input/30 bg-input/30 h-8 w-full min-w-0 shadow-none">
               <ComboboxPrimitive.Input
                 placeholder={labels.search}

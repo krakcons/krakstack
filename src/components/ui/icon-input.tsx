@@ -133,7 +133,7 @@ export function IconInput({
   return (
     <VirtualizedCombobox
       ariaLabel={copy.select}
-      contentClassName="w-80"
+      contentClassName="h-80 w-80"
       emptyLabel={
         isWaiting ? null : (
           <div className="text-muted-foreground flex flex-col items-center gap-2 px-3">
