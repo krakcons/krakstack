@@ -5,17 +5,17 @@ import {
   HttpApiGroup,
   HttpApiSchema,
   OpenApi,
-} from "effect/unstable/httpapi";
+} from "effect/http-api";
 
 const AgentMessageText = Schema.String.check(
-  Schema.isLengthBetween(1, 4_000),
+  Schema.isBetweenLength(1, 4_000),
 ).annotate({
   identifier: "AgentMessageText",
   title: "Agent message",
   description: "A user message sent to the agent.",
 });
 
-const AgentReferenceLabel = Schema.String.check(Schema.isLengthBetween(1, 500));
+const AgentReferenceLabel = Schema.String.check(Schema.isBetweenLength(1, 500));
 export const AGENT_REFERENCE_LIMIT = 20;
 
 export type AgentReference<Resource> = {

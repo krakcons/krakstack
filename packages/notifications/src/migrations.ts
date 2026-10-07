@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect";
-import { Migrator, SqlClient } from "effect/unstable/sql";
+import { Migrator, SqlClient } from "effect/sql";
 
 export const NOTIFICATION_MIGRATION_TABLE = "krakstack_notification_migrations";
 

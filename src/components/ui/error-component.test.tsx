@@ -9,7 +9,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { Data, Effect } from "effect";
-import { HttpClientError, HttpClientRequest } from "effect/unstable/http";
+import { HttpClientError, HttpClientRequest } from "effect/http";
 import {
   createMemoryHistory,
   createRootRoute,

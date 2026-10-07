@@ -14,8 +14,8 @@ import {
   Stream,
   Terminal,
 } from "effect";
-import { Argument, Command, Flag } from "effect/unstable/cli";
-import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
+import { Argument, Command, Flag } from "effect/cli";
+import { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 
 import { ApiClient, type ApiClientService } from "@/lib/httpapi-client";
 import {
@@ -264,7 +264,7 @@ const isBooleanSchema = (schema: CliJsonSchema) => {
 };
 
 const jsonFlag = (name: string) =>
-  Flag.string(name).pipe(
+  Flag.String(name).pipe(
     Flag.mapTryCatch(
       (value) => Schema.decodeUnknownSync(JsonFromString)(value),
       () => `--${name} must be valid JSON`,
@@ -282,20 +282,20 @@ const primitiveFlag = (
 
   if (isBooleanSchema(schema)) {
     flag = required
-      ? Flag.choice(name, ["true", "false"]).pipe(
+      ? Flag.Literals(name, ["true", "false"]).pipe(
           Flag.map((value) => value === "true"),
         )
-      : Flag.boolean(name);
+      : Flag.Boolean(name);
   } else if (choices.length > 0) {
-    flag = Flag.choice(name, choices);
+    flag = Flag.Literals(name, choices);
   } else if (type === "integer") {
-    flag = Flag.integer(name);
+    flag = Flag.Int(name);
   } else if (type === "number" || hasNumericPattern(schema)) {
-    flag = Flag.float(name);
+    flag = Flag.Finite(name);
   } else if (type === "object" || type === "array") {
     flag = jsonFlag(name);
   } else {
-    flag = Flag.string(name);
+    flag = Flag.String(name);
   }
 
   const documented = flag.pipe(
@@ -315,13 +315,13 @@ const primitiveArgument = (name: string, schema: CliJsonSchema) => {
   let argument: Argument.Argument<unknown>;
 
   if (choices.length > 0) {
-    argument = Argument.choice(name, choices);
+    argument = Argument.Literals(name, choices);
   } else if (type === "integer") {
-    argument = Argument.integer(name);
+    argument = Argument.Int(name);
   } else if (type === "number" || hasNumericPattern(schema)) {
-    argument = Argument.float(name);
+    argument = Argument.Finite(name);
   } else {
-    argument = Argument.string(name);
+    argument = Argument.String(name);
   }
 
   const documented = argument.pipe(Argument.withMetavar(name.toUpperCase()));

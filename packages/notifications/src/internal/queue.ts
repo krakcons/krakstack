@@ -1,5 +1,5 @@
 import { Context, Duration, Effect, Layer } from "effect";
-import { PersistedQueue } from "effect/unstable/persistence";
+import { PersistedQueue } from "effect/persistence";
 
 import {
   DeliveryQueueJob,
@@ -24,7 +24,9 @@ export class NotificationQueueService extends Context.Service<
   NotificationQueues
 >()("@krak-stack/notifications/internal/NotificationQueueService") {}
 
-export const makeNotificationQueues = Effect.gen(function* () {
+export const makeNotificationQueues = Effect.fnUntraced(function* (
+  maxAttempts = 10,
+) {
   const store = yield* PersistedQueue.makeStoreSql({
     tableName: NOTIFICATION_QUEUE_TABLE,
     lockRefreshInterval: Duration.millis(
@@ -38,10 +40,12 @@ export const makeNotificationQueues = Effect.gen(function* () {
   const deliveries = yield* factory.make({
     name: DELIVERY_QUEUE_NAME,
     schema: DeliveryQueueJob,
+    maxAttempts,
   });
   const reminders = yield* factory.make({
     name: REMINDER_QUEUE_NAME,
     schema: ReminderQueueJob,
+    maxAttempts,
   });
 
   return {
@@ -50,7 +54,7 @@ export const makeNotificationQueues = Effect.gen(function* () {
   } satisfies NotificationQueues;
 });
 
-export const notificationQueueLayer = Layer.effect(
-  NotificationQueueService,
-  makeNotificationQueues,
-);
+export const makeNotificationQueueLayer = (maxAttempts = 10) =>
+  Layer.effect(NotificationQueueService, makeNotificationQueues(maxAttempts));
+
+export const notificationQueueLayer = makeNotificationQueueLayer();

@@ -43,10 +43,10 @@ export class SesNotificationConfig extends Context.Service<
   SesNotificationConfigService
 >()("SesNotificationConfig", {
   make: Effect.gen(function* () {
-    const region = yield* Config.string("SES_REGION");
-    const id = yield* Config.redacted("SES_ACCESS_KEY_ID");
-    const secret = yield* Config.redacted("SES_SECRET_ACCESS_KEY");
-    const from = yield* Config.string("NOTIFICATION_EMAIL_FROM").pipe(
+    const region = yield* Config.String("SES_REGION");
+    const id = yield* Config.Redacted("SES_ACCESS_KEY_ID");
+    const secret = yield* Config.Redacted("SES_SECRET_ACCESS_KEY");
+    const from = yield* Config.String("NOTIFICATION_EMAIL_FROM").pipe(
       Config.orElse(() => Config.succeed("")),
     );
 

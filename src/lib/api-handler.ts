@@ -1,6 +1,6 @@
 import { Layer } from "effect";
-import { HttpRouter, HttpServer } from "effect/unstable/http";
-import { HttpApiScalar } from "effect/unstable/httpapi";
+import { HttpRouter, HttpServer } from "effect/http";
+import { HttpApiScalar } from "effect/http-api";
 
 import { Api } from "@/api";
 import { apiLayer } from "@/lib/api-builder";

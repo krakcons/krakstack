@@ -1,6 +1,6 @@
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import type { Json } from "effect/Schema";
-import { McpProtocol, McpSchema, McpServer } from "effect/unstable/ai";
+import { McpProtocol, McpSchema, McpServer } from "effect/ai";
 
 import { ApiClient, type ApiClientService } from "@/lib/httpapi-client";
 import {

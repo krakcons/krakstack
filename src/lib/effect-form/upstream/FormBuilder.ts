@@ -1,0 +1,209 @@
+import type * as Effect from "effect/Effect"
+import type * as Option from "effect/Option"
+import * as Predicate from "effect/Predicate"
+import type * as AtomRegistry from "effect/reactivity/AtomRegistry"
+import * as Schema from "effect/Schema"
+import * as SchemaGetter from "effect/SchemaGetter"
+
+import type {
+  AnyFieldDef,
+  ArrayFieldDef,
+  DecodedFromFields,
+  EncodedFromFields,
+  FieldDef,
+  FieldsRecord
+} from "./Field.js"
+import { isArrayFieldDef, isFieldDef, makeField } from "./Field.js"
+
+/**
+ * Flattens an intersection of field records into a single object type so that
+ * hover types and error messages display as `{ email: ...; password: ... }`
+ * instead of `{ email: ... } & { password: ... } & ...`.
+ *
+ * Note: `Types.Simplify` from effect is not used here because its
+ * `extends infer B ? B : never` indirection erases the `FieldsRecord`
+ * constraint in generic positions.
+ */
+type Simplify<T,> = { readonly [K in keyof T]: T[K] } & {}
+
+export interface SubmittedValues<TFields extends FieldsRecord,> {
+  readonly encoded: EncodedFromFields<TFields>
+  readonly decoded: DecodedFromFields<TFields>
+}
+
+export const FieldTypeId: unique symbol = Symbol.for("./Field.js")
+
+export type FieldTypeId = typeof FieldTypeId
+
+export interface FieldRef<S,> {
+  readonly [FieldTypeId]: FieldTypeId
+  readonly _S: S
+  readonly key: string
+}
+
+export const makeFieldRef = <S,>(key: string): FieldRef<S> => ({
+  [FieldTypeId]: FieldTypeId,
+  _S: undefined as any,
+  key
+})
+
+export const TypeId: unique symbol = Symbol.for("./Form.js")
+
+export type TypeId = typeof TypeId
+
+export interface FormState<TFields extends FieldsRecord,> {
+  readonly values: EncodedFromFields<TFields>
+  readonly initialValues: EncodedFromFields<TFields>
+  readonly lastSubmittedValues: Option.Option<SubmittedValues<TFields>>
+  readonly touched: { readonly [K in keyof TFields]: boolean }
+  readonly submitCount: number
+  readonly validationCount: number
+  readonly dirtyFields: ReadonlySet<string>
+}
+
+interface SyncRefinement {
+  readonly _tag: "sync"
+  readonly fn: (values: unknown) => Schema.FilterOutput
+}
+
+interface AsyncRefinement {
+  readonly _tag: "async"
+  readonly fn: (values: unknown) => Effect.Effect<undefined | boolean | Schema.FilterIssue, never, unknown>
+}
+
+type Refinement = SyncRefinement | AsyncRefinement
+
+export interface FormBuilder<TFields extends FieldsRecord, R,> {
+  readonly [TypeId]: TypeId
+  readonly fields: TFields
+  readonly refinements: ReadonlyArray<Refinement>
+  readonly _R?: R
+
+  addField<K extends string, S extends Schema.Top,>(
+    this: FormBuilder<TFields, R>,
+    field: FieldDef<K, S>
+  ): FormBuilder<Simplify<TFields & { readonly [key in K]: FieldDef<K, S> }>, R | Schema.Codec.DecodingServices<S>>
+
+  addField<K extends string, S extends Schema.Top,>(
+    this: FormBuilder<TFields, R>,
+    field: ArrayFieldDef<K, S>
+  ): FormBuilder<
+    Simplify<TFields & { readonly [key in K]: ArrayFieldDef<K, S> }>,
+    R | Schema.Codec.DecodingServices<S>
+  >
+
+  addField<K extends string, S extends Schema.Top,>(
+    this: FormBuilder<TFields, R>,
+    key: K,
+    schema: S
+  ): FormBuilder<Simplify<TFields & { readonly [key in K]: FieldDef<K, S> }>, R | Schema.Codec.DecodingServices<S>>
+
+  merge<TFields2 extends FieldsRecord, R2,>(
+    this: FormBuilder<TFields, R>,
+    other: FormBuilder<TFields2, R2>
+  ): FormBuilder<Simplify<TFields & TFields2>, R | R2>
+
+  refine(
+    this: FormBuilder<TFields, R>,
+    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput
+  ): FormBuilder<TFields, R>
+
+  refineEffect<RD,>(
+    this: FormBuilder<TFields, R>,
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>
+  ): FormBuilder<TFields, R | Exclude<RD, AtomRegistry.AtomRegistry>>
+}
+
+const FormBuilderProto = {
+  [TypeId]: TypeId,
+  addField<TFields extends FieldsRecord, R,>(
+    this: FormBuilder<TFields, R>,
+    keyOrField: string | AnyFieldDef,
+    schema?: Schema.Top
+  ): FormBuilder<any, any> {
+    const field = typeof keyOrField === "string"
+      ? makeField(keyOrField, schema!)
+      : keyOrField
+    const newSelf = Object.create(FormBuilderProto)
+    newSelf.fields = { ...this.fields, [field.key]: field }
+    newSelf.refinements = this.refinements
+    return newSelf
+  },
+  merge<TFields extends FieldsRecord, R, TFields2 extends FieldsRecord, R2,>(
+    this: FormBuilder<TFields, R>,
+    other: FormBuilder<TFields2, R2>
+  ): FormBuilder<TFields & TFields2, R | R2> {
+    const newSelf = Object.create(FormBuilderProto)
+    newSelf.fields = { ...this.fields, ...other.fields }
+    newSelf.refinements = [...this.refinements, ...other.refinements]
+    return newSelf
+  },
+  refine<TFields extends FieldsRecord, R,>(
+    this: FormBuilder<TFields, R>,
+    predicate: (values: DecodedFromFields<TFields>) => Schema.FilterOutput
+  ): FormBuilder<TFields, R> {
+    const newSelf = Object.create(FormBuilderProto)
+    newSelf.fields = this.fields
+    newSelf.refinements = [
+      ...this.refinements,
+      { _tag: "sync" as const, fn: (values: unknown) => predicate(values as DecodedFromFields<TFields>) }
+    ]
+    return newSelf
+  },
+  refineEffect<TFields extends FieldsRecord, R, RD,>(
+    this: FormBuilder<TFields, R>,
+    predicate: (values: DecodedFromFields<TFields>) => Effect.Effect<Schema.FilterOutput, never, RD>
+  ): FormBuilder<TFields, R | Exclude<RD, AtomRegistry.AtomRegistry>> {
+    const newSelf = Object.create(FormBuilderProto)
+    newSelf.fields = this.fields
+    newSelf.refinements = [
+      ...this.refinements,
+      { _tag: "async" as const, fn: (values: unknown) => predicate(values as DecodedFromFields<TFields>) }
+    ]
+    return newSelf
+  }
+}
+
+export const isFormBuilder = (u: unknown): u is FormBuilder<any, any> => Predicate.hasProperty(u, TypeId)
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export const empty: FormBuilder<{}, never> = (() => {
+  const self = Object.create(FormBuilderProto)
+  self.fields = {}
+  self.refinements = []
+  return self
+})()
+
+export const buildSchema = <TFields extends FieldsRecord, R,>(
+  self: FormBuilder<TFields, R>
+): Schema.Codec<DecodedFromFields<TFields>, EncodedFromFields<TFields>, R> => {
+  const schemaFields: Record<string, Schema.Top> = {}
+  for (const [key, def] of Object.entries(self.fields)) {
+    if (isArrayFieldDef(def)) {
+      schemaFields[key] = Schema.Array(def.itemSchema)
+    } else if (isFieldDef(def)) {
+      schemaFields[key] = def.schema
+    }
+  }
+
+  let schema: Schema.Codec<any, any, any, any> = Schema.Struct(schemaFields)
+
+  for (const refinement of self.refinements) {
+    if (refinement._tag === "sync") {
+      schema = schema.pipe(Schema.check(Schema.makeFilter((input) => refinement.fn(input))))
+    } else {
+      schema = schema.pipe(
+        Schema.decode({
+          decode: SchemaGetter.checkEffect((input) => refinement.fn(input)),
+          encode: SchemaGetter.passthrough()
+        })
+      )
+    }
+  }
+
+  return schema as Schema.Codec<
+    DecodedFromFields<TFields>,
+    EncodedFromFields<TFields>,
+    R
+  >
+}

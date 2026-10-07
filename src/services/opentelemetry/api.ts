@@ -8,8 +8,8 @@ import {
   HttpServer,
   HttpServerRequest,
   HttpServerResponse,
-} from "effect/unstable/http";
-import { Otlp, OtlpSerialization } from "effect/unstable/observability";
+} from "effect/http";
+import { Otlp, OtlpSerialization } from "effect/observability";
 
 const OpenTelemetryLive = Otlp.layerFromConfig().pipe(
   Layer.provide(OtlpSerialization.layerJson),
@@ -26,7 +26,7 @@ const otlpProxyPaths = [
 ] as const;
 
 const exporterConfig = (signal: OtlpSignalConfig) =>
-  Config.schema(Config.Array(Schema.String), `OTEL_${signal}_EXPORTER`).pipe(
+  Config.schema(Schema.Array(Schema.String), `OTEL_${signal}_EXPORTER`).pipe(
     Config.map((exporters) =>
       exporters.map((exporter) => exporter.toLowerCase().trim()),
     ),
@@ -67,7 +67,7 @@ const proxyOtlp = (baseUrl: URL, signal: OtlpSignal) =>
 
 const otlpProxyLayer = Layer.unwrap(
   Effect.gen(function* () {
-    const baseUrl = yield* Config.url("OTEL_EXPORTER_OTLP_ENDPOINT");
+    const baseUrl = yield* Config.URL("OTEL_EXPORTER_OTLP_ENDPOINT");
     const exporters = yield* Config.all({
       logs: exporterConfig("LOGS"),
       metrics: exporterConfig("METRICS"),

@@ -1,6 +1,6 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Option, Schema } from "effect";
-import { Cookies } from "effect/unstable/http";
+import { Cookies } from "effect/http";
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 

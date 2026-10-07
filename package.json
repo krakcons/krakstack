@@ -18,6 +18,7 @@
     "registry:build": "bun -e 'import { readdirSync, readFileSync, rmSync } from \"node:fs\"; const names = new Set(JSON.parse(readFileSync(\"registry.json\", \"utf8\")).items.map((item) => item.name)); for (const file of readdirSync(\"public/r\")) { if (file === \"registry.json\" || !file.endsWith(\".json\")) continue; const item = JSON.parse(readFileSync(`public/r/${file}`, \"utf8\")); if (!names.has(item.name)) rmSync(`public/r/${file}`); }' && shadcn build && oxfmt public/r/*.json",
     "registry:package:build": "bun run --cwd packages/registry build",
     "registry:package:pack": "bun pm --cwd packages/registry pack",
+    "registry:package:pack:dev": "mkdir -p tmp && bun pm --cwd packages/registry pack --filename \"$PWD/tmp/registry-effect4.tgz\"",
     "notifications:build": "bun run --cwd packages/notifications build",
     "notifications:check": "bun run --cwd packages/notifications check",
     "notifications:test": "bun run --cwd packages/notifications test",
@@ -32,11 +33,11 @@
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
-    "@effect/ai-openai": "4.0.0-rc.112",
-    "@effect/ai-openai-compat": "4.0.0-rc.112",
-    "@effect/atom-react": "4.0.0-rc.112",
-    "@effect/platform-browser": "4.0.0-rc.112",
-    "@effect/sql-pg": "4.0.0-rc.112",
+    "@effect/ai-openai": "4.0.0",
+    "@effect/ai-openai-compat": "4.0.0",
+    "@effect/atom-react": "4.0.0",
+    "@effect/platform-browser": "4.0.0",
+    "@effect/sql-pg": "4.0.0",
     "@iconify/react": "^6.0.2",
     "@krak-stack/registry": "workspace:*",
     "@lucas-barake/effect-form": "0.25.0-beta.6",
@@ -48,16 +49,14 @@
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-start": "^1.168.25",
     "@tanstack/react-virtual": "^3.14.5",
-    "@types/pg": "^8.20.0",
     "@xberg-io/xberg": "1.0.14",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.3.0",
     "drizzle-orm": "^1.0.0-rc.4-5d5b77c",
-    "effect": "4.0.0-rc.112",
+    "effect": "4.0.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.18.0",
-    "pg": "^8.21.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "shadcn": "^4.13.0",
@@ -67,9 +66,9 @@
   "devDependencies": {
     "@better-auth/api-key": "^1.6.18",
     "@effect/tsgo": "0.14.6",
-    "@effect/vitest": "4.0.0-rc.112",
+    "@effect/vitest": "4.0.0",
     "@inlang/paraglide-js": "^2.19.0",
-    "@krak-stack/auth": "0.2.16",
+    "@krak-stack/auth": "0.2.17",
     "@oxlint/plugins": "1.78.0",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/dom": "^10.4.1",
@@ -87,6 +86,15 @@
     "oxlint": "1.78.0",
     "typescript": "7.0.1-rc",
     "vite": "^8.0.16",
-    "vitest": "^4.1.9"
+    "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "@krak-stack/auth": "file:../krakstack-auth/tmp/auth-effect4.tgz",
+    "@lucas-barake/effect-form": "0.25.0-beta.6",
+    "@lucas-barake/effect-form-react": "0.26.0-beta.5"
+  },
+  "patchedDependencies": {
+    "@lucas-barake/effect-form@0.25.0-beta.6": "patches/@lucas-barake%2Feffect-form@0.25.0-beta.6.patch",
+    "@lucas-barake/effect-form-react@0.26.0-beta.5": "patches/@lucas-barake%2Feffect-form-react@0.26.0-beta.5.patch"
   }
 }

@@ -19,7 +19,7 @@ HTTP API, UI, provider credentials, or rendered product copy.
 
 ## Database Ownership
 
-Consumers provide one `SqlClient` from `effect/unstable/sql`.
+Consumers provide one `SqlClient` from `effect/sql`.
 `NotificationService.layer` runs domain migrations before exposing the service.
 Domain migrations use `krakstack_notification_migrations` and own these tables:
 
@@ -61,7 +61,7 @@ import {
   NotificationTransportRegistry,
   type NotificationTransport,
 } from "@krak-stack/notifications/transport";
-import type { SqlClient } from "effect/unstable/sql";
+import type { SqlClient } from "effect/sql";
 
 declare const sqlLayer: Layer.Layer<SqlClient.SqlClient>;
 declare const emailTransport: NotificationTransport;

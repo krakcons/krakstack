@@ -7,8 +7,8 @@ import {
   Headers,
   HttpClient,
   HttpTraceContext,
-} from "effect/unstable/http";
-import { OtlpExporter } from "effect/unstable/observability";
+} from "effect/http";
+import { OtlpExporter } from "effect/observability";
 import { afterEach, vi } from "vitest";
 
 import { BrowserOtlp } from "./browser";

@@ -1,6 +1,6 @@
 import { Effect, Option, Schema } from "effect";
-import { HttpClient, HttpClientRequest } from "effect/unstable/http";
-import { Tool, Toolkit } from "effect/unstable/ai";
+import { HttpClient, HttpClientRequest } from "effect/http";
+import { Tool, Toolkit } from "effect/ai";
 
 import { FileExtractionService } from "@/services/file-extraction";
 
@@ -87,7 +87,7 @@ export const WebFetchResponse = Schema.Struct({
   url: WebFetchUrl,
   contentType: SupportedMediaType,
   content: Schema.String.check(
-    Schema.isLengthBetween(1, MAX_CONTENT_CHARACTERS),
+    Schema.isBetweenLength(1, MAX_CONTENT_CHARACTERS),
   ),
   truncated: Schema.Boolean,
 }).annotate({
@@ -105,7 +105,7 @@ export const WebFetchFailure = Schema.Struct({
     "unavailable",
     "unsupported-content",
   ]),
-  message: Schema.String.check(Schema.isLengthBetween(1, 500)),
+  message: Schema.String.check(Schema.isBetweenLength(1, 500)),
 }).annotate({
   identifier: "WebFetchFailure",
   title: "Web fetch failure",

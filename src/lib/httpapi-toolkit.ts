@@ -1,6 +1,6 @@
 import { Effect, Layer, Schema } from "effect";
 import type { Json } from "effect/Schema";
-import { Tool, Toolkit } from "effect/unstable/ai";
+import { Tool, Toolkit } from "effect/ai";
 
 import { ApiClient } from "@/lib/httpapi-client";
 import {

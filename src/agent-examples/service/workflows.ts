@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { Activity, Workflow } from "effect/unstable/workflow";
+import { Activity, Workflow } from "effect/workflow";
 
 import { ExamplePersistenceError, ExampleSchema } from "./schema";
 import { Examples } from "./service";

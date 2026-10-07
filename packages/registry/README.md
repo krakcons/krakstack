@@ -6,6 +6,44 @@ Tree-shakable runtime components and Effect services from the KrakStack shadcn r
 bun add @krak-stack/registry
 ```
 
+## Temporary Effect form patches
+
+This interim release supports stable Effect 4, but the published form betas still
+use removed Effect import paths. Applications using Effect forms must apply both
+compatibility patches at their package-manager root; installing Registry alone
+does not apply them automatically.
+
+After installing Registry, copy its bundled patches into your application:
+
+```sh
+mkdir -p patches
+cp node_modules/@krak-stack/registry/patches/*.patch patches/
+```
+
+Merge these fields into the application's root `package.json`, preserving any
+existing overrides and patches:
+
+```json
+{
+  "overrides": {
+    "@lucas-barake/effect-form": "0.25.0-beta.6",
+    "@lucas-barake/effect-form-react": "0.26.0-beta.5"
+  },
+  "patchedDependencies": {
+    "@lucas-barake/effect-form@0.25.0-beta.6": "patches/@lucas-barake%2Feffect-form@0.25.0-beta.6.patch",
+    "@lucas-barake/effect-form-react@0.26.0-beta.5": "patches/@lucas-barake%2Feffect-form-react@0.26.0-beta.5.patch"
+  }
+}
+```
+
+Run `bun install` and commit the patches, manifest, and lockfile. Other package
+managers require equivalent patch configuration. See the bundled
+`patches/README.md` for provenance and removal instructions after
+[upstream release PR #111](https://github.com/lucas-barake/effect-form/pull/111)
+is published.
+
+## Usage
+
 Import only the subpaths used by the application:
 
 ```tsx
@@ -53,7 +91,7 @@ const appLayer = appRoutes.pipe(Layer.provideMerge(HttpApiOtlp.layer));
 Install browser telemetry globally on the Atom runtime used by the API client:
 
 ```ts
-import { Atom } from "effect/unstable/reactivity";
+import { Atom } from "effect/reactivity";
 import { BrowserOtlp } from "@krak-stack/registry/opentelemetry/browser";
 
 const apiRuntime = Atom.context();

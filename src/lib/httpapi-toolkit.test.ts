@@ -1,11 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Schema, SchemaIssue, Stream } from "effect";
-import { OpenAiStructuredOutput, Tool } from "effect/unstable/ai";
-import {
-  HttpApi,
-  HttpApiEndpoint,
-  HttpApiGroup,
-} from "effect/unstable/httpapi";
+import { OpenAiStructuredOutput, Tool } from "effect/ai";
+import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
 
 import { ApiClient, encodeHttpApiOperationResult } from "@/lib/httpapi-client";
 import { HttpApiSpec } from "@/lib/httpapi-helpers";

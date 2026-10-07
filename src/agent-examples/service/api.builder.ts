@@ -1,5 +1,5 @@
 import { Effect, Option } from "effect";
-import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import { AuthService } from "@krak-stack/auth/server";
 
 import { Api } from "./api-entry";

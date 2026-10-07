@@ -1,5 +1,5 @@
 import { Effect, FiberSet, Layer, Predicate, Schema, Stream } from "effect";
-import { FetchHttpClient, HttpClientRequest } from "effect/unstable/http";
+import { FetchHttpClient, HttpClientRequest } from "effect/http";
 import {
   type Otlp,
   OtlpExporter,
@@ -7,7 +7,7 @@ import {
   OtlpMetrics,
   OtlpSerialization,
   OtlpTracer,
-} from "effect/unstable/observability";
+} from "effect/observability";
 
 class BrowserReportedError extends Schema.TaggedError<BrowserReportedError>()(
   "BrowserReportedError",

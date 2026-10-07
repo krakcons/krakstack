@@ -49,7 +49,7 @@ export const SortParam = Schema.Struct({
 export const SortParamFromString = Schema.String.pipe(
   Schema.decodeTo(
     SortParam,
-    SchemaTransformation.transformOrFail({
+    SchemaTransformation.transformEffect({
       decode: (sort) => {
         const sortParam = parseSortParam(sort);
 
@@ -80,7 +80,7 @@ export const SortParamFromString = Schema.String.pipe(
 export const SortParamsFromString = Schema.String.pipe(
   Schema.decodeTo(
     Schema.Array(SortParam),
-    SchemaTransformation.transformOrFail<ReadonlyArray<SortParam>, string>({
+    SchemaTransformation.transformEffect<ReadonlyArray<SortParam>, string>({
       decode: (sort) => {
         if (sort === "") return Effect.succeed([]);
         const parts = sort.split(",");

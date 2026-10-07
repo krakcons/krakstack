@@ -113,10 +113,10 @@ const classifyFailure = (cause: unknown): NotificationTransportFailure => {
 
 const makeSmtpEmailTransport = Effect.gen(function* () {
   const environment = yield* Effect.gen(function* () {
-    const host = yield* Config.nonEmptyString("SMTP_HOST");
+    const host = yield* Config.NonEmptyString("SMTP_HOST");
     const port = yield* Config.schema(SmtpPort, "SMTP_PORT");
-    const user = yield* Config.redacted("SMTP_USER");
-    const password = yield* Config.redacted("SMTP_PASSWORD");
+    const user = yield* Config.Redacted("SMTP_USER");
+    const password = yield* Config.Redacted("SMTP_PASSWORD");
     const sender = yield* Config.schema(EmailAddress, "EMAIL_SENDER_ADDRESS");
     return { host, port, user, password, sender };
   }).pipe(

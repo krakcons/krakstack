@@ -1,7 +1,7 @@
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { Option, Schema } from "effect";
-import { Cookies } from "effect/unstable/http";
+import { Cookies } from "effect/http";
 import {
   type ComponentPropsWithoutRef,
   type ForwardRefExoticComponent,

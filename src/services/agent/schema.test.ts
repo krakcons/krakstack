@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Schema } from "effect";
-import { HttpApi, OpenApi } from "effect/unstable/httpapi";
+import { HttpApi, OpenApi } from "effect/http-api";
 
 import { makeAgentApiGroup } from "./schema";
 

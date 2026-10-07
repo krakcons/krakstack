@@ -1,6 +1,6 @@
 import { Effect } from "effect";
-import { HttpRouter } from "effect/unstable/http";
-import { HttpApiBuilder, HttpApiGroup } from "effect/unstable/httpapi";
+import { HttpRouter } from "effect/http";
+import { HttpApiBuilder, HttpApiGroup } from "effect/http-api";
 
 import { HealthApiGroup } from "./api.group";
 import { HealthService } from "./index";

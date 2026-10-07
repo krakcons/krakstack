@@ -1,10 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema, SchemaTransformation } from "effect";
-import {
-  HttpApi,
-  HttpApiEndpoint,
-  HttpApiGroup,
-} from "effect/unstable/httpapi";
+import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
 
 import {
   encodeHttpApiOperationResult,

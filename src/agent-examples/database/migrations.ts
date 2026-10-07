@@ -1,6 +1,6 @@
 import { PgMigrator } from "@effect/sql-pg";
 import { Effect } from "effect";
-import { Migrator, SqlClient } from "effect/unstable/sql";
+import { Migrator, SqlClient } from "effect/sql";
 
 const initial = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;

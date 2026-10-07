@@ -1,5 +1,5 @@
 import { Effect, Layer, Option, Schema, Stream } from "effect";
-import { Atom, Reactivity } from "effect/unstable/reactivity";
+import { Atom, Reactivity } from "effect/reactivity";
 
 import type {
   AgentAction,

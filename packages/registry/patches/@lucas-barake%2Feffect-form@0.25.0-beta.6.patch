@@ -1,0 +1,86 @@
+diff --git a/dist/FormAtoms.d.ts b/dist/FormAtoms.d.ts
+index 08d1e4e2e8edf08cecb5b550099c3293cbd10cd7..f7b1fa4a5a7d65e8b8b3785dc9eb5397d24718b4 100644
+--- a/dist/FormAtoms.d.ts
++++ b/dist/FormAtoms.d.ts
+@@ -1,7 +1,7 @@
+ import * as Effect from "effect/Effect";
+ import * as Option from "effect/Option";
+ import * as Schema from "effect/Schema";
+-import * as Atom from "effect/unstable/reactivity/Atom";
++import * as Atom from "effect/reactivity/Atom";
+ import * as Field from "./Field.ts";
+ import * as FormBuilder from "./FormBuilder.ts";
+ import * as Mode from "./Mode.ts";
+diff --git a/dist/FormAtoms.js b/dist/FormAtoms.js
+index 663c4478a08eb17bfb7a11df952ced8f7812cbf8..ebaa1be93c33af0390857e945a9d414094f215ab 100644
+--- a/dist/FormAtoms.js
++++ b/dist/FormAtoms.js
+@@ -3,8 +3,8 @@ import * as Effect from "effect/Effect";
+ import { pipe } from "effect/Function";
+ import * as Option from "effect/Option";
+ import * as Schema from "effect/Schema";
+-import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+-import * as Atom from "effect/unstable/reactivity/Atom";
++import * as AsyncResult from "effect/reactivity/AsyncResult";
++import * as Atom from "effect/reactivity/Atom";
+ import * as Field from "./Field.js";
+ import * as FormBuilder from "./FormBuilder.js";
+ import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.js";
+diff --git a/dist/FormBuilder.d.ts b/dist/FormBuilder.d.ts
+index d42cf00d24b9efea5168831549b85468a64dfcef..16dfc1af6443555454ec7e6219c94eeabce3d724 100644
+--- a/dist/FormBuilder.d.ts
++++ b/dist/FormBuilder.d.ts
+@@ -1,7 +1,7 @@
+ import type * as Effect from "effect/Effect";
+ import type * as Option from "effect/Option";
+ import * as Schema from "effect/Schema";
+-import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry";
++import type * as AtomRegistry from "effect/reactivity/AtomRegistry";
+ import type { ArrayFieldDef, DecodedFromFields, EncodedFromFields, FieldDef, FieldsRecord } from "./Field.ts";
+ /**
+  * Flattens an intersection of field records into a single object type so that
+diff --git a/package.json b/package.json
+index 96ad0aa1729c64e8378a8cb2ad29f13b5347e568..06ae5ac6312779be749ff867b846c8f3c4ccf5b1 100644
+--- a/package.json
++++ b/package.json
+@@ -36,10 +36,10 @@
+   "license": "MIT",
+   "sideEffects": [],
+   "peerDependencies": {
+-    "effect": ">=4.0.0-beta.52 <4.0.1"
++    "effect": "^4.0.0"
+   },
+   "devDependencies": {
+-    "effect": "4.0.0-beta.52"
++    "effect": "4.0.0"
+   },
+   "scripts": {
+     "build": "tsc -b tsconfig.json && pnpm babel",
+diff --git a/src/FormAtoms.ts b/src/FormAtoms.ts
+index bc60a7f7b676edf4d1e99f6eb4162335b3247022..60d3dadfe2ef14c0a1b66b5e16886e8870c82681 100644
+--- a/src/FormAtoms.ts
++++ b/src/FormAtoms.ts
+@@ -3,8 +3,8 @@ import * as Effect from "effect/Effect"
+ import { pipe } from "effect/Function"
+ import * as Option from "effect/Option"
+ import * as Schema from "effect/Schema"
+-import * as AsyncResult from "effect/unstable/reactivity/AsyncResult"
+-import * as Atom from "effect/unstable/reactivity/Atom"
++import * as AsyncResult from "effect/reactivity/AsyncResult"
++import * as Atom from "effect/reactivity/Atom"
+ import * as Field from "./Field.ts"
+ import * as FormBuilder from "./FormBuilder.ts"
+ import { recalculateDirtyFieldsForArray, recalculateDirtySubtree } from "./internal/dirty.ts"
+diff --git a/src/FormBuilder.ts b/src/FormBuilder.ts
+index 764de854be6b072967d1140c707ba9565eda9516..6a2d0fe285ae3b2d1afc4bf928897e5b7bfb0a4b 100644
+--- a/src/FormBuilder.ts
++++ b/src/FormBuilder.ts
+@@ -3,7 +3,7 @@ import type * as Option from "effect/Option"
+ import * as Predicate from "effect/Predicate"
+ import * as Schema from "effect/Schema"
+ import * as SchemaGetter from "effect/SchemaGetter"
+-import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
++import type * as AtomRegistry from "effect/reactivity/AtomRegistry"
+ 
+ import type {
+   AnyFieldDef,

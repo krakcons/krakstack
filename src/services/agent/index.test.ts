@@ -1,13 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Deferred, Effect, Fiber, Layer, Schema, Stream } from "effect";
 import { TestClock } from "effect/testing";
-import { LanguageModel, type Response, Toolkit } from "effect/unstable/ai";
-import { FetchHttpClient, HttpRouter, HttpServer } from "effect/unstable/http";
-import {
-  HttpApi,
-  HttpApiBuilder,
-  HttpApiClient,
-} from "effect/unstable/httpapi";
+import { LanguageModel, type Response, Toolkit } from "effect/ai";
+import { FetchHttpClient, HttpRouter, HttpServer } from "effect/http";
+import { HttpApi, HttpApiBuilder, HttpApiClient } from "effect/http-api";
 
 import { AgentService } from "./index";
 import { type AgentEvent, makeAgentApiGroup } from "./schema";

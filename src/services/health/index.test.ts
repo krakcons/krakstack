@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Context, Effect, Layer } from "effect";
-import { HttpApi, HttpApiBuilder, OpenApi } from "effect/unstable/httpapi";
+import { HttpApi, HttpApiBuilder, OpenApi } from "effect/http-api";
 
 import {
   HealthApiGroup,

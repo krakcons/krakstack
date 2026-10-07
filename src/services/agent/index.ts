@@ -15,7 +15,7 @@ import {
   type Response,
   Tool,
   Toolkit,
-} from "effect/unstable/ai";
+} from "effect/ai";
 
 import { compileMarkdown } from "@/lib/markdown/server";
 
@@ -135,7 +135,7 @@ export class AgentService extends Context.Service<AgentService>()(
         prompt,
         toolkit,
       }: {
-        readonly conversation: Chat.Service;
+        readonly conversation: Chat.Chat;
         readonly messageId: string;
         readonly prompt: Prompt.RawInput;
         readonly toolkit: Toolkit.WithHandler<Tools>;
@@ -204,7 +204,7 @@ export class AgentService extends Context.Service<AgentService>()(
 
       const appendApproval = Effect.fn("AgentService.appendApproval")(
         function* (
-          conversation: Chat.Service,
+          conversation: Chat.Chat,
           action: Extract<AgentAction, { readonly type: "approval" }>,
         ) {
           const history = yield* Ref.get(conversation.history);

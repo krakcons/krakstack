@@ -1,5 +1,5 @@
 import { Layer } from "effect";
-import { ClusterWorkflowEngine, SingleRunner } from "effect/unstable/cluster";
+import { ClusterWorkflowEngine, SingleRunner } from "effect/cluster";
 
 import { DB } from "@/services/database";
 

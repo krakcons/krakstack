@@ -150,10 +150,10 @@ const message = (email: EmailPayloadV1): Message => {
 
 const makeSesEmailTransport = Effect.gen(function* () {
   const environment = yield* Effect.gen(function* () {
-    const region = yield* Config.nonEmptyString("SES_REGION");
-    const accessKeyId = yield* Config.redacted("SES_ACCESS_KEY_ID");
-    const secretAccessKey = yield* Config.redacted("SES_SECRET_ACCESS_KEY");
-    const defaultFromValue = yield* Config.string(
+    const region = yield* Config.NonEmptyString("SES_REGION");
+    const accessKeyId = yield* Config.Redacted("SES_ACCESS_KEY_ID");
+    const secretAccessKey = yield* Config.Redacted("SES_SECRET_ACCESS_KEY");
+    const defaultFromValue = yield* Config.String(
       "NOTIFICATION_EMAIL_FROM",
     ).pipe(Config.orElse(() => Config.succeed("")));
     return { region, accessKeyId, secretAccessKey, defaultFromValue };

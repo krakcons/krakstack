@@ -6,7 +6,7 @@ import {
 import { CircleAlert, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Option, Schema } from "effect";
-import { HttpClientError, HttpTraceContext } from "effect/unstable/http";
+import { HttpClientError, HttpTraceContext } from "effect/http";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";

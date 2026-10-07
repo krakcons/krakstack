@@ -85,7 +85,7 @@ The library should own the tables that implement its behavior. Do not require ea
 
 ```ts
 import { Effect } from "effect";
-import { Migrator, SqlClient } from "effect/unstable/sql";
+import { Migrator, SqlClient } from "effect/sql";
 
 const migrations = Migrator.fromRecord({
   "0001_create_feature_records": Effect.gen(function* () {
@@ -130,7 +130,7 @@ Expose `FeatureService.layer` for the standard setup and `FeatureService.layerWi
 
 ```ts
 import { Context, Effect, Layer } from "effect";
-import { SqlClient } from "effect/unstable/sql";
+import { SqlClient } from "effect/sql";
 
 export type FeatureServiceOptions<QueueError, QueueRequirements> = {
   readonly queue: Effect.Effect<FeatureQueue, QueueError, QueueRequirements>;

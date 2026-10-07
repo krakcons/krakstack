@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from "effect";
-import { SqlClient, SqlSchema } from "effect/unstable/sql";
+import { SqlClient, SqlSchema } from "effect/sql";
 
 import {
   CreateExampleRequest,

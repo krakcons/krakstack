@@ -1,6 +1,6 @@
 import { Context, Effect, Layer, Option, Schema } from "effect";
-import { Cookies, HttpServerRequest } from "effect/unstable/http";
-import { HttpApiMiddleware } from "effect/unstable/httpapi";
+import { Cookies, HttpServerRequest } from "effect/http";
+import { HttpApiMiddleware } from "effect/http-api";
 
 export const LocaleSchema = Schema.String.check(
   Schema.isPattern(/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i),

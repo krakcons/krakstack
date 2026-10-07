@@ -3,7 +3,7 @@ import type { ComponentProps, JSX, ReactNode } from "react";
 import { Block } from "@tanstack/react-router";
 import { FormReact } from "@lucas-barake/effect-form-react";
 import { Cause, Option, Schema } from "effect";
-import { AsyncResult, Atom } from "effect/unstable/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 import { Languages, Loader2, Plus, Trash } from "lucide-react";
 
 import {

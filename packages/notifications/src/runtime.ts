@@ -1,5 +1,5 @@
 import { Cause, Context, DateTime, Effect, Layer, Schema } from "effect";
-import { SqlClient } from "effect/unstable/sql";
+import { SqlClient } from "effect/sql";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
 import { canonicalRecipientAddress } from "./internal/idempotency.js";
@@ -15,7 +15,7 @@ import {
   NOTIFICATION_QUEUE_TABLE,
   NotificationQueueService,
   REMINDER_QUEUE_NAME,
-  notificationQueueLayer,
+  makeNotificationQueueLayer,
 } from "./internal/queue.js";
 import {
   decodeRows,
@@ -1069,31 +1069,27 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
       ),
     );
 
-    const runDeliveryWorkerOnce = queues.deliveries
-      .take(processDelivery, { maxAttempts: queueMaxAttempts })
-      .pipe(
-        Effect.mapError(
-          (cause) =>
-            new NotificationQueueError({
-              operation: "runDeliveryWorkerOnce",
-              message: "Notification delivery queue iteration failed",
-              cause,
-            }),
-        ),
-      );
+    const runDeliveryWorkerOnce = queues.deliveries.take(processDelivery).pipe(
+      Effect.mapError(
+        (cause) =>
+          new NotificationQueueError({
+            operation: "runDeliveryWorkerOnce",
+            message: "Notification delivery queue iteration failed",
+            cause,
+          }),
+      ),
+    );
 
-    const runReminderWorkerOnce = queues.reminders
-      .take(processReminder, { maxAttempts: queueMaxAttempts })
-      .pipe(
-        Effect.mapError(
-          (cause) =>
-            new NotificationQueueError({
-              operation: "runReminderWorkerOnce",
-              message: "Notification reminder queue iteration failed",
-              cause,
-            }),
-        ),
-      );
+    const runReminderWorkerOnce = queues.reminders.take(processReminder).pipe(
+      Effect.mapError(
+        (cause) =>
+          new NotificationQueueError({
+            operation: "runReminderWorkerOnce",
+            message: "Notification reminder queue iteration failed",
+            cause,
+          }),
+      ),
+    );
 
     const runDeliveryWorker = Effect.forever(
       runDeliveryWorkerOnce.pipe(
@@ -1154,7 +1150,7 @@ export class NotificationRuntime extends Context.Service<
 >()("@krak-stack/notifications/NotificationRuntime") {
   static readonly makeLayer = (options: NotificationRuntimeOptions = {}) =>
     Layer.effect(this, makeNotificationRuntime(options)).pipe(
-      Layer.provide(notificationQueueLayer),
+      Layer.provide(makeNotificationQueueLayer(options.queueMaxAttempts ?? 10)),
     );
 
   static readonly layer = this.makeLayer();

@@ -1,7 +1,7 @@
 import { OpenAiClient } from "@effect/ai-openai";
 import { describe, expect, it } from "@effect/vitest";
 import { ConfigProvider, Effect, Layer } from "effect";
-import { HttpClientRequest } from "effect/unstable/http";
+import { HttpClientRequest } from "effect/http";
 
 import { CloudflareAIGateway } from "./index";
 

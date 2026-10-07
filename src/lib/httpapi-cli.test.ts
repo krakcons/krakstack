@@ -1,13 +1,13 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Cause, Effect, Layer, Schema, Stream } from "effect";
 import { TestConsole } from "effect/testing";
-import { Command } from "effect/unstable/cli";
+import { Command } from "effect/cli";
 import {
   HttpApi,
   HttpApiEndpoint,
   HttpApiGroup,
   OpenApi,
-} from "effect/unstable/httpapi";
+} from "effect/http-api";
 
 import {
   ApiClient,

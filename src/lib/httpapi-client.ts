@@ -1,11 +1,11 @@
 import { Context, Effect, Layer, Schema, SchemaTransformation } from "effect";
-import { HttpClient } from "effect/unstable/http";
+import { HttpClient } from "effect/http";
 import {
   HttpApi,
   HttpApiClient as EffectHttpApiClient,
   HttpApiGroup,
   OpenApi,
-} from "effect/unstable/httpapi";
+} from "effect/http-api";
 import type {
   HttpApiOperationEntry,
   HttpApiOperationInput,

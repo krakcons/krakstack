@@ -68,7 +68,7 @@ import { sesEmailTransportRegistryLayer } from "@krak-stack/notifications/transp
 
 const pgClientLayer = Layer.unwrap(
   Effect.gen(function* () {
-    const url = yield* Config.redacted("DATABASE_URL");
+    const url = yield* Config.Redacted("DATABASE_URL");
     return PgClient.layer({ url });
   }),
 );

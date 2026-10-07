@@ -6,16 +6,16 @@ export class S3ServiceConfig extends Context.Service<S3ServiceConfig>()(
   "S3ServiceConfig",
   {
     make: Effect.gen(function* () {
-      const accessKeyId = yield* Config.redacted("S3_ACCESS_KEY_ID");
-      const secretAccessKey = yield* Config.redacted("S3_SECRET_ACCESS_KEY");
-      const bucket = yield* Config.string("S3_BUCKET");
-      const region = yield* Config.string("S3_REGION").pipe(
+      const accessKeyId = yield* Config.Redacted("S3_ACCESS_KEY_ID");
+      const secretAccessKey = yield* Config.Redacted("S3_SECRET_ACCESS_KEY");
+      const bucket = yield* Config.String("S3_BUCKET");
+      const region = yield* Config.String("S3_REGION").pipe(
         Config.withDefault(""),
       );
-      const endpoint = yield* Config.string("S3_ENDPOINT").pipe(
+      const endpoint = yield* Config.String("S3_ENDPOINT").pipe(
         Config.withDefault(""),
       );
-      const sessionToken = yield* Config.redacted("S3_SESSION_TOKEN").pipe(
+      const sessionToken = yield* Config.Redacted("S3_SESSION_TOKEN").pipe(
         Config.orElse(() => Config.succeed(Redacted.make(""))),
       );
 

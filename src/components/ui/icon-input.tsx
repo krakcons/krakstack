@@ -5,8 +5,8 @@ import {
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
-} from "effect/unstable/http";
-import { AsyncResult, Atom } from "effect/unstable/reactivity";
+} from "effect/http";
+import { AsyncResult, Atom } from "effect/reactivity";
 import { useDeferredValue, useState } from "react";
 import { Icon } from "@iconify/react";
 import { ExternalLink, Search } from "lucide-react";

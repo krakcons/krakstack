@@ -1,0 +1,66 @@
+diff --git a/dist/FormReact.d.ts b/dist/FormReact.d.ts
+index 61b65ad3ef858a3d9994d4cfde7e47216d44b549..0431a57a4a27eefa43180fc19f04f887a25ebf24 100644
+--- a/dist/FormReact.d.ts
++++ b/dist/FormReact.d.ts
+@@ -4,8 +4,8 @@ import type * as FormBuilder from "@lucas-barake/effect-form/FormBuilder";
+ import type * as Effect from "effect/Effect";
+ import * as Option from "effect/Option";
+ import type * as Schema from "effect/Schema";
+-import * as Atom from "effect/unstable/reactivity/Atom";
+-import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry";
++import * as Atom from "effect/reactivity/Atom";
++import type * as AtomRegistry from "effect/reactivity/AtomRegistry";
+ import * as React from "react";
+ export type FieldValue<T> = FieldStateModule.FieldValue<T>;
+ export type FieldState<E> = FieldStateModule.FieldState<E>;
+diff --git a/dist/FormReact.js b/dist/FormReact.js
+index 03e34ec60b833b4dd220ac6faffe70b9138703cd..f313c18c5e6cdb7138e19180aeb0acd4281857fa 100644
+--- a/dist/FormReact.js
++++ b/dist/FormReact.js
+@@ -4,7 +4,7 @@ import { Field, FormAtoms } from "@lucas-barake/effect-form";
+ import { getNestedValue } from "@lucas-barake/effect-form/Path";
+ import * as Layer from "effect/Layer";
+ import * as Option from "effect/Option";
+-import * as Atom from "effect/unstable/reactivity/Atom";
++import * as Atom from "effect/reactivity/Atom";
+ import * as React from "react";
+ import { createContext, useContext } from "react";
+ const ArrayItemContext = /*#__PURE__*/createContext(null);
+diff --git a/package.json b/package.json
+index 416aed4983dfb7dfc1528b3cca636b860ab0986e..048e49b01201623854c1c8f042044d3f5bd64703 100644
+--- a/package.json
++++ b/package.json
+@@ -41,14 +41,14 @@
+     "@lucas-barake/effect-form": "^0.25.0-beta.6"
+   },
+   "devDependencies": {
+-    "@effect/atom-react": "4.0.0-beta.52",
++    "@effect/atom-react": "4.0.0",
+     "@vitejs/plugin-react": "^5.1.1",
+-    "effect": "4.0.0-beta.52",
++    "effect": "4.0.0",
+     "react": "^19.0.0"
+   },
+   "peerDependencies": {
+-    "@effect/atom-react": ">=4.0.0-beta.52 <4.0.1",
+-    "effect": ">=4.0.0-beta.52 <4.0.1",
++    "@effect/atom-react": "^4.0.0",
++    "effect": "^4.0.0",
+     "react": "^19.0.0"
+   },
+   "scripts": {
+diff --git a/src/FormReact.tsx b/src/FormReact.tsx
+index 49c358e92fe04a62a9ef97dbae6665ce53e905a5..dfb2792d4b824d448bf3e8f4b469c0861422bd6f 100644
+--- a/src/FormReact.tsx
++++ b/src/FormReact.tsx
+@@ -7,8 +7,8 @@ import type * as Effect from "effect/Effect"
+ import * as Layer from "effect/Layer"
+ import * as Option from "effect/Option"
+ import type * as Schema from "effect/Schema"
+-import * as Atom from "effect/unstable/reactivity/Atom"
+-import type * as AtomRegistry from "effect/unstable/reactivity/AtomRegistry"
++import * as Atom from "effect/reactivity/Atom"
++import type * as AtomRegistry from "effect/reactivity/AtomRegistry"
+ import * as React from "react"
+ import { createContext, useContext } from "react"
+ 

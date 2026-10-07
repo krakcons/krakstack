@@ -2,7 +2,7 @@ import { PgClient } from "@effect/sql-pg";
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Effect, Layer, Redacted } from "effect";
 import * as TestClock from "effect/testing/TestClock";
-import { SqlClient } from "effect/unstable/sql";
+import { SqlClient } from "effect/sql";
 
 import { NotificationService } from "../src/index.js";
 import { runNotificationMigrations } from "../src/migrations.js";

@@ -1,7 +1,7 @@
 import { useAtom, useAtomSet } from "@effect/atom-react";
 import { BrowserKeyValueStore } from "@effect/platform-browser";
 import { DateTime, Option, Schema } from "effect";
-import { AsyncResult, Atom } from "effect/unstable/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 import {
   ArrowDown,
   ArrowUp,

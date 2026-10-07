@@ -1,10 +1,6 @@
 import { OpenAiClient } from "@effect/ai-openai";
 import { Config, Context, Effect, Layer } from "effect";
-import {
-  FetchHttpClient,
-  HttpClient,
-  HttpClientRequest,
-} from "effect/unstable/http";
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 
 export type CloudflareAIGatewayMetadata = Readonly<
   Record<string, string | number | boolean>
@@ -14,9 +10,9 @@ export class CloudflareAIGateway extends Context.Service<CloudflareAIGateway>()(
   "CloudflareAIGateway",
   {
     make: Effect.gen(function* () {
-      const apiUrl = yield* Config.string("AI_GATEWAY_BASE_URL");
-      const apiKey = yield* Config.redacted("AI_GATEWAY_API_KEY");
-      const gatewayId = yield* Config.string("AI_GATEWAY_ID");
+      const apiUrl = yield* Config.String("AI_GATEWAY_BASE_URL");
+      const apiKey = yield* Config.Redacted("AI_GATEWAY_API_KEY");
+      const gatewayId = yield* Config.String("AI_GATEWAY_ID");
       return { apiUrl, apiKey, gatewayId };
     }),
   },
