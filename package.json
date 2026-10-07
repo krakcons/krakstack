@@ -68,7 +68,7 @@
     "@effect/tsgo": "0.14.6",
     "@effect/vitest": "4.0.0",
     "@inlang/paraglide-js": "^2.19.0",
-    "@krak-stack/auth": "0.2.17",
+    "@krak-stack/auth": "0.2.18",
     "@oxlint/plugins": "1.78.0",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/dom": "^10.4.1",
@@ -89,7 +89,6 @@
     "vitest": "^5.0.3"
   },
   "overrides": {
-    "@krak-stack/auth": "file:../krakstack-auth/tmp/auth-effect4.tgz",
     "@lucas-barake/effect-form": "0.25.0-beta.6",
     "@lucas-barake/effect-form-react": "0.26.0-beta.5"
   },

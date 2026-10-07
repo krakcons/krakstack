@@ -12,6 +12,7 @@ ENV VITE_ANALYTICS_WEBSITE_ID=$VITE_ANALYTICS_WEBSITE_ID
 # Install workspace dependencies without running the root prepare script before
 # its source files are available.
 COPY package.json bun.lock ./
+COPY patches ./patches
 COPY packages/registry/package.json ./packages/registry/package.json
 RUN bun install --frozen-lockfile --ignore-scripts
 

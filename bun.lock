@@ -42,7 +42,7 @@
         "@effect/tsgo": "0.14.6",
         "@effect/vitest": "4.0.0",
         "@inlang/paraglide-js": "^2.19.0",
-        "@krak-stack/auth": "0.2.17",
+        "@krak-stack/auth": "0.2.18",
         "@oxlint/plugins": "1.78.0",
         "@tailwindcss/typography": "^0.5.20",
         "@testing-library/dom": "^10.4.1",
@@ -138,7 +138,6 @@
     "@lucas-barake/effect-form-react@0.26.0-beta.5": "patches/@lucas-barake%2Feffect-form-react@0.26.0-beta.5.patch",
   },
   "overrides": {
-    "@krak-stack/auth": "file:../krakstack-auth/tmp/auth-effect4.tgz",
     "@lucas-barake/effect-form": "0.25.0-beta.6",
     "@lucas-barake/effect-form-react": "0.26.0-beta.5",
   },
@@ -419,7 +418,7 @@
 
     "@js-temporal/polyfill": ["@js-temporal/polyfill@0.5.1", "", { "dependencies": { "jsbi": "^4.3.0" } }, "sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ=="],
 
-    "@krak-stack/auth": ["@krak-stack/auth@../krakstack-auth/tmp/auth-effect4.tgz", { "dependencies": { "@effect/atom-react": "^4.0.0", "@lucas-barake/effect-form-react": "0.26.0-beta.5", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@krak-stack/registry": "^0.1.36", "@tanstack/react-router": "^1.170.15", "effect": "^4.0.0", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-tXY/QRknl5leXhrmcrqkSb5iMv2G6n8TgQU3bAIIta1dY65qgxI1QdPJrfgDK1pGoTvDjmcGDY0G+aWBNiuQpw=="],
+    "@krak-stack/auth": ["@krak-stack/auth@0.2.18", "", { "dependencies": { "@effect/atom-react": "^4.0.0", "@lucas-barake/effect-form-react": "0.26.0-beta.5", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@krak-stack/registry": "^0.1.36", "@tanstack/react-router": "^1.170.15", "effect": "^4.0.0", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-b5KOq6nEJJlYQWJARYteS8dHfyaPah6WA4piQTjiOlAUFmKVC09k1CUCz/NYxaeTmfc4SpjUbBBZRt6tGMU1tA=="],
 
     "@krak-stack/notifications": ["@krak-stack/notifications@workspace:packages/notifications"],
 
