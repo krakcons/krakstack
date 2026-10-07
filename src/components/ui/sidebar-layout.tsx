@@ -209,9 +209,10 @@ export function SidebarLayout({
           <div className="ml-auto flex items-center gap-2">{headerActions}</div>
         </header>
         <div
-          className={
-            contentClassName ?? "flex flex-col gap-6 px-5 py-6 md:px-8"
-          }
+          className={cn(
+            "isolate",
+            contentClassName ?? "flex flex-col gap-6 px-5 py-6 md:px-8",
+          )}
         >
           {children ?? <Outlet />}
         </div>
