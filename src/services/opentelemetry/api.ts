@@ -26,7 +26,7 @@ const otlpProxyPaths = [
 ] as const;
 
 const exporterConfig = (signal: OtlpSignalConfig) =>
-  Config.schema(Schema.Array(Schema.String), `OTEL_${signal}_EXPORTER`).pipe(
+  Config.Array(Schema.String, `OTEL_${signal}_EXPORTER`).pipe(
     Config.map((exporters) =>
       exporters.map((exporter) => exporter.toLowerCase().trim()),
     ),
