@@ -147,42 +147,27 @@ Use Effect durable workflows for operations that must survive interruption, retr
 
 ## Testing
 
-- Use Vitest with `@effect/vitest`.
-- Add tests beside code when practical using `*.test.ts` or `*.test.tsx`.
-- Import `describe`, `expect`, and `it` from `@effect/vitest`.
-- Use `it.effect` for Effect programs and provide dependencies with `Effect.provide(...)`.
-- Prefer fresh per-test layers so mutable state does not leak.
-- Use suite-shared layers only for expensive resources and reset state between tests.
-- Backend and service tests must use the real Postgres test database through `TEST_DATABASE_URL`.
-- Never point tests at `DATABASE_URL`.
-- The test database is provided externally. Set `TEST_DATABASE_URL` in `.env` or the shell before DB tests.
-- Provide services with a PostgreSQL client layer configured from `TEST_DATABASE_URL`.
-- Run migrations against the test database before DB tests and reset affected tables between tests.
-- Use the same `SqlClient` and parameterized SQL for test setup and cleanup.
+- Test meaningful behavior and regression risks: business rules, authorization, tenant isolation, persistence, state transitions, validation, and error handling. Include focused regression tests for bug fixes when practical.
+- Do not add or run tests solely for copy, translations, documentation, styling, layout, or static markup unless explicitly requested. Test UI changes only when meaningful behavior changes.
+- Reuse existing coverage and prefer the smallest test at the lowest effective layer; do not duplicate cases across unit, integration, and end-to-end tests.
+- Use Vitest with `@effect/vitest`, importing `describe`, `expect`, and `it` from it. Keep `*.test.ts` / `*.test.tsx` beside code; use `it.effect` and `Effect.provide(...)` for Effect programs.
+- Isolate mutable state with fresh test layers or explicit resets.
+- Persistence tests must use real Postgres through `TEST_DATABASE_URL`, never `DATABASE_URL`; pure logic needs no database. Run migrations first and use `SqlClient` with parameterized SQL for setup and cleanup.
 
 ## End-to-End Testing
 
-- Use Playwright for browser-level tests of user journeys, UI behavior, routing, authentication, and frontend-to-API integrations.
-- Keep end-to-end tests in `e2e/` as `*.spec.ts` files and share repeated setup through focused helpers.
-- Run `bun run test:e2e:install` once when Chromium is not installed, `bun run test:e2e` for the full suite, and `bun run test:e2e:ui` when interactive debugging is useful.
-- Use the Playwright CLI to exercise changed UI and integrations as you build, not only after implementation is complete. Start with the smallest relevant spec or title filter, inspect the browser result, and rerun after each meaningful change before running the full suite.
-- Run a focused test with `bun run test:e2e -- e2e/<name>.spec.ts` or `bun run test:e2e -- --grep "<test name>"`.
-- Prefer assertions against user-visible outcomes and accessible locators such as `getByRole`, `getByLabel`, and `getByText`. Avoid implementation-coupled selectors and arbitrary sleeps.
-- Cover complete high-value flows across UI and API boundaries. Keep lower-level edge cases in Vitest rather than duplicating them in browser tests.
-- Make test data unique and deterministic, isolate browser contexts where roles or sessions differ, and clean up persistent state when a test can affect later runs.
-- End-to-end tests must use `TEST_DATABASE_URL`; never use `DATABASE_URL`. The Playwright configuration maps the test database into the application process and starts the development server automatically.
-- Use Playwright traces, screenshots, and the UI runner to diagnose failures. Do not weaken assertions, add unconditional delays, or increase timeouts until the underlying behavior has been investigated.
-- Before considering a UI or integration change complete, run the focused Playwright coverage for the changed journey and, when practical, the full end-to-end suite.
+- Use Playwright selectively for critical journeys requiring a browser or frontend-to-API integration; keep specs in `e2e/*.spec.ts` and lower-level edge cases in Vitest.
+- Assert observable outcomes with accessible locators. Avoid incidental prose, CSS classes, DOM structure, and presentation snapshots unless they are explicit requirements.
+- Use unique, deterministic data, isolate sessions, and clean up persistent state. Database-backed tests must use `TEST_DATABASE_URL`, never `DATABASE_URL`.
+- E2E tests are slow: run them as final validation after implementation, not iteratively after each edit; rerun only to verify fixes for E2E failures. Use focused coverage with `bun run test:e2e -- e2e/<name>.spec.ts` or `bun run test:e2e -- --grep "<test name>"`; reserve the full suite for broad changes, insufficient focused coverage, or explicit requests.
+- Diagnose failures with traces or screenshots; do not weaken assertions, add arbitrary sleeps, or increase timeouts without investigating.
 
 ## Checks
 
-Run checks after code changes when practical:
-
-- `bun run test`
-- `bun run test:e2e`
-- `bun type:check`
-- `bun lint`
-- `bun fmt`
+- Match checks to risk; do not run everything by default. Run focused tests for behavior changes and broader suites only when needed.
+- Documentation-only changes need no application tests or type checks. For copy or presentation changes, use formatting, compilation checks, or visual review only when useful.
+- Use `bun type:check` for TypeScript changes when practical; scope `bun lint` and `bun fmt` to changed files when supported and avoid unrelated churn.
+- Report checks run and blockers; never imply unrun checks passed.
 
 ## Examples
 
