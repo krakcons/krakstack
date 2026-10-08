@@ -552,7 +552,7 @@ const DEFAULT_WIDTH = 208;
 const DEFAULT_MAX_WIDTH = 640;
 const DEFAULT_QUERY: DataTablePublicState = {
   page: 0,
-  pageSize: 10,
+  pageSize: 20,
 };
 
 const DEFAULT_UI_STATE: DataTableUiState = {

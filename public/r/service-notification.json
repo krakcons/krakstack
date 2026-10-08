@@ -3,7 +3,7 @@
   "name": "service-notification",
   "title": "Notification Service",
   "description": "A legacy source-vendored direct Effect dispatcher retained for compatibility; durable systems should use @krak-stack/notifications.",
-  "dependencies": ["effect@rc"],
+  "dependencies": ["effect@latest"],
   "registryDependencies": [],
   "files": [
     {
@@ -27,7 +27,7 @@
   ],
   "meta": {
     "createdAt": "2026-08-17",
-    "updatedAt": "2026-08-30"
+    "updatedAt": "2026-10-08"
   },
   "docs": "## Compatibility Status\n\n`service-notification` is the source-vendored direct compatibility dispatcher. It sends top-level channel messages through an application-composed `NotificationChannelRegistry` and remains available for projects that already own this source. It is not the recommended durable notification system.\n\nNew applications that need package-owned migrations, inbox and preference CRUD, delivery attempts, Effect persisted-queue jobs, retries, a scheduler, workers, or one-shot reminders should install `@krak-stack/notifications`.\n\n## Included Files\n\n- `services/notification/index.ts` - Direct `NotificationService`, optional persistence-store contract, and layer helpers\n- `services/notification/channels/index.ts` - Compatibility channel contract and registry\n- `services/notification/schema.ts` - Dynamic message envelope and shared send error\n\n## Direct Dispatch\n\n```ts\nconst notifications = yield* NotificationService;\n\nyield* notifications.send({\n  email: {\n    to: \"user@example.com\",\n    subject: \"Password reset\",\n    text: \"Use the secure link to reset your password.\",\n  },\n});\n```\n\nInstall `notification-channel-email-ses` when this compatibility dispatcher should send through SES. For the durable package, import the provider adapter from `@krak-stack/notifications/transport/email-ses` or `/transport/email-smtp` instead.\n\n## Optional Store Hook\n\nThe structured `{ persist, message }` form can call a consumer-provided `NotificationPersistenceStore` before optional direct channel dispatch. The application still owns that store, its transaction boundary, authorization, migrations, relay, retry policy, and workers. Adding the hook does not turn this compatibility item into the durable `@krak-stack/notifications` runtime.",
   "type": "registry:lib"

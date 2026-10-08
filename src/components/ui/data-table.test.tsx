@@ -974,6 +974,18 @@ describe("DataTable model", () => {
     expect(await screen.findByText("Open row")).toBeTruthy();
   });
 
+  it("defaults to 20 rows per page", () => {
+    const rows = Array.from({ length: 21 }, (_, index) => ({
+      id: `row-${index}`,
+      name: `Record ${index + 1}`,
+      score: index,
+    }));
+    render(<DataTable columnDefs={columns} rowData={rows} />);
+
+    expect(screen.getByText("Record 20")).toBeTruthy();
+    expect(screen.queryByText("Record 21")).toBeNull();
+  });
+
   it("controls API-ready query state while keeping UI state internal", () => {
     const onStateChange = vi.fn();
     render(

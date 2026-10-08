@@ -3,7 +3,7 @@
   "name": "embedding-layer",
   "title": "Embeddings",
   "description": "An Effect layer that configures an OpenAI-compatible embeddings model from EMBEDDINGS_URL, EMBEDDINGS_MODEL, and EMBEDDINGS_DIMENSIONS.",
-  "dependencies": ["@effect/ai-openai-compat@rc", "effect@rc"],
+  "dependencies": ["@effect/ai-openai-compat@rc", "effect@latest"],
   "files": [
     {
       "path": "src/services/embedding.ts",
@@ -13,7 +13,7 @@
     }
   ],
   "meta": {
-    "updatedAt": "2026-10-07"
+    "updatedAt": "2026-10-08"
   },
   "docs": "## Overview\n\n`embedding-layer` provides an OpenAI-compatible embedding model layer configured through Effect `Config`. It reads the embeddings endpoint, model name, and output dimensions from the environment, then wires the OpenAI-compatible client through `FetchHttpClient`.\n\n## Layers\n\n```ts\nimport { OpenAiClient, OpenAiEmbeddingModel } from \"@effect/ai-openai-compat\";\nimport { Config, Effect, Layer, Redacted } from \"effect\";\nimport { FetchHttpClient } from \"effect/http\";\n\nexport const EmbeddingLayer = Layer.unwrap(\n  Effect.gen(function* () {\n    const apiUrl = yield* Config.String(\"EMBEDDINGS_URL\");\n    const embeddingModel = yield* Config.String(\"EMBEDDINGS_MODEL\");\n    const embeddingDimensions = yield* Config.Number(\"EMBEDDINGS_DIMENSIONS\");\n\n    const embeddingClientLayer = OpenAiClient.layer({\n      apiKey: Redacted.make(\"embedding\"),\n      apiUrl,\n    });\n\n    return OpenAiEmbeddingModel.layer({\n      model: embeddingModel,\n      config: {\n        dimensions: embeddingDimensions,\n        encoding_format: \"float\",\n      },\n    }).pipe(\n      Layer.provide(embeddingClientLayer),\n      Layer.provide(FetchHttpClient.layer),\n    );\n  }),\n);\n```\n\n## Environment Variables\n\n- `EMBEDDINGS_URL` - OpenAI-compatible embeddings API URL\n- `EMBEDDINGS_MODEL` - Embeddings model name\n- `EMBEDDINGS_DIMENSIONS` - Embedding vector dimensions",
   "type": "registry:lib"

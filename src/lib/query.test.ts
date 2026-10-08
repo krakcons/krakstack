@@ -13,7 +13,7 @@ describe("Query", () => {
   it("validates router sorting with default pagination", async () => {
     const sort = [{ id: "name", direction: "desc" }];
     expect(await QueryStandard["~standard"].validate({ sort })).toEqual({
-      value: { page: 0, pageSize: 10, sort },
+      value: { page: 0, pageSize: 20, sort },
     });
   });
 
@@ -61,8 +61,8 @@ describe("Query", () => {
   it("round-trips cleared and omitted sorting over HTTP", () => {
     const codec = Schema.toCodecStringTree(Query);
     for (const query of [
-      { page: 0, pageSize: 10 },
-      { page: 0, pageSize: 10, sort: [] },
+      { page: 0, pageSize: 20 },
+      { page: 0, pageSize: 20, sort: [] },
     ]) {
       expect(
         Schema.decodeUnknownSync(codec)(Schema.encodeSync(codec)(query)),
@@ -73,16 +73,42 @@ describe("Query", () => {
   it("preserves sorting arrays in JSON", () => {
     const query = {
       page: 0,
-      pageSize: 10,
+      pageSize: 20,
       sort: [{ id: "name", direction: "asc" as const }],
     };
-    expect(Schema.encodeSync(Schema.toCodecJson(Query))(query)).toEqual(query);
+    expect(Schema.encodeSync(Schema.toCodecJson(Query))(query)).toEqual({
+      sort: query.sort,
+    });
+  });
+
+  it("omits default pagination when encoding queries", () => {
+    for (const codec of [
+      Query,
+      Schema.toCodecJson(Query),
+      Schema.toCodecStringTree(Query),
+    ]) {
+      const query = { page: 0, pageSize: 20 };
+      expect(Schema.encodeSync(codec)(query)).toEqual({});
+      expect(Schema.decodeUnknownSync(codec)({})).toEqual(query);
+    }
+  });
+
+  it("omits each pagination default independently over HTTP", () => {
+    const codec = Schema.toCodecStringTree(Query);
+    for (const [query, encoded] of [
+      [{ page: 2, pageSize: 20 }, { page: "2" }],
+      [{ page: 0, pageSize: 10 }, { pageSize: "10" }],
+      [{ page: 0, pageSize: 25 }, { pageSize: "25" }],
+    ] as const) {
+      expect(Schema.encodeSync(codec)(query)).toEqual(encoded);
+      expect(Schema.decodeUnknownSync(codec)(encoded)).toEqual(query);
+    }
   });
 
   it("defaults omitted pagination for router and request consumers", () => {
     expect(Schema.decodeUnknownSync(Query)({})).toEqual({
       page: 0,
-      pageSize: 10,
+      pageSize: 20,
     });
   });
 

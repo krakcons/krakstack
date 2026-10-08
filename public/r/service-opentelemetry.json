@@ -3,7 +3,7 @@
   "name": "service-opentelemetry",
   "title": "OpenTelemetry",
   "description": "Effect OpenTelemetry layers for server and browser export, same-origin OTLP proxying, distributed traces, and browser exception capture.",
-  "dependencies": ["effect@rc"],
+  "dependencies": ["effect@latest"],
   "files": [
     {
       "path": "src/services/opentelemetry/api.ts",

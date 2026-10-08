@@ -3,7 +3,7 @@
   "name": "notification-persistence",
   "title": "Notification Persistence",
   "description": "A legacy source-install option for app-owned PostgreSQL notification tables and codecs; new apps should use @krak-stack/notifications.",
-  "dependencies": ["drizzle-orm@rc", "effect@rc"],
+  "dependencies": ["drizzle-orm@rc", "effect@latest"],
   "registryDependencies": [],
   "files": [
     {
@@ -27,7 +27,7 @@
   ],
   "meta": {
     "createdAt": "2026-08-17",
-    "updatedAt": "2026-08-30"
+    "updatedAt": "2026-10-08"
   },
   "docs": "## Legacy Source-Install Option\n\n`notification-persistence` vendors three project-owned PostgreSQL tables into an application: `notifications`, `notification_settings`, and `notification_deliveries`. It also vendors Effect record schemas and versioned payload codecs. It remains available for projects that intentionally own their Drizzle schema and worker implementation.\n\nNew durable notification systems should install `@krak-stack/notifications` instead. The package owns migrations, inbox CRUD, preference and suppression CRUD, delivery attempts and references, Effect persisted-queue jobs, the scheduler and workers, and one-shot reminders.\n\n## Included Files\n\n- `services/notification/persistence/drizzle.ts` - Legacy Drizzle tables, indexes, constraints, and inferred row types\n- `services/notification/persistence/schema.ts` - Legacy record schemas, lifecycle values, and payload codecs\n- `services/notification/persistence/index.ts` - Server-only compatibility exports\n\n## Existing Applications\n\nRe-export the installed definitions from the app's Drizzle schema only while the application remains the migration owner:\n\n```ts\nexport * from \"@/services/notification/persistence/drizzle\";\n```\n\nThis item provides no authorization queries, CRUD service, migrations, relay, scheduler, retry runtime, or worker. The application must implement and operate all of those concerns.\n\n## Adopt `@krak-stack/notifications`\n\nPreserve the three existing tables and stop every application-owned relay and worker before cutover. The package's additive migration adopts their data, reconciles legacy `processing` rows, and imports disabled rows from a compatible `email_preferences` table. Move application correlations to `notification_delivery_references`, then exclude all package-owned notification and queue tables from application Drizzle migrations. See the Notifications guide for the complete cutover sequence.",
   "type": "registry:lib"

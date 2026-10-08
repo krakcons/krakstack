@@ -6,7 +6,7 @@
   "dependencies": [
     "@effect/atom-react@rc",
     "@iconify/react",
-    "effect@rc",
+    "effect@latest",
     "lucide-react",
     "react"
   ],
@@ -24,7 +24,7 @@
     }
   ],
   "meta": {
-    "updatedAt": "2026-10-07"
+    "updatedAt": "2026-10-08"
   },
   "docs": "## Overview\n\n`IconInput` is a controlled icon picker for any [Iconify](https://icon-sets.iconify.design/) collection. It uses `VirtualizedCombobox` to search and render large result sets efficiently, and returns the selected icon name without its collection prefix. Search results are loaded through an Effect Atom and `HttpClient`.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Usage\n\n```tsx\nimport { useState } from \"react\";\nimport { IconInput } from \"@/components/ui/icon-input\";\n\nconst [icon, setIcon] = useState(\"circle-help\");\n\n<IconInput value={icon} onValueChange={setIcon} />\n```\n\nPass `collection` to use another Iconify collection.",
   "type": "registry:component"

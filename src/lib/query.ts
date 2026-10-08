@@ -1,4 +1,11 @@
-import { Effect, Schema, SchemaIssue, SchemaTransformation } from "effect";
+import {
+  Effect,
+  Option,
+  Schema,
+  SchemaGetter,
+  SchemaIssue,
+  SchemaTransformation,
+} from "effect";
 
 export type SortDirection = "asc" | "desc";
 
@@ -142,12 +149,29 @@ export const SortParams = Schema.declare(Schema.is(SortParamsArray), {
 });
 
 export const Query = Schema.Struct({
-  page: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed(0)),
+  page: Schema.optionalKey(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  ).pipe(
+    Schema.decodeTo(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)), {
+      decode: SchemaGetter.withDefault(Effect.succeed(0)),
+      encode: SchemaGetter.transformOptional(
+        Option.filter((page) => page !== 0),
+      ),
+    }),
   ),
-  pageSize: Schema.Int.check(
-    Schema.isBetween({ minimum: 1, maximum: 100 }),
-  ).pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
+  pageSize: Schema.optionalKey(
+    Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+  ).pipe(
+    Schema.decodeTo(
+      Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+      {
+        decode: SchemaGetter.withDefault(Effect.succeed(20)),
+        encode: SchemaGetter.transformOptional(
+          Option.filter((pageSize) => pageSize !== 20),
+        ),
+      },
+    ),
+  ),
   globalFilter: Schema.optional(Schema.String),
   sort: Schema.optional(SortParams),
 }).annotate({
@@ -158,7 +182,7 @@ export const Query = Schema.Struct({
   examples: [
     {
       page: 0,
-      pageSize: 10,
+      pageSize: 20,
       globalFilter: "housing",
       sort: [
         { id: "publicName", direction: "desc" },
@@ -185,7 +209,7 @@ export const PaginationMeta = Schema.Struct({
     identifier: "PaginationMeta",
     title: "Pagination Metadata",
     description: "Pagination metadata returned with a paginated list response.",
-    examples: [{ page: 0, pageSize: 10, total: 125, pageCount: 13 }],
+    examples: [{ page: 0, pageSize: 20, total: 125, pageCount: 7 }],
   }),
 );
 
