@@ -77,8 +77,7 @@ export const compileMarkdown = (source: string) => {
         codeBlocks.push({ code, language });
         return `<markdown-code-block data-index="${index}"></markdown-code-block>`;
       },
-      codespan: (children) =>
-        `<code data-inline-code>${escapeHtml(children)}</code>`,
+      codespan: (children) => `<code data-inline-code>${children}</code>`,
       emphasis: (children) => `<em>${children}</em>`,
       heading: (children, { id, level }) => {
         const headingId = escapeHtml(id ?? "");

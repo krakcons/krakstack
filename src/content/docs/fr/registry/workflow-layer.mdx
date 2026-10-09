@@ -1,0 +1,156 @@
+---
+slug: workflow-layer
+path: /docs/workflow-layer
+title: Moteur de workflows
+description: Exemples de workflows durables avec runners uniques simples ou runners HTTP recommandés.
+order: 4
+locale: fr
+section: layers
+type: how-to
+createdAt: "2026-10-09"
+updatedAt: "2026-10-09"
+---
+
+# Moteur de workflows
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/workflow-layer
+```
+
+Installe `src/services/workflow.ts` et sa dépendance de base de données. Les exemples
+de workflows appartiennent à l'application ; adaptez-les à votre service.
+
+## Exemples de workflows
+
+Définissez un workflow versionné et une activité durable dans `src/services/example/workflows.ts` :
+
+```ts
+import { Effect, Schema } from "effect";
+import { Activity, Workflow } from "effect/workflow";
+
+import { ExamplePersistenceError, ExampleSchema } from "./schema";
+import { Examples } from "./service";
+
+export const CreateExampleV1 = Workflow.make("CreateExampleV1", {
+  payload: {
+    requestId: Schema.String,
+    userId: Schema.String,
+    name: Schema.NonEmptyString,
+    description: Schema.optional(Schema.String),
+  },
+  success: ExampleSchema,
+  error: ExamplePersistenceError,
+  idempotencyKey: ({ requestId }) => requestId,
+});
+
+export const examplesWorkflowLayer = CreateExampleV1.toLayer(
+  ({ userId, name, description }) =>
+    Effect.gen(function* () {
+      const examples = yield* Examples;
+      return yield* Activity.make({
+        name: "PersistExampleV1",
+        success: ExampleSchema,
+        error: ExamplePersistenceError,
+        execute: examples.create({ userId, payload: { name, description } }),
+      });
+    }),
+);
+```
+
+`ExampleSchema` et `ExamplePersistenceError` sont des schémas Effect sérialisables ;
+`Examples` est votre service métier. Transmettez les identifiants d'acteur validés par l'API.
+Réutilisez `requestId` pour retenter la même opération ; les effets externes doivent supporter le rejeu.
+
+Enregistrez l'implémentation avec le moteur partagé au démarrage :
+
+```ts
+import { Layer } from "effect";
+
+import { Examples } from "@/services/example/service";
+import { examplesWorkflowLayer } from "@/services/example/workflows";
+import { workflowEngineLayer } from "@/services/workflow";
+
+export const workflowsLayer = examplesWorkflowLayer.pipe(
+  Layer.provide(Examples.layer),
+  Layer.provide(workflowEngineLayer),
+);
+```
+
+Initialisez cette layer avant les requêtes. Partagez le `memoMap` du runtime avec
+les handlers HTTP, libérez les deux à l'arrêt et gardez les interruptions récupérables.
+
+## Runners
+
+Les deux options conservent l'état durable des workflows dans Postgres. Choisissez
+le runner dans `src/services/workflow.ts`.
+
+### Single (Simple)
+
+Configuration installée par défaut : un processus, sans écoute RPC. Utilisez-la
+en développement local isolé ou sans chevauchement entre exécuteurs au déploiement.
+
+```ts
+import { Layer } from "effect";
+import { ClusterWorkflowEngine, SingleRunner } from "effect/cluster";
+
+import { DB } from "@/services/database";
+
+export const workflowEngineLayer = ClusterWorkflowEngine.layer.pipe(
+  Layer.provide(SingleRunner.layer({ runnerStorage: "memory" })),
+  Layer.provide(DB.clientLayer),
+);
+```
+
+Un réplica souhaité ne suffit pas : une mise à jour progressive peut faire
+coexister les anciens et nouveaux Pods.
+
+### HTTP (Recommandé)
+
+Utilisez des runners HTTP pour les mises à jour progressives en production ou
+plusieurs réplicas. Ils se coordonnent via SQL partagé et communiquent en HTTP privé.
+
+```bash
+bun add @effect/platform-bun
+```
+
+```ts
+import { BunClusterHttp } from "@effect/platform-bun";
+import { Config, Effect, Layer, Option, Schema } from "effect";
+import { ClusterWorkflowEngine, RunnerAddress } from "effect/cluster";
+
+import { DB } from "@/services/database";
+
+const runnersLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const podIp = yield* Config.schema(Schema.NonEmptyString, "POD_IP");
+    const port = 34431;
+    return BunClusterHttp.layer({
+      transport: "http",
+      storage: "sql",
+      shardingConfig: {
+        runnerAddress: Option.some(RunnerAddress.make(podIp, port)),
+        runnerListenAddress: Option.some(RunnerAddress.make("0.0.0.0", port)),
+      },
+    });
+  }),
+);
+
+export const workflowEngineLayer = ClusterWorkflowEngine.layer.pipe(
+  Layer.provide(runnersLayer),
+  Layer.provide(DB.clientLayer),
+);
+```
+
+- KrakStack injecte `POD_IP`. Ajoutez le port TCP privé `workflow-rpc` (`34431`,
+  exposition `pod`) au premier conteneur du groupe. Autorisez le trafic entre Pods sur ce port.
+- Les réplicas partagent le stockage ; les applications et environnements indépendants doivent l'isoler.
+- Un processus qui soumet sans exécuter peut utiliser
+  `BunClusterHttp.layer({ transport: "http", storage: "sql", clientOnly: true })` ;
+  des runners HTTP actifs restent nécessaires.
+
+**Changement de type de runner :** arrêtez tous les anciens exécuteurs avant de
+démarrer le nouveau type, y compris lors d'un retour arrière. Ne mélangez jamais
+runners Single et HTTP sur un stockage partagé et ne connectez pas un SingleRunner
+local au stockage de production.
