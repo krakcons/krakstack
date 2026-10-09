@@ -133,8 +133,7 @@ HTTP API client, schema, AI tool, CLI, and MCP utilities are available under
 the `@krak-stack/registry/httpapi/*` subpaths. Keep application-specific API
 layers, handlers, authentication, and client bindings in the application.
 
-Use `@krak-stack/registry/httpapi/toolkit` for HTTP API tools. The old
-`@krak-stack/registry/httpapi-toolkit` export has been removed in `0.1.38`.
+Use `@krak-stack/registry/httpapi/toolkit` for HTTP API tools.
 
 ### HTTP API tools and MCP
 
@@ -143,10 +142,6 @@ contains its tool name, typed `inputSchema`, derived `inputJsonSchema`, and meth
 annotations. Inputs use `{ params, query, headers, body }`; only the CLI turns
 terminal arguments into that shape. The generated HTTP client handles wire
 encoding, and payload codecs retain their transformations.
-
-The old flat/wire-input helpers and `HttpApiSpec` schema lookup methods have been
-removed in `0.1.38`. Use the schemas on each operation definition and
-`executeHttpApiOperation` from `@krak-stack/registry/httpapi/client` instead.
 
 Use `makeHttpApiToolkit(config)` to construct matching tools and handlers once:
 

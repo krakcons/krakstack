@@ -113,15 +113,6 @@ const ExternalLink = makeIcon(
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
   </>,
 );
-const Hash = makeIcon(
-  "Hash",
-  <>
-    <line x1="4" x2="20" y1="9" y2="9" />
-    <line x1="4" x2="20" y1="15" y2="15" />
-    <line x1="10" x2="8" y1="3" y2="21" />
-    <line x1="16" x2="14" y1="3" y2="21" />
-  </>,
-);
 
 export type DocsLocale = string;
 
@@ -429,25 +420,16 @@ export const makeDocs = (config: DocsConfig) => {
       .normalize("NFKD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
-  const searchIndex = source.pages.flatMap((page) => {
+  const searchIndex = source.pages.map((page) => {
     const description = normalizeSearchText(
       `${page.description} ${(page.tags ?? []).join(" ")}`,
     );
-    return [
-      {
-        page,
-        title: normalizeSearchText(page.title),
-        description,
-        content: normalizeSearchText(page.searchText),
-      },
-      ...page.headings.map((heading) => ({
-        page,
-        heading,
-        title: normalizeSearchText(heading.title),
-        description: `${normalizeSearchText(page.title)} ${description}`,
-        content: "",
-      })),
-    ];
+    return {
+      page,
+      title: normalizeSearchText(page.title),
+      description,
+      content: normalizeSearchText(page.searchText),
+    };
   });
 
   for (const page of source.pages) {
@@ -503,10 +485,7 @@ export const makeDocs = (config: DocsConfig) => {
       (entry) => entry.page.locale === locale,
     );
     if (!normalizedQuery) {
-      return localized
-        .filter((entry) => !("heading" in entry))
-        .slice(0, limit)
-        .map(({ page }) => ({ page }));
+      return localized.slice(0, limit).map(({ page }) => ({ page }));
     }
 
     const terms = normalizedQuery.split(/\s+/);
@@ -531,11 +510,7 @@ export const makeDocs = (config: DocsConfig) => {
           left.entry.page.order - right.entry.page.order,
       )
       .slice(0, limit)
-      .map(({ entry }) => {
-        const result: DocsSearchResult = { page: entry.page };
-        if ("heading" in entry) result.heading = entry.heading;
-        return result;
-      });
+      .map(({ entry }) => ({ page: entry.page }));
   };
   const url = (page: DocsPage, locale: DocsLocale) =>
     `${origin}/${locale}${page.path}`;
@@ -682,7 +657,7 @@ const messages = {
     downloadTable: "Download table",
     onThisPage: "On this page",
     searchTitle: "Search documentation",
-    searchDescription: "Search documentation pages and headings.",
+    searchDescription: "Search documentation pages.",
     searchPlaceholder: "Search documentation...",
     searchInputPlaceholder: "Search documentation...",
     searchEmpty: "No documentation found.",
@@ -714,8 +689,7 @@ const messages = {
     downloadTable: "Télécharger le tableau",
     onThisPage: "Sur cette page",
     searchTitle: "Rechercher dans la documentation",
-    searchDescription:
-      "Recherchez des pages et des sections dans la documentation.",
+    searchDescription: "Recherchez des pages dans la documentation.",
     searchPlaceholder: "Rechercher dans la documentation...",
     searchInputPlaceholder: "Rechercher dans la documentation...",
     searchEmpty: "Aucune documentation trouvée.",
@@ -932,43 +906,24 @@ const DocsSearch = ({
       ({ page }) => page.section === section,
     );
     if (!isSearching) {
-      sectionResults.sort((left, right) => {
-        const pageOrder = left.page.order - right.page.order;
-        if (pageOrder !== 0) return pageOrder;
-        if (!left.heading) return -1;
-        if (!right.heading) return 1;
-        return (
-          left.page.headings.findIndex(({ id }) => id === left.heading?.id) -
-          right.page.headings.findIndex(({ id }) => id === right.heading?.id)
-        );
-      });
+      sectionResults.sort((left, right) => left.page.order - right.page.order);
     }
 
     return {
       heading: messages.sectionLabel(section),
-      items: sectionResults.map(({ page, heading }) =>
-        heading
-          ? {
-              id: `${page.path}#${heading.id}`,
-              label: heading.title,
-              description: page.title,
-              icon: <Hash className="size-4" />,
-              onSelect: () => docs.navigate(`${page.path}#${heading.id}`),
-            }
-          : (() => {
-              const item: SearchMenuGroup["items"][number] = {
-                id: page.path,
-                label: page.title,
-                description: page.description,
-                onSelect: () => docs.navigate(page.path),
-              };
-              if (page.icon) {
-                const PageIcon = iconFor(docs.icons, page.icon);
-                if (PageIcon) item.icon = <PageIcon className="size-4" />;
-              }
-              return item;
-            })(),
-      ),
+      items: sectionResults.map(({ page }) => {
+        const item: SearchMenuGroup["items"][number] = {
+          id: page.path,
+          label: page.title,
+          description: page.description,
+          onSelect: () => docs.navigate(page.path),
+        };
+        if (page.icon) {
+          const PageIcon = iconFor(docs.icons, page.icon);
+          if (PageIcon) item.icon = <PageIcon className="size-4" />;
+        }
+        return item;
+      }),
     };
   });
 
