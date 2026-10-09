@@ -37,17 +37,9 @@
       "types": "./dist/lib/httpapi-cli.d.ts",
       "import": "./dist/lib/httpapi-cli.js"
     },
-    "./httpapi/client": {
-      "types": "./dist/lib/httpapi-client.d.ts",
-      "import": "./dist/lib/httpapi-client.js"
-    },
-    "./httpapi/helpers": {
-      "types": "./dist/lib/httpapi-helpers.d.ts",
-      "import": "./dist/lib/httpapi-helpers.js"
-    },
-    "./httpapi/mcp": {
-      "types": "./dist/lib/httpapi-mcp.d.ts",
-      "import": "./dist/lib/httpapi-mcp.js"
+    "./httpapi/adapter": {
+      "types": "./dist/lib/httpapi-adapter.d.ts",
+      "import": "./dist/lib/httpapi-adapter.js"
     },
     "./opentelemetry/api": {
       "types": "./dist/services/opentelemetry/api.d.ts",

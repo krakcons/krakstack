@@ -135,7 +135,7 @@ Use Effect durable workflows for operations that must survive interruption, retr
 - Merge service API groups into the root API with `.add(...)`.
 - Keep OpenAPI annotations on the root API.
 - OpenAPI documentation is served at `/api/docs`.
-- MCP server support is served at `/api/mcp` and should use `@krak-stack/httpapi-mcp`.
+- MCP server support is served at `/api/mcp`. Register Effect toolkits with `McpServer.registerToolkit` and compose the transport with `McpServer.layerHttp`; use `@krak-stack/httpapi-toolkit` to generate tools from an HttpApi. Select exposed operations explicitly and keep authentication and authorization application-owned.
 - CLI support should use `@krak-stack/httpapi-cli`.
 
 ## Tooling

@@ -11,6 +11,24 @@ import {
 } from "./webfetch-toolkit";
 
 describe("web fetch toolkit", () => {
+  it.effect("rejects invalid options during handler layer acquisition", () =>
+    Effect.gen(function* () {
+      const error = yield* WebFetchToolkit.pipe(
+        Effect.provide(WebFetchToolkitLayer({ maxResponseBytes: 0 })),
+        Effect.provide(FileExtractionService.layer),
+        Effect.provide(
+          Layer.succeed(
+            HttpClient.HttpClient,
+            HttpClient.make(() =>
+              Effect.die("HTTP must not run for invalid options"),
+            ),
+          ),
+        ),
+        Effect.flip,
+      );
+      expect(error.message).toContain("maxResponseBytes");
+    }),
+  );
   it.effect("fetches and extracts a public HTML page", () => {
     const client = HttpClient.make((request) =>
       Effect.succeed(

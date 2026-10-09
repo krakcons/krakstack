@@ -23,7 +23,7 @@ export const defaultWebFetchToolkitOptions: WebFetchToolkitOptions = {
   maxContentCharacters: 30_000,
 };
 
-const decodeOptions = Schema.decodeUnknownSync(WebFetchToolkitOptions);
+const decodeOptions = Schema.decodeUnknownEffect(WebFetchToolkitOptions);
 
 const isPublicHttpsUrl = Schema.makeFilter((value: string) => {
   try {
@@ -147,14 +147,13 @@ export const WebFetchToolkit = Toolkit.make(WebFetchTool);
 
 export const WebFetchToolkitLayer = (
   options: Partial<WebFetchToolkitOptions> = {},
-) => {
-  const resolved = decodeOptions({
-    ...defaultWebFetchToolkitOptions,
-    ...options,
-  });
-
-  return WebFetchToolkit.toLayer(
+) =>
+  WebFetchToolkit.toLayer(
     Effect.gen(function* () {
+      const resolved = yield* decodeOptions({
+        ...defaultWebFetchToolkitOptions,
+        ...options,
+      });
       const http = yield* HttpClient.HttpClient;
       const extraction = yield* FileExtractionService;
 
@@ -262,4 +261,3 @@ export const WebFetchToolkitLayer = (
       });
     }),
   );
-};

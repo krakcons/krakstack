@@ -4,14 +4,13 @@ import { OpenAiStructuredOutput, Tool } from "effect/ai";
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
 import { HttpClient, HttpClientResponse } from "effect/http";
 
-import { ApiClient, encodeHttpApiOperationResult } from "@/lib/httpapi-client";
-import { HttpApiSpec } from "@/lib/httpapi-helpers";
-
 import {
-  HttpApiToolkit,
-  HttpApiToolkitLayer,
-  makeHttpApiToolkit,
-} from "./httpapi-toolkit";
+  HttpApiAdapter,
+  encodeHttpApiOperationResult,
+} from "@/lib/httpapi-adapter";
+import { httpApiAdapterTestLayer } from "./httpapi-adapter.test-utils";
+
+import { makeHttpApiToolkit } from "./httpapi-toolkit";
 
 const TestApi = HttpApi.make("TestApi").add(
   HttpApiGroup.make("test")
@@ -59,13 +58,10 @@ describe("HttpApi toolkit", () => {
         expect(definitions).toBe(2);
       }).pipe(
         Effect.provide(
-          Layer.mergeAll(
-            HttpApiSpec.layer({ api: TestApi }),
-            Layer.succeed(ApiClient, {
-              execute: () => Effect.succeed("available"),
-              encodeResult: (result) => encodeHttpApiOperationResult(result),
-            }),
-          ),
+          httpApiAdapterTestLayer(TestApi, {
+            execute: () => Effect.succeed("available"),
+            encodeResult: (result) => encodeHttpApiOperationResult(result),
+          }),
         ),
       );
     },
@@ -92,18 +88,13 @@ describe("HttpApi toolkit", () => {
           HttpClientResponse.fromWeb(request, Response.json({ days: 7 })),
         );
       });
-      const specLayer = HttpApiSpec.layer({ api });
-      const handlersLayer = HttpApiToolkitLayer({}).pipe(
-        Layer.provide(specLayer),
-        Layer.provide(
-          ApiClient.layer({ api, baseUrl: "http://localhost" }).pipe(
-            Layer.provide(Layer.succeed(HttpClient.HttpClient, http)),
-          ),
-        ),
-      );
+      const clientLayer = HttpApiAdapter.layer({
+        api,
+        baseUrl: "http://localhost",
+      }).pipe(Layer.provide(Layer.succeed(HttpClient.HttpClient, http)));
       return Effect.gen(function* () {
-        const definition = yield* HttpApiToolkit({});
-        const toolkit = yield* definition.pipe(Effect.provide(handlersLayer));
+        const { toolkit: definition, handlers } = yield* makeHttpApiToolkit();
+        const toolkit = yield* definition.pipe(Effect.provide(handlers));
         const tool = definition.tools.workouts_summary;
         if (!tool) return yield* Effect.die("Missing summary tool");
         const stream = yield* toolkit.handle(tool.name, {
@@ -123,25 +114,20 @@ describe("HttpApi toolkit", () => {
           Array.from(yield* Stream.runCollect(invalid))[0]?.isFailure,
         ).toBe(true);
         expect(urls).toHaveLength(1);
-      }).pipe(Effect.provide(specLayer));
+      }).pipe(Effect.provide(clientLayer));
     },
   );
 
   it.effect(
-    "pairs generated tools with independently constructed handlers",
+    "uses default configuration for matching tools and handlers",
     () => {
-      const specLayer = HttpApiSpec.layer({ api: TestApi });
-      const clientLayer = Layer.succeed(ApiClient, {
+      const clientLayer = httpApiAdapterTestLayer(TestApi, {
         encodeResult: (result) => encodeHttpApiOperationResult(result),
         execute: () => Effect.succeed("available"),
       });
-      const handlersLayer = HttpApiToolkitLayer({}).pipe(
-        Layer.provide(specLayer),
-        Layer.provide(clientLayer),
-      );
-
       return Effect.gen(function* () {
-        const toolkitDefinition = yield* HttpApiToolkit({});
+        const { toolkit: toolkitDefinition, handlers } =
+          yield* makeHttpApiToolkit();
         const toolName = Object.keys(toolkitDefinition.tools)[0];
         expect(toolName).toBeDefined();
         const tool = toolkitDefinition.tools[toolName ?? ""];
@@ -159,9 +145,7 @@ describe("HttpApi toolkit", () => {
           additionalProperties: false,
         });
 
-        const toolkit = yield* toolkitDefinition.pipe(
-          Effect.provide(handlersLayer),
-        );
+        const toolkit = yield* toolkitDefinition.pipe(Effect.provide(handlers));
         const resultStream = yield* toolkit.handle(toolName ?? "", {});
         const results = Array.from(yield* Stream.runCollect(resultStream));
 
@@ -169,27 +153,22 @@ describe("HttpApi toolkit", () => {
           isFailure: false,
           result: "available",
         });
-      }).pipe(Effect.provide(specLayer));
+      }).pipe(Effect.provide(clientLayer));
     },
   );
 
   it.effect("uses strict Effect schemas and preserves optional inputs", () => {
-    const specLayer = HttpApiSpec.layer({ api: TestApi });
     let receivedInput: unknown;
-    const clientLayer = Layer.succeed(ApiClient, {
+    const clientLayer = httpApiAdapterTestLayer(TestApi, {
       encodeResult: (result) => encodeHttpApiOperationResult(result),
       execute: ({ input }) => {
         receivedInput = input;
         return Effect.succeed("created");
       },
     });
-    const handlersLayer = HttpApiToolkitLayer({}).pipe(
-      Layer.provide(specLayer),
-      Layer.provide(clientLayer),
-    );
-
     return Effect.gen(function* () {
-      const toolkitDefinition = yield* HttpApiToolkit({});
+      const { toolkit: toolkitDefinition, handlers } =
+        yield* makeHttpApiToolkit();
       const tool = toolkitDefinition.tools.test_create;
       expect(tool).toBeDefined();
       if (!tool) return yield* Effect.die("Missing create tool");
@@ -224,9 +203,7 @@ describe("HttpApi toolkit", () => {
         },
       });
 
-      const toolkit = yield* toolkitDefinition.pipe(
-        Effect.provide(handlersLayer),
-      );
+      const toolkit = yield* toolkitDefinition.pipe(Effect.provide(handlers));
       const resultStream = yield* toolkit.handle(
         tool.name,
         yield* Schema.decodeUnknownEffect(Schema.Json)(decoded),
@@ -239,8 +216,6 @@ describe("HttpApi toolkit", () => {
       });
       expect(receivedInput).toEqual({
         params: { itemId: "item-1" },
-        query: {},
-        headers: {},
         body: {
           name: "Example",
           options: [
@@ -249,12 +224,12 @@ describe("HttpApi toolkit", () => {
           ],
         },
       });
-    }).pipe(Effect.provide(specLayer));
+    }).pipe(Effect.provide(clientLayer));
   });
 
   it.effect("rejects incomplete nested component data before execution", () =>
     Effect.gen(function* () {
-      const toolkit = yield* HttpApiToolkit({});
+      const { toolkit } = yield* makeHttpApiToolkit();
       const tool = toolkit.tools.test_create;
       if (!tool) return yield* Effect.die("Missing create tool");
       const { codec } = OpenAiStructuredOutput.toCodecOpenAI(
@@ -274,6 +249,6 @@ describe("HttpApi toolkit", () => {
       expect(SchemaIssue.makeFormatterDefault()(error.issue)).toContain(
         "correct",
       );
-    }).pipe(Effect.provide(HttpApiSpec.layer({ api: TestApi }))),
+    }).pipe(Effect.provide(httpApiAdapterTestLayer(TestApi))),
   );
 });

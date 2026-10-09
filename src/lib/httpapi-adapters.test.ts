@@ -1,17 +1,13 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Schema, SchemaTransformation, Stream } from "effect";
-import { Command } from "effect/cli";
+import { McpProtocol, McpServer } from "effect/ai";
 import { HttpClient, HttpClientResponse, HttpRouter } from "effect/http";
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
 import { TestConsole } from "effect/testing";
 
-import { ApiClient } from "./httpapi-client";
-import {
-  makeHttpApiCliCommand,
-  httpApiCliEnvironmentLayer,
-} from "./httpapi-cli";
-import { HttpApiSpec } from "./httpapi-helpers";
-import { HttpApiMcp } from "./httpapi-mcp";
+import { HttpApiAdapter } from "./httpapi-adapter";
+import { makeHttpApiCli } from "./httpapi-cli";
+import { httpApiCliEnvironmentLayer } from "./httpapi-cli.test-utils";
 import { makeHttpApiToolkit } from "./httpapi-toolkit";
 
 const UrlFromString = Schema.String.pipe(
@@ -96,7 +92,7 @@ describe("shared HTTP API adapter inputs", () => {
               url: "https://example.com/item",
             },
           };
-          const clientLayer = ApiClient.layer({
+          const clientLayer = HttpApiAdapter.layer({
             api,
             baseUrl: "http://localhost",
           }).pipe(Layer.provide(Layer.succeed(HttpClient.HttpClient, http)));
@@ -115,9 +111,9 @@ describe("shared HTTP API adapter inputs", () => {
               ];
               if (optional)
                 args.push("--days", invalid ? "invalid" : "7", "--no-active");
-              const command = yield* makeHttpApiCliCommand();
+              const { run } = yield* makeHttpApiCli();
               const result = yield* Effect.result(
-                Command.runWith(command, { version: "1.0.0" })(args).pipe(
+                run(args).pipe(
                   Effect.provide(httpApiCliEnvironmentLayer(args)),
                 ),
               );
@@ -137,12 +133,27 @@ describe("shared HTTP API adapter inputs", () => {
               const web = yield* Effect.acquireRelease(
                 Effect.sync(() =>
                   HttpRouter.toWebHandler(
-                    HttpApiMcp.layerHttp({
-                      api,
-                      baseUrl: "http://localhost",
-                      methods: ["post"],
-                    }).pipe(
-                      Layer.provide(Layer.succeed(HttpClient.HttpClient, http)),
+                    Layer.effectDiscard(
+                      Effect.gen(function* () {
+                        const { toolkit, handlers } = yield* makeHttpApiToolkit(
+                          {
+                            needsApproval: () => false,
+                          },
+                        );
+                        yield* McpServer.registerToolkit(toolkit).pipe(
+                          Effect.provide(handlers),
+                        );
+                      }),
+                    ).pipe(
+                      Layer.provideMerge(
+                        McpServer.layerHttp({
+                          name: "test",
+                          version: "1.0.0",
+                          path: "/api/mcp",
+                          protocols: [McpProtocol.v2025_11_25],
+                        }),
+                      ),
+                      Layer.provide(clientLayer),
                     ),
                     { disableLogger: true },
                   ),
@@ -216,13 +227,7 @@ describe("shared HTTP API adapter inputs", () => {
                 body: '{"at":"2026-10-09T00:00:00.000Z","url":"https://example.com/item"}',
               });
           }).pipe(
-            Effect.provide(
-              Layer.mergeAll(
-                HttpApiSpec.layer({ api }),
-                clientLayer,
-                TestConsole.layer,
-              ),
-            ),
+            Effect.provide(Layer.mergeAll(clientLayer, TestConsole.layer)),
           );
         },
       );

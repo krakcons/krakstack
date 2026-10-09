@@ -10,12 +10,15 @@ import { McpProtocol, McpServer } from "effect/ai";
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
 import { HttpClient, HttpClientResponse, HttpRouter } from "effect/http";
 
-import { ApiClient, encodeHttpApiOperationResult } from "./httpapi-client";
-import { HttpApiSpec } from "./httpapi-helpers";
-import { HttpApiMcp } from "./httpapi-mcp";
+import {
+  HttpApiAdapter,
+  encodeHttpApiOperationResult,
+} from "./httpapi-adapter";
+import { httpApiAdapterTestLayer } from "./httpapi-adapter.test-utils";
+import { makeHttpApiToolkit } from "./httpapi-toolkit";
 
 describe("HTTP API MCP toolkit registration", () => {
-  it.effect("composes the HTTP MCP SDK with read-only defaults", () => {
+  it.effect("exposes only explicitly selected read operations", () => {
     const api = HttpApi.make("test").add(
       HttpApiGroup.make("items")
         .add(
@@ -39,7 +42,30 @@ describe("HTTP API MCP toolkit registration", () => {
       expect(server.tools[0]?.tool.annotations?.readOnlyHint).toBe(true);
     }).pipe(
       Effect.provide(
-        HttpApiMcp.layerHttp({ api, baseUrl: "http://localhost" }),
+        Layer.effectDiscard(
+          Effect.gen(function* () {
+            const { toolkit, handlers } = yield* makeHttpApiToolkit({});
+            yield* McpServer.registerToolkit(toolkit).pipe(
+              Effect.provide(handlers),
+            );
+          }),
+        ).pipe(
+          Layer.provideMerge(
+            McpServer.layerHttp({
+              name: "test",
+              version: "1.0.0",
+              path: "/api/mcp",
+              protocols: [McpProtocol.v2025_11_25],
+            }),
+          ),
+          Layer.provide(
+            HttpApiAdapter.layer({
+              api,
+              baseUrl: "http://localhost",
+              methods: ["get"],
+            }),
+          ),
+        ),
       ),
       Effect.provide(
         Layer.mergeAll(
@@ -64,9 +90,13 @@ describe("HTTP API MCP toolkit registration", () => {
         ),
       );
       return Effect.gen(function* () {
-        const mcp = yield* HttpApiMcp;
+        const { toolkit, handlers } = yield* makeHttpApiToolkit({
+          toolMetaKey: "test/operation",
+        });
         const server = yield* McpServer.McpServer;
-        yield* mcp.registerTools;
+        yield* McpServer.registerToolkit(toolkit).pipe(
+          Effect.provide(handlers),
+        );
         const tool = server.tools[0]?.tool;
         expect(tool?.name).toBe("workouts_summary");
         expect(tool?.annotations?.readOnlyHint).toBe(true);
@@ -84,11 +114,9 @@ describe("HTTP API MCP toolkit registration", () => {
           Schema.is(Schema.toEncoded(schema))({ query: { days: "7" } }),
         ).toBe(false);
       }).pipe(
-        Effect.provide(HttpApiMcp.layer({ toolMetaKey: "test/operation" })),
         Effect.provide(
           Layer.mergeAll(
-            HttpApiSpec.layer({ api }),
-            Layer.succeed(ApiClient, {
+            httpApiAdapterTestLayer(api, {
               execute: () => Effect.succeed({ count: 1 }),
               encodeResult: (result) => encodeHttpApiOperationResult(result),
             }),

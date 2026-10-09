@@ -1,13 +1,12 @@
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import type { Json } from "effect/Schema";
 import { Tool, Toolkit } from "effect/ai";
 
-import { ApiClient, executeHttpApiOperation } from "@/lib/httpapi-client";
+import { HttpApiAdapter } from "@/lib/httpapi-adapter";
 import {
-  HttpApiSpec,
   type HttpApiOperationEntry,
   type HttpApiOperationDefinition,
-} from "@/lib/httpapi-helpers";
+} from "@/lib/httpapi-adapter";
 
 export type HttpApiToolkitConfig = {
   readonly toolMetaKey?: string;
@@ -59,9 +58,9 @@ const makeOperationTool = (
 };
 
 export const makeHttpApiToolkit = Effect.fn("HttpApiToolkit.make")(function* (
-  config: HttpApiToolkitConfig,
+  config: HttpApiToolkitConfig = {},
 ) {
-  const spec = yield* HttpApiSpec;
+  const spec = yield* HttpApiAdapter;
   const entries = spec.operations.map((operation) => ({
     operation,
     tool: makeOperationTool(operation, config),
@@ -69,16 +68,13 @@ export const makeHttpApiToolkit = Effect.fn("HttpApiToolkit.make")(function* (
   const toolkit = Toolkit.make(...entries.map(({ tool }) => tool));
 
   const handlers = toolkit.toLayer(
-    Effect.map(ApiClient, (client) =>
+    Effect.map(HttpApiAdapter, (client) =>
       Object.fromEntries(
         entries.map(({ operation: entry, tool }) => [
           tool.name,
           (input) =>
             Effect.gen(function* () {
-              const result = yield* executeHttpApiOperation(
-                { operation: entry, input },
-                client,
-              );
+              const result = yield* client.execute({ operation: entry, input });
               const encodedResult = yield* client.encodeResult(result, entry);
               return (
                 config.transformResult?.(entry, encodedResult) ?? encodedResult
@@ -94,14 +90,3 @@ export const makeHttpApiToolkit = Effect.fn("HttpApiToolkit.make")(function* (
   );
   return { toolkit, handlers };
 });
-
-export const HttpApiToolkit = Effect.fn("HttpApiToolkit")(function* (
-  config: HttpApiToolkitConfig,
-) {
-  return (yield* makeHttpApiToolkit(config)).toolkit;
-});
-
-export const HttpApiToolkitLayer = (config: HttpApiToolkitConfig) =>
-  Layer.unwrap(
-    makeHttpApiToolkit(config).pipe(Effect.map(({ handlers }) => handlers)),
-  );

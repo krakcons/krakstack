@@ -1,7 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Cause, Effect, Layer, Schema, Stream } from "effect";
+import { Effect, Schema, Stream } from "effect";
 import { TestConsole } from "effect/testing";
-import { Command } from "effect/cli";
 import {
   HttpApi,
   HttpApiEndpoint,
@@ -10,26 +9,20 @@ import {
 } from "effect/http-api";
 
 import {
-  ApiClient,
   encodeHttpApiOperationResult,
-  type ApiClientService,
-} from "./httpapi-client";
-import {
-  formatHttpApiCliCause,
-  httpApiCliEnvironmentLayer,
-  makeHttpApiCliCommand,
-  printHttpApiCliResult,
-  toHttpApiCliName,
-} from "./httpapi-cli";
-import { HttpApiSpec, type HttpApiOperationEntry } from "./httpapi-helpers";
+  type HttpApiAdapterService,
+} from "./httpapi-adapter";
+import { httpApiAdapterTestLayer } from "./httpapi-adapter.test-utils";
+import { makeHttpApiCli } from "./httpapi-cli";
+import { httpApiCliEnvironmentLayer } from "./httpapi-cli.test-utils";
 
-const operation: HttpApiOperationEntry = {
-  method: "get",
-  path: "/events",
-  operation: { operationId: "events.stream" },
-};
+const OutputApi = HttpApi.make("output").add(
+  HttpApiGroup.make("events").add(
+    HttpApiEndpoint.get("stream", "/events", { success: Schema.Json }),
+  ),
+);
 
-const client: ApiClientService = {
+const client: Pick<HttpApiAdapterService, "execute" | "encodeResult"> = {
   encodeResult: (result) => encodeHttpApiOperationResult(result),
   execute: () => Effect.die("Not used"),
 };
@@ -61,65 +54,118 @@ const TestApi = HttpApi.make("TestApi")
     ),
   );
 
-describe("printHttpApiCliResult", () => {
+describe("CLI result output", () => {
   it.effect("pretty prints ordinary responses", () =>
     Effect.gen(function* () {
-      yield* printHttpApiCliResult({ status: "ready" }, operation, client);
+      const { run } = yield* makeHttpApiCli();
+      const args = ["events", "stream"];
+      yield* run(args).pipe(Effect.provide(httpApiCliEnvironmentLayer(args)));
 
       expect(yield* TestConsole.logLines).toEqual([
         '{\n  "status": "ready"\n}',
       ]);
-    }).pipe(Effect.provide(TestConsole.layer)),
+    }).pipe(
+      Effect.provide(
+        httpApiAdapterTestLayer(OutputApi, {
+          ...client,
+          execute: () => Effect.succeed({ status: "ready" }),
+        }),
+      ),
+      Effect.provide(TestConsole.layer),
+    ),
   );
 
   it.effect("prints stream events as NDJSON without a trailing result", () =>
     Effect.gen(function* () {
-      yield* printHttpApiCliResult(
-        Stream.make(
-          { _tag: "progress", current: 1 },
-          { _tag: "progress", current: 2 },
-        ),
-        operation,
-        client,
-      );
+      const { run } = yield* makeHttpApiCli();
+      const args = ["events", "stream"];
+      yield* run(args).pipe(Effect.provide(httpApiCliEnvironmentLayer(args)));
 
       expect(yield* TestConsole.logLines).toEqual([
         '{"_tag":"progress","current":1}',
         '{"_tag":"progress","current":2}',
       ]);
-    }).pipe(Effect.provide(TestConsole.layer)),
+    }).pipe(
+      Effect.provide(
+        httpApiAdapterTestLayer(OutputApi, {
+          ...client,
+          execute: () =>
+            Effect.succeed(
+              Stream.make(
+                { _tag: "progress", current: 1 },
+                { _tag: "progress", current: 2 },
+              ),
+            ),
+        }),
+      ),
+      Effect.provide(TestConsole.layer),
+    ),
   );
 });
 
-describe("formatHttpApiCliCause", () => {
-  it("includes the error name when its message is empty", () => {
-    const error = new Error("");
-    error.name = "effect/HttpApiError/Unauthorized";
-
-    expect(formatHttpApiCliCause(Cause.fail(error))).toContain(
-      "effect/HttpApiError/Unauthorized",
-    );
-  });
-
-  it("omits Effect stack traces", () => {
-    expect(formatHttpApiCliCause(Cause.fail(new Error("Request failed")))).toBe(
-      "Error: Request failed",
-    );
-  });
-});
-
 describe("generated HttpApi commands", () => {
-  it("normalizes names to kebab-case", () => {
-    expect(toHttpApiCliName("listHTTPResources")).toBe("list-http-resources");
-    expect(toHttpApiCliName("Test Service API")).toBe("test-service-api");
+  it.effect("propagates execution failures to the caller", () => {
+    const error = new Error("Request failed");
+    return Effect.gen(function* () {
+      const { run } = yield* makeHttpApiCli();
+      const args = ["events", "stream"];
+      const failure = yield* run(args).pipe(
+        Effect.provide(httpApiCliEnvironmentLayer(args)),
+        Effect.flip,
+      );
+      expect(failure).toBe(error);
+    }).pipe(
+      Effect.provide(
+        httpApiAdapterTestLayer(OutputApi, {
+          ...client,
+          execute: () => Effect.fail(error),
+        }),
+      ),
+      Effect.provide(TestConsole.layer),
+    );
   });
+
+  it.effect("runs with the version from API metadata", () =>
+    Effect.gen(function* () {
+      const { run } = yield* makeHttpApiCli();
+      const args = ["--version"];
+      yield* run(args).pipe(Effect.provide(httpApiCliEnvironmentLayer(args)));
+      expect(yield* TestConsole.logLines).toEqual(["test-service-api v1.2.3"]);
+    }).pipe(
+      Effect.provide(httpApiAdapterTestLayer(TestApi, client)),
+      Effect.provide(TestConsole.layer),
+    ),
+  );
+
+  it.effect("normalizes acronym endpoint names to kebab-case", () =>
+    Effect.gen(function* () {
+      const { command } = yield* makeHttpApiCli();
+      const group = command.subcommands[0]?.commands.find(
+        ({ name }) => name === "resources",
+      );
+      expect(group?.subcommands[0]?.commands.map(({ name }) => name)).toContain(
+        "list-http-resources",
+      );
+    }).pipe(
+      Effect.provide(
+        httpApiAdapterTestLayer(
+          HttpApi.make("names").add(
+            HttpApiGroup.make("resources").add(
+              HttpApiEndpoint.get("listHTTPResources", "/resources", {
+                success: Schema.Json,
+              }),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   it.effect(
     "assembles typed operation input from positional arguments and flags",
     () => {
       let receivedInput: unknown;
-      const specLayer = HttpApiSpec.layer({ api: TestApi });
-      const clientLayer = Layer.succeed(ApiClient, {
+      const clientLayer = httpApiAdapterTestLayer(TestApi, {
         encodeResult: (result) => encodeHttpApiOperationResult(result),
         execute: ({ input }) => {
           receivedInput = input;
@@ -142,15 +188,13 @@ describe("generated HttpApi commands", () => {
       ];
 
       return Effect.gen(function* () {
-        const command = yield* makeHttpApiCliCommand();
+        const { command, run } = yield* makeHttpApiCli();
         expect(command.name).toBe("test-service-api");
         expect(
           command.subcommands[0]?.commands.map(({ name }) => name),
         ).toContain("test-items");
 
-        yield* Command.runWith(command, { version: "1.2.3" })(args).pipe(
-          Effect.provide(httpApiCliEnvironmentLayer(args)),
-        );
+        yield* run(args).pipe(Effect.provide(httpApiCliEnvironmentLayer(args)));
 
         expect(receivedInput).toEqual({
           body: {
@@ -158,16 +202,11 @@ describe("generated HttpApi commands", () => {
             displayName: "Example",
             metadata: { owner: "test" },
           },
-          headers: {},
           params: { itemId: "item-1" },
           query: { includeArchived: true, page: 2 },
         });
         expect(yield* TestConsole.logLines).toEqual(['"created"']);
-      }).pipe(
-        Effect.provide(specLayer),
-        Effect.provide(clientLayer),
-        Effect.provide(TestConsole.layer),
-      );
+      }).pipe(Effect.provide(clientLayer), Effect.provide(TestConsole.layer));
     },
   );
 });

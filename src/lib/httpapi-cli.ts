@@ -1,33 +1,14 @@
-import {
-  Cause,
-  Console,
-  Context,
-  Effect,
-  Exit,
-  FileSystem,
-  JsonSchema,
-  Layer,
-  Option,
-  Path,
-  Schema,
-  Stdio,
-  Stream,
-  Terminal,
-} from "effect";
+import { Console, Effect, JsonSchema, Option, Schema, Stream } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 
 import {
-  ApiClient,
-  executeHttpApiOperation,
-  type ApiClientService,
-} from "@/lib/httpapi-client";
+  HttpApiAdapter,
+  type HttpApiAdapterService,
+} from "@/lib/httpapi-adapter";
 import {
-  HttpApiSpec,
   type HttpApiOperation,
-  type HttpApiOperationEntry,
   type HttpApiOperationDefinition,
-} from "@/lib/httpapi-helpers";
+} from "@/lib/httpapi-adapter";
 import type { Json } from "effect/Schema";
 
 type CliOperation = HttpApiOperationDefinition & {
@@ -89,23 +70,18 @@ const CliParsedConfig = Schema.Record(
   Schema.Union([Schema.Json, CliParsedOption]),
 ).annotate({ identifier: "HttpApiCliParsedConfig" });
 type CliParsedConfig = typeof CliParsedConfig.Type;
-export class HttpApiCli extends Context.Service<HttpApiCli>()("HttpApiCli", {
-  make: () =>
-    Effect.gen(function* () {
-      const spec = yield* HttpApiSpec;
-      const command = yield* makeHttpApiCliCommand();
+export const makeHttpApiCli = Effect.fn("HttpApiCli.make")(function* () {
+  const spec = yield* HttpApiAdapter;
+  const command = yield* makeHttpApiCliCommand();
 
-      return {
-        command,
-        run: (args: ReadonlyArray<string>) =>
-          Command.runWith(command, { version: spec.info.version })(args),
-      };
-    }),
-}) {
-  static readonly layer = Layer.effect(this, this.make());
-}
+  return {
+    command,
+    run: (args: ReadonlyArray<string>) =>
+      Command.runWith(command, { version: spec.info.version })(args),
+  };
+});
 
-export const toHttpApiCliName = (value: string) =>
+const toHttpApiCliName = (value: string) =>
   value
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
@@ -398,30 +374,28 @@ const HttpApiCliResultStream = Schema.declare(
   (value): value is HttpApiCliResultStream => Stream.isStream(value),
 ).annotate({ identifier: "HttpApiCliResultStream" });
 
-export const printHttpApiCliResult = Effect.fn("HttpApiCli.printResult")(
-  function* (
-    response: ErrorOptions["cause"],
-    operation: HttpApiOperationEntry,
-    client: ApiClientService,
-  ) {
-    const stream = Schema.decodeUnknownOption(HttpApiCliResultStream)(response);
-    if (stream._tag === "Some") {
-      return yield* stream.value.pipe(
-        Stream.mapEffect((event) => client.encodeResult(event, operation)),
-        Stream.runForEach((event) => print(JSON.stringify(event))),
-      );
-    }
+const printHttpApiCliResult = Effect.fn("HttpApiCli.printResult")(function* (
+  response: ErrorOptions["cause"],
+  operation: HttpApiOperationDefinition,
+  client: HttpApiAdapterService,
+) {
+  const stream = Schema.decodeUnknownOption(HttpApiCliResultStream)(response);
+  if (stream._tag === "Some") {
+    return yield* stream.value.pipe(
+      Stream.mapEffect((event) => client.encodeResult(event, operation)),
+      Stream.runForEach((event) => print(JSON.stringify(event))),
+    );
+  }
 
-    const encoded = yield* client.encodeResult(response, operation);
-    return yield* print(JSON.stringify(encoded, null, 2) ?? "null");
-  },
-);
+  const encoded = yield* client.encodeResult(response, operation);
+  return yield* print(JSON.stringify(encoded, null, 2) ?? "null");
+});
 
 const callOperation = Effect.fn("HttpApiCli.callOperation")(function* (
   operation: CliOperation,
   inputs: ReadonlyArray<CliInput>,
   callConfig: CliParsedConfig,
-  client: ApiClientService,
+  client: HttpApiAdapterService,
 ) {
   const emptyValues = (): CliValues => ({});
   const assembled = {
@@ -470,7 +444,7 @@ const callOperation = Effect.fn("HttpApiCli.callOperation")(function* (
         ),
     ),
   );
-  const response = yield* executeHttpApiOperation({ operation, input }, client);
+  const response = yield* client.execute({ operation, input });
   return yield* printHttpApiCliResult(response, operation, client);
 });
 
@@ -492,7 +466,10 @@ const groupListCommand = (group: CliOperationGroup) =>
     Command.withDescription(`List ${group.title} operations`),
   );
 
-const operationCommand = (operation: CliOperation, client: ApiClientService) =>
+const operationCommand = (
+  operation: CliOperation,
+  client: HttpApiAdapterService,
+) =>
   Effect.sync(() => {
     const inputs = operationInputs(operation);
     const config: Record<
@@ -522,7 +499,10 @@ const operationCommand = (operation: CliOperation, client: ApiClientService) =>
     );
   });
 
-const groupCommand = (group: CliOperationGroup, client: ApiClientService) =>
+const groupCommand = (
+  group: CliOperationGroup,
+  client: HttpApiAdapterService,
+) =>
   Effect.all(
     group.operations.map((operation) => operationCommand(operation, client)),
   ).pipe(
@@ -537,90 +517,21 @@ const groupCommand = (group: CliOperationGroup, client: ApiClientService) =>
     ),
   );
 
-export const makeHttpApiCliCommand = Effect.fn("HttpApiCli.makeCommand")(
-  function* () {
-    const spec = yield* HttpApiSpec;
-    const client = yield* ApiClient;
-    const name = fallbackName(spec.info.title, "api");
-    const groups = yield* Effect.try({
-      try: () => httpApiCliOperationGroups(spec.operations.map(toCliOperation)),
-      catch: (error) =>
-        error instanceof Error ? error : new Error(String(error)),
-    });
-    const groupCommands = yield* Effect.all(
-      groups.map((group) => groupCommand(group, client)),
-    );
-
-    return Command.make(name).pipe(
-      Command.withDescription(spec.info.description ?? spec.info.title),
-      Command.withSubcommands([listCommand(groups), ...groupCommands]),
-    );
-  },
-);
-
-const cliEnvironmentLayer = (args: ReadonlyArray<string>) =>
-  Layer.mergeAll(
-    FileSystem.layerNoop({}),
-    Path.layer,
-    Stdio.layerTest({ args: Effect.succeed(Array.from(args)) }),
-    Layer.succeed(
-      Terminal.Terminal,
-      Terminal.make({
-        columns: Effect.sync(() => process.stdout.columns ?? 80),
-        rows: Effect.sync(() => process.stdout.rows ?? 24),
-        readInput: Effect.die("Terminal input is not supported"),
-        readLine: Effect.die("Terminal input is not supported"),
-        display: (text) => Effect.sync(() => process.stdout.write(text)),
-      }),
-    ),
-    Layer.succeed(
-      ChildProcessSpawner,
-      ChildProcessSpawner.of({
-        spawn: () => Effect.die("Child processes are not supported"),
-        exitCode: () => Effect.die("Child processes are not supported"),
-        streamString: () => Stream.die("Child processes are not supported"),
-        streamLines: () => Stream.die("Child processes are not supported"),
-        lines: () => Effect.die("Child processes are not supported"),
-        string: () => Effect.die("Child processes are not supported"),
-      }),
-    ),
-  );
-
-export const httpApiCliEnvironmentLayer = (args: ReadonlyArray<string>) =>
-  cliEnvironmentLayer(args);
-
-export const httpApiCli = (args = process.argv.slice(2)) =>
-  Effect.gen(function* () {
-    const cli = yield* HttpApiCli;
-    return yield* cli.run(args);
+const makeHttpApiCliCommand = Effect.fn("HttpApiCli.makeCommand")(function* () {
+  const spec = yield* HttpApiAdapter;
+  const client = spec;
+  const name = fallbackName(spec.info.title, "api");
+  const groups = yield* Effect.try({
+    try: () => httpApiCliOperationGroups(spec.operations.map(toCliOperation)),
+    catch: (error) =>
+      error instanceof Error ? error : new Error(String(error)),
   });
-
-export const formatHttpApiCliCause = (cause: Cause.Cause<unknown>) => {
-  const errors = Cause.prettyErrors(cause);
-  if (errors.length === 0) return Cause.pretty(cause);
-  return errors
-    .map((error) =>
-      error.message ? `${error.name}: ${error.message}` : error.name,
-    )
-    .join("\n");
-};
-
-export const runHttpApiCli = <E>(
-  layer: Layer.Layer<HttpApiCli, E>,
-  args = process.argv.slice(2),
-) => {
-  Effect.runPromiseExit(
-    httpApiCli(args).pipe(
-      Effect.provide(layer),
-      Effect.provide(httpApiCliEnvironmentLayer(args)),
-    ),
-  ).then(
-    Exit.match({
-      onSuccess: () => undefined,
-      onFailure: (cause) => {
-        console.error(formatHttpApiCliCause(cause));
-        process.exitCode = 1;
-      },
-    }),
+  const groupCommands = yield* Effect.all(
+    groups.map((group) => groupCommand(group, client)),
   );
-};
+
+  return Command.make(name).pipe(
+    Command.withDescription(spec.info.description ?? spec.info.title),
+    Command.withSubcommands([listCommand(groups), ...groupCommands]),
+  );
+});
