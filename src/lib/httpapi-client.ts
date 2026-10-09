@@ -29,6 +29,27 @@ export type ApiClientExecuteOptions = {
   readonly input: HttpApiOperationInput;
 };
 
+export const executeHttpApiOperation = Effect.fn(
+  "HttpApiClient.executeOperation",
+)(
+  (
+    options: {
+      readonly operation: HttpApiOperationEntry;
+      readonly input: Partial<HttpApiOperationInput>;
+    },
+    client: ApiClientService,
+  ) =>
+    client.execute({
+      operation: options.operation,
+      input: {
+        body: options.input.body,
+        headers: options.input.headers ?? {},
+        params: options.input.params ?? {},
+        query: options.input.query ?? {},
+      },
+    }),
+);
+
 export type HttpApiOperationResultValue =
   | null
   | undefined

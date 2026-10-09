@@ -17,25 +17,24 @@ import {
 import { Argument, Command, Flag } from "effect/cli";
 import { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 
-import { ApiClient, type ApiClientService } from "@/lib/httpapi-client";
+import {
+  ApiClient,
+  executeHttpApiOperation,
+  type ApiClientService,
+} from "@/lib/httpapi-client";
 import {
   HttpApiSpec,
-  type HttpApiMethod,
   type HttpApiOperation,
   type HttpApiOperationEntry,
+  type HttpApiOperationDefinition,
 } from "@/lib/httpapi-helpers";
 import type { Json } from "effect/Schema";
 
-type CliOperation = {
+type CliOperation = HttpApiOperationDefinition & {
   groupName: string;
   groupTitle: string;
   name: string;
-  method: HttpApiMethod;
-  path: string;
   summary: string;
-  operation: HttpApiOperation;
-  inputSchema: Schema.Codec<unknown, unknown>;
-  inputJsonSchema: JsonSchema.JsonSchema;
 };
 type CliOperationGroup = {
   name: string;
@@ -48,7 +47,6 @@ type CliInput = {
   readonly location: CliInputLocation;
   readonly name: string;
   readonly optionName: string;
-  readonly wireString: boolean;
   readonly param: Argument.Argument<unknown> | Flag.Flag<unknown>;
 };
 type CliValues = Record<string, Json>;
@@ -91,12 +89,6 @@ const CliParsedConfig = Schema.Record(
   Schema.Union([Schema.Json, CliParsedOption]),
 ).annotate({ identifier: "HttpApiCliParsedConfig" });
 type CliParsedConfig = typeof CliParsedConfig.Type;
-const DecodedOperationInput = Schema.Struct({
-  body: Schema.optional(Schema.Unknown),
-  headers: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
-  params: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
-  query: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
-}).annotate({ identifier: "HttpApiCliDecodedOperationInput" });
 export class HttpApiCli extends Context.Service<HttpApiCli>()("HttpApiCli", {
   make: () =>
     Effect.gen(function* () {
@@ -147,25 +139,12 @@ const operationName = (
     `${method}_operation`,
   );
 
-const toCliOperation = ({
-  inputJsonSchema,
-  inputSchema,
-  method,
-  operation,
-  path,
-}: HttpApiOperationEntry & {
-  readonly inputSchema: Schema.Codec<unknown, unknown>;
-  readonly inputJsonSchema: JsonSchema.JsonSchema;
-}): CliOperation => ({
-  groupName: operationGroupName(operation),
-  groupTitle: operationGroupTitle(operation),
-  name: operationName(method, path, operation),
-  method,
-  path,
-  summary: operation.summary ?? operation.description ?? "",
-  operation,
-  inputSchema,
-  inputJsonSchema,
+const toCliOperation = (entry: HttpApiOperationDefinition): CliOperation => ({
+  ...entry,
+  groupName: operationGroupName(entry.operation),
+  groupTitle: operationGroupTitle(entry.operation),
+  name: operationName(entry.method, entry.path, entry.operation),
+  summary: entry.operation.summary ?? entry.operation.description ?? "",
 });
 
 const httpApiCliOperationGroups = (
@@ -247,22 +226,6 @@ const schemaEnum = (schema: CliJsonSchema): ReadonlyArray<string> =>
     effectiveSchema(schema).enum,
   ).pipe(Option.getOrElse((): ReadonlyArray<string> => []));
 
-const hasNumericPattern = (schema: CliJsonSchema): boolean => {
-  const effective = effectiveSchema(schema);
-  if (effective.pattern?.includes("\\d")) return true;
-  return (effective.allOf ?? []).some((part) =>
-    hasNumericPattern(cliJsonSchema(part)),
-  );
-};
-
-const isBooleanSchema = (schema: CliJsonSchema) => {
-  const values = schemaEnum(schema);
-  return (
-    schemaType(schema) === "boolean" ||
-    (values.includes("true") && values.includes("false"))
-  );
-};
-
 const jsonFlag = (name: string) =>
   Flag.String(name).pipe(
     Flag.mapTryCatch(
@@ -280,7 +243,7 @@ const primitiveFlag = (
   const choices = schemaEnum(schema);
   let flag: Flag.Flag<unknown>;
 
-  if (isBooleanSchema(schema)) {
+  if (type === "boolean") {
     flag = required
       ? Flag.Literals(name, ["true", "false"]).pipe(
           Flag.map((value) => value === "true"),
@@ -290,7 +253,7 @@ const primitiveFlag = (
     flag = Flag.Literals(name, choices);
   } else if (type === "integer") {
     flag = Flag.Int(name);
-  } else if (type === "number" || hasNumericPattern(schema)) {
+  } else if (type === "number") {
     flag = Flag.Finite(name);
   } else if (type === "object" || type === "array") {
     flag = jsonFlag(name);
@@ -318,7 +281,7 @@ const primitiveArgument = (name: string, schema: CliJsonSchema) => {
     argument = Argument.Literals(name, choices);
   } else if (type === "integer") {
     argument = Argument.Int(name);
-  } else if (type === "number" || hasNumericPattern(schema)) {
+  } else if (type === "number") {
     argument = Argument.Finite(name);
   } else {
     argument = Argument.String(name);
@@ -342,7 +305,7 @@ const operationInputDrafts = (operation: CliOperation) => {
   const document = cliJsonSchema(operation.inputJsonSchema);
   const definitions = document.$defs ?? {};
   const resolveSchema = (value: CliJsonSchemaSource) => {
-    const schema = cliJsonSchema(value);
+    const schema = effectiveSchema(cliJsonSchema(value));
     const name = schema.$ref?.match(
       /^#\/(?:\$defs|components\/schemas)\/(.+)$/,
     )?.[1];
@@ -351,30 +314,21 @@ const operationInputDrafts = (operation: CliOperation) => {
       : effectiveSchema(schema);
   };
   const properties = document.properties ?? {};
-  const drafts: Array<CliInputDraft> = (
-    operation.operation.parameters ?? []
-  ).flatMap((parameter) => {
-    if (parameter.in === "cookie") return [];
-    const location =
-      parameter.in === "path"
-        ? "params"
-        : parameter.in === "header"
-          ? "headers"
-          : "query";
-    return [
-      {
+  const drafts: Array<CliInputDraft> = [];
+  for (const location of ["params", "headers", "query"] as const) {
+    const group = resolveSchema(properties[location]);
+    const required = new Set(group.required ?? []);
+    for (const [name, schema] of Object.entries(group.properties ?? {})) {
+      drafts.push({
         location,
-        name: parameter.name,
-        preferredName: fallbackName(parameter.name, location),
-        required: parameter.required ?? false,
-        schema: resolveSchema(properties[parameter.name] ?? parameter.schema),
-      },
-    ];
-  });
-  const body = resolveSchema(
-    properties.body ??
-      operation.operation.requestBody?.content?.["application/json"]?.schema,
-  );
+        name,
+        preferredName: fallbackName(name, location),
+        required: required.has(name),
+        schema: resolveSchema(schema),
+      });
+    }
+  }
+  const body = resolveSchema(properties.body);
 
   if (schemaType(body) === "object" && body.properties) {
     const required = new Set(body.required ?? []);
@@ -387,12 +341,12 @@ const operationInputDrafts = (operation: CliOperation) => {
         schema: resolveSchema(schema),
       });
     }
-  } else if (operation.operation.requestBody) {
+  } else if (properties.body) {
     drafts.push({
       location: "body",
       name: "body",
       preferredName: "body",
-      required: operation.operation.requestBody.required ?? false,
+      required: document.required?.includes("body") ?? false,
       schema: body,
     });
   }
@@ -430,8 +384,6 @@ const operationInputs = (operation: CliOperation): ReadonlyArray<CliInput> => {
       location: draft.location,
       name: draft.name,
       optionName,
-      wireString:
-        draft.location !== "body" && schemaType(draft.schema) === "string",
       param:
         draft.location === "params"
           ? primitiveArgument(optionName, draft.schema)
@@ -465,88 +417,62 @@ export const printHttpApiCliResult = Effect.fn("HttpApiCli.printResult")(
   },
 );
 
-const callOperation = (
+const callOperation = Effect.fn("HttpApiCli.callOperation")(function* (
   operation: CliOperation,
   inputs: ReadonlyArray<CliInput>,
   callConfig: CliParsedConfig,
   client: ApiClientService,
-) =>
-  Effect.gen(function* () {
-    const emptyValues = (): CliValues => ({});
-    const assembled = {
-      body: emptyValues(),
-      headers: emptyValues(),
-      params: emptyValues(),
-      query: emptyValues(),
-    };
-    for (const input of inputs) {
-      const parsed = callConfig[input.configKey];
-      const value = Option.isOption(parsed)
-        ? Option.getOrUndefined(parsed)
-        : parsed;
-      if (value !== undefined) {
-        assembled[input.location][input.name] = input.wireString
-          ? String(value)
-          : value;
-      }
+) {
+  const emptyValues = (): CliValues => ({});
+  const assembled = {
+    body: emptyValues(),
+    headers: emptyValues(),
+    params: emptyValues(),
+    query: emptyValues(),
+  };
+  for (const input of inputs) {
+    const parsed = callConfig[input.configKey];
+    const value = Option.isOption(parsed)
+      ? Option.getOrUndefined(parsed)
+      : parsed;
+    if (value !== undefined) {
+      assembled[input.location][input.name] = value;
     }
+  }
 
-    const bodyInput = inputs.some(
-      (input) => input.location === "body" && input.name === "body",
-    )
-      ? assembled.body.body
-      : Object.keys(assembled.body).length > 0 ||
-          operation.operation.requestBody?.required
-        ? assembled.body
-        : undefined;
-    const rawInput: RawCliInput = {};
-    if (inputs.some((input) => input.location === "params")) {
-      rawInput.params = assembled.params;
-    }
-    if (inputs.some((input) => input.location === "headers")) {
-      rawInput.headers = assembled.headers;
-    }
-    if (inputs.some((input) => input.location === "query")) {
-      rawInput.query = assembled.query;
-    }
-    if (bodyInput !== undefined) rawInput.body = bodyInput;
+  const bodyInput = inputs.some(
+    (input) => input.location === "body" && input.name === "body",
+  )
+    ? assembled.body.body
+    : Object.keys(assembled.body).length > 0 ||
+        cliJsonSchema(operation.inputJsonSchema).required?.includes("body")
+      ? assembled.body
+      : undefined;
+  const rawInput: RawCliInput = {};
+  if (inputs.some((input) => input.location === "params")) {
+    rawInput.params = assembled.params;
+  }
+  if (inputs.some((input) => input.location === "headers")) {
+    rawInput.headers = assembled.headers;
+  }
+  if (inputs.some((input) => input.location === "query")) {
+    rawInput.query = assembled.query;
+  }
+  if (bodyInput !== undefined) rawInput.body = bodyInput;
 
-    const decoded = yield* Schema.decodeUnknownEffect(operation.inputSchema)(
-      rawInput,
-    ).pipe(
-      Effect.mapError(
-        (error) =>
-          new Error(
-            `Invalid input for ${operation.groupName} ${operation.name}: ${error.message}`,
-          ),
-      ),
-    );
-    const input = yield* Schema.decodeUnknownEffect(DecodedOperationInput)(
-      decoded,
-    );
-    const response = yield* client.execute({
-      operation: {
-        method: operation.method,
-        path: operation.path,
-        operation: operation.operation,
-      },
-      input: {
-        body: input.body,
-        headers: input.headers ?? {},
-        params: input.params ?? {},
-        query: input.query ?? {},
-      },
-    });
-    return yield* printHttpApiCliResult(
-      response,
-      {
-        method: operation.method,
-        path: operation.path,
-        operation: operation.operation,
-      },
-      client,
-    );
-  });
+  const input = yield* Schema.decodeUnknownEffect(operation.inputSchema)(
+    rawInput,
+  ).pipe(
+    Effect.mapError(
+      (error) =>
+        new Error(
+          `Invalid input for ${operation.groupName} ${operation.name}: ${error.message}`,
+        ),
+    ),
+  );
+  const response = yield* executeHttpApiOperation({ operation, input }, client);
+  return yield* printHttpApiCliResult(response, operation, client);
+});
 
 const listCommand = (groups: ReadonlyArray<CliOperationGroup>) =>
   Command.make("list", {}, () =>
@@ -617,16 +543,7 @@ export const makeHttpApiCliCommand = Effect.fn("HttpApiCli.makeCommand")(
     const client = yield* ApiClient;
     const name = fallbackName(spec.info.title, "api");
     const groups = yield* Effect.try({
-      try: () =>
-        httpApiCliOperationGroups(
-          spec.operations.map((operation) =>
-            toCliOperation({
-              ...operation,
-              inputSchema: spec.operationSchema(operation.operation),
-              inputJsonSchema: spec.operationJsonSchema(operation.operation),
-            }),
-          ),
-        ),
+      try: () => httpApiCliOperationGroups(spec.operations.map(toCliOperation)),
       catch: (error) =>
         error instanceof Error ? error : new Error(String(error)),
     });

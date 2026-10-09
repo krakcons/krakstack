@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.37",
+  "version": "0.1.38",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -29,7 +29,7 @@
       "types": "./dist/services/agent/schema.d.ts",
       "import": "./dist/services/agent/schema.js"
     },
-    "./httpapi-toolkit": {
+    "./httpapi/toolkit": {
       "types": "./dist/lib/httpapi-toolkit.d.ts",
       "import": "./dist/lib/httpapi-toolkit.js"
     },

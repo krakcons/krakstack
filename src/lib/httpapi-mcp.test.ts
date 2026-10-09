@@ -8,13 +8,48 @@ import {
 } from "effect";
 import { McpProtocol, McpServer } from "effect/ai";
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
-import { HttpRouter } from "effect/http";
+import { HttpClient, HttpClientResponse, HttpRouter } from "effect/http";
 
 import { ApiClient, encodeHttpApiOperationResult } from "./httpapi-client";
 import { HttpApiSpec } from "./httpapi-helpers";
 import { HttpApiMcp } from "./httpapi-mcp";
 
 describe("HTTP API MCP toolkit registration", () => {
+  it.effect("composes the HTTP MCP SDK with read-only defaults", () => {
+    const api = HttpApi.make("test").add(
+      HttpApiGroup.make("items")
+        .add(
+          HttpApiEndpoint.get("list", "/items", {
+            success: Schema.Array(Schema.String),
+          }),
+        )
+        .add(
+          HttpApiEndpoint.post("create", "/items", {
+            payload: Schema.String,
+            success: Schema.String,
+          }),
+        ),
+    );
+    const http = HttpClient.make((request) =>
+      Effect.succeed(HttpClientResponse.fromWeb(request, Response.json([]))),
+    );
+    return Effect.gen(function* () {
+      const server = yield* McpServer.McpServer;
+      expect(server.tools.map(({ tool }) => tool.name)).toEqual(["items_list"]);
+      expect(server.tools[0]?.tool.annotations?.readOnlyHint).toBe(true);
+    }).pipe(
+      Effect.provide(
+        HttpApiMcp.layerHttp({ api, baseUrl: "http://localhost" }),
+      ),
+      Effect.provide(
+        Layer.mergeAll(
+          HttpRouter.layer,
+          Layer.succeed(HttpClient.HttpClient, http),
+        ),
+      ),
+    );
+  });
+
   it.effect(
     "registers typed schemas, annotations and operation metadata",
     () => {

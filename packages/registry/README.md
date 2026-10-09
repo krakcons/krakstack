@@ -55,7 +55,7 @@ import { makeAgentApiGroup } from "@krak-stack/registry/agent/schema";
 import {
   HttpApiToolkit,
   HttpApiToolkitLayer,
-} from "@krak-stack/registry/httpapi-toolkit";
+} from "@krak-stack/registry/httpapi/toolkit";
 import { ApiClient } from "@krak-stack/registry/httpapi/client";
 import { HttpApiSpec } from "@krak-stack/registry/httpapi/helpers";
 import { HttpApiOtlp } from "@krak-stack/registry/opentelemetry/api";
@@ -132,6 +132,53 @@ The returned object contains `meta`, `links`, and derived JSON-LD `scripts`. Web
 HTTP API client, schema, AI tool, CLI, and MCP utilities are available under
 the `@krak-stack/registry/httpapi/*` subpaths. Keep application-specific API
 layers, handlers, authentication, and client bindings in the application.
+
+Use `@krak-stack/registry/httpapi/toolkit` for HTTP API tools. The old
+`@krak-stack/registry/httpapi-toolkit` export has been removed in `0.1.38`.
+
+### HTTP API tools and MCP
+
+CLI, toolkit, and MCP adapters share `HttpApiSpec.operations`. Each operation
+contains its tool name, typed `inputSchema`, derived `inputJsonSchema`, and method
+annotations. Inputs use `{ params, query, headers, body }`; only the CLI turns
+terminal arguments into that shape. The generated HTTP client handles wire
+encoding, and payload codecs retain their transformations.
+
+The old flat/wire-input helpers and `HttpApiSpec` schema lookup methods have been
+removed in `0.1.38`. Use the schemas on each operation definition and
+`executeHttpApiOperation` from `@krak-stack/registry/httpapi/client` instead.
+
+Use `makeHttpApiToolkit(config)` to construct matching tools and handlers once:
+
+```ts
+import { makeHttpApiToolkit } from "@krak-stack/registry/httpapi/toolkit";
+
+const { toolkit, handlers } = yield * makeHttpApiToolkit({});
+const tools = yield * toolkit.pipe(Effect.provide(handlers));
+```
+
+Provide `HttpApiSpec` and `ApiClient` through the surrounding Effect layers.
+`HttpApiToolkit` and `HttpApiToolkitLayer` remain available for integrations that
+need to construct definitions and handlers separately.
+
+For an HTTP MCP server, use the single-layer factory:
+
+```ts
+import { Layer } from "effect";
+import { FetchHttpClient } from "effect/http";
+import { HttpApiMcp } from "@krak-stack/registry/httpapi/mcp";
+import { AppApi } from "@/api";
+
+export const mcpLayer = HttpApiMcp.layerHttp({
+  api: AppApi,
+  baseUrl: "http://localhost:3000",
+}).pipe(Layer.provide(FetchHttpClient.layer));
+```
+
+The factory defaults to `/api/mcp` and GET operations only. Set `path`, `methods`,
+`include`, or `toolMetaKey` when needed. Provide an authenticated `HttpClient`
+instead of `FetchHttpClient.layer` when the downstream API requires credentials.
+Inbound MCP authentication remains application-owned.
 
 Documentation consumers load and compile their application-owned MDX on the
 server, then pass the validated page records to `createDocsSource` and

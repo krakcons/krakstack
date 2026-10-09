@@ -7,7 +7,11 @@ import { HttpClient, HttpClientResponse } from "effect/http";
 import { ApiClient, encodeHttpApiOperationResult } from "@/lib/httpapi-client";
 import { HttpApiSpec } from "@/lib/httpapi-helpers";
 
-import { HttpApiToolkit, HttpApiToolkitLayer } from "./httpapi-toolkit";
+import {
+  HttpApiToolkit,
+  HttpApiToolkitLayer,
+  makeHttpApiToolkit,
+} from "./httpapi-toolkit";
 
 const TestApi = HttpApi.make("TestApi").add(
   HttpApiGroup.make("test")
@@ -35,6 +39,38 @@ const TestApi = HttpApi.make("TestApi").add(
 );
 
 describe("HttpApi toolkit", () => {
+  it.effect(
+    "constructs tools and handlers together without rebuilding definitions",
+    () => {
+      let definitions = 0;
+      return Effect.gen(function* () {
+        const { toolkit: definition, handlers } = yield* makeHttpApiToolkit({
+          strict: () => {
+            definitions++;
+            return true;
+          },
+        });
+        const toolkit = yield* definition.pipe(Effect.provide(handlers));
+        const stream = yield* toolkit.handle("test_status", {});
+        expect(Array.from(yield* Stream.runCollect(stream))[0]).toMatchObject({
+          isFailure: false,
+          result: "available",
+        });
+        expect(definitions).toBe(2);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            HttpApiSpec.layer({ api: TestApi }),
+            Layer.succeed(ApiClient, {
+              execute: () => Effect.succeed("available"),
+              encodeResult: (result) => encodeHttpApiOperationResult(result),
+            }),
+          ),
+        ),
+      );
+    },
+  );
+
   it.effect(
     "passes decoded numeric queries to the real generated client",
     () => {
