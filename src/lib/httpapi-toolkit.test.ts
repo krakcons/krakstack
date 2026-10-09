@@ -2,6 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Schema, SchemaIssue, Stream } from "effect";
 import { OpenAiStructuredOutput, Tool } from "effect/ai";
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/http-api";
+import { HttpClient, HttpClientResponse } from "effect/http";
 
 import { ApiClient, encodeHttpApiOperationResult } from "@/lib/httpapi-client";
 import { HttpApiSpec } from "@/lib/httpapi-helpers";
@@ -34,6 +35,62 @@ const TestApi = HttpApi.make("TestApi").add(
 );
 
 describe("HttpApi toolkit", () => {
+  it.effect(
+    "passes decoded numeric queries to the real generated client",
+    () => {
+      const api = HttpApi.make("numeric").add(
+        HttpApiGroup.make("workouts").add(
+          HttpApiEndpoint.get("summary", "/summary", {
+            query: Schema.Struct({
+              days: Schema.optional(Schema.Number),
+              limit: Schema.optional(Schema.Number),
+            }),
+            success: Schema.Struct({ days: Schema.Number }),
+          }),
+        ),
+      );
+      const urls: URL[] = [];
+      const http = HttpClient.make((request, url) => {
+        urls.push(url);
+        return Effect.succeed(
+          HttpClientResponse.fromWeb(request, Response.json({ days: 7 })),
+        );
+      });
+      const specLayer = HttpApiSpec.layer({ api });
+      const handlersLayer = HttpApiToolkitLayer({}).pipe(
+        Layer.provide(specLayer),
+        Layer.provide(
+          ApiClient.layer({ api, baseUrl: "http://localhost" }).pipe(
+            Layer.provide(Layer.succeed(HttpClient.HttpClient, http)),
+          ),
+        ),
+      );
+      return Effect.gen(function* () {
+        const definition = yield* HttpApiToolkit({});
+        const toolkit = yield* definition.pipe(Effect.provide(handlersLayer));
+        const tool = definition.tools.workouts_summary;
+        if (!tool) return yield* Effect.die("Missing summary tool");
+        const stream = yield* toolkit.handle(tool.name, {
+          query: { days: 7, limit: 5 },
+        });
+        const results = Array.from(yield* Stream.runCollect(stream));
+        expect(results[0]).toMatchObject({
+          isFailure: false,
+          result: { days: 7 },
+        });
+        expect(urls[0]?.searchParams.get("days")).toBe("7");
+        expect(urls[0]?.searchParams.get("limit")).toBe("5");
+        const invalid = yield* toolkit.handle(tool.name, {
+          query: { days: "7" },
+        });
+        expect(
+          Array.from(yield* Stream.runCollect(invalid))[0]?.isFailure,
+        ).toBe(true);
+        expect(urls).toHaveLength(1);
+      }).pipe(Effect.provide(specLayer));
+    },
+  );
+
   it.effect(
     "pairs generated tools with independently constructed handlers",
     () => {
@@ -134,7 +191,10 @@ describe("HttpApi toolkit", () => {
       const toolkit = yield* toolkitDefinition.pipe(
         Effect.provide(handlersLayer),
       );
-      const resultStream = yield* toolkit.handle(tool.name, decoded);
+      const resultStream = yield* toolkit.handle(
+        tool.name,
+        yield* Schema.decodeUnknownEffect(Schema.Json)(decoded),
+      );
       const results = yield* Stream.runCollect(resultStream);
 
       expect(Array.from(results)[0]).toMatchObject({
