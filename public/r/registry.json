@@ -636,7 +636,7 @@
       "title": "Database",
       "description": "An Effect service that provides a Drizzle PostgreSQL client from DATABASE_URL with pg type parsing configured for application-safe date and interval handling.",
       "meta": {
-        "updatedAt": "2026-10-08"
+        "updatedAt": "2026-10-11"
       },
       "type": "registry:lib",
       "docs": "## Overview\n\n`service-database` provides a Drizzle PostgreSQL client as an Effect service. It reads `DATABASE_URL`, configures pg type parsing for date and interval types, and exposes a reusable layer for application programs.\n\n## Usage\n\n```ts\nimport { Effect } from \"effect\";\nimport { DB } from \"@/services/database\";\nimport { users } from \"@/db/schema\";\n\nconst program = Effect.gen(function* () {\n  const db = yield* DB;\n  return yield* db.select().from(users);\n});\n\nconst usersList = await Effect.runPromise(\n  program.pipe(Effect.provide(DB.layer)),\n);\n```",
@@ -824,7 +824,7 @@
       "description": "A Bun Markdown compiler and shared React renderer with safe links, extracted code blocks, and TanStack Highlight.",
       "meta": {
         "createdAt": "2026-08-27",
-        "updatedAt": "2026-09-28"
+        "updatedAt": "2026-10-11"
       },
       "type": "registry:block",
       "docs": "## Overview\n\n`markdown` provides a server-side `Bun.markdown` compiler and a matching React renderer. The compiler escapes raw HTML, restricts link and image URLs, and extracts fenced code for rendering through the shared `CodeBlock`.\n\n## Usage\n\n```tsx\nconst compiled = compileMarkdown(source);\n\n<MarkdownContent\n  html={compiled.html}\n  codeBlocks={compiled.codeBlocks}\n/>\n```",
@@ -1007,7 +1007,7 @@
       "title": "Lint & Format Config",
       "description": "Production-ready Oxfmt and Oxlint configuration for KrakStack projects, including vendored anti-slop rules, Tailwind class sorting, and React/TypeScript correctness checks.",
       "meta": {
-        "updatedAt": "2026-08-17"
+        "updatedAt": "2026-10-11"
       },
       "docs": "## Overview\n\n`lint-format` installs root-level Oxfmt and Oxlint configuration for KrakStack projects. It includes editable source for KrakStack's Oxlint plugin, initially based on anti-slop's opinionated rules for rejecting low-evidence TypeScript and JavaScript patterns. The plugin is vendored so each project can inspect, customize, and extend its rules.\n\n## Included Files\n\n- `.oxfmtrc.json` \u2014 Oxfmt config with 80-column formatting and Tailwind CSS class sorting\n- `.oxlintrc.json` \u2014 Oxlint config for React, TypeScript, browser, Node, and the vendored plugin\n- `tools/oxlint/anti-slop/` \u2014 editable Oxlint plugin source and shared rule utilities\n\n## Choices\n\n- Vendors plugin source instead of coupling projects to a fixed lint package release\n- Enables all anti-slop rules as errors\n- Ignores installed agent tooling and the plugin source itself\n- Uses JSON config files so CLI tooling can load them reliably across Node and Bun runtimes\n- Enables `sortTailwindcss` for shadcn/Tailwind projects\n- Disables `eslint/require-yield` because Effect uses generator functions as a DSL\n- Enables Vitest globals only in test files\n\n## Usage\n\nInstall the registry item:\n\n```bash\nbunx shadcn@latest add @krak-stack/lint-format\n```\n\nRecommended package scripts:\n\n```json\n{\n  \"scripts\": {\n    \"lint\": \"oxlint\",\n    \"fmt\": \"oxfmt\",\n    \"fmt:check\": \"oxfmt --check .\"\n  }\n}\n```\n\nRun checks locally or in CI:\n\n```bash\nbun run fmt:check\nbun run lint\n```",
       "files": [
