@@ -166,7 +166,7 @@ Use Effect durable workflows for operations that must survive interruption, retr
 
 - Match checks to risk; do not run everything by default. Run focused tests for behavior changes and broader suites only when needed.
 - Documentation-only changes need no application tests or type checks. For copy or presentation changes, use formatting, compilation checks, or visual review only when useful.
-- Use `bun type:check` for TypeScript changes when practical; scope `bun lint` and `bun fmt` to changed files when supported and avoid unrelated churn.
+- Use Bun 1.4.3's `bun check` command for TypeScript changes when practical; scope `bun lint` and `bun fmt` to changed files when supported and avoid unrelated churn.
 - Report checks run and blockers; never imply unrun checks passed.
 
 ## Examples

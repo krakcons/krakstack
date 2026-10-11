@@ -37,7 +37,7 @@ The dev server runs on port `3003` by default.
 ```bash
 bun run build
 bun run test
-bun type:check
+bun check
 bun lint
 bun fmt
 
