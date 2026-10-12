@@ -10,6 +10,38 @@ import {
 } from "./query";
 
 describe("Query", () => {
+  it("decodes numeric strings from legacy router redirects and encodes numbers", async () => {
+    const input = { page: "0", pageSize: "10", globalFilter: "collection-1" };
+    const decoded = { page: 0, pageSize: 10, globalFilter: "collection-1" };
+    expect(await QueryStandard["~standard"].validate(input)).toEqual({
+      value: decoded,
+    });
+    for (const codec of [Query, Schema.toCodecJson(Query)]) {
+      expect(Schema.decodeUnknownSync(codec)(input)).toEqual(decoded);
+      expect(Schema.encodeSync(codec)(decoded)).toEqual({
+        pageSize: 10,
+        globalFilter: "collection-1",
+      });
+      expect(Schema.encodeSync(codec)({ page: 2, pageSize: 25 })).toEqual({
+        page: 2,
+        pageSize: 25,
+      });
+    }
+  });
+
+  it("retains pagination validation for numeric string inputs", () => {
+    for (const invalid of [
+      { page: "-1" },
+      { page: "1.5" },
+      { page: "invalid" },
+      { pageSize: "0" },
+      { pageSize: "101" },
+      { pageSize: "1.5" },
+    ]) {
+      expect(() => Schema.decodeUnknownSync(Query)(invalid)).toThrow();
+    }
+  });
+
   it("validates router sorting with default pagination", async () => {
     const sort = [{ id: "name", direction: "desc" }];
     expect(await QueryStandard["~standard"].validate({ sort })).toEqual({

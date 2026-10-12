@@ -150,7 +150,10 @@ export const SortParams = Schema.declare(Schema.is(SortParamsArray), {
 
 export const Query = Schema.Struct({
   page: Schema.optionalKey(
-    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    Schema.Union([Schema.Number, Schema.NumberFromString]).check(
+      Schema.isInt(),
+      Schema.isGreaterThanOrEqualTo(0),
+    ),
   ).pipe(
     Schema.decodeTo(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)), {
       decode: SchemaGetter.withDefault(Effect.succeed(0)),
@@ -160,7 +163,10 @@ export const Query = Schema.Struct({
     }),
   ),
   pageSize: Schema.optionalKey(
-    Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
+    Schema.Union([Schema.Number, Schema.NumberFromString]).check(
+      Schema.isInt(),
+      Schema.isBetween({ minimum: 1, maximum: 100 }),
+    ),
   ).pipe(
     Schema.decodeTo(
       Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
