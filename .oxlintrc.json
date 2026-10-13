@@ -13,8 +13,7 @@
     ".pi/**",
     ".roo/**",
     ".windsurf/**",
-    "tools/oxlint/anti-slop/**",
-    "src/lib/effect-form/upstream/**"
+    "tools/oxlint/anti-slop/**"
   ],
   "jsPlugins": [
     {
