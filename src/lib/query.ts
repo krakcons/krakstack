@@ -149,7 +149,7 @@ export const SortParams = Schema.declare(Schema.is(SortParamsArray), {
 });
 
 export const Query = Schema.Struct({
-  page: Schema.optionalKey(
+  page: Schema.optional(
     Schema.Union([Schema.Number, Schema.NumberFromString]).check(
       Schema.isInt(),
       Schema.isGreaterThanOrEqualTo(0),
@@ -162,7 +162,7 @@ export const Query = Schema.Struct({
       ),
     }),
   ),
-  pageSize: Schema.optionalKey(
+  pageSize: Schema.optional(
     Schema.Union([Schema.Number, Schema.NumberFromString]).check(
       Schema.isInt(),
       Schema.isBetween({ minimum: 1, maximum: 100 }),
@@ -201,9 +201,29 @@ export const Query = Schema.Struct({
 export type QueryType = typeof Query.Type;
 export type QueryEncoded = typeof Query.Encoded;
 
-export const QueryStandard: ReturnType<
-  typeof Schema.toStandardSchemaV1<typeof Query>
-> = Schema.toStandardSchemaV1(Query);
+// Return explicit undefined values for defaults: Router merges validation output
+// into the supplied search, so absent keys would leave explicit defaults intact.
+export const QueryStandard = Schema.toStandardSchemaV1(
+  Schema.Struct({
+    ...Query.fields,
+    page: Query.fields.page.pipe(
+      Schema.decodeTo(Schema.optional(Schema.Int), {
+        decode: SchemaGetter.transform((page) =>
+          page === 0 ? undefined : page,
+        ),
+        encode: SchemaGetter.transform((page) => page ?? 0),
+      }),
+    ),
+    pageSize: Query.fields.pageSize.pipe(
+      Schema.decodeTo(Schema.optional(Schema.Int), {
+        decode: SchemaGetter.transform((pageSize) =>
+          pageSize === 20 ? undefined : pageSize,
+        ),
+        encode: SchemaGetter.transform((pageSize) => pageSize ?? 20),
+      }),
+    ),
+  }).annotate({ identifier: "QuerySearch" }),
+);
 
 export const PaginationMeta = Schema.Struct({
   page: Schema.Int,
