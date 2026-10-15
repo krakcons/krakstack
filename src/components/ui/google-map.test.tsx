@@ -40,6 +40,8 @@ afterEach(() => {
   browserWindow.google = undefined;
   document.getElementById("krak-stack-google-maps-script")?.remove();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("GoogleMap", () => {
@@ -64,6 +66,7 @@ describe("GoogleMap", () => {
       setZoom = vi.fn((zoom: number) => {
         this.zoom = zoom;
       });
+      fitBounds = vi.fn();
 
       constructor(_element: HTMLElement, _options: MockMapOptions) {
         maps.push(this);
@@ -81,6 +84,9 @@ describe("GoogleMap", () => {
     }
 
     class MockCircle {
+      getBounds = vi.fn(() => ({
+        toJSON: () => ({ north: 2, south: 0, east: 3, west: 1 }),
+      }));
       setCenter = vi.fn((_center: GoogleMapPoint) => undefined);
       setMap = vi.fn((_map: MockMapReference | null) => undefined);
       setOptions = vi.fn(
@@ -174,5 +180,79 @@ describe("GoogleMap", () => {
         expect.objectContaining({ fillColor: "#ffffff" }),
       );
     });
+
+    const observers: MockResizeObserver[] = [];
+    class MockResizeObserver {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+      constructor(readonly callback: ResizeObserverCallback) {
+        observers.push(this);
+      }
+      resize = () => this.callback([], this);
+    }
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    let width = 0;
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(
+      () => width,
+    );
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(300);
+    rerender(
+      <GoogleMap
+        apiKey="test-key"
+        center={{ lat: 3, lng: 4 }}
+        zoom={10}
+        fitRadius
+        fitPadding={40}
+        radius={{ radiusMeters: 2000 }}
+      />,
+    );
+    expect(maps[0]?.fitBounds).not.toHaveBeenCalled();
+    width = 320;
+    act(() => observers[0]?.resize());
+    expect(maps[0]?.fitBounds).toHaveBeenLastCalledWith(
+      { north: 2, south: 0, east: 3, west: 1 },
+      40,
+    );
+    const fitCount = maps[0]?.fitBounds.mock.calls.length;
+    act(() => observers[0]?.resize());
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe(fitCount);
+    width = 640;
+    act(() => observers[0]?.resize());
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe((fitCount ?? 0) + 1);
+    act(() =>
+      screen.getByRole("button", { name: "Show selected area" }).click(),
+    );
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe((fitCount ?? 0) + 2);
+    maps[0]?.setZoom.mockClear();
+    const callsBeforeStyleChange = maps[0]?.fitBounds.mock.calls.length;
+    rerender(
+      <GoogleMap
+        apiKey="test-key"
+        center={{ lat: 3, lng: 4 }}
+        zoom={10}
+        fitRadius
+        fitPadding={40}
+        radius={{ radiusMeters: 2000, fillColor: "#ffffff" }}
+      />,
+    );
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe(callsBeforeStyleChange);
+    expect(maps[0]?.setZoom).not.toHaveBeenCalled();
+    rerender(
+      <GoogleMap
+        apiKey="test-key"
+        center={{ lat: 3, lng: 4 }}
+        zoom={10}
+        fitRadius
+        fitPadding={40}
+        radius={{ radiusMeters: 4000 }}
+      />,
+    );
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe(
+      (callsBeforeStyleChange ?? 0) + 1,
+    );
+    expect(circles[0]?.setRadius).toHaveBeenLastCalledWith(4000);
+    cleanup();
+    expect(observers[0]?.disconnect).toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { Minus, Plus } from "lucide-react";
+import { LocateFixed, Minus, Plus } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Schema } from "effect";
 
@@ -32,6 +32,7 @@ export type GoogleMapMessages = {
   errorBody: string;
   zoomIn: string;
   zoomOut: string;
+  showArea: string;
 };
 
 export type GoogleMapMessageTranslations = Partial<
@@ -46,6 +47,8 @@ export type GoogleMapProps = {
   radius?: GoogleMapRadiusOptions | undefined;
   interactive?: boolean | undefined;
   zoomControls?: boolean | undefined;
+  fitRadius?: boolean | undefined;
+  fitPadding?: number | undefined;
   minZoom?: number | undefined;
   maxZoom?: number | undefined;
   className?: string | undefined;
@@ -71,10 +74,18 @@ type GoogleMapOptions = {
 };
 
 type GoogleMapInstance = {
+  fitBounds: (bounds: GoogleMapBounds, padding: number) => void;
   getZoom: () => number | undefined;
   setCenter: (center: GoogleMapPoint) => void;
   setOptions: (options: Partial<GoogleMapOptions>) => void;
   setZoom: (zoom: number) => void;
+};
+
+type GoogleMapBounds = {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
 };
 
 type GoogleMarkerInstance = {
@@ -86,6 +97,7 @@ type GoogleMarkerInstance = {
 type GoogleCircleStyleOptions = Omit<GoogleMapRadiusOptions, "radiusMeters">;
 
 type GoogleCircleInstance = {
+  getBounds: () => { toJSON: () => GoogleMapBounds } | undefined;
   setCenter: (center: GoogleMapPoint) => void;
   setMap: (map: GoogleMapInstance | null) => void;
   setOptions: (options: GoogleCircleStyleOptions) => void;
@@ -152,6 +164,7 @@ const defaultMessages = {
     errorBody: "Google Maps could not be loaded. Try again later.",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
+    showArea: "Show selected area",
   },
   fr: {
     mapLabel: "Carte Google",
@@ -163,6 +176,7 @@ const defaultMessages = {
     errorBody: "Impossible de charger Google Maps. Réessayez plus tard.",
     zoomIn: "Zoom avant",
     zoomOut: "Zoom arrière",
+    showArea: "Afficher la zone sélectionnée",
   },
 } as const satisfies Record<"en" | "fr", GoogleMapMessages>;
 
@@ -259,6 +273,8 @@ export function GoogleMap({
   radius,
   interactive = true,
   zoomControls = true,
+  fitRadius = false,
+  fitPadding = 32,
   minZoom = 3,
   maxZoom = 20,
   className,
@@ -296,6 +312,18 @@ export function GoogleMap({
   const radiusStrokeColor = radius?.strokeColor;
   const radiusStrokeOpacity = radius?.strokeOpacity;
   const radiusStrokeWeight = radius?.strokeWeight;
+
+  const showSelectedArea = () => {
+    try {
+      const element = mapElementRef.current;
+      const bounds = circleRef.current?.getBounds()?.toJSON();
+      if (!element?.clientWidth || !element.clientHeight || !bounds) return;
+      mapRef.current?.fitBounds(bounds, Math.max(0, fitPadding));
+    } catch {
+      setLoadState("error");
+    }
+  };
+  const fitSelection = useEffectEvent(showSelectedArea);
 
   const initializeMap = useEffectEvent(
     (api: GoogleMapsApi, element: HTMLElement) => {
@@ -365,15 +393,11 @@ export function GoogleMap({
   }, [normalizedApiKey]);
 
   useEffect(() => {
-    const api = apiRef.current;
     const map = mapRef.current;
-    if (loadState !== "ready" || !api || !map) return;
-
+    if (loadState !== "ready" || !map) return;
+    const nextCenter = { lat: centerLat, lng: centerLng };
+    const nextZoom = clampZoom(zoom, normalizedMinZoom, normalizedMaxZoom);
     try {
-      const nextCenter = { lat: centerLat, lng: centerLng };
-      const nextZoom = clampZoom(zoom, normalizedMinZoom, normalizedMaxZoom);
-      map.setCenter(nextCenter);
-      map.setZoom(nextZoom);
       map.setOptions(
         mapOptions(
           nextCenter,
@@ -383,7 +407,30 @@ export function GoogleMap({
           normalizedMaxZoom,
         ),
       );
+      map.setCenter(nextCenter);
+      map.setZoom(nextZoom);
       setCurrentZoom(nextZoom);
+    } catch {
+      setLoadState("error");
+    }
+  }, [
+    centerLat,
+    centerLng,
+    zoom,
+    interactive,
+    fitRadius,
+    normalizedMinZoom,
+    normalizedMaxZoom,
+    loadState,
+  ]);
+
+  useEffect(() => {
+    const api = apiRef.current;
+    const map = mapRef.current;
+    if (loadState !== "ready" || !api || !map) return;
+
+    try {
+      const nextCenter = { lat: centerLat, lng: centerLng };
 
       if (markerEnabled) {
         if (markerRef.current) {
@@ -434,19 +481,50 @@ export function GoogleMap({
   }, [
     centerLat,
     centerLng,
-    interactive,
     loadState,
     markerEnabled,
     markerIcon,
-    normalizedMaxZoom,
-    normalizedMinZoom,
     radiusFillColor,
     radiusFillOpacity,
     radiusMeters,
     radiusStrokeColor,
     radiusStrokeOpacity,
     radiusStrokeWeight,
-    zoom,
+  ]);
+
+  useEffect(() => {
+    const element = mapElementRef.current;
+    if (
+      loadState !== "ready" ||
+      !fitRadius ||
+      radiusMeters === undefined ||
+      !element
+    )
+      return;
+    fitSelection();
+    if (!globalThis.ResizeObserver) return;
+    let width = element.clientWidth;
+    let height = element.clientHeight;
+    const observer = new ResizeObserver(() => {
+      const nextWidth = element.clientWidth;
+      const nextHeight = element.clientHeight;
+      if (nextWidth === width && nextHeight === height) return;
+      width = nextWidth;
+      height = nextHeight;
+      fitSelection();
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [
+    loadState,
+    fitRadius,
+    fitPadding,
+    interactive,
+    centerLat,
+    centerLng,
+    radiusMeters,
+    normalizedMinZoom,
+    normalizedMaxZoom,
   ]);
 
   const changeZoom = (delta: number) => {
@@ -465,7 +543,7 @@ export function GoogleMap({
   return (
     <div
       className={cn(
-        "bg-muted relative min-h-64 overflow-hidden rounded-lg border",
+        "bg-muted relative isolate min-h-64 min-w-0 overflow-hidden rounded-lg border",
         className,
       )}
     >
@@ -476,10 +554,24 @@ export function GoogleMap({
         aria-label={labels.mapLabel}
       />
       {loadState === "ready" && zoomControls ? (
-        <div className="bg-background/95 absolute right-4 bottom-4 z-10 overflow-hidden rounded-md border shadow-sm backdrop-blur">
+        <div className="bg-background/95 absolute top-3 right-3 z-10 overflow-hidden rounded-md border shadow-sm backdrop-blur">
+          {fitRadius && radiusMeters !== undefined ? (
+            <>
+              <button
+                type="button"
+                onClick={showSelectedArea}
+                aria-label={labels.showArea}
+                title={labels.showArea}
+                className="text-foreground hover:bg-accent focus-visible:ring-ring relative flex size-11 items-center justify-center focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset"
+              >
+                <LocateFixed className="size-4" />
+              </button>
+              <div className="bg-border h-px" />
+            </>
+          ) : null}
           <button
             type="button"
-            className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex size-9 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-50"
+            className="text-foreground hover:bg-accent focus-visible:ring-ring relative flex size-11 items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50"
             disabled={currentZoom >= normalizedMaxZoom}
             onClick={() => changeZoom(1)}
             aria-label={labels.zoomIn}
@@ -489,7 +581,7 @@ export function GoogleMap({
           <div className="bg-border h-px" />
           <button
             type="button"
-            className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex size-9 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-50"
+            className="text-foreground hover:bg-accent focus-visible:ring-ring relative flex size-11 items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50"
             disabled={currentZoom <= normalizedMinZoom}
             onClick={() => changeZoom(-1)}
             aria-label={labels.zoomOut}
