@@ -55,7 +55,7 @@
     "fmt": "oxfmt src package.json tsconfig.json README.md"
   },
   "dependencies": {
-    "@krak-stack/registry": "0.1.40",
+    "@krak-stack/registry": "0.1.42",
     "@xberg-io/xberg": "1.0.14"
   },
   "devDependencies": {

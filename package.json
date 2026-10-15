@@ -44,8 +44,8 @@
     "@effect/sql-pg": "4.0.0",
     "@iconify/react": "^6.0.2",
     "@krak-stack/registry": "workspace:*",
-    "@lucas-barake/effect-form": "0.25.0-beta.6",
-    "@lucas-barake/effect-form-react": "0.26.0-beta.5",
+    "@lucas-barake/effect-form": "1.1.0",
+    "@lucas-barake/effect-form-react": "1.1.0",
     "@shadcn/react": "^0.2.1",
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/highlight": "^0.0.10",
@@ -72,7 +72,7 @@
     "@effect/tsgo": "0.14.6",
     "@effect/vitest": "4.0.0",
     "@inlang/paraglide-js": "^2.19.0",
-    "@krak-stack/auth": "0.2.18",
+    "@krak-stack/auth": "0.2.20",
     "@oxlint/plugins": "1.78.0",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/dom": "^10.4.1",
@@ -91,13 +91,5 @@
     "typescript": "7.0.1-rc",
     "vite": "^8.0.16",
     "vitest": "^5.0.3"
-  },
-  "overrides": {
-    "@lucas-barake/effect-form": "0.25.0-beta.6",
-    "@lucas-barake/effect-form-react": "0.26.0-beta.5"
-  },
-  "patchedDependencies": {
-    "@lucas-barake/effect-form@0.25.0-beta.6": "patches/@lucas-barake%2Feffect-form@0.25.0-beta.6.patch",
-    "@lucas-barake/effect-form-react@0.26.0-beta.5": "patches/@lucas-barake%2Feffect-form-react@0.26.0-beta.5.patch"
   }
 }

@@ -1,4 +1,5 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import { useAtomValue } from "@effect/atom-react";
 
 import { ThemeProvider } from "@krak-stack/registry/theme-switcher";
 import { KrakstackProvider } from "@krak-stack/registry/krakstack-provider";
@@ -8,6 +9,7 @@ import { getLocale, locales } from "@/paraglide/runtime";
 
 import appCss from "../styles.css?url";
 import { ErrorComponent } from "@/components/ui/error-component";
+import { telemetryRuntime } from "@/lib/browser-telemetry";
 
 const analyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
 
@@ -71,6 +73,8 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useAtomValue(telemetryRuntime);
+
   return (
     <html lang={getLocale()} suppressHydrationWarning>
       <head>

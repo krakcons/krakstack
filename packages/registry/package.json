@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.41",
+  "version": "0.1.42",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,6 @@
   "files": [
     "dist",
     "README.md",
-    "patches",
     "tailwind.css"
   ],
   "type": "module",
@@ -241,8 +240,8 @@
     "@effect/platform-browser": "^4.0.0",
     "@iconify/react": "^6.0.2",
     "@inlang/paraglide-js": "^2.19.0",
-    "@lucas-barake/effect-form": "0.25.0-beta.6",
-    "@lucas-barake/effect-form-react": "0.26.0-beta.5",
+    "@lucas-barake/effect-form": "1.1.0",
+    "@lucas-barake/effect-form-react": "1.1.0",
     "@tanstack/highlight": "^0.0.10",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",

@@ -6,41 +6,19 @@ Tree-shakable runtime components and Effect services from the KrakStack shadcn r
 bun add @krak-stack/registry
 ```
 
-## Temporary Effect form patches
+## Effect forms
 
-This interim release supports stable Effect 4, but the published form betas still
-use removed Effect import paths. Applications using Effect forms must apply both
-compatibility patches at their package-manager root; installing Registry alone
-does not apply them automatically.
-
-After installing Registry, copy its bundled patches into your application:
+Applications using Effect forms need `@lucas-barake/effect-form@1.1.0` and
+`@lucas-barake/effect-form-react@1.1.0`, which support stable Effect 4 without
+compatibility patches:
 
 ```sh
-mkdir -p patches
-cp node_modules/@krak-stack/registry/patches/*.patch patches/
+bun add @lucas-barake/effect-form@1.1.0 @lucas-barake/effect-form-react@1.1.0
 ```
 
-Merge these fields into the application's root `package.json`, preserving any
-existing overrides and patches:
-
-```json
-{
-  "overrides": {
-    "@lucas-barake/effect-form": "0.25.0-beta.6",
-    "@lucas-barake/effect-form-react": "0.26.0-beta.5"
-  },
-  "patchedDependencies": {
-    "@lucas-barake/effect-form@0.25.0-beta.6": "patches/@lucas-barake%2Feffect-form@0.25.0-beta.6.patch",
-    "@lucas-barake/effect-form-react@0.26.0-beta.5": "patches/@lucas-barake%2Feffect-form-react@0.26.0-beta.5.patch"
-  }
-}
-```
-
-Run `bun install` and commit the patches, manifest, and lockfile. Other package
-managers require equivalent patch configuration. See the bundled
-`patches/README.md` for provenance and removal instructions after
-[upstream release PR #111](https://github.com/lucas-barake/effect-form/pull/111)
-is published.
+When upgrading from the patched betas, remove their `patchedDependencies`
+entries and patch files, update any form version overrides to `1.1.0`, and run
+`bun install`. Preserve unrelated dependency patches.
 
 ## Usage
 
