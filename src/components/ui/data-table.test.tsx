@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "@effect/vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -34,6 +35,7 @@ import { MenubarMenu, MenubarTrigger } from "./menubar";
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   localStorage.clear();
 });
 
@@ -914,6 +916,182 @@ describe("DataTable model", () => {
       await screen.findByRole("menuitem", { name: "Access status" }),
     ).toBeTruthy();
   });
+
+  it("runs an app export with no loaded rows, prevents duplicates, and restores the menu after failure", async () => {
+    let rejectExport = (_error: Error) => {};
+    const pending = new Promise<void>((_resolve, reject) => {
+      rejectExport = reject;
+    });
+    const onExport = vi
+      .fn<() => Promise<void>>()
+      .mockReturnValueOnce(pending)
+      .mockResolvedValue(undefined);
+    const onError = vi.fn();
+    const action = {
+      id: "all",
+      label: "Exporter tous les résultats",
+      onExport,
+    };
+    render(
+      <DataTable
+        columnDefs={columns}
+        rowData={[]}
+        locale="fr"
+        features={{
+          export: {
+            baseName: "records",
+            builtIn: false,
+            actions: [action],
+            onError,
+          },
+          pagination: { mode: "server", rowCount: 100 },
+        }}
+      />,
+    );
+
+    const trigger = screen.getByRole("menuitem", { name: "Exporter" });
+    fireEvent.click(trigger);
+    const item = await screen.findByRole("menuitem", { name: action.label });
+    expect(screen.queryByRole("menuitem", { name: "CSV" })).toBeNull();
+    fireEvent.click(item);
+    fireEvent.click(item);
+    expect(onExport).toHaveBeenCalledTimes(1);
+    expect(trigger.getAttribute("aria-busy")).toBe("true");
+    fireEvent.click(trigger);
+    expect(onExport).toHaveBeenCalledTimes(1);
+
+    const error = new Error("private server detail");
+    await act(async () => rejectExport(error));
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error, action);
+    expect(screen.getByRole("alert").textContent).toBe(
+      "L’exportation a échoué. Veuillez réessayer.",
+    );
+    expect(screen.queryByText(error.message)).toBeNull();
+    expect(trigger.getAttribute("aria-busy")).toBe("false");
+
+    fireEvent.click(trigger);
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: action.label }),
+    );
+    await waitFor(() =>
+      expect(trigger.getAttribute("aria-busy")).toBe("false"),
+    );
+    expect(onExport).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("offers custom actions alongside CSV/JSON and respects disabled actions", async () => {
+    const onExport = vi.fn();
+    const onDisabledExport = vi.fn();
+    render(
+      <DataTable
+        columnDefs={columns}
+        rowData={data}
+        features={{
+          export: {
+            baseName: "records",
+            actions: [
+              { id: "allowed", label: "All results", onExport },
+              {
+                id: "disabled",
+                label: "Unavailable",
+                disabled: true,
+                onExport: onDisabledExport,
+              },
+            ],
+          },
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Export" }));
+    expect(await screen.findByRole("menuitem", { name: "CSV" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "JSON" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Unavailable" }));
+    expect(onDisabledExport).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("menuitem", { name: "All results" }));
+    await waitFor(() => expect(onExport).toHaveBeenCalledOnce());
+  });
+
+  it("reports synchronous export failures and supports retry without an error callback", async () => {
+    const onExport = vi.fn<() => void>().mockImplementationOnce(() => {
+      throw new Error("failed");
+    });
+    render(
+      <DataTable
+        columnDefs={columns}
+        rowData={data}
+        features={{
+          export: {
+            baseName: "records",
+            actions: [{ id: "all", label: "All results", onExport }],
+          },
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Export" }));
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "All results" }),
+    );
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Export" }));
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "All results" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+    expect(onExport).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([undefined, "currentPage", "filteredRows"] as const)(
+    "preserves built-in CSV scope %s, filtering, and visible columns",
+    async (scope) => {
+      const createObjectURL = vi.fn((_blob: Blob) => "blob:export");
+      vi.stubGlobal(
+        "URL",
+        class extends URL {
+          static override createObjectURL = createObjectURL;
+          static override revokeObjectURL = vi.fn();
+        },
+      );
+      const click = vi
+        .spyOn(HTMLAnchorElement.prototype, "click")
+        .mockImplementation(() => {});
+      render(
+        <DataTable
+          columnDefs={[
+            ...columns,
+            {
+              colId: "private",
+              headerName: "Private",
+              valueGetter: () => "not exported",
+            },
+          ]}
+          rowData={[...data, { id: "four", name: "Zed", score: 15 }]}
+          initialState={{ page: 0, pageSize: 1, globalFilter: "a" }}
+          features={{ export: { baseName: "records", scope } }}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Private" }));
+      fireEvent.click(
+        await screen.findByRole("menuitem", { name: "Hide column" }),
+      );
+      fireEvent.click(screen.getByRole("menuitem", { name: "Export" }));
+      fireEvent.click(await screen.findByRole("menuitem", { name: "CSV" }));
+      expect(click).toHaveBeenCalledOnce();
+      const blob = createObjectURL.mock.calls[0]![0];
+      expect(blob).toBeInstanceOf(Blob);
+      const content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsText(blob);
+      });
+      expect(content).toBe(
+        scope === "filteredRows"
+          ? "Name,Score\nAlpha,30\nBeta,10\nGamma,20"
+          : "Name,Score\nAlpha,30",
+      );
+    },
+  );
 
   it("opens nested column sorting controls", async () => {
     render(
