@@ -2,7 +2,14 @@
 
 import { describe, expect, it } from "@effect/vitest";
 import { createBrowserHistory } from "@tanstack/react-router";
-import { ConfigProvider, DateTime, Deferred, Effect, Schema } from "effect";
+import {
+  ConfigProvider,
+  DateTime,
+  Deferred,
+  Effect,
+  Logger,
+  Schema,
+} from "effect";
 import { FetchHttpClient } from "effect/http";
 import { OtlpExporter } from "effect/observability";
 import { TestClock } from "effect/testing";
@@ -221,11 +228,12 @@ describe("OTLP events", () => {
   );
 
   it.effect(
-    "uses the active exporter from effects run outside its runtime and detaches on disposal",
+    "identifies and clears with null outside the active exporter runtime and detaches on disposal",
     () => {
       const { requests, fetch } = captureRequests();
       return Effect.gen(function* () {
         yield* BrowserOtlp.track("app.before_startup");
+        yield* BrowserOtlp.identify(null);
         yield* Effect.gen(function* () {
           yield* Effect.promise(() =>
             Effect.runPromise(
@@ -244,7 +252,9 @@ describe("OTLP events", () => {
           yield* Effect.promise(() =>
             Effect.runPromise(BrowserOtlp.page({ path: "/docs" })),
           );
-          yield* Effect.promise(() => Effect.runPromise(BrowserOtlp.reset));
+          yield* Effect.promise(() =>
+            Effect.runPromise(BrowserOtlp.identify(null)),
+          );
           yield* Effect.promise(() =>
             Effect.runPromise(BrowserOtlp.track("app.logged_out")),
           );
@@ -260,6 +270,7 @@ describe("OTLP events", () => {
           Effect.provideService(FetchHttpClient.Fetch, fetch),
         );
         yield* BrowserOtlp.track("app.after_disposal");
+        yield* BrowserOtlp.identify(null);
         expect(requests).toHaveLength(1);
         const payload = yield* Schema.decodeUnknownEffect(LogsPayload)(
           requests[0]!.body,
@@ -291,7 +302,7 @@ describe("OTLP events", () => {
   );
 
   it.effect(
-    "snapshots browser identity per event and replaces or resets it without rewriting queued events",
+    "snapshots browser identity, preserves it on invalid input without failing, and resets future events",
     () => {
       const { requests, fetch } = captureRequests();
       return Effect.gen(function* () {
@@ -302,10 +313,20 @@ describe("OTLP events", () => {
         });
         yield* BrowserOtlp.page({ path: "/docs" });
         yield* BrowserOtlp.identify({ userId: "user-2" });
+        const warnings: unknown[] = [];
         expect(
-          (yield* BrowserOtlp.identify({ userId: "" }).pipe(Effect.result))
-            ._tag,
-        ).toBe("Failure");
+          (yield* BrowserOtlp.identify({ userId: "" }).pipe(
+            Effect.provide(
+              Logger.layer([
+                Logger.make(({ message }) => warnings.push(message)),
+              ]),
+            ),
+            Effect.result,
+          ))._tag,
+        ).toBe("Success");
+        expect(warnings).toEqual([
+          ["Invalid browser telemetry identity; keeping previous identity"],
+        ]);
         yield* BrowserOtlp.track(
           "app.switched",
           { "user.id": "property-user" },
@@ -314,7 +335,7 @@ describe("OTLP events", () => {
         yield* BrowserOtlp.track("app.scoped").pipe(
           Effect.annotateLogs({ "user.id": "scoped-user" }),
         );
-        yield* BrowserOtlp.reset;
+        yield* BrowserOtlp.identify(null);
         yield* BrowserOtlp.track("app.logged_out");
         yield* (yield* OtlpExporter.Flusher).flush;
         expect(requests).toHaveLength(1);

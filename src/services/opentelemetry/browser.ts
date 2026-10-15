@@ -161,16 +161,13 @@ export interface BrowserOtlpOptions {
 }
 
 const browserEffects = {
-  /** Replaces identity for future events in this runtime; does not persist or emit an event. */
-  identify: Effect.fnUntraced(function* (input: BrowserIdentity) {
-    const identity = yield* Schema.decodeUnknownEffect(BrowserIdentity)(input);
+  /** Replaces identity for future events; null clears it without emitting an event. */
+  identify: Effect.fnUntraced(function* (input: BrowserIdentity | null) {
+    const identity = yield* Schema.decodeUnknownEffect(BrowserIdentity)(
+      input === null ? {} : input,
+    );
     const state = yield* BrowserIdentityState;
     yield* Ref.set(state, identity);
-  }),
-
-  reset: Effect.gen(function* () {
-    const state = yield* BrowserIdentityState;
-    yield* Ref.set(state, {});
   }),
 
   track: Effect.fnUntraced(function* (
@@ -311,10 +308,15 @@ const BrowserPageViewsLive = Layer.effectDiscard(
 );
 
 export class BrowserOtlp {
-  /** Effects use the active browser layer without requiring its services in the calling runtime. */
-  static readonly identify = (identity: BrowserIdentity) =>
-    runBrowser(browserEffects.identify(identity));
-  static readonly reset = runBrowser(browserEffects.reset);
+  /** Uses the active browser layer; invalid identity warns without failing or changing state. */
+  static readonly identify = (identity: BrowserIdentity | null) =>
+    runBrowser(browserEffects.identify(identity)).pipe(
+      Effect.catch(() =>
+        Effect.logWarning(
+          "Invalid browser telemetry identity; keeping previous identity",
+        ),
+      ),
+    );
   static readonly track = (
     name: string,
     properties?: EventAttributes,

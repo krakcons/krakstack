@@ -79,179 +79,191 @@ import {
 import { NotificationService } from "@krak-stack/registry/service-notification";
 ```
 
-Inject API telemetry and browser proxy routes into the application HTTP layer:
+## OpenTelemetry
+
+| Export                                                    | Purpose                                                                                 |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `HttpApiOtlp.layer` from `opentelemetry/api`              | Server exporters and same-origin browser ingestion routes. Includes `ServerOtlp.layer`. |
+| `ServerOtlp.layer` from `opentelemetry/server`            | Exporters for workers, workflows, and CLIs without an HTTP server.                      |
+| `BrowserOtlp.layer(options)` from `opentelemetry/browser` | Browser tracing and optional events, logs, and metrics.                                 |
+
+### Setup
+
+Provide the HTTP layer once at the application composition root:
 
 ```ts
+import { Layer } from "effect";
+import { HttpApiOtlp } from "@krak-stack/registry/opentelemetry/api";
+
 const appLayer = appRoutes.pipe(Layer.provideMerge(HttpApiOtlp.layer));
 ```
 
-Install browser telemetry globally on the Atom runtime used by the API client:
+Configure an OTLP/HTTP collector on the server:
+
+```dotenv
+OTEL_SERVICE_NAME=my-app-api
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=otlp
+```
+
+Browser events require the logs signal. The proxy forwards enabled signals from
+`/api/otel/v1/{traces,metrics,logs}` to the collector. Keep collector credentials
+server-side. Server log endpoint/header overrides use
+`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` / `OTEL_EXPORTER_OTLP_LOGS_HEADERS`, falling
+back to the shared endpoint/headers; these overrides do not change proxy routing.
+`OTEL_SDK_DISABLED=true` disables server export, not browser collection.
+
+Install one browser layer on the Atom context passed to `AtomHttpApi.Service`:
 
 ```ts
 import { Atom } from "effect/reactivity";
 import { BrowserOtlp } from "@krak-stack/registry/opentelemetry/browser";
 
 const apiRuntime = Atom.context();
-
 if (!import.meta.env.SSR) {
-  apiRuntime.addGlobalLayer(BrowserOtlp.layer({ serviceName: "my-app-web" }));
+  apiRuntime.addGlobalLayer(
+    BrowserOtlp.layer({ serviceName: "my-app-web", events: {} }),
+  );
 }
 ```
 
-### Named events and page views
+Mount/read `ApiClient.runtime` in the root layout to start it. Browser methods
+target the active layer even when run from another Effect runtime. Calls before
+startup or after disposal are no-ops, not buffered. Dispose long-lived server and
+browser runtimes on shutdown to flush pending data.
 
-For workers, workflows, or CLIs without an HTTP server, provide `ServerOtlp.layer`
-from `@krak-stack/registry/opentelemetry/server`. `HttpApiOtlp.layer` already
-includes this layer alongside the browser proxy routes.
+### Browser API
+
+All methods return Effects. Use `yield*` inside Effect code or
+`Effect.runPromise(...)` / `Effect.runFork(...)` from application callbacks.
+
+| Method                                   | Behavior                                                                                                                   |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `identify({ userId?, organizationId? })` | Replace identity for future events; omitted fields clear old values. Emits no event.                                       |
+| `identify(null)`                         | Clear identity, for example on logout.                                                                                     |
+| `track(name, properties?, options?)`     | Record a named event.                                                                                                      |
+| `page(options?)`                         | Record `browser.page_view`. Accepts `path`, `name`, `category`, `properties`, and event `options`. `pageView` is an alias. |
+
+`identify` has no typed failure: invalid input warns without including supplied
+values and leaves identity unchanged. `track` and `page` fail with an Effect
+schema error on invalid input. Identity is in memory only, applies to events
+rather than automatic traces/logs, and never rewrites queued events.
+
+### Auth example
+
+Mount this once under the application's Atom registry. `ApiClient` and
+`authSessionAtom` are application-owned; the telemetry package has no auth
+dependency. The session atom in this example exposes KrakStack Auth session data.
+
+```tsx
+import { useAtomSubscribe, useAtomValue } from "@effect/atom-react";
+import { BrowserOtlp } from "@krak-stack/registry/opentelemetry/browser";
+import { Effect } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { ApiClient } from "@/lib/api-client";
+import { authSessionAtom } from "@/services/auth/client";
+
+export const AuthTelemetry = () => {
+  const runtime = useAtomValue(ApiClient.runtime);
+
+  useAtomSubscribe(
+    authSessionAtom,
+    (session) => {
+      if (!AsyncResult.isSuccess(runtime)) return;
+
+      Effect.runFork(
+        BrowserOtlp.identify(
+          AsyncResult.isSuccess(session) && !session.waiting && session.value
+            ? {
+                userId: session.value.user.id,
+                organizationId:
+                  session.value.session.activeOrganizationId ?? undefined,
+              }
+            : null,
+        ),
+      );
+    },
+    { immediate: true },
+  );
+
+  return null;
+};
+```
+
+This identifies after startup and clears identity during auth loading, failure,
+and logout. The first page view may be anonymous. For other auth libraries, pass
+the same two IDs or `null` when auth state changes. Apply your own consent policy;
+do not send names, emails, or session tokens as identity.
+
+### Page views and browser options
+
+`events: {}` enables custom events and one page view on startup, then on pathname
+changes through `pushState`, `replaceState`, and back/forward navigation.
+Same-path and query/hash-only changes are ignored. Tracking follows URL changes,
+not loader completion. Paths exclude query strings/fragments but may still
+contain personal IDs.
+
+For sanitized route templates or custom timing, use
+`events: { pageViews: false }` and call `page({ path: "/orders/:id" })` manually.
+Do not combine automatic and manual tracking for the same view.
+
+| Layer option                              | Default                                                         |
+| ----------------------------------------- | --------------------------------------------------------------- |
+| `serviceName`                             | Required                                                        |
+| `traces`                                  | `{}`; includes global exception capture. `false` disables both. |
+| `events`, `logs`, `metrics`               | `false`; enable each independently with `{}`.                   |
+| `baseUrl`                                 | `/api/otel`                                                     |
+| `serviceVersion`, `attributes`, `headers` | Optional resource/transport metadata.                           |
+
+Browser events batch every 30 seconds, up to 100 records by default. Override
+`exportInterval`, `maxBatchSize`, and `shutdownTimeout` under `events`.
+
+### Server events and shared options
+
+Define server events as Effects and run them inside the runtime with
+`ServerOtlp.layer` (or the HTTP layer):
 
 ```ts
 import { Effect } from "effect";
 import { ServerOtlp } from "@krak-stack/registry/opentelemetry/server";
 
-const program = ServerOtlp.track("app.order.completed", {
-  "order.id": "order-123",
-}).pipe(Effect.provide(ServerOtlp.layer));
-```
-
-Enable server events with `OTEL_LOGS_EXPORTER=otlp`, `OTEL_SERVICE_NAME`, and
-`OTEL_EXPORTER_OTLP_ENDPOINT` (the exporter appends `/v1/logs`), or an explicit
-`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`. Signal-specific headers override
-`OTEL_EXPORTER_OTLP_HEADERS`; `OTEL_SDK_DISABLED=true` disables export. Use a
-long-lived application runtime to retain batching; dispose it on shutdown to
-flush pending events.
-
-Browser events are separately opt-in and do not enable application log export:
-
-```ts
-BrowserOtlp.layer({ serviceName: "my-app-web", events: {} });
-
-// Effects use the active BrowserOtlp.layer, even from a different calling runtime.
-const telemetry = Effect.gen(function* () {
-  yield* BrowserOtlp.track("app.checkout.started", {
-    "checkout.source": "cart",
-  });
-  yield* BrowserOtlp.page({
-    name: "Documentation",
-    category: "Docs",
-    path: "/docs",
-  });
+const orderCompleted = Effect.gen(function* () {
+  yield* ServerOtlp.track("app.order.completed", { "order.total": 49 });
 });
 ```
 
-With `events: {}`, page views are automatic: one when the layer starts, then one
-for each pathname change through `pushState`, `replaceState`, or `popstate`
-(back/forward). Repeated same-path changes and query/hash-only changes are ignored.
-History hooks and listeners are scoped and restored on disposal. Tracking follows
-URL changes, not framework loader completion. The first page may be anonymous if
-identity has not been set yet; identify does not retroactively change it.
+Authenticated handlers inherit `user.id` and `organization.id` from
+`AuthMiddleware` log annotations. Server identity is fiber-scoped; there is no
+server `identify` method. Background jobs can supply identity per event.
 
-Set `events: { pageViews: false }` to disable automatic tracking while retaining custom events.
-Then call `page` (`pageView` alias) manually for route templates or application-specific
-navigation timing. Do not also manually emit the same automatic page view.
-Without `path`, it reads `location.pathname` when executed. It emits the
-application-defined event `browser.page_view` with required attribute `url.path`,
-stripping query strings and fragments. Supply sanitized paths or route templates
-when paths contain personal information. No cookies or visitor/session IDs are
-created. Only the pathname is captured; paths may still contain personal IDs.
+Both `track` methods accept `options`:
 
-### Browser identity
+| Option                                            | OTLP attribute / meaning                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------- |
+| `userId`, `anonymousId`, `sessionId`, `messageId` | `user.id`, `analytics.anonymous_id`, `session.id`, `log.record.uid` |
+| `context`                                         | Additional flat attributes                                          |
+| `timestamp`                                       | Effect `DateTime.Utc` occurrence time; otherwise recorded now       |
 
-Call `BrowserOtlp.identify` when auth state becomes available or changes, and
-`BrowserOtlp.reset` on logout. These remain Effects, but the caller does not need
-the browser exporter's services in its own runtime:
+Attribute precedence, lowest to highest: context, properties, explicit identity
+options, browser identified identity, scoped log annotations. Values support
+strings, finite numbers, booleans, and homogeneous arrays, not nested objects.
+Use stable event names and put dynamic values in attributes. Message IDs support
+correlation, not guaranteed deduplication.
 
-```ts
-const telemetry = Effect.gen(function* () {
-  yield* BrowserOtlp.identify({
-    userId: "user-123",
-    organizationId: "org-123",
-  });
-  yield* BrowserOtlp.track("app.checkout.started");
-  yield* BrowserOtlp.page({ path: "/checkout" });
-  yield* BrowserOtlp.reset;
-});
-```
+Events are OTLP log records with `eventName`, INFO severity, and active trace/span
+IDs when available; they do not create spans. `browser.page_view`, `url.path`,
+`analytics.page.name`, and `analytics.page.category` describe page events; the
+analytics names are project conventions, not standardized OTel semantics.
 
-Identity is in memory per telemetry runtime, not cookies or local storage.
-`identify` replaces the complete identity; omitting an organization clears the
-previous organization. It emits no event. Identity is copied into each future
-event when recorded; changes and resets do not rewrite queued events. Identified
-user/org attributes override per-call properties/options, while scoped log
-annotations take precedence over identified identity. This applies only to event
-telemetry, not automatic trace/log exporters, API request headers, or authorization.
-Browser identity is client-supplied and untrusted; use trusted server events for
-billing, authorization, audit trails, or tenant-isolated reporting. Re-identify
-after a reload and update identity before recording events after an auth or
-organization change. The OTLP proxy remains passthrough and never enriches identity.
+Configure collector/storage separately. Browser identity is untrusted analytics
+metadata, not authorization or an audit trail. No visitor/session IDs or cookies
+are generated. Browser flushing on hidden/pagehide is best-effort. Apply payload
+and rate limits at ingestion, and keep sensitive data out of events and
+high-cardinality fields out of Loki labels.
 
-Initialize the browser layer once on the application's long-lived runtime. After
-it starts, `Effect.runPromise(BrowserOtlp.identify(...))` and
-`Effect.runPromise(BrowserOtlp.track(...))` work from ordinary application code.
-The API retains typed validation errors and the calling fiber's trace/log context.
-Calls executed before startup or after disposal are no-ops; nothing is buffered.
-If several browser layers are active, calls target the most recently started one;
-use a single browser layer in normal applications. There is no analytics bridge,
-React hook, or automatic identification.
-
-### Event options
-
-Both environments accept
-`track(name, properties?, options?)`. Common options are explicit and per-call,
-so server requests never share mutable visitor state:
-
-```ts
-const telemetry = Effect.gen(function* () {
-  yield* ServerOtlp.track(
-    "app.order.completed",
-    { "order.total": 49 },
-    {
-      sessionId: "session-123",
-      messageId: "order-123-completed",
-      context: { "organization.id": "org-123", "app.locale": "en" },
-    },
-  );
-});
-```
-
-`context` and event properties become flat OTLP attributes; properties override
-context on collision. Options `userId`, `anonymousId`, `sessionId`, and `messageId`
-map to `user.id`, `analytics.anonymous_id`, `session.id`, and `log.record.uid`,
-overriding properties with the same keys. Scoped `Effect.annotateLogs` annotations
-are inherited automatically and take precedence over all per-call attributes.
-In authenticated server handlers, `AuthMiddleware` already supplies `user.id` and
-`organization.id`, so do not repeat them in `.track()` calls. Background jobs and
-browser code can provide identity explicitly when needed. Annotations remain
-fiber-scoped; no identity state is persisted by the event service.
-Identifiers are optional; callers own
-consent and identity lifecycle. Message IDs aid correlation, not guaranteed
-deduplication. Optional `timestamp` accepts an Effect `DateTime.Utc` for delayed
-events; the SDK still sets observed time to the time of recording. There is no
-clock-skew correction. `page` accepts `properties` and these same `options`, plus
-optional `name` and `category` mapped to application-defined
-`analytics.page.name` and `analytics.page.category` attributes. It always owns
-the sanitized `url.path`. The `analytics.*` fields and `browser.page_view` name
-are project conventions, not standardized OpenTelemetry analytics semantics.
-Group, Alias, profile storage, destination routing, and automatic
-collection of IPs, user agents, page titles, referrers, and full URLs are not
-implemented.
-
-Both `.track(name, attributes?)` methods follow the
-[OpenTelemetry event conventions](https://opentelemetry.io/docs/specs/semconv/general/events/):
-records have the native `eventName` field, an occurrence timestamp, INFO severity
-number (9), flat structured attributes, and no body. The SDK sets observed time
-when it records the occurrence. Events inherit active trace/span IDs without
-creating spans. Use stable domain-qualified names with no dynamic identifiers;
-put changing values in attributes. Document each custom event's trigger and
-required/optional attributes; include `error.type` for failures. These conventions
-are still in development. Attribute values support strings, finite numbers,
-booleans, and homogeneous arrays of those values. Invalid inputs fail with an
-Effect schema error.
-
-The logs proxy must be enabled with `OTEL_LOGS_EXPORTER=otlp` for browser events.
-OTLP transports events; configure a collector and a logs backend such as Loki for
-storage and Grafana dashboards. Browser flushing on hidden/pagehide is best
-effort. Apply payload limits and rate limits at your public ingestion boundary,
-avoid sensitive attributes, and keep high-cardinality fields out of Loki labels.
+## Other services
 
 `@krak-stack/registry/service-notification` is the source-compatible direct
 dispatcher. Use the separate `@krak-stack/notifications` package for a durable
