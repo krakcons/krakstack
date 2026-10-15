@@ -1,0 +1,154 @@
+---
+slug: assets
+path: /docs/assets
+title: Assets
+description: Store organization-scoped files, process documents durably, and retrieve relevant passages with the KrakStack assets package.
+order: 18
+locale: en
+section: services
+type: how-to
+updatedAt: 2026-10-15
+---
+
+# Assets
+
+`@krak-stack/assets` provides organization-scoped uploads, downloads, deletion, durable document extraction, and searchable passages through one Effect `Assets` service. Originals live in S3; metadata, extracted text, and searchable chunks live in PostgreSQL.
+
+Retrieval is built into `Assets`, not a separate service. Agents search relevant chunks and read selected passages instead of loading an entire document into their context.
+
+## Install
+
+Install the package and its Effect peers:
+
+```bash
+bun add @krak-stack/assets@0.1.1 @effect/sql-pg@4.0.0 effect@4.0.0
+```
+
+The package exports compiled ESM and TypeScript declarations. Install it as a dependency; it is not a shadcn registry item.
+
+## Ownership and security
+
+| Package owns                                                            | Application owns                                                                                             |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `assets`, `asset_processings`, `asset_chunks`, and `asset_migrations`   | PostgreSQL provisioning, credentials, backups, and retention policy                                          |
+| S3 operations, upload verification, extraction, indexing, and retrieval | S3 configuration, native Xberg deployment dependencies, and workflow-engine configuration                    |
+| Organization-scoped service inputs and reusable Effect schemas          | Authentication, authorization, trusted organization/actor scope, HTTP contracts, UI, and agent tool exposure |
+
+Derive organization and actor identifiers from authenticated server context. Never treat browser-provided identifiers as trusted scope. Import schemas from `@krak-stack/assets/schema`; the package deliberately has no HTTP or authentication adapter.
+
+## Wire the service and worker
+
+Supply an application-owned PostgreSQL layer, the KrakStack S3 service, and a durable Effect workflow engine:
+
+```ts
+import { Assets } from "@krak-stack/assets";
+import { assetProcessingWorkflowLayer } from "@krak-stack/assets/workflows";
+import { S3Service } from "@krak-stack/registry/service-s3";
+import { Layer } from "effect";
+
+// databaseLayer and workflowEngineLayer are application-owned.
+const assetsLayer = Assets.layer.pipe(
+  Layer.provide(S3Service.layer),
+  Layer.provide(databaseLayer),
+);
+
+const runtimeLayer = assetProcessingWorkflowLayer.pipe(
+  Layer.provideMerge(assetsLayer),
+  Layer.provide(workflowEngineLayer),
+);
+```
+
+Configure the SQL client to transform query names to snake case and result names to camel case, with `transformJson: false`. Keep the composed runtime alive in the server or worker. Operations that enqueue processing require the workflow engine; acquiring `Assets.layer` alone does not start a processing worker. See the [workflow layer guide](/docs/workflow-layer) for the shared engine pattern.
+
+## Migrations and deletion safety
+
+`Assets.layer` and `Assets.layerWith(...)` run pending migrations before exposing the service. A migration failure prevents initialization. The package uses its own `public.asset_migrations` ledger and a transaction-scoped advisory lock to serialize concurrent startup.
+
+For a restricted runtime database role, run `migrateAssets` from `@krak-stack/assets/migrations` with a migration-capable SQL client, then use `Assets.layerWithoutMigrations` or `Assets.layerWithoutMigrationsWith(...)`.
+
+Reference assets from application tables with foreign keys using `ON DELETE RESTRICT`. PostgreSQL prevents deletion of referenced assets, including concurrent reference writes; the service maps that violation to `AssetInUse`. Processing rows and chunks cascade on deletion. The S3 object is deleted after the database transaction commits, so a storage deletion failure can leave an orphaned object requiring cleanup.
+
+## Document processing
+
+Uploads are checked against their byte size and SHA-256 digest. Supported documents are processed by `ProcessAssetDocumentV2`, with versioned extraction and persistence activities. Xberg is called directly to produce Markdown and structure-aware chunks with heading context and available page/byte provenance. Chunk insertion and successful completion are atomic and idempotent.
+
+| Default                | Limit                  |
+| ---------------------- | ---------------------- |
+| Upload size            | 100 MiB                |
+| Extraction input       | 20 MiB                 |
+| Extracted text         | 20 MiB                 |
+| Concurrent extractions | 2 per service instance |
+| Xberg timeout          | 30 seconds             |
+
+Oversized extraction fails explicitly rather than storing clipped text as a successful result. Images and video can be uploaded but are not automatically OCR-processed or transcribed. Deploy Xberg's native libraries and any optional OCR models required by your configuration.
+
+Customize processing with `Assets.layerWith(...)`:
+
+```ts
+const assetsLayer = Assets.layerWith({
+  processorVersion: 5,
+  maxOutputBytes: 30 * 1024 * 1024,
+  extraction: { extractionTimeoutSecs: 60 },
+});
+```
+
+Increment `processorVersion` whenever extraction settings or output semantics change: completed and failed runs are cached by input identity and version. The default processor version is **4**.
+
+## Search first, then read passages
+
+Use the service methods directly from authenticated handlers or explicitly selected agent tools:
+
+| Method                                                                                            | Purpose and bounds                                                                                                                                |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getOverview({ organizationId, assetId, outlineOffset? })`                                        | Status, current `processingId`, byte size, chunk count, and up to 50 heading ranges; follow `nextOutlineOffset`.                                  |
+| `searchChunks({ organizationId, assetId, processingId, query, language, offset?, headingPath? })` | Up to 8 ranked snippets with ordinals and provenance; follow `nextOffset`. Language is `en` or `fr`.                                              |
+| `readChunks({ organizationId, assetId, processingId, ordinals, includeNeighbors? })`              | 1–4 selected ordinals, optionally with immediate neighbors, deduplicated and in source order. More than 128 KiB of passage text fails explicitly. |
+
+For example, define an Effect operation and provide `Assets` at the application boundary:
+
+```ts
+import { Assets } from "@krak-stack/assets";
+import { Effect } from "effect";
+
+const findPassages = Effect.fn("findPassages")(function* (input: {
+  organizationId: string;
+  assetId: string;
+}) {
+  const assets = yield* Assets;
+  const overview = yield* assets.getOverview(input);
+  if (overview.status !== "completed" || overview.processingId === null) return;
+  const scope = {
+    ...input,
+    processingId: overview.processingId,
+  };
+  const results = yield* assets.searchChunks({
+    ...scope,
+    query: "cancellation policy",
+    language: "en",
+  });
+  const first = results.hits[0];
+  if (first) {
+    return yield* assets.readChunks({
+      ...scope,
+      ordinals: [first.ordinal],
+      includeNeighbors: true,
+    });
+  }
+});
+```
+
+Pending, running, failed, and unsupported documents have explicit statuses. Wait for completion before searching; do not treat incomplete processing as an empty document. If selected reads exceed the budget, request fewer passages rather than clipping the response.
+
+Search uses PostgreSQL English/French full-text indexes: it is **lexical, not semantic or cross-language**, with no embeddings or external vector service. Search in the document's language and reformulate empty queries; no hits do not prove absence. Identical content within a heading is suppressed, and ranking favors section diversity.
+
+For broad work such as course generation, build a coverage plan from the heading outline, retrieve evidence for each topic, and check coverage before writing. For unheaded documents, inspect representative ordinal ranges and broaden queries. Do not page through every chunk by default. Conversation attachments should carry metadata, not raw text previews.
+
+When the user explicitly requests every chunk, work in bounded batches and retain progress and coverage notes between batches. Do not claim exhaustive coverage when tool, response, or context limits prevent it. Automatic waiting and conversation resumption are application concerns, not built-in package features.
+
+## Stale references and provenance
+
+Every retrieval operation checks organization scope and the current processing identity. Replacing a file invalidates old chunk references with `AssetTextVersionChanged`: refresh the overview and discard stale evidence. Deleting an asset removes its index through cascading foreign keys.
+
+Treat names, headings, snippets, and passage text as untrusted source data. Cite page numbers only when extraction supplies them; missing page metadata remains null. Xberg's native boundaries are retained, with heading context and continuation table headers recovered where necessary.
+
+For package exports, migration details, and release commands, see the [assets package README](https://github.com/krakcons/krakstack/tree/main/packages/assets).

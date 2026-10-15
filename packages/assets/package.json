@@ -1,0 +1,75 @@
+{
+  "name": "@krak-stack/assets",
+  "version": "0.1.1",
+  "description": "Organization-scoped Effect asset storage, durable document processing, and searchable passages with PostgreSQL, S3, and Xberg.",
+  "homepage": "https://krakstack.net/docs/assets",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krakcons/krakstack.git",
+    "directory": "packages/assets"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./processing": {
+      "types": "./dist/processing.d.ts",
+      "import": "./dist/processing.js"
+    },
+    "./workflow": {
+      "types": "./dist/workflow.d.ts",
+      "import": "./dist/workflow.js"
+    },
+    "./migrations": {
+      "types": "./dist/migrations.d.ts",
+      "import": "./dist/migrations.js"
+    },
+    "./workflows": {
+      "types": "./dist/workflows.d.ts",
+      "import": "./dist/workflows.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "bun run typecheck && bun run test && bun run build",
+    "typecheck": "tsc -p tsconfig.json",
+    "prepack": "bun run check",
+    "test": "vitest run",
+    "lint": "oxlint src",
+    "fmt": "oxfmt src package.json tsconfig.json README.md"
+  },
+  "dependencies": {
+    "@krak-stack/registry": "0.1.40",
+    "@xberg-io/xberg": "1.0.14"
+  },
+  "devDependencies": {
+    "@effect/sql-pg": "4.0.0",
+    "@effect/vitest": "4.0.0",
+    "@types/bun": "^1.4.0",
+    "effect": "4.0.0",
+    "oxfmt": "0.55.0",
+    "oxlint": "1.72.0",
+    "typescript": "7.0.1-rc",
+    "vitest": "5.0.3"
+  },
+  "peerDependencies": {
+    "@effect/sql-pg": "^4.0.0",
+    "effect": "^4.0.0"
+  }
+}

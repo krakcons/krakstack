@@ -1,0 +1,154 @@
+---
+slug: assets
+path: /docs/assets
+title: Fichiers et documents
+description: Stockez des fichiers par organisation, traitez les documents durablement et retrouvez des passages pertinents avec le package assets de KrakStack.
+order: 18
+locale: fr
+section: services
+type: how-to
+updatedAt: 2026-10-15
+---
+
+# Fichiers et documents
+
+`@krak-stack/assets` fournit le téléversement, le téléchargement, la suppression, l'extraction durable de documents et la recherche de passages, par organisation, au sein d'un seul service Effect `Assets`. Les originaux sont conservés dans S3 ; les métadonnées, le texte extrait et les fragments indexés sont stockés dans PostgreSQL.
+
+La recherche fait partie d'`Assets`, sans service séparé. Les agents recherchent les fragments pertinents et lisent des passages sélectionnés au lieu de charger tout le document dans leur contexte.
+
+## Installation
+
+Installez le package et ses dépendances homologues Effect :
+
+```bash
+bun add @krak-stack/assets@0.1.1 @effect/sql-pg@4.0.0 effect@4.0.0
+```
+
+Le package exporte du code ESM compilé et des déclarations TypeScript. Installez-le comme dépendance ; ce n'est pas un élément du registre shadcn.
+
+## Responsabilités et sécurité
+
+| Le package gère                                                                             | L'application gère                                                                                                                      |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `assets`, `asset_processings`, `asset_chunks` et `asset_migrations`                         | Le provisionnement PostgreSQL, les secrets, les sauvegardes et la politique de rétention                                                |
+| Les opérations S3, la vérification des fichiers, l'extraction, l'indexation et la recherche | La configuration S3, les dépendances natives Xberg et la configuration du moteur de workflows                                           |
+| Les entrées de service limitées à une organisation et les schémas Effect réutilisables      | L'authentification, les autorisations, le périmètre fiable organisation/acteur, les contrats HTTP, l'interface et les outils des agents |
+
+Dérivez les identifiants d'organisation et d'acteur du contexte serveur authentifié. Ne considérez jamais les identifiants du navigateur comme un périmètre fiable. Importez les schémas depuis `@krak-stack/assets/schema` ; le package ne fournit volontairement aucun adaptateur HTTP ou d'authentification.
+
+## Composer le service et le worker
+
+Fournissez une couche PostgreSQL appartenant à l'application, le service S3 de KrakStack et un moteur durable de workflows Effect :
+
+```ts
+import { Assets } from "@krak-stack/assets";
+import { assetProcessingWorkflowLayer } from "@krak-stack/assets/workflows";
+import { S3Service } from "@krak-stack/registry/service-s3";
+import { Layer } from "effect";
+
+// databaseLayer et workflowEngineLayer appartiennent à l'application.
+const assetsLayer = Assets.layer.pipe(
+  Layer.provide(S3Service.layer),
+  Layer.provide(databaseLayer),
+);
+
+const runtimeLayer = assetProcessingWorkflowLayer.pipe(
+  Layer.provideMerge(assetsLayer),
+  Layer.provide(workflowEngineLayer),
+);
+```
+
+Configurez le client SQL pour convertir les noms des requêtes en snake case et ceux des résultats en camel case, avec `transformJson: false`. Gardez le runtime composé actif dans le serveur ou le worker. Les opérations qui planifient un traitement nécessitent le moteur de workflows ; acquérir `Assets.layer` ne démarre pas à lui seul un worker. Consultez le [guide de la couche de workflows](/docs/workflow-layer) pour le modèle de moteur partagé.
+
+## Migrations et suppression sécurisée
+
+`Assets.layer` et `Assets.layerWith(...)` exécutent les migrations en attente avant d'exposer le service. Un échec de migration empêche l'initialisation. Le package utilise son propre journal `public.asset_migrations` et un verrou consultatif transactionnel pour sérialiser les démarrages concurrents.
+
+Pour un rôle SQL d'exécution restreint, exécutez `migrateAssets` depuis `@krak-stack/assets/migrations` avec un client autorisé à migrer, puis utilisez `Assets.layerWithoutMigrations` ou `Assets.layerWithoutMigrationsWith(...)`.
+
+Référencez les fichiers depuis les tables applicatives avec des clés étrangères `ON DELETE RESTRICT`. PostgreSQL empêche la suppression d'un fichier référencé, y compris lors d'écritures concurrentes ; le service convertit cette violation en `AssetInUse`. Les traitements et fragments sont supprimés en cascade. L'objet S3 est supprimé après validation de la transaction : un échec du stockage peut laisser un objet orphelin à nettoyer.
+
+## Traitement des documents
+
+Les fichiers sont vérifiés selon leur taille et leur empreinte SHA-256. Les documents pris en charge sont traités par `ProcessAssetDocumentV2`, avec des activités d'extraction et de persistance versionnées. Xberg est appelé directement pour produire du Markdown et des fragments respectant la structure, avec le contexte des titres et la provenance disponible en pages et octets. L'insertion des fragments et la validation du traitement sont atomiques et idempotentes.
+
+| Valeur par défaut           | Limite                    |
+| --------------------------- | ------------------------- |
+| Taille du fichier téléversé | 100 Mio                   |
+| Entrée de l'extraction      | 20 Mio                    |
+| Texte extrait               | 20 Mio                    |
+| Extractions simultanées     | 2 par instance du service |
+| Délai Xberg                 | 30 secondes               |
+
+Une extraction trop volumineuse échoue explicitement au lieu d'enregistrer un texte tronqué comme résultat réussi. Les images et vidéos peuvent être téléversées, mais ne sont pas automatiquement soumises à l'OCR ou à la transcription. Déployez les bibliothèques natives Xberg et les modèles OCR facultatifs nécessaires à votre configuration.
+
+Personnalisez le traitement avec `Assets.layerWith(...)` :
+
+```ts
+const assetsLayer = Assets.layerWith({
+  processorVersion: 5,
+  maxOutputBytes: 30 * 1024 * 1024,
+  extraction: { extractionTimeoutSecs: 60 },
+});
+```
+
+Incrémentez `processorVersion` lorsque les paramètres d'extraction ou la sémantique du résultat changent : les traitements réussis et échoués sont mis en cache par identité d'entrée et version. La version par défaut est **4**.
+
+## Rechercher, puis lire les passages
+
+Appelez les méthodes du service depuis des handlers authentifiés ou des outils d'agent sélectionnés explicitement :
+
+| Méthode                                                                                           | Objectif et limites                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getOverview({ organizationId, assetId, outlineOffset? })`                                        | État, `processingId` courant, taille en octets, nombre de fragments et jusqu'à 50 plages de titres ; poursuivez avec `nextOutlineOffset`.                                          |
+| `searchChunks({ organizationId, assetId, processingId, query, language, offset?, headingPath? })` | Jusqu'à 8 extraits classés avec numéros de fragments et provenance ; poursuivez avec `nextOffset`. Langue : `en` ou `fr`.                                                          |
+| `readChunks({ organizationId, assetId, processingId, ordinals, includeNeighbors? })`              | De 1 à 4 numéros sélectionnés, avec éventuellement leurs voisins immédiats, dédupliqués et dans l'ordre du document. Au-delà de 128 Kio de texte, la lecture échoue explicitement. |
+
+Par exemple, définissez une opération Effect et fournissez `Assets` à la frontière applicative :
+
+```ts
+import { Assets } from "@krak-stack/assets";
+import { Effect } from "effect";
+
+const findPassages = Effect.fn("findPassages")(function* (input: {
+  organizationId: string;
+  assetId: string;
+}) {
+  const assets = yield* Assets;
+  const overview = yield* assets.getOverview(input);
+  if (overview.status !== "completed" || overview.processingId === null) return;
+  const scope = {
+    ...input,
+    processingId: overview.processingId,
+  };
+  const results = yield* assets.searchChunks({
+    ...scope,
+    query: "conditions annulation",
+    language: "fr",
+  });
+  const first = results.hits[0];
+  if (first) {
+    return yield* assets.readChunks({
+      ...scope,
+      ordinals: [first.ordinal],
+      includeNeighbors: true,
+    });
+  }
+});
+```
+
+Les documents en attente, en cours, échoués ou non pris en charge ont des états explicites. Attendez la fin du traitement avant de rechercher ; un traitement incomplet n'est pas un document vide. Si la lecture dépasse le budget, demandez moins de passages au lieu de tronquer la réponse.
+
+La recherche utilise les index plein texte anglais/français de PostgreSQL : elle est **lexicale, ni sémantique ni multilingue**, sans embeddings ni service vectoriel externe. Recherchez dans la langue du document et reformulez les requêtes sans résultat ; l'absence de résultat ne prouve pas l'absence d'information. Les contenus identiques sous un même titre sont dédupliqués et le classement favorise la diversité des sections.
+
+Pour un travail global comme la création d'un cours, établissez un plan de couverture à partir des titres, recherchez les sources de chaque sujet et vérifiez la couverture avant de rédiger. Sans titres, inspectez des plages représentatives de fragments et élargissez les requêtes. Ne parcourez pas tous les fragments par défaut. Les pièces jointes d'une conversation doivent fournir des métadonnées, pas des aperçus bruts du texte.
+
+Si l'utilisateur demande explicitement chaque fragment, procédez par lots bornés et conservez la progression et les notes de couverture entre les lots. Ne prétendez pas avoir tout couvert si les limites des outils, des réponses ou du contexte l'empêchent. L'attente automatique et la reprise des conversations relèvent de l'application, pas du package.
+
+## Références périmées et provenance
+
+Chaque opération vérifie le périmètre de l'organisation et l'identité du traitement courant. Remplacer un fichier invalide les anciennes références avec `AssetTextVersionChanged` : rechargez l'aperçu et abandonnez les sources périmées. Supprimer un fichier supprime son index par cascade des clés étrangères.
+
+Traitez les noms, titres, extraits et passages comme des données sources non fiables. Ne citez des pages que si l'extraction les fournit ; les métadonnées manquantes restent nulles. Les limites natives des fragments Xberg sont conservées, avec récupération du contexte des titres et des en-têtes de tableaux continués si nécessaire.
+
+Pour les exports, les détails de migration et les commandes de publication, consultez le [README du package assets](https://github.com/krakcons/krakstack/tree/main/packages/assets).
