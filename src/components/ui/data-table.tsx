@@ -169,10 +169,10 @@ export interface DataTableListItemContext<TData> {
 
 export interface DataTableListOptions {
   emptyLabel: ReactNode;
-  display?: "list" | "icon";
-  locale?: string;
-  messages?: DataTableMessageTranslations;
-  visibleCount?: number;
+  display?: "list" | "icon" | undefined;
+  locale?: string | undefined;
+  messages?: DataTableMessageTranslations | undefined;
+  visibleCount?: number | undefined;
 }
 
 export type DataTableListColumn<TData> = DataTableListOptions & {
@@ -214,8 +214,8 @@ interface EditableDataTableListCellProps extends DataTableListOptions {
 }
 
 interface DataTableListCellActionsProps {
-  actionsLabel?: string;
-  itemActions?: readonly DataTableItemAction<DataTableListItem>[];
+  actionsLabel?: string | undefined;
+  itemActions?: readonly DataTableItemAction<DataTableListItem>[] | undefined;
 }
 
 export type DataTableListCellProps = DataTableListCellActionsProps &
@@ -360,6 +360,27 @@ export type DataTablePaginationFeature =
   | { mode: "client"; pageSizes?: readonly number[] }
   | { mode: "server"; rowCount: number; pageSizes?: readonly number[] };
 
+export interface DataTableExportAction {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  disabled?: boolean;
+  /** The app owns fetching, authorization, field selection, and downloading. */
+  onExport: () => void | Promise<void>;
+}
+
+export interface DataTableExportFeature {
+  baseName: string;
+  /** Both scopes operate only on rows already supplied to the table. */
+  scope?: "currentPage" | "filteredRows";
+  /** Set false to offer only app-provided actions. Defaults to true. */
+  builtIn?: boolean;
+  actions?: readonly DataTableExportAction[];
+  // App callbacks may throw arbitrary values; the app owns error classification.
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters
+  onError?: (error: unknown, action: DataTableExportAction) => void;
+}
+
 export interface DataTableFeatures<TData> {
   toolbar?:
     | false
@@ -384,7 +405,7 @@ export interface DataTableFeatures<TData> {
   rowActions?:
     | false
     | { label?: string; items: readonly DataTableRowAction<TData>[] };
-  export?: false | { baseName: string; scope?: "currentPage" | "filteredRows" };
+  export?: false | DataTableExportFeature;
   gallery?:
     | false
     | { name: string; description?: string; tag?: string; tagIcon?: ReactNode };
@@ -408,6 +429,7 @@ export type DataTableMessages = PaginationMessages & {
   export: string;
   exportCsv: string;
   exportJson: string;
+  exportFailed?: string;
   refresh: string;
   view: string;
   tableView: string;
@@ -446,6 +468,7 @@ const messages = {
     export: "Export",
     exportCsv: "CSV",
     exportJson: "JSON",
+    exportFailed: "Export failed. Please try again.",
     refresh: "Refresh",
     view: "View",
     tableView: "Table",
@@ -477,6 +500,7 @@ const messages = {
     export: "Exporter",
     exportCsv: "CSV",
     exportJson: "JSON",
+    exportFailed: "L’exportation a échoué. Veuillez réessayer.",
     refresh: "Rafraîchir",
     view: "Affichage",
     tableView: "Tableau",
@@ -969,7 +993,7 @@ type DataTableStore<TData extends RowData> = {
   columnDefs: readonly DataTableColDef<TData>[];
   config: ResolvedConfig<TData>;
   state: DataTableState;
-  controlledState?: DataTablePublicState;
+  controlledState?: DataTablePublicState | undefined;
   model: DataTableModel<TData>;
 };
 
@@ -1267,7 +1291,7 @@ const renderCell = <TData extends RowData>(
   row: DataTableModelRow<TData>,
   column: DataTableColumn<TData>,
   locale = "en",
-  labels = dataTableMessages(locale),
+  labels: DataTableMessages = dataTableMessages(locale),
 ) => {
   const value = row.values.get(column.id);
   const params = {
@@ -1480,7 +1504,7 @@ export const DataTableRowActions = <TData,>({
                 event.stopPropagation();
                 action.onClick(row);
               }}
-              variant={action.variant}
+              variant={action.variant ?? "default"}
             >
               {action.icon}
               {action.name}
@@ -1546,6 +1570,9 @@ const DataTableToolbar = <TData extends RowData>({
   tableAtom: TableAtom<TData>;
 }) => {
   const [store, setStore] = useTableAtom(tableAtom);
+  const exportPending = useRef(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportFailed, setExportFailed] = useState(false);
   const { features, labels } = store.config;
   const model = deriveModel(store);
   const selectedRows = getSelectedRows(store, model);
@@ -1575,6 +1602,28 @@ const DataTableToolbar = <TData extends RowData>({
     features.export && features.export.scope === "filteredRows"
       ? model.filteredRows
       : model.pageRows;
+  const exportFeature = features.export;
+  const exportActions = exportFeature ? (exportFeature.actions ?? []) : [];
+  const builtInExport = exportFeature && exportFeature.builtIn !== false;
+  const canExport =
+    (builtInExport && exportRows.length > 0) ||
+    exportActions.some((action) => !action.disabled);
+
+  const runExport = async (action: DataTableExportAction) => {
+    if (exportPending.current || action.disabled) return;
+    exportPending.current = true;
+    setExporting(true);
+    setExportFailed(false);
+    try {
+      await action.onExport();
+    } catch (error) {
+      setExportFailed(true);
+      if (exportFeature) exportFeature.onError?.(error, action);
+    } finally {
+      exportPending.current = false;
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-2 pb-4">
@@ -1634,7 +1683,7 @@ const DataTableToolbar = <TData extends RowData>({
                     <MenubarItem
                       key={action.id ?? action.name}
                       onClick={() => action.onClick(selectedRows)}
-                      variant={action.variant}
+                      variant={action.variant ?? "default"}
                     >
                       {action.icon}
                       {action.name}
@@ -1696,65 +1745,101 @@ const DataTableToolbar = <TData extends RowData>({
             <MenubarMenu>
               <MenubarTrigger
                 aria-label={labels.export}
-                disabled={!exportRows.length}
+                aria-busy={exporting}
+                disabled={exporting || !canExport}
               >
-                <Download />
-                <span className="hidden sm:inline">{labels.export}</span>
+                {exporting ? (
+                  <RefreshCw className="animate-spin" />
+                ) : (
+                  <Download />
+                )}
+                <span className="hidden sm:inline">
+                  {exporting ? labels.loading : labels.export}
+                </span>
               </MenubarTrigger>
               <MenubarContent align="end">
                 <MenubarGroup>
                   <MenubarLabel>{labels.export}</MenubarLabel>
                   <MenubarSeparator />
-                  <MenubarItem
-                    onClick={() =>
-                      downloadCsv(
-                        model.visibleColumns.map(columnLabel),
-                        exportRows.map((row) =>
-                          model.visibleColumns.map((column) =>
-                            String(
-                              getDataTableExportValue(
-                                row,
-                                column,
-                                store.config.locale,
-                              ) ?? "",
-                            ),
-                          ),
-                        ),
-                        features.export ? features.export.baseName : "table",
-                      )
-                    }
-                  >
-                    <FileText />
-                    {labels.exportCsv}
-                  </MenubarItem>
-                  <MenubarItem
-                    onClick={() =>
-                      downloadJson(
-                        exportRows.map((row) =>
-                          Object.fromEntries(
-                            model.visibleColumns.map((column) => [
-                              column.id,
-                              getDataTableExportValue(
-                                row,
-                                column,
-                                store.config.locale,
+                  {builtInExport ? (
+                    <>
+                      <MenubarItem
+                        disabled={exporting || !exportRows.length}
+                        onClick={() =>
+                          downloadCsv(
+                            model.visibleColumns.map(columnLabel),
+                            exportRows.map((row) =>
+                              model.visibleColumns.map((column) =>
+                                String(
+                                  getDataTableExportValue(
+                                    row,
+                                    column,
+                                    store.config.locale,
+                                  ) ?? "",
+                                ),
                               ),
-                            ]),
-                          ),
-                        ),
-                        features.export ? features.export.baseName : "table",
-                      )
-                    }
-                  >
-                    <FileJson />
-                    {labels.exportJson}
-                  </MenubarItem>
+                            ),
+                            features.export
+                              ? features.export.baseName
+                              : "table",
+                          )
+                        }
+                      >
+                        <FileText />
+                        {labels.exportCsv}
+                      </MenubarItem>
+                      <MenubarItem
+                        disabled={exporting || !exportRows.length}
+                        onClick={() =>
+                          downloadJson(
+                            exportRows.map((row) =>
+                              Object.fromEntries(
+                                model.visibleColumns.map((column) => [
+                                  column.id,
+                                  getDataTableExportValue(
+                                    row,
+                                    column,
+                                    store.config.locale,
+                                  ),
+                                ]),
+                              ),
+                            ),
+                            features.export
+                              ? features.export.baseName
+                              : "table",
+                          )
+                        }
+                      >
+                        <FileJson />
+                        {labels.exportJson}
+                      </MenubarItem>
+                    </>
+                  ) : null}
+                  {builtInExport && exportActions.length ? (
+                    <MenubarSeparator />
+                  ) : null}
+                  {exportActions.map((action) => (
+                    <MenubarItem
+                      key={action.id}
+                      disabled={exporting || action.disabled}
+                      onClick={() => void runExport(action)}
+                    >
+                      {action.icon}
+                      {action.label}
+                    </MenubarItem>
+                  ))}
                 </MenubarGroup>
               </MenubarContent>
             </MenubarMenu>
           ) : null}
         </Menubar>
       </div>
+      {exportFeature && exportFailed ? (
+        <p role="alert" className="text-destructive text-sm">
+          {labels.exportFailed ??
+            dataTableMessages(store.config.locale).exportFailed}
+        </p>
+      ) : null}
     </div>
   );
 };
@@ -2272,7 +2357,7 @@ const GroupActions = ({
   groupId,
   title,
 }: {
-  actions?: readonly DataTableGroupAction[];
+  actions?: readonly DataTableGroupAction[] | undefined;
   groupId: string;
   title: string;
 }) => {
@@ -2297,7 +2382,7 @@ const GroupActions = ({
             <DropdownMenuItem
               key={action.name}
               onClick={() => action.onClick(groupId)}
-              variant={action.variant}
+              variant={action.variant ?? "default"}
             >
               {action.icon} {action.name}
             </DropdownMenuItem>
@@ -2900,18 +2985,14 @@ const HydratedDataTable = <TData extends RowData>({
   setPersistedUiState,
   ...props
 }: HydratedDataTableProps<TData>) => {
-  const transientUiAtomRef =
-    useRef<Atom.Writable<DataTableTransientUiState> | null>(null);
-  if (!transientUiAtomRef.current) {
+  const [transientUiAtom] = useState(() => {
     const grouping = props.features?.grouping;
-    transientUiAtomRef.current = Atom.make({
+    return Atom.make<DataTableTransientUiState>({
       ...transientUiFromState(DEFAULT_UI_STATE),
       grouping: grouping && grouping.initial ? grouping.initial : [],
     });
-  }
-  const [transientUiState, setTransientUiState] = useAtom(
-    transientUiAtomRef.current,
-  );
+  });
+  const [transientUiState, setTransientUiState] = useAtom(transientUiAtom);
   const uiState: DataTableUiState = useMemo(
     () => ({ ...persistedUiState, ...transientUiState }),
     [persistedUiState, transientUiState],
@@ -2924,8 +3005,7 @@ const HydratedDataTable = <TData extends RowData>({
     [setPersistedUiState, setTransientUiState],
   );
   const validatedConfig = resolveConfig(props, (state) => setUiState(state));
-  const atomRef = useRef<TableAtom<TData> | null>(null);
-  if (!atomRef.current) {
+  const [tableAtom] = useState(() => {
     const initial = {
       rowData: props.rowData,
       columnDefs: props.columnDefs,
@@ -2933,12 +3013,11 @@ const HydratedDataTable = <TData extends RowData>({
       state: initialPublicState(props, uiState),
       controlledState: props.state,
     };
-    atomRef.current = Atom.make<DataTableStore<TData>>({
+    return Atom.make<DataTableStore<TData>>({
       ...initial,
       model: buildDataTableModel(initial),
     });
-  }
-  const tableAtom = atomRef.current;
+  });
   const setStore = useAtomSet(tableAtom);
 
   useLayoutEffect(() => {
@@ -3004,27 +3083,21 @@ export const DataTable = <TData extends RowData>(
   props: DataTableProps<TData>,
 ) => {
   const locale = useKrakstackLocale(props.locale);
-  const persistedUiAtomRef = useRef<Atom.Writable<
-    AsyncResult.AsyncResult<DataTablePersistedUiState>,
-    DataTablePersistedUiState
-  > | null>(null);
-  if (!persistedUiAtomRef.current) {
+  const [persistedUiAtom] = useState(() => {
     const pathname = globalThis.window?.location.pathname ?? "/";
     const columnIds = normalizeDataTableColumns(props.columnDefs)
       .map(({ id }) => id)
       .join(",");
     const viewCapability = props.features?.gallery ? "gallery" : "table";
-    persistedUiAtomRef.current = Atom.kvs({
+    return Atom.kvs({
       mode: "async",
       runtime: dataTableStorageRuntime,
       key: `data-table:${pathname}:${columnIds}:${viewCapability}:ui`,
       schema: DataTablePersistedUiStateSchema,
       defaultValue: () => persistedUiFromState(DEFAULT_UI_STATE),
     });
-  }
-  const [persistedUiResult, setPersistedUiState] = useAtom(
-    persistedUiAtomRef.current,
-  );
+  });
+  const [persistedUiResult, setPersistedUiState] = useAtom(persistedUiAtom);
   if (
     !AsyncResult.isSuccess(persistedUiResult) ||
     AsyncResult.isWaiting(persistedUiResult)
@@ -3238,16 +3311,16 @@ const DataTableListMenu = ({
   actions: readonly DataTableItemAction<DataTableListItem>[];
   addEmptyLabel?: ReactNode;
   addLabel?: string;
-  addOptions?: readonly DataTableListOption[];
+  addOptions?: readonly DataTableListOption[] | undefined;
   addSearchLabel?: string;
   className?: string;
-  display?: "list" | "icon";
+  display?: "list" | "icon" | undefined;
   force?: boolean;
   items: readonly (string | DataTableListItem)[];
   label?: string;
-  locale?: string;
-  messages?: DataTableMessageTranslations;
-  onAdd?: (item: DataTableListOption) => void;
+  locale?: string | undefined;
+  messages?: DataTableMessageTranslations | undefined;
+  onAdd?: ((item: DataTableListOption) => void) | undefined;
   trigger?: ReactElement;
 }) => {
   const entries = items.map((item) => {
@@ -3310,7 +3383,7 @@ const DataTableListMenu = ({
                         event.stopPropagation();
                         action.onClick(item);
                       }}
-                      variant={action.variant}
+                      variant={action.variant ?? "default"}
                     >
                       {action.icon}
                       {action.name}
@@ -3364,8 +3437,8 @@ const DataTableListAddMenu = ({
   emptyLabel?: ReactNode;
   display: "list" | "icon";
   label: string;
-  locale?: string;
-  messages?: DataTableMessageTranslations;
+  locale?: string | undefined;
+  messages?: DataTableMessageTranslations | undefined;
   onAdd: (item: DataTableListOption) => void;
   options: readonly DataTableListOption[];
   searchLabel: string;
