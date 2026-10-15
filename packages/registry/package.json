@@ -49,6 +49,10 @@
       "types": "./dist/services/opentelemetry/browser.d.ts",
       "import": "./dist/services/opentelemetry/browser.js"
     },
+    "./opentelemetry/server": {
+      "types": "./dist/services/opentelemetry/server.d.ts",
+      "import": "./dist/services/opentelemetry/server.js"
+    },
     "./docs": {
       "types": "./dist/lib/docs.d.ts",
       "import": "./dist/lib/docs.js"

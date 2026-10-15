@@ -9,12 +9,7 @@ import {
   HttpServerRequest,
   HttpServerResponse,
 } from "effect/http";
-import { Otlp, OtlpSerialization } from "effect/observability";
-
-const OpenTelemetryLive = Otlp.layerFromConfig().pipe(
-  Layer.provide(OtlpSerialization.layerJson),
-  Layer.provide(FetchHttpClient.layer),
-);
+import { ServerOtlp } from "./server";
 
 type OtlpSignal = "traces" | "metrics" | "logs";
 type OtlpSignalConfig = Uppercase<OtlpSignal>;
@@ -102,7 +97,7 @@ const serverServices = HttpServer.layerServices.pipe(
 
 export class HttpApiOtlp {
   static readonly layer = Layer.mergeAll(
-    OpenTelemetryLive,
+    ServerOtlp.layer,
     otlpProxyLayer,
     serverServices,
   );
