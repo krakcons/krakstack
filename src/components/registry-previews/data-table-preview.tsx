@@ -21,7 +21,13 @@ import {
   Pencil,
 } from "lucide-react";
 import { useState } from "react";
+import { getRouteApi } from "@tanstack/react-router";
+import { Schema } from "effect";
+import { Query } from "@/lib/query";
 import * as m from "@/paraglide/messages";
+
+const routeApi = getRouteApi("/docs/{-$slug}");
+const decodeQuery = Schema.decodeUnknownSync(Query);
 
 type Project = {
   id: string;
@@ -262,6 +268,10 @@ const columnTypeExamples: ColumnTypeExample[] = [
 ];
 
 export function DataTablePreview() {
+  const search = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+  const projectQuery = decodeQuery(search);
+  const columnTypesQuery = decodeQuery(search.columnTypes ?? {});
   const columns = projectColumns();
   const [previewProjects, setPreviewProjects] = useState(projects);
   const [typeExamples, setTypeExamples] = useState(columnTypeExamples);
@@ -390,6 +400,14 @@ export function DataTablePreview() {
         <CardContent className="max-w-full min-w-0">
           <DataTable
             columnDefs={columns}
+            state={projectQuery}
+            onStateChange={(query) =>
+              void navigate({
+                search: (previous) => ({ ...previous, ...query }),
+                replace: true,
+                resetScroll: false,
+              })
+            }
             getRowId={(project) => project.id}
             rowData={previewProjects}
             features={{
@@ -468,6 +486,14 @@ export function DataTablePreview() {
         <CardContent className="max-w-full min-w-0">
           <DataTable
             columnDefs={typeColumns}
+            state={columnTypesQuery}
+            onStateChange={(query) =>
+              void navigate({
+                search: (previous) => ({ ...previous, columnTypes: query }),
+                replace: true,
+                resetScroll: false,
+              })
+            }
             features={{
               pagination: false,
               export: { baseName: "column-types" },

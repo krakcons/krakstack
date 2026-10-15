@@ -1202,6 +1202,70 @@ describe("DataTable model", () => {
     );
   });
 
+  it("clears a controlled filter in one click when the URL state omits the cleared field", () => {
+    const onStateChange = vi.fn();
+    const ControlledTable = () => {
+      const [query, setQuery] = useState<DataTablePublicState>({
+        ...state,
+        globalFilter: "Alpha",
+      });
+      return (
+        <DataTable
+          columnDefs={columns}
+          rowData={data}
+          state={query}
+          onStateChange={(next) => {
+            onStateChange(next);
+            const { globalFilter, ...rest } = next;
+            setQuery(globalFilter ? { ...rest, globalFilter } : rest);
+          }}
+        />
+      );
+    };
+    render(<ControlledTable />);
+    expect(screen.getByDisplayValue("Alpha")).toBeTruthy();
+    expect(screen.queryByText("Beta")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filter results..." }));
+
+    expect(onStateChange).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ page: 0, globalFilter: undefined }),
+    );
+    expect(screen.getByRole<HTMLInputElement>("textbox").value).toBe("");
+    expect(
+      screen.queryByRole("button", { name: "Filter results..." }),
+    ).toBeNull();
+    expect(screen.getByText("Beta")).toBeTruthy();
+  });
+
+  it("clears omitted controlled sorting and does not restore initial query values", () => {
+    const { rerender } = render(
+      <DataTable
+        columnDefs={columns}
+        rowData={data}
+        initialState={{
+          globalFilter: "Beta",
+          sort: [{ id: "name", direction: "desc" }],
+        }}
+        state={{
+          ...state,
+          globalFilter: "Alpha",
+          sort: [{ id: "name", direction: "desc" }],
+        }}
+      />,
+    );
+
+    rerender(<DataTable columnDefs={columns} rowData={data} state={state} />);
+
+    expect(screen.getByRole<HTMLInputElement>("textbox").value).toBe("");
+    expect(
+      screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => row.textContent),
+    ).toEqual(["Alpha30", "Beta10"]);
+  });
+
   it("persists internal UI state by route and column identity", async () => {
     const storageKey = "data-table:/:name,score:table:ui";
     const { unmount } = render(

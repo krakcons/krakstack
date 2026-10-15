@@ -1071,7 +1071,8 @@ const resolveConfig = <TData extends RowData>(
   };
 };
 
-const queryFromState = (state: DataTableState): DataTablePublicState => ({
+// Include absent optional fields so controlled URL state clears previous values.
+const queryFromState = (state: DataTablePublicState): DataTablePublicState => ({
   page: state.page,
   pageSize: state.pageSize,
   globalFilter: state.globalFilter,
@@ -1105,9 +1106,7 @@ const initialPublicState = <TData extends RowData>(
   props: DataTableProps<TData>,
   uiState: DataTableUiState,
 ): DataTableState => ({
-  ...DEFAULT_QUERY,
-  ...props.initialState,
-  ...props.state,
+  ...queryFromState(props.state ?? { ...DEFAULT_QUERY, ...props.initialState }),
   ...uiState,
 });
 
@@ -1182,7 +1181,7 @@ const changeState = <TData extends RowData>(
       store.config.onUiStateChange(uiState);
     }
     const state = store.controlledState
-      ? { ...proposed, ...store.controlledState }
+      ? { ...proposed, ...queryFromState(store.controlledState) }
       : proposed;
     if (sameDataTableState(state, store.state)) return store;
     const next = { ...store, state };
@@ -1645,7 +1644,7 @@ const DataTableToolbar = <TData extends RowData>({
           {store.state.globalFilter ? (
             <Button
               aria-label={labels.filter}
-              className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
+              className="absolute top-1/2 right-1 size-7 -translate-y-1/2 active:not-aria-[haspopup]:-translate-y-1/2"
               onClick={() =>
                 update((state) => ({
                   ...state,
@@ -3035,7 +3034,11 @@ const HydratedDataTable = <TData extends RowData>({
         labels: dataTableMessages(props.locale, props.messages),
         locale: props.locale ?? "en",
       };
-      const state = { ...store.state, ...uiState, ...props.state };
+      const state = {
+        ...store.state,
+        ...uiState,
+        ...queryFromState(props.state ?? store.state),
+      };
       const modelChanged =
         store.rowData !== props.rowData ||
         store.columnDefs !== props.columnDefs ||
