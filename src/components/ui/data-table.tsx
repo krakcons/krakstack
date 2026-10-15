@@ -169,10 +169,10 @@ export interface DataTableListItemContext<TData> {
 
 export interface DataTableListOptions {
   emptyLabel: ReactNode;
-  display?: "list" | "icon";
-  locale?: string;
-  messages?: DataTableMessageTranslations;
-  visibleCount?: number;
+  display?: "list" | "icon" | undefined;
+  locale?: string | undefined;
+  messages?: DataTableMessageTranslations | undefined;
+  visibleCount?: number | undefined;
 }
 
 export type DataTableListColumn<TData> = DataTableListOptions & {
@@ -214,8 +214,8 @@ interface EditableDataTableListCellProps extends DataTableListOptions {
 }
 
 interface DataTableListCellActionsProps {
-  actionsLabel?: string;
-  itemActions?: readonly DataTableItemAction<DataTableListItem>[];
+  actionsLabel?: string | undefined;
+  itemActions?: readonly DataTableItemAction<DataTableListItem>[] | undefined;
 }
 
 export type DataTableListCellProps = DataTableListCellActionsProps &
@@ -993,7 +993,7 @@ type DataTableStore<TData extends RowData> = {
   columnDefs: readonly DataTableColDef<TData>[];
   config: ResolvedConfig<TData>;
   state: DataTableState;
-  controlledState?: DataTablePublicState;
+  controlledState?: DataTablePublicState | undefined;
   model: DataTableModel<TData>;
 };
 
@@ -1504,7 +1504,7 @@ export const DataTableRowActions = <TData,>({
                 event.stopPropagation();
                 action.onClick(row);
               }}
-              variant={action.variant}
+              variant={action.variant ?? "default"}
             >
               {action.icon}
               {action.name}
@@ -1683,7 +1683,7 @@ const DataTableToolbar = <TData extends RowData>({
                     <MenubarItem
                       key={action.id ?? action.name}
                       onClick={() => action.onClick(selectedRows)}
-                      variant={action.variant}
+                      variant={action.variant ?? "default"}
                     >
                       {action.icon}
                       {action.name}
@@ -2357,7 +2357,7 @@ const GroupActions = ({
   groupId,
   title,
 }: {
-  actions?: readonly DataTableGroupAction[];
+  actions?: readonly DataTableGroupAction[] | undefined;
   groupId: string;
   title: string;
 }) => {
@@ -2382,7 +2382,7 @@ const GroupActions = ({
             <DropdownMenuItem
               key={action.name}
               onClick={() => action.onClick(groupId)}
-              variant={action.variant}
+              variant={action.variant ?? "default"}
             >
               {action.icon} {action.name}
             </DropdownMenuItem>
@@ -2985,18 +2985,14 @@ const HydratedDataTable = <TData extends RowData>({
   setPersistedUiState,
   ...props
 }: HydratedDataTableProps<TData>) => {
-  const transientUiAtomRef =
-    useRef<Atom.Writable<DataTableTransientUiState> | null>(null);
-  if (!transientUiAtomRef.current) {
+  const [transientUiAtom] = useState(() => {
     const grouping = props.features?.grouping;
-    transientUiAtomRef.current = Atom.make({
+    return Atom.make<DataTableTransientUiState>({
       ...transientUiFromState(DEFAULT_UI_STATE),
       grouping: grouping && grouping.initial ? grouping.initial : [],
     });
-  }
-  const [transientUiState, setTransientUiState] = useAtom(
-    transientUiAtomRef.current,
-  );
+  });
+  const [transientUiState, setTransientUiState] = useAtom(transientUiAtom);
   const uiState: DataTableUiState = useMemo(
     () => ({ ...persistedUiState, ...transientUiState }),
     [persistedUiState, transientUiState],
@@ -3009,8 +3005,7 @@ const HydratedDataTable = <TData extends RowData>({
     [setPersistedUiState, setTransientUiState],
   );
   const validatedConfig = resolveConfig(props, (state) => setUiState(state));
-  const atomRef = useRef<TableAtom<TData> | null>(null);
-  if (!atomRef.current) {
+  const [tableAtom] = useState(() => {
     const initial = {
       rowData: props.rowData,
       columnDefs: props.columnDefs,
@@ -3018,12 +3013,11 @@ const HydratedDataTable = <TData extends RowData>({
       state: initialPublicState(props, uiState),
       controlledState: props.state,
     };
-    atomRef.current = Atom.make<DataTableStore<TData>>({
+    return Atom.make<DataTableStore<TData>>({
       ...initial,
       model: buildDataTableModel(initial),
     });
-  }
-  const tableAtom = atomRef.current;
+  });
   const setStore = useAtomSet(tableAtom);
 
   useLayoutEffect(() => {
@@ -3089,27 +3083,21 @@ export const DataTable = <TData extends RowData>(
   props: DataTableProps<TData>,
 ) => {
   const locale = useKrakstackLocale(props.locale);
-  const persistedUiAtomRef = useRef<Atom.Writable<
-    AsyncResult.AsyncResult<DataTablePersistedUiState>,
-    DataTablePersistedUiState
-  > | null>(null);
-  if (!persistedUiAtomRef.current) {
+  const [persistedUiAtom] = useState(() => {
     const pathname = globalThis.window?.location.pathname ?? "/";
     const columnIds = normalizeDataTableColumns(props.columnDefs)
       .map(({ id }) => id)
       .join(",");
     const viewCapability = props.features?.gallery ? "gallery" : "table";
-    persistedUiAtomRef.current = Atom.kvs({
+    return Atom.kvs({
       mode: "async",
       runtime: dataTableStorageRuntime,
       key: `data-table:${pathname}:${columnIds}:${viewCapability}:ui`,
       schema: DataTablePersistedUiStateSchema,
       defaultValue: () => persistedUiFromState(DEFAULT_UI_STATE),
     });
-  }
-  const [persistedUiResult, setPersistedUiState] = useAtom(
-    persistedUiAtomRef.current,
-  );
+  });
+  const [persistedUiResult, setPersistedUiState] = useAtom(persistedUiAtom);
   if (
     !AsyncResult.isSuccess(persistedUiResult) ||
     AsyncResult.isWaiting(persistedUiResult)
@@ -3323,16 +3311,16 @@ const DataTableListMenu = ({
   actions: readonly DataTableItemAction<DataTableListItem>[];
   addEmptyLabel?: ReactNode;
   addLabel?: string;
-  addOptions?: readonly DataTableListOption[];
+  addOptions?: readonly DataTableListOption[] | undefined;
   addSearchLabel?: string;
   className?: string;
-  display?: "list" | "icon";
+  display?: "list" | "icon" | undefined;
   force?: boolean;
   items: readonly (string | DataTableListItem)[];
   label?: string;
-  locale?: string;
-  messages?: DataTableMessageTranslations;
-  onAdd?: (item: DataTableListOption) => void;
+  locale?: string | undefined;
+  messages?: DataTableMessageTranslations | undefined;
+  onAdd?: ((item: DataTableListOption) => void) | undefined;
   trigger?: ReactElement;
 }) => {
   const entries = items.map((item) => {
@@ -3395,7 +3383,7 @@ const DataTableListMenu = ({
                         event.stopPropagation();
                         action.onClick(item);
                       }}
-                      variant={action.variant}
+                      variant={action.variant ?? "default"}
                     >
                       {action.icon}
                       {action.name}
@@ -3449,8 +3437,8 @@ const DataTableListAddMenu = ({
   emptyLabel?: ReactNode;
   display: "list" | "icon";
   label: string;
-  locale?: string;
-  messages?: DataTableMessageTranslations;
+  locale?: string | undefined;
+  messages?: DataTableMessageTranslations | undefined;
   onAdd: (item: DataTableListOption) => void;
   options: readonly DataTableListOption[];
   searchLabel: string;
