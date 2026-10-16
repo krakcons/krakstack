@@ -18,6 +18,7 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{ action: NonNullable<unknown>, name: NonNullable<unknown>, row: NonNullable<unknown> }} Data_Table_Preview_Member_Action_StatusInputs */
 /** @typedef {{}} Data_Table_Preview_List_IconsInputs */
 /** @typedef {{}} Data_Table_Preview_List_EditableInputs */
+/** @typedef {{}} Data_Table_Preview_MembersInputs */
 /** @typedef {{}} Data_Table_Preview_Updated_AtInputs */
 /** @typedef {{}} Error_Preview_TitleInputs */
 /** @typedef {{}} Error_Preview_DescriptionInputs */
@@ -362,6 +363,20 @@ export const data_table_preview_list_editable = /** @type {((inputs?: Data_Table
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.data_table_preview_list_editable(inputs)
 	return __fr.data_table_preview_list_editable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Members" |
+*
+* @param {Data_Table_Preview_MembersInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const data_table_preview_members = /** @type {((inputs?: Data_Table_Preview_MembersInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Data_Table_Preview_MembersInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.data_table_preview_members(inputs)
+	return __fr.data_table_preview_members(inputs)
 });
 /**
 * | output |

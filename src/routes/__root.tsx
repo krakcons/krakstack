@@ -1,4 +1,9 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Scripts,
+  createRootRoute,
+  stripSearchParams,
+} from "@tanstack/react-router";
 import { useAtomValue } from "@effect/atom-react";
 
 import { ThemeProvider } from "@krak-stack/registry/theme-switcher";
@@ -14,6 +19,14 @@ import { telemetryRuntime } from "@/lib/browser-telemetry";
 const analyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
 
 export const Route = createRootRoute({
+  search: {
+    middlewares: [
+      stripSearchParams<{ page?: number; pageSize?: number }>({
+        page: 0,
+        pageSize: 20,
+      }),
+    ],
+  },
   errorComponent: ErrorComponent,
   head: () => ({
     meta: [

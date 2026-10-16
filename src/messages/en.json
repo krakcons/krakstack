@@ -15,6 +15,7 @@
   "data_table_preview_member_action_status": "{action} selected for {name} in row {row}.",
   "data_table_preview_list_icons": "List (icons)",
   "data_table_preview_list_editable": "List (editable)",
+  "data_table_preview_members": "Members",
   "data_table_preview_updated_at": "Updated at (UTC)",
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "error_preview_title": "Error Component",

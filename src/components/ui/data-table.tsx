@@ -178,7 +178,9 @@ export interface DataTableListOptions {
 export type DataTableListColumn<TData> = DataTableListOptions & {
   /** Includes items not loaded in the preview; the dropdown only shows supplied items. */
   getTotalCount?: (row: TData) => number;
-  /** Actions open from an explicit roster button; list items remain passive. */
+  /** Optional primary action for items without submenu actions. */
+  onItemClick?: (context: DataTableListItemContext<TData>) => void;
+  /** Optional secondary actions shown in each item's submenu. */
   itemActions?: readonly DataTableItemAction<DataTableListItemContext<TData>>[];
   actionsLabel?: string;
 } & (
@@ -214,6 +216,7 @@ interface EditableDataTableListCellProps extends DataTableListOptions {
 }
 
 interface DataTableListCellActionsProps {
+  onItemClick?: ((item: DataTableListItem) => void) | undefined;
   actionsLabel?: string | undefined;
   itemActions?: readonly DataTableItemAction<DataTableListItem>[] | undefined;
 }
@@ -538,7 +541,10 @@ export interface DataTableProps<TData extends RowData> {
   columnDefs: readonly DataTableColDef<TData>[];
   getRowId?: (row: TData) => string;
   state?: DataTablePublicState;
-  initialState?: Partial<DataTablePublicState>;
+  initialState?: Partial<DataTablePublicState> & {
+    /** Initial visibility defaults; saved user preferences take precedence. */
+    columnVisibility?: Readonly<Record<string, boolean>>;
+  };
   locale?: string;
   onStateChange?: (state: DataTablePublicState) => void;
   status?: DataTableStatus;
@@ -1371,6 +1377,11 @@ const renderCell = <TData extends RowData>(
         <DataTableListCell
           {...config}
           itemActions={itemActions}
+          onItemClick={
+            config.onItemClick
+              ? (item) => config.onItemClick?.({ item, row: row.data })
+              : undefined
+          }
           items={config.getItems(row.data)}
           locale={locale}
           messages={{ [locale]: labels }}
@@ -1393,6 +1404,11 @@ const renderCell = <TData extends RowData>(
       <DataTableListCell
         {...config}
         itemActions={itemActions}
+        onItemClick={
+          config.onItemClick
+            ? (item) => config.onItemClick?.({ item, row: row.data })
+            : undefined
+        }
         items={config.getItems(row.data)}
         locale={locale}
         messages={{ [locale]: labels }}
@@ -3086,6 +3102,9 @@ export const DataTable = <TData extends RowData>(
   props: DataTableProps<TData>,
 ) => {
   const locale = useKrakstackLocale(props.locale);
+  const [initialColumnVisibility] = useState(
+    () => props.initialState?.columnVisibility ?? {},
+  );
   const [persistedUiAtom] = useState(() => {
     const pathname = globalThis.window?.location.pathname ?? "/";
     const columnIds = normalizeDataTableColumns(props.columnDefs)
@@ -3101,10 +3120,20 @@ export const DataTable = <TData extends RowData>(
     });
   });
   const [persistedUiResult, setPersistedUiState] = useAtom(persistedUiAtom);
-  if (
-    !AsyncResult.isSuccess(persistedUiResult) ||
-    AsyncResult.isWaiting(persistedUiResult)
-  ) {
+  const persistedUiState = useMemo(
+    () =>
+      AsyncResult.isSuccess(persistedUiResult)
+        ? {
+            ...persistedUiResult.value,
+            columnVisibility: {
+              ...initialColumnVisibility,
+              ...persistedUiResult.value.columnVisibility,
+            },
+          }
+        : undefined,
+    [initialColumnVisibility, persistedUiResult],
+  );
+  if (!persistedUiState || AsyncResult.isWaiting(persistedUiResult)) {
     return (
       <div
         aria-busy="true"
@@ -3117,7 +3146,7 @@ export const DataTable = <TData extends RowData>(
     <HydratedDataTable
       {...props}
       locale={locale}
-      persistedUiState={persistedUiResult.value}
+      persistedUiState={persistedUiState}
       setPersistedUiState={setPersistedUiState}
     />
   );
@@ -3159,13 +3188,11 @@ export const DataTableListCell = (props: DataTableListCellProps) => {
   ) {
     return <EditableDataTableListCell {...resolvedProps} />;
   }
-  const { actionsLabel, itemActions, ...summaryProps } = resolvedProps;
+  const { actionsLabel, itemActions, onItemClick, ...summaryProps } =
+    resolvedProps;
   const labels = dataTableMessages(locale, resolvedProps.messages);
-  const totalCount = resolvedProps.totalCount ?? resolvedProps.items.length;
-  const overflow =
-    totalCount >
-    Math.min(resolvedProps.items.length, resolvedProps.visibleCount ?? 3);
-  if (!itemActions?.length && !overflow) {
+  const hasItems = resolvedProps.items.length > 0;
+  if (!itemActions?.length && !hasItems) {
     return <DataTableListSummary {...summaryProps} />;
   }
   const menuLabel =
@@ -3180,11 +3207,12 @@ export const DataTableListCell = (props: DataTableListCellProps) => {
       <DataTableListMenu
         actions={itemActions ?? []}
         display={resolvedProps.display}
-        force={overflow}
+        force={hasItems}
         label={menuLabel}
         items={resolvedProps.items}
         locale={locale}
         messages={resolvedProps.messages}
+        onItemClick={onItemClick}
         trigger={
           <Button
             aria-label={menuLabel}
@@ -3212,6 +3240,7 @@ const EditableDataTableListCell = ({
   totalCount,
   actionsLabel,
   itemActions,
+  onItemClick,
   locale = "en",
   messages,
 }: EditableDataTableListCellProps & DataTableListCellActionsProps) => {
@@ -3262,6 +3291,7 @@ const EditableDataTableListCell = ({
         display={display}
         force
         items={selected}
+        onItemClick={onItemClick}
         label={actionsLabel ?? manageLabel}
         locale={locale}
         messages={messages}
@@ -3309,6 +3339,7 @@ const DataTableListMenu = ({
   locale = "en",
   messages,
   onAdd,
+  onItemClick,
   trigger,
 }: {
   actions: readonly DataTableItemAction<DataTableListItem>[];
@@ -3324,6 +3355,7 @@ const DataTableListMenu = ({
   locale?: string | undefined;
   messages?: DataTableMessageTranslations | undefined;
   onAdd?: ((item: DataTableListOption) => void) | undefined;
+  onItemClick?: ((item: DataTableListItem) => void) | undefined;
   trigger?: ReactElement;
 }) => {
   const entries = items.map((item) => {
@@ -3360,7 +3392,7 @@ const DataTableListMenu = ({
       />
       <DropdownMenuContent
         align="end"
-        className="max-h-72 w-72"
+        className="max-h-[min(18rem,var(--available-height))] w-72 max-w-[calc(100vw-2rem)]"
         onClick={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
       >
@@ -3395,15 +3427,19 @@ const DataTableListMenu = ({
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             ) : (
-              <div
-                className="px-2 py-1.5"
+              <DropdownMenuItem
                 key={item.value ?? `${item.label}-${index}`}
+                closeOnClick={Boolean(onItemClick)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onItemClick?.(item);
+                }}
               >
                 <DataTableListEntry
                   item={item}
                   appearance={display === "icon" ? "detail" : "list"}
                 />
-              </div>
+              </DropdownMenuItem>
             ),
           )}
           {onAdd && addOptions?.length ? (
@@ -3597,7 +3633,11 @@ const DataTableListEntry = ({
     </span>
   );
   if (appearance === "list") {
-    return <span className="truncate">{item.label}</span>;
+    return (
+      <span className="min-w-0 flex-1 truncate" title={item.label}>
+        {item.label}
+      </span>
+    );
   }
   return appearance === "icon" ? (
     <Tooltip>

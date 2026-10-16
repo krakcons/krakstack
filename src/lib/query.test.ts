@@ -5,6 +5,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  stripSearchParams,
 } from "@tanstack/react-router";
 
 import {
@@ -20,7 +21,7 @@ describe("Query", () => {
     const input = { page: "0", pageSize: "10", globalFilter: "collection-1" };
     const decoded = { page: 0, pageSize: 10, globalFilter: "collection-1" };
     expect(await QueryStandard["~standard"].validate(input)).toEqual({
-      value: { pageSize: 10, globalFilter: "collection-1" },
+      value: decoded,
     });
     for (const codec of [Query, Schema.toCodecJson(Query)]) {
       expect(Schema.decodeUnknownSync(codec)(input)).toEqual(decoded);
@@ -51,7 +52,7 @@ describe("Query", () => {
   it("validates router sorting with default pagination", async () => {
     const sort = [{ id: "name", direction: "desc" }];
     expect(await QueryStandard["~standard"].validate({ sort })).toEqual({
-      value: { sort },
+      value: { page: 0, pageSize: 20, sort },
     });
   });
 
@@ -153,22 +154,22 @@ describe("Query", () => {
     ).toEqual({ page: 0, pageSize: 20 });
   });
 
-  it("does not add pagination defaults to standard search validation", async () => {
+  it("supplies pagination defaults in standard search validation", async () => {
     for (const input of [
       {},
       { page: 0, pageSize: 20 },
       { page: undefined, pageSize: undefined },
     ]) {
       expect(await QueryStandard["~standard"].validate(input)).toStrictEqual({
-        value: { page: undefined, pageSize: undefined },
+        value: { page: 0, pageSize: 20 },
       });
     }
     expect(
       await QueryStandard["~standard"].validate({ page: 2, pageSize: 20 }),
-    ).toEqual({ value: { page: 2 } });
+    ).toEqual({ value: { page: 2, pageSize: 20 } });
     expect(
       await QueryStandard["~standard"].validate({ page: 0, pageSize: 50 }),
-    ).toEqual({ value: { pageSize: 50 } });
+    ).toEqual({ value: { page: 0, pageSize: 50 } });
     for (const input of [{ page: -1 }, { pageSize: 0 }, { pageSize: 101 }]) {
       expect(await QueryStandard["~standard"].validate(input)).toHaveProperty(
         "issues",
@@ -176,8 +177,17 @@ describe("Query", () => {
     }
   });
 
-  it("keeps default pagination out of router URLs without middleware", async () => {
-    const root = createRootRoute();
+  it("keeps child pagination defaults out of URLs with root search middleware", async () => {
+    const root = createRootRoute({
+      search: {
+        middlewares: [
+          stripSearchParams<{ page?: number; pageSize?: number }>({
+            page: 0,
+            pageSize: 20,
+          }),
+        ],
+      },
+    });
     const items = createRoute({
       getParentRoute: () => root,
       path: "items",
@@ -201,9 +211,25 @@ describe("Query", () => {
     });
     await router.navigate({ href: "/items?page=0&pageSize=20&status=invited" });
     expect(router.state.location.searchStr).toBe("?status=invited");
-    expect(
-      Schema.decodeUnknownSync(Query)(router.state.matches.at(-1)?.search),
-    ).toEqual({ page: 0, pageSize: 20 });
+    expect(router.state.matches.at(-1)?.search).toEqual({
+      page: 0,
+      pageSize: 20,
+      status: "invited",
+    });
+
+    await router.navigate({ href: "/items?page=2&pageSize=20" });
+    expect(router.state.location.search).toEqual({ page: 2 });
+    expect(router.state.matches.at(-1)?.search).toEqual({
+      page: 2,
+      pageSize: 20,
+    });
+
+    await router.navigate({ href: "/items" });
+    expect(router.state.location.searchStr).toBe("");
+    expect(router.state.matches.at(-1)?.search).toEqual({
+      page: 0,
+      pageSize: 20,
+    });
   });
 
   it("validates structured sorting", () => {

@@ -1,4 +1,4 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet } from "@tanstack/react-router";
 import { Option, Schema } from "effect";
 import { Cookies } from "effect/http";
 import type { LucideIcon } from "lucide-react";
@@ -41,6 +41,8 @@ const getSidebarDefaultOpen = (defaultOpen: boolean) => {
 type NavItem = {
   label: () => string;
   href: string;
+  /** Match only this page instead of also highlighting its nested routes. */
+  exact?: boolean;
   icon?: LucideIcon;
   badge?: () => string;
   external?: boolean;
@@ -69,9 +71,6 @@ type AppSidebarProps = {
 
 function AppSidebar({ collapsible, footer, groups, header }: AppSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
 
   const closeMobileSidebar = () => {
     if (isMobile) setOpenMobile(false);
@@ -90,13 +89,19 @@ function AppSidebar({ collapsible, footer, groups, header }: AppSidebarProps) {
                   const render = item.external ? (
                     <a href={item.href} target="_blank" rel="noreferrer" />
                   ) : (
-                    <Link to={item.href} />
+                    <Link
+                      to={item.href}
+                      activeOptions={{
+                        exact: item.exact ?? false,
+                        includeSearch: false,
+                      }}
+                      activeProps={{ "data-active": "" }}
+                    />
                   );
 
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
-                        isActive={!item.external && pathname === item.href}
                         onClick={closeMobileSidebar}
                         render={render}
                         tooltip={item.label()}

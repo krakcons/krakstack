@@ -8,6 +8,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, vi } from "vitest";
@@ -515,7 +516,7 @@ describe("DataTable model", () => {
     expect(screen.getByText("Custom cell")).toBeTruthy();
   });
 
-  it("displays list icons without per-item buttons or action menus", () => {
+  it("opens read-only icon lists without per-item actions or activating the row", async () => {
     const onRowClicked = vi.fn();
     const member = { value: "ada", label: "Ada", imageSrc: "/ada.png" };
     render(
@@ -541,9 +542,72 @@ describe("DataTable model", () => {
       screen.getByLabelText("Ada").querySelector("[aria-hidden=true]")
         ?.className,
     ).toContain("text-secondary-foreground");
-    fireEvent.click(screen.getByLabelText("Ada"));
-    expect(screen.queryByRole("menu")).toBeNull();
-    expect(onRowClicked).toHaveBeenCalledWith(data[0]);
+    fireEvent.click(screen.getByRole("button", { name: "View all items" }));
+    const menu = await screen.findByRole("menu");
+    const item = within(menu).getByRole("menuitem", { name: "Ada" });
+    expect(item.hasAttribute("aria-haspopup")).toBe(false);
+    fireEvent.click(item);
+    expect(screen.getByRole("menu")).toBeTruthy();
+    expect(onRowClicked).not.toHaveBeenCalled();
+  });
+
+  it.each([1, 3, 4])(
+    "opens a read-only dropdown for %i list items while keeping name previews",
+    async (count) => {
+      const items = ["Ada", "Grace", "Linus", "Margaret"]
+        .slice(0, count)
+        .map((label) => ({ value: label, label }));
+      render(
+        <DataTableListCell emptyLabel="Empty" display="list" items={items} />,
+      );
+      const trigger = screen.getByRole("button", { name: "View all items" });
+      expect(trigger.textContent).toContain("Ada");
+      fireEvent.click(trigger);
+      const menu = await screen.findByRole("menu");
+      for (const item of items) {
+        const menuItem = within(menu).getByRole("menuitem", {
+          name: item.label,
+        });
+        expect(menuItem.hasAttribute("aria-haspopup")).toBe(false);
+      }
+    },
+  );
+
+  it("does not open an empty read-only list", () => {
+    render(<DataTableListCell emptyLabel="Empty" items={[]} />);
+    expect(screen.getByText("Empty")).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("runs a primary list item action with row context without opening a submenu or activating the row", async () => {
+    const onItemClick = vi.fn();
+    const onRowClicked = vi.fn();
+    const item = { value: "resource-1", label: "Resource one" };
+    render(
+      <DataTable
+        columnDefs={[
+          {
+            colId: "resources",
+            headerName: "Resources",
+            type: "list",
+            typeOptions: {
+              emptyLabel: "Empty",
+              getItems: () => [item],
+              onItemClick,
+            },
+          },
+        ]}
+        rowData={[data[0]]}
+        onRowClicked={onRowClicked}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "View all items" }));
+    const menuItem = await screen.findByRole("menuitem", { name: item.label });
+    expect(menuItem.hasAttribute("aria-haspopup")).toBe(false);
+    fireEvent.click(menuItem);
+    expect(onItemClick).toHaveBeenCalledWith({ item, row: data[0] });
+    expect(onRowClicked).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   });
 
   it("opens item actions from an explicit roster without activating the row", async () => {
@@ -1265,6 +1329,60 @@ describe("DataTable model", () => {
         .map((row) => row.textContent),
     ).toEqual(["Alpha30", "Beta10"]);
   });
+
+  it("searches hidden-by-default ID columns and lets users show them", async () => {
+    render(
+      <DataTable
+        columnDefs={[{ field: "id", headerName: "ID" }, ...columns]}
+        initialState={{ columnVisibility: { id: false } }}
+        rowData={data}
+        features={{ pagination: false }}
+      />,
+    );
+
+    expect(await screen.findByText("Alpha")).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: "ID" })).toBeNull();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "two" } });
+    await waitFor(() => expect(screen.queryByText("Alpha")).toBeNull());
+    expect(screen.getByText("Beta")).toBeTruthy();
+    expect(screen.queryByText("Gamma")).toBeNull();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Columns" }));
+    const idOption = await screen.findByRole("menuitemcheckbox", {
+      name: "ID",
+    });
+    expect(idOption.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(idOption);
+    expect(await screen.findByText("two")).toBeTruthy();
+  });
+
+  it.each([
+    { visibility: {}, visible: false },
+    { visibility: { id: true }, visible: true },
+    { visibility: { id: false }, visible: false },
+  ])(
+    "respects saved visibility $visibility for hidden-by-default columns",
+    async ({ visibility, visible }) => {
+      localStorage.setItem(
+        "data-table:/:id,name,score:table:ui",
+        JSON.stringify({
+          columnVisibility: visibility,
+          columnSizing: {},
+          view: "table",
+        }),
+      );
+      render(
+        <DataTable
+          columnDefs={[{ field: "id", headerName: "ID" }, ...columns]}
+          rowData={data}
+          initialState={{ columnVisibility: { id: false } }}
+          features={{ pagination: false }}
+        />,
+      );
+      expect(await screen.findByText("Alpha")).toBeTruthy();
+      expect(screen.queryByText("one") !== null).toBe(visible);
+    },
+  );
 
   it("persists internal UI state by route and column identity", async () => {
     const storageKey = "data-table:/:name,score:table:ui";

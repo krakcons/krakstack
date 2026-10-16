@@ -20,14 +20,11 @@ import {
   LogIn,
   Pencil,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { getRouteApi } from "@tanstack/react-router";
-import { Schema } from "effect";
-import { Query } from "@/lib/query";
 import * as m from "@/paraglide/messages";
 
 const routeApi = getRouteApi("/docs/{-$slug}");
-const decodeQuery = Schema.decodeUnknownSync(Query);
 
 type Project = {
   id: string;
@@ -38,6 +35,7 @@ type Project = {
   category: "Product" | "Growth" | "Platform";
   score: number;
   updated: string;
+  members?: readonly DataTableListOption[];
 };
 
 const projects: Project[] = [
@@ -127,7 +125,17 @@ const projects: Project[] = [
   },
 ];
 
-const projectColumns = (): DataTableColDef<Project>[] => [
+const projectColumns = ({
+  setMemberAction,
+  setPreviewProjects,
+}: {
+  setMemberAction: (action: {
+    action: string;
+    name: string;
+    row: string;
+  }) => void;
+  setPreviewProjects: Dispatch<SetStateAction<Project[]>>;
+}): DataTableColDef<Project>[] => [
   {
     field: "name",
     headerName: "Project",
@@ -168,11 +176,73 @@ const projectColumns = (): DataTableColDef<Project>[] => [
       emptyLabel: "—",
       display: "icon",
       getItems: (project) => [{ value: project.owner, label: project.owner }],
+      actionsLabel: m.data_table_preview_member_actions(),
+      itemActions: [
+        {
+          name: m.data_table_preview_impersonate(),
+          icon: <LogIn />,
+          onClick: ({ item, row }) =>
+            setMemberAction({
+              action: m.data_table_preview_impersonate(),
+              name: item.label,
+              row: row.id,
+            }),
+        },
+        {
+          name: m.data_table_preview_ban(),
+          icon: <Ban />,
+          variant: "destructive",
+          onClick: ({ item, row }) =>
+            setMemberAction({
+              action: m.data_table_preview_ban(),
+              name: item.label,
+              row: row.id,
+            }),
+        },
+      ],
     },
   },
   {
     field: "category",
     headerName: "Category",
+  },
+  {
+    colId: "members",
+    headerName: m.data_table_preview_members(),
+    type: "list",
+    width: 280,
+    typeOptions: {
+      display: "list",
+      emptyLabel: m.data_table_preview_no_items(),
+      getItems: getProjectMembers,
+      getOptions: () => exampleMembers,
+      manageLabel: m.data_table_preview_manage_members(),
+      onAdd: ({ value, row }) => {
+        const member = exampleMembers.find((item) => item.value === value);
+        if (!member) return;
+        setPreviewProjects((current) =>
+          current.map((project) =>
+            project.id === row.id &&
+            !getProjectMembers(project).some((item) => item.value === value)
+              ? { ...project, members: [...getProjectMembers(project), member] }
+              : project,
+          ),
+        );
+      },
+      onRemove: ({ value, row }) =>
+        setPreviewProjects((current) =>
+          current.map((project) =>
+            project.id === row.id
+              ? {
+                  ...project,
+                  members: getProjectMembers(project).filter(
+                    (item) => item.value !== value,
+                  ),
+                }
+              : project,
+          ),
+        ),
+    },
   },
   {
     field: "score",
@@ -225,169 +295,44 @@ const exampleMembers: DataTableListOption[] = [
   { value: "grace", label: "Grace" },
   { value: "hedy", label: "Hedy" },
   { value: "linus", label: "Linus" },
+  { value: "alan", label: "Alan" },
+  { value: "annie", label: "Annie" },
+  { value: "barbara", label: "Barbara" },
+  { value: "claude", label: "Claude" },
+  { value: "donald", label: "Donald" },
+  { value: "dorothy", label: "Dorothy" },
+  { value: "edsger", label: "Edsger" },
+  { value: "evelyn", label: "Evelyn" },
+  { value: "frances", label: "Frances" },
+  { value: "george", label: "George" },
+  { value: "james", label: "James" },
+  { value: "jean", label: "Jean" },
+  { value: "john", label: "John" },
+  { value: "karen", label: "Karen" },
+  { value: "katherine", label: "Katherine" },
+  { value: "ken", label: "Ken" },
+  { value: "margaret", label: "Margaret" },
+  { value: "mary", label: "Mary" },
+  { value: "radia", label: "Radia" },
+  { value: "sophie", label: "Sophie" },
 ];
 
-type ColumnTypeExample = {
-  id: string;
-  number: number | null;
-  boolean: boolean | null;
-  date: string | null;
-  dateTime: string | null;
-  list: readonly DataTableListOption[];
-  members: readonly DataTableListOption[];
-};
-
-const columnTypeExamples: ColumnTypeExample[] = [
-  {
-    id: "example-1",
-    number: 1234.5,
-    boolean: true,
-    date: "2026-01-02",
-    dateTime: "2026-01-02T09:15:00Z",
-    list: exampleMembers,
-    members: exampleMembers.slice(0, 1),
-  },
-  {
-    id: "example-2",
-    number: 0,
-    boolean: false,
-    date: "2026-09-23",
-    dateTime: "2026-09-23T10:30:00-04:00",
-    list: exampleMembers.slice(1, 2),
-    members: exampleMembers.slice(1, 3),
-  },
-  {
-    id: "example-3",
-    number: null,
-    boolean: null,
-    date: null,
-    dateTime: null,
-    list: [],
-    members: [],
-  },
-];
+const getProjectMembers = (project: Project) =>
+  project.members ??
+  (project.category === "Growth"
+    ? exampleMembers
+    : exampleMembers.slice(0, project.category === "Product" ? 3 : 1));
 
 export function DataTablePreview() {
   const search = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
-  const projectQuery = decodeQuery(search);
-  const columnTypesQuery = decodeQuery(search.columnTypes ?? {});
-  const columns = projectColumns();
   const [previewProjects, setPreviewProjects] = useState(projects);
-  const [typeExamples, setTypeExamples] = useState(columnTypeExamples);
   const [memberAction, setMemberAction] = useState<{
     action: string;
     name: string;
     row: string;
   } | null>(null);
-  const typeColumns: DataTableColDef<ColumnTypeExample>[] = [
-    {
-      field: "number",
-      headerName: "number",
-      type: "number",
-      typeOptions: { minimumFractionDigits: 2, maximumFractionDigits: 2 },
-    },
-    {
-      field: "boolean",
-      headerName: "boolean",
-      type: "boolean",
-      typeOptions: {
-        trueLabel: m.data_table_preview_true(),
-        falseLabel: m.data_table_preview_false(),
-        getAriaLabel: (row) =>
-          m.data_table_preview_toggle_boolean({ row: row.id }),
-        onChange: ({ value, row }) =>
-          setTypeExamples((current) =>
-            current.map((example) =>
-              example.id === row.id ? { ...example, boolean: value } : example,
-            ),
-          ),
-      },
-    },
-    { field: "date", headerName: "date", type: "date" },
-    {
-      field: "dateTime",
-      headerName: "dateTime",
-      type: "dateTime",
-      width: 260,
-      typeOptions: { timeZone: "UTC", hour12: false },
-    },
-    {
-      field: "list",
-      headerName: m.data_table_preview_list_icons(),
-      type: "list",
-      typeOptions: {
-        actionsLabel: m.data_table_preview_member_actions(),
-        emptyLabel: m.data_table_preview_no_items(),
-        display: "icon",
-        getItems: (row) => row.list,
-        itemActions: [
-          {
-            name: m.data_table_preview_impersonate(),
-            icon: <LogIn />,
-            onClick: ({ item, row }) =>
-              setMemberAction({
-                action: m.data_table_preview_impersonate(),
-                name: item.label,
-                row: row.id,
-              }),
-          },
-          {
-            name: m.data_table_preview_ban(),
-            icon: <Ban />,
-            variant: "destructive",
-            onClick: ({ item, row }) =>
-              setMemberAction({
-                action: m.data_table_preview_ban(),
-                name: item.label,
-                row: row.id,
-              }),
-          },
-        ],
-      },
-    },
-    {
-      field: "members",
-      headerName: m.data_table_preview_list_editable(),
-      type: "list",
-      width: 280,
-      typeOptions: {
-        emptyLabel: m.data_table_preview_no_items(),
-        display: "list",
-        manageLabel: m.data_table_preview_manage_members(),
-        getItems: (row) => row.members,
-        getOptions: () => exampleMembers,
-        onAdd: ({ value, row }) => {
-          const member = exampleMembers.find((item) => item.value === value);
-          if (!member) return;
-          setTypeExamples((current) =>
-            current.map((example) =>
-              example.id === row.id &&
-              !example.members.some((item) => item.value === value)
-                ? {
-                    ...example,
-                    members: [...example.members, member],
-                  }
-                : example,
-            ),
-          );
-        },
-        onRemove: ({ value, row }) =>
-          setTypeExamples((current) =>
-            current.map((example) =>
-              example.id === row.id
-                ? {
-                    ...example,
-                    members: example.members.filter(
-                      (item) => item.value !== value,
-                    ),
-                  }
-                : example,
-            ),
-          ),
-      },
-    },
-  ];
+  const columns = projectColumns({ setMemberAction, setPreviewProjects });
   return (
     <div className="grid gap-6">
       <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
@@ -400,7 +345,7 @@ export function DataTablePreview() {
         <CardContent className="max-w-full min-w-0">
           <DataTable
             columnDefs={columns}
-            state={projectQuery}
+            state={search}
             onStateChange={(query) =>
               void navigate({
                 search: (previous) => ({ ...previous, ...query }),
@@ -476,38 +421,11 @@ export function DataTablePreview() {
           />
         </CardContent>
       </Card>
-      <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
-        <CardHeader>
-          <CardTitle>{m.data_table_preview_column_types()}</CardTitle>
-          <CardDescription>
-            {m.data_table_preview_column_types_description()}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="max-w-full min-w-0">
-          <DataTable
-            columnDefs={typeColumns}
-            state={columnTypesQuery}
-            onStateChange={(query) =>
-              void navigate({
-                search: (previous) => ({ ...previous, columnTypes: query }),
-                replace: true,
-                resetScroll: false,
-              })
-            }
-            features={{
-              pagination: false,
-              export: { baseName: "column-types" },
-            }}
-            getRowId={(row) => row.id}
-            rowData={typeExamples}
-          />
-          <p role="status" className="text-muted-foreground mt-3 text-sm">
-            {memberAction
-              ? m.data_table_preview_member_action_status(memberAction)
-              : null}
-          </p>
-        </CardContent>
-      </Card>
+      <p role="status" className="text-muted-foreground text-sm">
+        {memberAction
+          ? m.data_table_preview_member_action_status(memberAction)
+          : null}
+      </p>
     </div>
   );
 }

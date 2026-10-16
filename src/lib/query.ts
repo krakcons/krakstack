@@ -201,29 +201,7 @@ export const Query = Schema.Struct({
 export type QueryType = typeof Query.Type;
 export type QueryEncoded = typeof Query.Encoded;
 
-// Return explicit undefined values for defaults: Router merges validation output
-// into the supplied search, so absent keys would leave explicit defaults intact.
-export const QueryStandard = Schema.toStandardSchemaV1(
-  Schema.Struct({
-    ...Query.fields,
-    page: Query.fields.page.pipe(
-      Schema.decodeTo(Schema.optional(Schema.Int), {
-        decode: SchemaGetter.transform((page) =>
-          page === 0 ? undefined : page,
-        ),
-        encode: SchemaGetter.transform((page) => page ?? 0),
-      }),
-    ),
-    pageSize: Query.fields.pageSize.pipe(
-      Schema.decodeTo(Schema.optional(Schema.Int), {
-        decode: SchemaGetter.transform((pageSize) =>
-          pageSize === 20 ? undefined : pageSize,
-        ),
-        encode: SchemaGetter.transform((pageSize) => pageSize ?? 20),
-      }),
-    ),
-  }).annotate({ identifier: "QuerySearch" }),
-);
+export const QueryStandard = Schema.toStandardSchemaV1(Query);
 
 export const PaginationMeta = Schema.Struct({
   page: Schema.Int,
