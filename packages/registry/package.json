@@ -11,7 +11,8 @@
   "files": [
     "dist",
     "README.md",
-    "tailwind.css"
+    "tailwind.css",
+    "CHANGELOG.md"
   ],
   "type": "module",
   "sideEffects": false,

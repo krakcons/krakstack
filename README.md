@@ -16,10 +16,16 @@ KrakStack Site is the public registry and documentation site for KrakStack. It p
 
 ## Packages
 
+- [`@krak-stack/assets`](./packages/assets) provides organization-scoped asset storage and document processing.
 - [`@krak-stack/notifications`](./packages/notifications) is the recommended durable notification package. It owns PostgreSQL migrations, inbox and preference operations, delivery attempts, Effect persisted-queue jobs, workers, scheduling, and one-shot reminders.
 - [`@krak-stack/registry`](./packages/registry) publishes tree-shakable components and source-compatible Effect services.
 
 The registry items `service-notification`, `notification-channel-email-ses`, and `notification-persistence` remain available for applications that already vendor and operate the legacy dispatcher and persistence model. New durable notification systems should use `@krak-stack/notifications`; `notification-menu` remains a backend-neutral UI option for either model.
+
+Package versions and changelogs are managed with Changesets. Run `bun run changeset`
+with package changes, then `bun run version:packages` when preparing a release.
+The three packages are versioned independently and published manually with Bun.
+See the [package release workflow](.changeset/README.md).
 
 ## Getting Started
 

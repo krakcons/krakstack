@@ -28,6 +28,8 @@
     "assets:test": "bun run --cwd packages/assets test",
     "assets:typecheck": "bun run --cwd packages/assets typecheck",
     "assets:pack": "bun pm --cwd packages/assets pack",
+    "changeset": "changeset",
+    "version:packages": "changeset version",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check .",
@@ -69,6 +71,7 @@
   },
   "devDependencies": {
     "@better-auth/api-key": "^1.6.18",
+    "@changesets/cli": "3.0.3",
     "@effect/tsgo": "0.14.6",
     "@effect/vitest": "4.0.0",
     "@inlang/paraglide-js": "^2.19.0",
