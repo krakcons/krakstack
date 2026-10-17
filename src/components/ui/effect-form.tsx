@@ -3,6 +3,7 @@ import type { ComponentProps, JSX, ReactNode } from "react";
 import { Block } from "@tanstack/react-router";
 import { FormReact } from "@lucas-barake/effect-form-react";
 import { Cause, Option, Schema } from "effect";
+import { HttpClientError } from "effect/http";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { Languages, Loader2, Plus, Trash } from "lucide-react";
 
@@ -63,6 +64,14 @@ export type EffectFormMessages = {
   nameRequired: string;
   revert: string;
   submit: string;
+  submitBadRequest: string;
+  submitUnauthorized: string;
+  submitForbidden: string;
+  submitNotFound: string;
+  submitConflict: string;
+  submitRateLimited: string;
+  submitUnavailable: string;
+  submitFailed: string;
   suggestedImageSize: (width: string, height: string) => string;
   value: string;
 };
@@ -83,6 +92,16 @@ const messages = {
     nameRequired: "Name is required",
     revert: "Revert to default",
     submit: "Submit",
+    submitBadRequest: "The submitted information is invalid.",
+    submitUnauthorized: "Please sign in to submit this form.",
+    submitForbidden: "You do not have permission to submit this form.",
+    submitNotFound: "The requested resource could not be found.",
+    submitConflict:
+      "Your changes conflict with the current state. Please refresh and try again.",
+    submitRateLimited: "Too many requests. Please try again later.",
+    submitUnavailable:
+      "The service is temporarily unavailable. Please try again later.",
+    submitFailed: "Your changes could not be saved. Please try again.",
     suggestedImageSize: (width: string, height: string) =>
       `Suggested image size: ${width} x ${height}`,
     value: "Value",
@@ -102,6 +121,18 @@ const messages = {
     nameRequired: "Le nom est obligatoire",
     revert: "Revenir aux paramètres par défaut",
     submit: "Soumettre",
+    submitBadRequest: "Les informations soumises sont invalides.",
+    submitUnauthorized: "Veuillez vous connecter pour soumettre ce formulaire.",
+    submitForbidden:
+      "Vous n’avez pas la permission de soumettre ce formulaire.",
+    submitNotFound: "La ressource demandée est introuvable.",
+    submitConflict:
+      "Vos modifications sont en conflit avec l’état actuel. Veuillez actualiser la page et réessayer.",
+    submitRateLimited: "Trop de requêtes. Veuillez réessayer plus tard.",
+    submitUnavailable:
+      "Le service est temporairement indisponible. Veuillez réessayer plus tard.",
+    submitFailed:
+      "Vos modifications n’ont pas pu être enregistrées. Veuillez réessayer.",
     suggestedImageSize: (width: string, height: string) =>
       `Taille de l'image suggérée : ${width} x ${height}`,
     value: "Valeur",
@@ -127,9 +158,64 @@ const useEffectFormMessages = (
   translations?: EffectFormMessageTranslations,
 ) => effectFormMessages(useKrakstackLocale(locale), translations);
 
-const getCauseErrorMessage = (cause: Cause.Cause<unknown>) => {
+const SubmitErrorDetails = Schema.Struct({
+  _tag: Schema.optional(Schema.String),
+  status: Schema.optional(Schema.Number),
+  statusCode: Schema.optional(Schema.Number),
+}).annotate({ identifier: "SubmitErrorDetails" });
+
+const submitErrorStatuses = new Map([
+  ["BadRequest", 400],
+  ["Unauthorized", 401],
+  ["Forbidden", 403],
+  ["NotFound", 404],
+  ["Conflict", 409],
+  ["TooManyRequests", 429],
+  ["InternalServerError", 500],
+  ["NotImplemented", 501],
+  ["ServiceUnavailable", 503],
+]);
+
+const getCauseErrorMessage = (
+  cause: Cause.Cause<unknown>,
+  labels: EffectFormMessages,
+) => {
   const error = Cause.squash(cause);
-  return error instanceof Error ? error.message : String(error);
+  const isHttpClientError = HttpClientError.isHttpClientError(error);
+  // Preserve explicit server/domain messages, but not HTTP-client diagnostics.
+  if (!isHttpClientError && error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  const details = Option.getOrUndefined(
+    Schema.decodeUnknownOption(SubmitErrorDetails)(error),
+  );
+  const status = isHttpClientError
+    ? error.response?.status
+    : (details?.status ??
+      details?.statusCode ??
+      submitErrorStatuses.get(details?._tag ?? ""));
+  const statusMessage = new Map([
+    [400, labels.submitBadRequest],
+    [401, labels.submitUnauthorized],
+    [403, labels.submitForbidden],
+    [404, labels.submitNotFound],
+    [409, labels.submitConflict],
+    [429, labels.submitRateLimited],
+    [500, labels.submitFailed],
+    [501, labels.submitFailed],
+    [503, labels.submitUnavailable],
+  ]).get(status ?? 0);
+
+  // Localize empty HTTP errors and transport diagnostics.
+  if (statusMessage) return statusMessage;
+  if (error instanceof Error)
+    return error.message.trim() || labels.submitFailed;
+  return (
+    Option.getOrElse(
+      Schema.decodeUnknownOption(Schema.String)(error),
+      () => "",
+    ).trim() || labels.submitFailed
+  );
 };
 
 export type FieldOptions = {
@@ -180,13 +266,18 @@ export const ErrorMessage = ({ text }: { text: string }) => (
 
 export const SubmitError = <A, E>({
   result,
+  locale,
+  messages,
 }: {
   result: AsyncResult.AsyncResult<A, E>;
+  locale?: string;
+  messages?: EffectFormMessageTranslations;
 }) => {
+  const labels = useEffectFormMessages(locale, messages);
   const message = AsyncResult.isFailure(result)
     ? Schema.isSchemaError(Cause.squash(result.cause))
       ? undefined
-      : getCauseErrorMessage(result.cause)
+      : getCauseErrorMessage(result.cause, labels)
     : undefined;
 
   return message ? <ErrorMessage text={message} /> : null;

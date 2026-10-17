@@ -3,14 +3,127 @@
 import { describe, expect, it } from "@effect/vitest";
 import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { Effect, Schema } from "effect";
+import { Effect, Exit, Schema } from "effect";
+import { HttpApiError } from "effect/http-api";
+import {
+  HttpClientError,
+  HttpClientRequest,
+  HttpClientResponse,
+} from "effect/http";
+import { AsyncResult } from "effect/reactivity";
 import { afterEach, vi } from "vitest";
 
-import { ImageField } from "./effect-form";
+import { ImageField, SubmitError, effectFormMessages } from "./effect-form";
+import { KrakstackProvider } from "./krakstack-provider";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+});
+
+describe("SubmitError", () => {
+  it.each([
+    [new HttpApiError.BadRequest({}), "submitBadRequest"],
+    [new HttpApiError.Unauthorized({}), "submitUnauthorized"],
+    [new HttpApiError.Forbidden({}), "submitForbidden"],
+    [new HttpApiError.NotFound({}), "submitNotFound"],
+    [new HttpApiError.Conflict({}), "submitConflict"],
+    [{ _tag: "TooManyRequests" }, "submitRateLimited"],
+    [new HttpApiError.InternalServerError({}), "submitFailed"],
+    [new HttpApiError.ServiceUnavailable({}), "submitUnavailable"],
+  ] as const)("displays a message for $0._tag", (error, message) => {
+    render(<SubmitError result={AsyncResult.fail(error)} />);
+    expect(screen.getByRole("alert").textContent).toBe(
+      effectFormMessages()[message],
+    );
+  });
+
+  it("uses the provider locale and supports explicit locale and message overrides", () => {
+    const result = AsyncResult.fail(new HttpApiError.Forbidden({}));
+    const { rerender } = render(
+      <KrakstackProvider locale="fr">
+        <SubmitError result={result} />
+      </KrakstackProvider>,
+    );
+    expect(screen.getByRole("alert").textContent).toBe(
+      effectFormMessages("fr").submitForbidden,
+    );
+
+    rerender(
+      <KrakstackProvider locale="fr">
+        <SubmitError
+          result={result}
+          locale="es-MX"
+          messages={{
+            es: { submitForbidden: "Sin permiso" },
+            "es-MX": { submitForbidden: "No tienes permiso" },
+          }}
+        />
+      </KrakstackProvider>,
+    );
+    expect(screen.getByRole("alert").textContent).toBe("No tienes permiso");
+  });
+
+  it.each([new Error(""), new Error("   "), "", undefined, null, {}])(
+    "provides a fallback for an uninformative failure (%j)",
+    (error) => {
+      render(<SubmitError result={AsyncResult.fail(error)} />);
+      expect(screen.getByRole("alert").textContent).toBe(
+        effectFormMessages().submitFailed,
+      );
+    },
+  );
+
+  it("preserves useful domain error messages", () => {
+    render(
+      <SubmitError
+        result={AsyncResult.fail(new Error("The hostname is already in use."))}
+      />,
+    );
+    expect(screen.getByRole("alert").textContent).toBe(
+      "The hostname is already in use.",
+    );
+  });
+
+  it("preserves an explicit message on a typed HTTP error", () => {
+    const error = new HttpApiError.Forbidden({});
+    Object.defineProperty(error, "message", {
+      value: "Only organization owners can change this setting.",
+    });
+    render(<SubmitError result={AsyncResult.fail(error)} />);
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Only organization owners can change this setting.",
+    );
+  });
+
+  it("recognizes HTTP client response statuses", () => {
+    const request = HttpClientRequest.get("https://example.com");
+    const response = HttpClientResponse.fromWeb(
+      request,
+      new Response(null, { status: 403 }),
+    );
+    const error = new HttpClientError.HttpClientError({
+      reason: new HttpClientError.StatusCodeError({ request, response }),
+    });
+    render(<SubmitError result={AsyncResult.fail(error)} />);
+    expect(screen.getByRole("alert").textContent).toBe(
+      effectFormMessages().submitForbidden,
+    );
+  });
+
+  it("leaves schema validation errors to field-level displays", () => {
+    const exit = Schema.decodeUnknownExit(Schema.String)(42);
+    if (!Exit.isFailure(exit)) throw new Error("Expected a schema error");
+    render(<SubmitError result={AsyncResult.failure(exit.cause)} />);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("does not display an error for initial or successful submissions", () => {
+    const { rerender } = render(<SubmitError result={AsyncResult.initial()} />);
+    expect(screen.queryByRole("alert")).toBeNull();
+    rerender(<SubmitError result={AsyncResult.success(undefined)} />);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });
 
 describe("ImageField", () => {

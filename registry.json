@@ -307,7 +307,7 @@
       "name": "effect-form",
       "type": "registry:block",
       "title": "Effect Form",
-      "description": "Reusable Effect Form fields, submission state, errors, grouping, file inputs, and dirty-navigation blocking.",
+      "description": "Reusable Effect Form fields, submission state, localized HTTP errors with failure fallbacks, grouping, file inputs, and dirty-navigation blocking.",
       "meta": {
         "updatedAt": "2026-10-17"
       },
