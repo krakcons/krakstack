@@ -973,16 +973,12 @@ export const ImageField: FormReact.FieldComponent<
         onBlur={field.onBlur}
         canClear={Boolean(field.value)}
         {...(field.value instanceof File ? { file: field.value } : {})}
-        {...(imageUrl
-          ? {
-              image: {
-                alt: props.label,
-                height: props.size.height,
-                src: imageUrl,
-                width: props.size.width,
-              },
-            }
-          : {})}
+        image={{
+          alt: props.label,
+          height: props.size.height,
+          src: imageUrl,
+          width: props.size.width,
+        }}
         id={field.path}
         invalid={invalid}
         locale={props.locale}

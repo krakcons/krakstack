@@ -1,4 +1,4 @@
-import { Activity, FileCode2, ShieldCheck } from "lucide-react";
+import { Activity, FileCode2, Users } from "lucide-react";
 
 import { m } from "@/paraglide/messages";
 
@@ -11,7 +11,7 @@ export const krakstackRepositories = [
     isNew: false,
   },
   {
-    icon: ShieldCheck,
+    icon: Users,
     title: () => m.home_repository_auth_title(),
     description: () => m.home_repository_auth_description(),
     href: "https://github.com/krakcons/krakstack-auth",

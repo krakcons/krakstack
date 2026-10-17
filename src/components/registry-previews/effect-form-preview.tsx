@@ -7,6 +7,7 @@ import {
   CheckboxField,
   FieldWrapper,
   FileField,
+  ImageField,
   KeyValueField,
   MultiSelectField,
   SearchableSelectField,
@@ -23,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { m } from "@/paraglide/messages";
 
 const options = [
   { label: "Forms", value: "forms" },
@@ -39,6 +41,15 @@ const builder = FormBuilder.empty
   .addField("searchableInterests", Schema.Array(Schema.String))
   .addField("metadata", Schema.Record(Schema.String, Schema.String))
   .addField("notifications", Schema.Boolean)
+  .addField(
+    "image",
+    Schema.Union([
+      Schema.String,
+      Schema.instanceOf(File),
+      Schema.Null,
+      Schema.Undefined,
+    ]),
+  )
   .addField("attachment", Schema.UndefinedOr(Schema.instanceOf(File)));
 
 const makeForm = () =>
@@ -51,6 +62,7 @@ const makeForm = () =>
       searchableInterests: SearchableSelectField,
       metadata: KeyValueField,
       notifications: CheckboxField,
+      image: ImageField,
       attachment: FileField,
     },
     mode: { validation: "onSubmit" },
@@ -79,6 +91,7 @@ export const EffectFormPreview = () => {
             searchableInterests: ["localization"],
             metadata: { source: "docs" },
             notifications: true,
+            image: "/logo192.png",
             attachment: undefined,
           }}
         >
@@ -117,6 +130,15 @@ export const EffectFormPreview = () => {
             >
               <form.metadata label="Metadata" />
               <form.attachment accept=".pdf,.txt" label="Attachment" />
+              <form.image
+                label={m.effect_form_preview_image_label()}
+                size={{
+                  width: 96,
+                  height: 96,
+                  suggestedWidth: 512,
+                  suggestedHeight: 512,
+                }}
+              />
             </FieldWrapper>
 
             <SubmitError result={submitResult} />

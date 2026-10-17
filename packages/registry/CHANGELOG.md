@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.1.48
+
+### Patch Changes
+
+- Fix Effect Form image previews for newly selected and replacement files. Use full-width image attachment rows with consistently sized, bordered previews, truncated filenames, compact file type and size metadata, and replace/delete actions aligned to the right. Replace the refresh icon with upload icons for changing images and files.
+
 ## 0.1.47
 
 ### Patch Changes

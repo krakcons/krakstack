@@ -8,7 +8,7 @@ import {
   type DragEvent,
   type ReactNode,
 } from "react";
-import { CloudUpload, FileIcon, FileUp, RefreshCw, Trash2 } from "lucide-react";
+import { CloudUpload, FileIcon, FileUp, ImageUp, Trash2 } from "lucide-react";
 import { Schema } from "effect";
 
 import {
@@ -93,7 +93,9 @@ const formatBytes = (bytes: number, locale: string) => {
 
 const fileDescription = (file: File, locale: string) =>
   [
-    file.type || file.name.split(".").pop()?.toUpperCase(),
+    (file.name.includes(".")
+      ? file.name.split(".").pop()?.toUpperCase()
+      : "") || file.type.split("/").pop()?.toUpperCase(),
     formatBytes(file.size, locale),
   ]
     .filter(Boolean)
@@ -331,15 +333,23 @@ export const FilePicker = ({
   return (
     <>
       <Attachment
-        className={image ? "w-fit max-w-full" : "w-full"}
-        orientation={image ? "vertical" : "horizontal"}
+        className="w-full"
+        orientation="horizontal"
         state={invalid ? "error" : "done"}
       >
         <AttachmentMedia
           variant={image ? "image" : "icon"}
           className={
             image
-              ? "aspect-auto w-full max-w-full [&_img]:aspect-auto! [&_img]:object-contain!"
+              ? "aspect-auto max-w-full border [&_img]:aspect-auto! [&_img]:object-contain!"
+              : undefined
+          }
+          style={
+            image
+              ? {
+                  width: image.width,
+                  aspectRatio: `${image.width} / ${image.height}`,
+                }
               : undefined
           }
         >
@@ -349,28 +359,27 @@ export const FilePicker = ({
               alt={image.alt}
               width={image.width}
               height={image.height}
-              className="h-auto max-w-full object-contain"
-              style={{ maxHeight: image.height }}
+              className="size-full object-contain"
             />
           ) : (
             <FileIcon />
           )}
         </AttachmentMedia>
-        <AttachmentContent className={image ? "w-full" : undefined}>
-          <AttachmentTitle>{title}</AttachmentTitle>
+        <AttachmentContent>
+          <AttachmentTitle>{file?.name ?? title}</AttachmentTitle>
           {file ? (
-            <AttachmentDescription>
+            <AttachmentDescription className="break-words">
               {fileDescription(file, locale)}
             </AttachmentDescription>
           ) : null}
         </AttachmentContent>
-        <AttachmentActions>
+        <AttachmentActions className="ml-auto gap-1">
           <AttachmentAction
             type="button"
             aria-label={labels.replaceFile}
             onClick={() => inputRef.current?.click()}
           >
-            <RefreshCw />
+            {image ? <ImageUp /> : <FileUp />}
           </AttachmentAction>
           {canClear ? (
             <AttachmentAction
