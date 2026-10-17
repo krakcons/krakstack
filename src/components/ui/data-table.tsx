@@ -116,7 +116,8 @@ type DataTableState = QueryType & DataTableUiState;
 type DataTablePersistedUiState = Pick<
   DataTableUiState,
   "columnVisibility" | "columnSizing" | "view"
->;
+> &
+  Partial<Pick<DataTableUiState, "grouping">>;
 
 type DataTableTransientUiState = Omit<
   DataTableUiState,
@@ -126,6 +127,7 @@ type DataTableTransientUiState = Omit<
 const DataTablePersistedUiStateSchema = Schema.Struct({
   columnVisibility: Schema.Record(Schema.String, Schema.Boolean),
   columnSizing: Schema.Record(Schema.String, Schema.Number),
+  grouping: Schema.optionalKey(Schema.Array(Schema.String)),
   view: Schema.Literals(["table", "gallery"]),
 }).annotate({ identifier: "DataTablePersistedUiState" });
 
@@ -599,6 +601,7 @@ const persistedUiFromState = (
 ): DataTablePersistedUiState => ({
   columnVisibility: state.columnVisibility,
   columnSizing: state.columnSizing,
+  grouping: state.grouping,
   view: state.view,
 });
 
@@ -606,7 +609,6 @@ const transientUiFromState = (
   state: DataTableUiState,
 ): DataTableTransientUiState => ({
   rowSelection: state.rowSelection,
-  grouping: state.grouping,
   collapsedGroups: state.collapsedGroups,
 });
 
@@ -2410,15 +2412,13 @@ const GroupActions = ({
 
 const GroupedTable = <TData extends RowData>({
   tableAtom,
+  sections,
 }: {
   tableAtom: TableAtom<TData>;
+  sections: GroupSection<TData>[];
 }) => {
   const [store, setStore] = useTableAtom(tableAtom);
   const model = deriveModel(store);
-  const sections = groupDataTableRows(
-    model.sortedRows,
-    getActiveGrouping(store),
-  );
   const extra =
     (store.config.features.selection ? 1 : 0) +
     (hasRowActionMenu(store) ? 1 : 0) +
@@ -2690,15 +2690,21 @@ const DataTableBody = <TData extends RowData>({
 }) => {
   const [store] = useTableAtom(tableAtom);
   const model = deriveModel(store);
-  const grouped = getActiveGrouping(store).length > 0;
+  const fields = getActiveGrouping(store);
+  const grouped = fields.length > 0;
   const rows = grouped ? model.sortedRows : model.pageRows;
+  const sections = groupDataTableRows(rows, fields);
   const colSpan =
     model.visibleColumns.length +
     (store.config.features.selection ? 1 : 0) +
     (hasRowActionMenu(store) ? 1 : 0) +
     (canDragRows(store) ? 1 : 0);
-  if (grouped && rows.length && !store.config.status.error) {
-    return <GroupedTable tableAtom={tableAtom} />;
+  if (
+    sections.length &&
+    (rows.length || !store.config.status.loading) &&
+    !store.config.status.error
+  ) {
+    return <GroupedTable tableAtom={tableAtom} sections={sections} />;
   }
   return (
     <TableBody>
@@ -2832,6 +2838,7 @@ const DataTableGallery = <TData extends RowData>({
   const model = deriveModel(store);
   const fields = getActiveGrouping(store);
   const rows = fields.length ? model.sortedRows : model.pageRows;
+  const sections = groupDataTableRows(rows, fields);
   if (store.config.status.error) {
     return (
       <div className="text-destructive rounded-lg border border-dashed p-10 text-center">
@@ -2846,7 +2853,7 @@ const DataTableGallery = <TData extends RowData>({
       </div>
     );
   }
-  if (!rows.length) {
+  if (!rows.length && !sections.length) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-10 text-center">
         {store.config.status.empty ?? store.config.labels.empty}
@@ -2934,11 +2941,7 @@ const DataTableGallery = <TData extends RowData>({
         </section>
       );
     });
-  return (
-    <div className="space-y-4">
-      {renderSections(groupDataTableRows(rows, fields))}
-    </div>
-  );
+  return <div className="space-y-4">{renderSections(sections)}</div>;
 };
 
 const DataTablePagination = <TData extends RowData>({
@@ -3000,17 +3003,23 @@ const HydratedDataTable = <TData extends RowData>({
   setPersistedUiState,
   ...props
 }: HydratedDataTableProps<TData>) => {
-  const [transientUiAtom] = useState(() => {
+  const [initialGrouping] = useState(() => {
     const grouping = props.features?.grouping;
-    return Atom.make<DataTableTransientUiState>({
-      ...transientUiFromState(DEFAULT_UI_STATE),
-      grouping: grouping && grouping.initial ? grouping.initial : [],
-    });
+    return grouping && grouping.initial ? grouping.initial : [];
   });
+  const [transientUiAtom] = useState(() =>
+    Atom.make<DataTableTransientUiState>(
+      transientUiFromState(DEFAULT_UI_STATE),
+    ),
+  );
   const [transientUiState, setTransientUiState] = useAtom(transientUiAtom);
   const uiState: DataTableUiState = useMemo(
-    () => ({ ...persistedUiState, ...transientUiState }),
-    [persistedUiState, transientUiState],
+    () => ({
+      ...persistedUiState,
+      ...transientUiState,
+      grouping: persistedUiState.grouping ?? initialGrouping,
+    }),
+    [persistedUiState, transientUiState, initialGrouping],
   );
   const setUiState = useCallback(
     (state: DataTableUiState) => {
@@ -3116,7 +3125,12 @@ export const DataTable = <TData extends RowData>(
       runtime: dataTableStorageRuntime,
       key: `data-table:${pathname}:${columnIds}:${viewCapability}:ui`,
       schema: DataTablePersistedUiStateSchema,
-      defaultValue: () => persistedUiFromState(DEFAULT_UI_STATE),
+      defaultValue: () => ({
+        ...persistedUiFromState(DEFAULT_UI_STATE),
+        grouping: props.features?.grouping
+          ? (props.features.grouping.initial ?? [])
+          : [],
+      }),
     });
   });
   const [persistedUiResult, setPersistedUiState] = useAtom(persistedUiAtom);

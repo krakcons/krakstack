@@ -1,5 +1,12 @@
 # @krak-stack/registry
 
+## 0.1.50
+
+### Patch Changes
+
+- Render configured empty groups and their actions in DataTable table and gallery views even when no resource rows exist. Preserve loading, error, and normal empty states when no groups are available.
+- Persist Group by selections alongside column and view preferences, including explicitly cleared grouping. Keep existing saved preferences compatible and use the initial grouping when no grouping preference has been saved.
+
 ## 0.1.49
 
 ### Patch Changes

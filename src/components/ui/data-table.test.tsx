@@ -67,6 +67,119 @@ const state: DataTablePublicState = {
   pageSize: 2,
 };
 
+describe.each(["table", "gallery"] as const)(
+  "DataTable empty groups in %s view",
+  (view) => {
+    const selectView = async () => {
+      if (view === "gallery") {
+        fireEvent.click(screen.getByRole("menuitem", { name: "View" }));
+        fireEvent.click(
+          await screen.findByRole("menuitemradio", { name: "Gallery" }),
+        );
+        await waitFor(() => expect(screen.queryByRole("table")).toBeNull());
+      } else {
+        expect(screen.getByRole("table")).toBeTruthy();
+      }
+    };
+    const emptyGroups = (
+      ids: readonly string[] = ["folder-1"],
+      active = true,
+    ) => ({
+      initial: active ? ["folder"] : [],
+      fields: [
+        {
+          id: "folder",
+          label: "Folder",
+          getGroupId: (_row: Row) => "folder-1",
+          getGroupIds: () => ids,
+          renderGroupLabel: () => "Empty folder",
+          renderEmptyGroup: () => "No courses in this folder",
+        },
+      ],
+    });
+
+    it("renders empty folders and keeps their actions available with no resource rows", async () => {
+      const rename = vi.fn();
+      const grouping = emptyGroups();
+      render(
+        <DataTable<Row>
+          columnDefs={columns}
+          rowData={[]}
+          features={{
+            pagination: false,
+            gallery: { name: "name" },
+            grouping: {
+              ...grouping,
+              fields: grouping.fields.map((field) => ({
+                ...field,
+                actions: [{ name: "Rename folder", onClick: rename }],
+              })),
+            },
+          }}
+        />,
+      );
+      await selectView();
+      expect(screen.getByText("Empty folder")).toBeTruthy();
+      expect(screen.getByText("No courses in this folder")).toBeTruthy();
+      expect(screen.queryByText("No results.")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      fireEvent.click(
+        await screen.findByRole("menuitem", {
+          name: "Rename folder",
+        }),
+      );
+      expect(rename).toHaveBeenCalledWith("folder-1");
+    });
+
+    it.each(["inactive", "no groups"])(
+      "retains the normal empty state when grouping is %s",
+      async (mode) => {
+        render(
+          <DataTable<Row>
+            columnDefs={columns}
+            rowData={[]}
+            features={{
+              gallery: { name: "name" },
+              grouping: emptyGroups(
+                mode === "no groups" ? [] : ["folder-1"],
+                mode !== "inactive",
+              ),
+            }}
+          />,
+        );
+        await selectView();
+        expect(screen.getByText("No results.")).toBeTruthy();
+        expect(screen.queryByText("Empty folder")).toBeNull();
+      },
+    );
+
+    it.each(["loading", "error"] as const)(
+      "preserves the %s state instead of showing empty groups",
+      async (status) => {
+        render(
+          <DataTable<Row>
+            columnDefs={columns}
+            rowData={[]}
+            features={{ gallery: { name: "name" }, grouping: emptyGroups() }}
+            status={
+              status === "loading"
+                ? { loading: true }
+                : { error: "Unable to load folders" }
+            }
+          />,
+        );
+        await selectView();
+        expect(
+          screen.getByText(
+            status === "loading" ? "Loading..." : "Unable to load folders",
+          ),
+        ).toBeTruthy();
+        expect(screen.queryByText("Empty folder")).toBeNull();
+      },
+    );
+  },
+);
+
 describe("DataTable model", () => {
   it("formats numbers as localized decimals, percentages, and currencies without losing zero", () => {
     render(
@@ -1414,6 +1527,94 @@ describe("DataTable model", () => {
       />,
     );
     await waitFor(() => expect(screen.queryByText("Alpha")).toBeNull());
+  });
+
+  it("persists grouping selection and clearing across table remounts", async () => {
+    const storageKey = "data-table:/:name,score:table:ui";
+    const table = (
+      <DataTable<Row>
+        columnDefs={columns}
+        rowData={[]}
+        features={{
+          pagination: false,
+          grouping: {
+            initial: ["folder"],
+            fields: [
+              {
+                id: "folder",
+                label: "Folder",
+                getGroupId: () => "folder-1",
+                getGroupIds: () => ["folder-1"],
+                renderGroupLabel: () => "Saved folder",
+              },
+            ],
+          },
+        }}
+      />
+    );
+    const first = render(table);
+    expect(await screen.findByText("Saved folder")).toBeTruthy();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Group by" }));
+    fireEvent.click(
+      await screen.findByRole("menuitemcheckbox", { name: "Folder" }),
+    );
+    await waitFor(() =>
+      expect(localStorage.getItem(storageKey)).toContain('"grouping":[]'),
+    );
+    first.unmount();
+
+    const second = render(table);
+    expect(await screen.findByText("No results.")).toBeTruthy();
+    expect(screen.queryByText("Saved folder")).toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Group by" }));
+    const option = await screen.findByRole("menuitemcheckbox", {
+      name: "Folder",
+    });
+    expect(option.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(option);
+    await waitFor(() =>
+      expect(localStorage.getItem(storageKey)).toContain(
+        '"grouping":["folder"]',
+      ),
+    );
+    second.unmount();
+
+    render(table);
+    expect(await screen.findByText("Saved folder")).toBeTruthy();
+  });
+
+  it("keeps legacy saved column preferences and uses the initial grouping when none was saved", async () => {
+    localStorage.setItem(
+      "data-table:/:name,score:table:ui",
+      JSON.stringify({
+        columnVisibility: { score: false },
+        columnSizing: {},
+        view: "table",
+      }),
+    );
+    render(
+      <DataTable<Row>
+        columnDefs={columns}
+        rowData={data}
+        features={{
+          pagination: false,
+          grouping: {
+            initial: ["folder"],
+            fields: [
+              {
+                id: "folder",
+                label: "Folder",
+                getGroupId: () => "folder-1",
+                renderGroupLabel: () => "Legacy folder",
+              },
+            ],
+          },
+        }}
+      />,
+    );
+    expect(await screen.findByText("Legacy folder")).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: /Score/ })).toBeNull();
+    expect(screen.getByText("Alpha")).toBeTruthy();
   });
 
   it("hides default columns while persisted UI state hydrates", async () => {
