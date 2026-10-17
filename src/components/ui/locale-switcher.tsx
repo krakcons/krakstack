@@ -25,7 +25,7 @@ const messages = {
   },
   fr: {
     title: "Changer de langue",
-    en: "Anglais",
+    en: "English",
     fr: "Français",
   },
 } as const;

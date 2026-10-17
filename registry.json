@@ -348,7 +348,7 @@
       "title": "Locale Switcher",
       "description": "An i18n-library-agnostic dropdown for switching between arbitrary locales with localized language labels.",
       "meta": {
-        "updatedAt": "2026-09-28"
+        "updatedAt": "2026-10-16"
       },
       "docs": "## Overview\n\n`locale-switcher` provides a compact, i18n-library-agnostic language switcher. The caller provides the current locale, available locales, and a change callback.\n\nSet the active locale once with `KrakstackProvider`; pass `locale` directly only when a component needs an override. Message overrides are keyed by arbitrary locale strings, so additional languages can be supplied with `messages={{ es: { ... } }}`. Exact locale keys such as `es-MX` take precedence over base keys such as `es`; English is the final fallback.\n\n## Features\n\n- Accepts any locale strings and delegates locale changes to the caller\n- In-file English and French labels\n- Optional message overrides\n- Icon-only trigger with accessible screen-reader text\n\n## Usage\n\n```tsx\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\n\n<LocaleSwitcher\n  locale={locale}\n  locales={[\"en\", \"fr\", \"es\"]}\n  onLocaleChange={setLocale}\n  messages={{ es: { title: \"Idioma\", es: \"Espa\u00f1ol\" } }}\n/>\n```",
       "files": [

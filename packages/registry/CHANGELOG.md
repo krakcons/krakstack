@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.1.47
+
+### Patch Changes
+
+- Display language names in their native language in the UI language switcher so users can recognize their language regardless of the active UI locale. Editing-locale selectors continue to use translated language names.
+
 ## 0.1.46
 
 ### Patch Changes
