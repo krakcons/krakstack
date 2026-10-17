@@ -43,7 +43,7 @@
         "@effect/tsgo": "0.14.6",
         "@effect/vitest": "4.0.0",
         "@inlang/paraglide-js": "^2.19.0",
-        "@krak-stack/auth": "0.2.22",
+        "@krak-stack/auth": "0.2.23",
         "@oxlint/plugins": "1.78.0",
         "@tailwindcss/typography": "^0.5.20",
         "@testing-library/dom": "^10.4.1",
@@ -469,7 +469,7 @@
 
     "@krak-stack/assets": ["@krak-stack/assets@workspace:packages/assets"],
 
-    "@krak-stack/auth": ["@krak-stack/auth@0.2.22", "", { "dependencies": { "@effect/atom-react": "^4.0.0", "@lucas-barake/effect-form-react": "1.1.0", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@krak-stack/registry": "^0.1.48", "@tanstack/react-router": "^1.170.15", "effect": "^4.0.0", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-oYnV91QdBSXHWgioNcLaq9DHr5BOo/DMCmZaBgPwWKPjPGCKcd0eZRCYj00t/ReWiWpIWxAWBsioddk4lVXW7w=="],
+    "@krak-stack/auth": ["@krak-stack/auth@0.2.23", "", { "dependencies": { "@effect/atom-react": "^4.0.0", "@lucas-barake/effect-form-react": "1.1.0", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@krak-stack/registry": "^0.1.48", "@tanstack/react-router": "^1.170.15", "effect": "^4.0.0", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-hnP9KJab7/PAVjX//4glaugHFNqtrXfSgnPcJ6mW2i/Bx+ymp4dfsNuWOvI93q9zPHlgPCfnppx8FZEvlcT+LA=="],
 
     "@krak-stack/notifications": ["@krak-stack/notifications@workspace:packages/notifications"],
 
