@@ -194,7 +194,6 @@ import { HttpApiOtlp } from "@krak-stack/registry/opentelemetry/api";
 const options = {
   origin: "https://example.com",
   secret: Redacted.make(existingApplicationSecret),
-  trustCloudflare: false,
 };
 
 // Without database injection: enrich and forward only.
@@ -224,6 +223,32 @@ recorded events include the configured OTel resource; browser events retain thei
 producer resource, which is not trusted to choose the storage scope. Use distinct
 service names for environments sharing a database, or an explicit common
 `serviceName` when multiple services intentionally share analytics scope.
+
+Geolocation is opt-in and shared by browser ingestion and request-scoped server events:
+
+| `geolocation`                                   | Behavior                                                                                                                            |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Omitted / `undefined`                           | No IP or geography lookup; no automatic visitor/session attribution                                                                 |
+| `"cloudflare"`                                  | Read validated Cloudflare client-IP and country/region/city headers; use only behind verified ingress with origin-bypass protection |
+| `(request) => Effect<EventGeolocation \| null>` | Application-owned trusted lookup; `null` means no enrichment, with no Cloudflare fallback                                           |
+
+```ts
+const cloudflare = Events.layer({ ...options, geolocation: "cloudflare" });
+const custom = Events.layer({
+  ...options,
+  geolocation: (request) => lookupTrustedGeolocation(request),
+});
+```
+
+The custom lookup returns optional `ip`, `country`, `region`, and `city` fields.
+`ip` is a numeric IPv4/IPv6 address used only for daily hashing, never stored or
+forwarded automatically. `country` is an uppercase two-letter code; `region` is
+the uppercase subdivision suffix (for example `ON`, emitted as `CA-ON` with
+country `CA`); `city` is nonempty and at most 128 characters. Return only `ip`
+to enable visitors/visits without geography, or only geography to omit visitors.
+Provider failures or invalid results fail ingestion (HTTP 503) or server recording
+rather than falling back silently. Browser lookup runs once per validated batch;
+server lookup runs per request-scoped `.track()`, never for background events.
 
 Events use OTLP as the wire format, with the following analytics attributes:
 
@@ -272,18 +297,20 @@ The browser captures event-time page context and privacy signals. The server own
 identity, sessions, geo/device enrichment, and classification. The identity hook
 runs once per validated batch; it reflects auth at ingestion time, not event time.
 
-| Operation  | Instruction                                                                                                |
-| ---------- | ---------------------------------------------------------------------------------------------------------- |
-| Server     | Provide `Events.layer(options)`; injected SqlClient enables persistence and runs the initial migration     |
-| Hashing    | Reuse a stable server application secret (32+ characters), shared across instances; no SQL key management  |
-| Storage    | An injected PostgreSQL/SQLite SqlClient enables blocking, deduplicated event inserts and visit assignment  |
-| Auth       | Set `Events.layer({ ...options, identity: (request) => ... })` to resolve identity using your auth library |
-| Identity   | Server hook only; browser IDs are discarded. Return IDs or `null` for anonymous; failures return 503       |
-| Retention  | Application-owned; retain at least the latest 30 minutes of events to preserve active visits               |
-| Cloudflare | Enable trust only behind verified ingress with origin-bypass protection                                    |
-| Privacy    | No browser storage; daily visitor IDs; 30-minute visits when SQL is injected; DNT/GPC respected            |
-| Opt-out    | Set browser `enabled: false`                                                                               |
-| Limits     | JSON only; 64 KiB; edge rate limits required                                                               |
+| Operation   | Instruction                                                                                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server      | Provide `Events.layer(options)`; injected SqlClient enables persistence and runs the initial migration                                                                 |
+| Hashing     | Reuse a stable server application secret (32+ characters), shared across instances; no SQL key management                                                              |
+| Storage     | An injected PostgreSQL/SQLite SqlClient enables blocking, deduplicated event inserts and visit assignment                                                              |
+| Auth        | Request log annotations supply verified `user.id`, `organization.id`, and `app.actor.*`; KrakStack `AuthMiddleware.routerLayer()` supplies these for browser ingestion |
+| Other auth  | Optional `identity(request)` callback is a fallback when no request auth annotations exist                                                                             |
+| Identity    | Browser IDs are discarded. Verified request annotations replace the entire fallback identity; invalid annotations or failed fallback resolution return 503             |
+| Actor       | Only verified request actor type/ID and owner type/ID are retained; browser actor/audit claims are discarded and browser events remain analytics                       |
+| Retention   | Application-owned; retain at least the latest 30 minutes of events to preserve active visits                                                                           |
+| Geolocation | Omit for none, set `"cloudflare"` behind verified ingress, or supply a trusted Effect callback                                                                         |
+| Privacy     | No browser storage; daily visitor IDs; 30-minute visits when SQL is injected; DNT/GPC respected                                                                        |
+| Opt-out     | Set browser `enabled: false`                                                                                                                                           |
+| Limits      | JSON only; 64 KiB; edge rate limits required                                                                                                                           |
 
 With persistence enabled, `events` stores per-event OTLP JSON and indexed
 identity/time columns for project-owned reports without central ClickHouse access.
@@ -296,7 +323,8 @@ worker or guaranteed central delivery. Events can be lost before ingestion commi
 Scope report queries to the service and authorized organization/user; own event retention.
 
 There is no sessions table or cleanup API. For each service/anonymous visitor,
-ingestion reads the latest persisted event: reuse its `session.id` while receipt
+browser ingestion and request-scoped server recording read the latest persisted
+browser or server event: reuse its `session.id` while receipt
 inactivity is under 30 minutes, otherwise generate a new one. IDs are stored on
 events and forwarded through OTLP; group/filter by `session_id` for timelines.
 Retries reuse the original persisted record, including its session ID, even across
@@ -361,6 +389,24 @@ read its page path, business properties and context without another table.
 authoritative server events in SQL, joining the application's transaction when using
 the same SqlClient. It requires persistence enabled and returns `{ eventId, inserted }`.
 It does not export before commit; emit `ServerOtlp.event` afterward if desired.
+
+When `HttpServerRequest` is available in the calling Effect context, `.track()`
+automatically derives the same daily visitor ID and visit as browser ingestion,
+using the same configured service name, secret, provider-supplied trusted IP and User-Agent.
+Page views, searches and record views can therefore share a timeline; new events
+from either path extend its activity. Resolution and insertion use the same
+transaction and visitor lock, including inside an application transaction.
+The session ID is present in both SQL `session_id` and the stored OTLP record.
+
+Explicit server log annotations override derived context, including `session.id`.
+Request `x-session-id` headers and event properties do not select a session.
+Without an HTTP request or trusted IP/User-Agent, server events have no automatic
+visitor/session attribution; explicit annotations still work for background jobs.
+No browser storage, continuation tokens or additional table are introduced.
+Backend-to-backend requests identify the calling backend, not its end users;
+applications must supply validated context if those journeys need separate grouping.
+Browser DNT/GPC opt-out does not disable explicit server `.track()` calls; apply
+application-owned analytics opt-out policy before recording them.
 
 ### Server audit events
 
@@ -453,15 +499,15 @@ automatic analytics SQL persistence or page context for these generic events.
 These are document metrics, not SPA navigation timings; unsupported metrics may
 be absent. No performance entries, URLs or DOM attribution are exported.
 
-| Feature                        | Coverage                                                                     |
-| ------------------------------ | ---------------------------------------------------------------------------- |
-| Page views, events, visitors   | Included; approximate cookieless identity                                    |
-| Visits / session IDs           | Event-derived when SqlClient is injected; no session metadata table          |
-| Location                       | Trusted Cloudflare country, region and city; no bundled GeoIP database       |
-| Browser, OS, device            | Server-side User-Agent parsing                                               |
-| Referrer and UTM               | Referrer host and source/medium/campaign/content/term; no attribution engine |
-| Web Vitals                     | Independent BrowserOtlp collection, no reporting UI                          |
-| Dashboards, funnels, retention | Not included                                                                 |
+| Feature                        | Coverage                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------- |
+| Page views, events, visitors   | Included; approximate cookieless identity                                     |
+| Visits / session IDs           | Event-derived when SqlClient is injected; no session metadata table           |
+| Location                       | Optional Cloudflare or custom geolocation provider; no bundled GeoIP database |
+| Browser, OS, device            | Server-side User-Agent parsing                                                |
+| Referrer and UTM               | Referrer host and source/medium/campaign/content/term; no attribution engine  |
+| Web Vitals                     | Independent BrowserOtlp collection, no reporting UI                           |
+| Dashboards, funnels, retention | Not included                                                                  |
 
 Identity is approximate and pseudonymous. No identity merging, traits, Segment
 destination routing, or clock-skew correction is included.

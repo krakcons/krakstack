@@ -5,6 +5,7 @@ import {
   Effect,
   Layer,
   Option,
+  Predicate,
   Redacted,
   References,
   Schema,
@@ -17,11 +18,18 @@ import {
   OtlpProcessingError,
 } from "../opentelemetry/processor";
 import { OtlpResource } from "effect/observability";
-import { cloudflareContext, deviceContext } from "./request-context";
+import {
+  cloudflareGeolocation,
+  geolocationAttributes,
+  deviceContext,
+} from "./request-context";
 import {
   EventUuid,
   EventIdentity,
+  EventGeolocation,
+  EventGeolocationError,
   AuditAttribution,
+  RequestActorAttribution,
   EventLogRecord,
   EventId,
   BrowserEventPath,
@@ -40,6 +48,11 @@ import {
 import { migrateEvents } from "./migrations";
 
 export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
+export type { EventGeolocation } from "./schema";
+export type EventGeolocationResolver = (
+  request: HttpServerRequest.HttpServerRequest,
+) => Effect.Effect<EventGeolocation | null, unknown>;
 
 const identityAttributes = (identity: EventIdentity | null | undefined) => {
   const attributes: Record<string, string> = {};
@@ -67,8 +80,9 @@ export interface EventsOptions {
   readonly origin: string;
   /** Reuse a stable application secret; never sent to the browser. */
   readonly secret: Redacted.Redacted<string>;
-  readonly trustCloudflare?: boolean;
-  /** Resolves verified identity once per accepted analytics batch. Null means anonymous. */
+  /** Omit to disable. Cloudflare requires verified ingress with origin-bypass protection. */
+  readonly geolocation?: "cloudflare" | EventGeolocationResolver;
+  /** Optional fallback for non-annotation auth integrations. Request auth annotations take precedence. */
   readonly identity?: (
     request: HttpServerRequest.HttpServerRequest,
   ) => Effect.Effect<EventIdentity | null, unknown>;
@@ -88,7 +102,14 @@ const Configuration = Schema.Struct({
         "Expected an HTTP origin",
     ),
   ),
-  trustCloudflare: Schema.optional(Schema.Boolean),
+  geolocation: Schema.optional(
+    Schema.Union([
+      Schema.Literal("cloudflare"),
+      Schema.declare((value): value is EventGeolocationResolver =>
+        Predicate.isFunction(value),
+      ),
+    ]),
+  ),
   secret: Schema.String.check(Schema.isMinLength(32)),
 }).annotate({ identifier: "EventsConfiguration" });
 export class EventsConfigurationError extends Schema.TaggedError<EventsConfigurationError>()(
@@ -206,7 +227,7 @@ export class Events extends Context.Service<Events>()(
                 Result: VisitorEventSession,
                 execute: ({ visitorId }) => sql`
             SELECT event_id, session_id, received_at FROM events
-            WHERE service_name = ${configuration.serviceName} AND source = 'browser' AND anonymous_id = ${visitorId}
+            WHERE service_name = ${configuration.serviceName} AND anonymous_id = ${visitorId}
               AND session_id IS NOT NULL
             ORDER BY received_at DESC, event_id DESC LIMIT 1
           `,
@@ -295,6 +316,59 @@ export class Events extends Context.Service<Events>()(
               };
             })
           : undefined;
+        const resolveGeolocation = Effect.fnUntraced(
+          function* (request: HttpServerRequest.HttpServerRequest) {
+            const location =
+              configuration.geolocation === "cloudflare"
+                ? cloudflareGeolocation(request.headers)
+                : configuration.geolocation
+                  ? yield* configuration.geolocation(request)
+                  : null;
+            return yield* Schema.decodeUnknownEffect(
+              Schema.NullOr(EventGeolocation),
+            )(location);
+          },
+          Effect.mapError(() => new EventGeolocationError({})),
+        );
+        // Both callers run this inside their insertion transaction: one visitor
+        // lock coordinates browser and server arrivals, even across instances.
+        const resolveRequestContext = Effect.fnUntraced(function* (
+          request: HttpServerRequest.HttpServerRequest,
+          now: DateTime.Utc,
+          location: EventGeolocation | null,
+        ) {
+          const userAgent = request.headers["user-agent"]?.slice(0, 2048) ?? "";
+          const visitorId =
+            location?.ip && userAgent
+              ? dailyVisitorId({
+                  serviceName: configuration.serviceName,
+                  secret: options.secret,
+                  ip: location.ip,
+                  userAgent,
+                  day: DateTime.formatIsoDate(now),
+                })
+              : undefined;
+          let sessionId: string | undefined;
+          if (visitorId && storage) {
+            yield* storage.lockVisitor(visitorId);
+            const latest = yield* storage.latestSession({ visitorId });
+            sessionId =
+              Option.isSome(latest) &&
+              latest.value.received_at >
+                DateTime.toEpochMillis(now) - SESSION_TIMEOUT_MS
+                ? latest.value.session_id!
+                : randomUUID();
+          }
+          const identity: Record<string, string> = {};
+          if (visitorId) identity["analytics.anonymous_id"] = visitorId;
+          if (sessionId) identity["session.id"] = sessionId;
+          return {
+            ...deviceContext(userAgent),
+            ...geolocationAttributes(location),
+            "analytics.identity.mode": visitorId ? "daily" : "unattributed",
+            ...identity,
+          };
+        });
         const track = Effect.fn("Events.track")(function* (input: TrackEvent) {
           const event = yield* Schema.decodeUnknownEffect(TrackEvent)(input);
           const category = event.category ?? "analytics";
@@ -302,7 +376,11 @@ export class Events extends Context.Service<Events>()(
             return yield* new EventsPersistenceError({
               operation: "persistence-disabled",
             });
-          const now = DateTime.toEpochMillis(yield* DateTime.now);
+          const receivedAt = yield* DateTime.now;
+          const now = DateTime.toEpochMillis(receivedAt);
+          const request = yield* Effect.serviceOption(
+            HttpServerRequest.HttpServerRequest,
+          );
           const annotations = yield* References.CurrentLogAnnotations;
           // Request identity replaces the entire explicit identity: never combine
           // a verified API key with a caller-supplied user or owner.
@@ -342,6 +420,14 @@ export class Events extends Context.Service<Events>()(
           attributes["app.event.source"] = "server";
           attributes["app.event.category"] = category;
           const span = yield* Effect.currentSpan.pipe(Effect.option);
+          const location = Option.isSome(request)
+            ? yield* resolveGeolocation(request.value).pipe(
+                Effect.mapError(
+                  () =>
+                    new EventsPersistenceError({ operation: "geolocation" }),
+                ),
+              )
+            : null;
           const entry = {
             eventName: event.name,
             timeUnixNano: (
@@ -350,17 +436,28 @@ export class Events extends Context.Service<Events>()(
               ) * 1_000_000n
             ).toString(),
             observedTimeUnixNano: (BigInt(now) * 1_000_000n).toString(),
-            attributes: OtlpResource.entriesToAttributes(
-              Object.entries(attributes),
-            ),
           };
-          const validated = yield* Schema.decodeUnknownEffect(EventLogRecord)({
-            ...entry,
-            traceId: Option.isSome(span) ? span.value.traceId : undefined,
-            spanId: Option.isSome(span) ? span.value.spanId : undefined,
-          });
-          return yield* storage
-            .persist({
+          return yield* Effect.gen(function* () {
+            const requestContext = Option.isSome(request)
+              ? yield* resolveRequestContext(
+                  request.value,
+                  receivedAt,
+                  location,
+                )
+              : {};
+            const validated = yield* Schema.decodeUnknownEffect(EventLogRecord)(
+              {
+                ...entry,
+                // Explicit server annotations remain authoritative. Never read
+                // session/visitor IDs from untrusted request headers or properties.
+                attributes: OtlpResource.entriesToAttributes(
+                  Object.entries({ ...requestContext, ...attributes }),
+                ),
+                traceId: Option.isSome(span) ? span.value.traceId : undefined,
+                spanId: Option.isSome(span) ? span.value.spanId : undefined,
+              },
+            );
+            return yield* storage.persist({
               source: "server",
               compareTimestamp: event.timestamp !== undefined,
               record: validated,
@@ -378,18 +475,18 @@ export class Events extends Context.Service<Events>()(
                   },
                 ],
               },
-            })
-            .pipe(
-              storage.sql.withTransaction,
-              Effect.map(({ eventId, inserted }) => ({ eventId, inserted })),
-              Effect.mapError((error) =>
-                error._tag === "EventConflictError"
-                  ? error
-                  : new EventsPersistenceError({
-                      operation: "track",
-                    }),
-              ),
-            );
+            });
+          }).pipe(
+            storage.sql.withTransaction,
+            Effect.map(({ eventId, inserted }) => ({ eventId, inserted })),
+            Effect.mapError((error) =>
+              error._tag === "EventConflictError"
+                ? error
+                : new EventsPersistenceError({
+                    operation: "track",
+                  }),
+            ),
+          );
         });
         const process = Effect.fnUntraced(function* (body: Uint8Array) {
           const request = yield* HttpServerRequest.HttpServerRequest;
@@ -448,47 +545,58 @@ export class Events extends Context.Service<Events>()(
               return yield* new OtlpProcessingError({ status: 400 });
             }
           }
-          const userAgent = request.headers["user-agent"]?.slice(0, 2048) ?? "";
-          const trustedIdentity = options.identity
-            ? yield* options.identity(request).pipe(
-                Effect.flatMap(
-                  Schema.decodeUnknownEffect(Schema.NullOr(EventIdentity)),
+          const annotations = yield* References.CurrentLogAnnotations;
+          const hasIdentity = [
+            "user.id",
+            "organization.id",
+            ...actorAttributeKeys,
+          ].some((key) => annotations[key] !== undefined);
+          const trustedIdentity = yield* (
+            hasIdentity
+              ? Schema.decodeUnknownEffect(EventIdentity)({
+                  userId: annotations["user.id"],
+                  organizationId: annotations["organization.id"],
+                })
+              : options.identity
+                ? options
+                    .identity(request)
+                    .pipe(
+                      Effect.flatMap(
+                        Schema.decodeUnknownEffect(
+                          Schema.NullOr(EventIdentity),
+                        ),
+                      ),
+                    )
+                : Effect.succeed(null)
+          ).pipe(
+            Effect.mapError(() => new OtlpProcessingError({ status: 503 })),
+          );
+          const trustedActor = actorAttributeKeys.some(
+            (key) => annotations[key] !== undefined,
+          )
+            ? yield* Schema.decodeUnknownEffect(RequestActorAttribution)(
+                Object.fromEntries(
+                  actorAttributeKeys
+                    .filter((key) => annotations[key] !== undefined)
+                    .map((key) => [key, annotations[key]]),
                 ),
+              ).pipe(
                 Effect.mapError(() => new OtlpProcessingError({ status: 503 })),
               )
-            : null;
-          const trustedAttributes = identityAttributes(trustedIdentity);
+            : {};
+          const trustedAttributes = {
+            ...identityAttributes(trustedIdentity),
+            ...trustedActor,
+          };
+          const location = yield* resolveGeolocation(request).pipe(
+            Effect.mapError(() => new OtlpProcessingError({ status: 503 })),
+          );
           const ingest = Effect.gen(function* () {
-            const location = options.trustCloudflare
-              ? cloudflareContext(request.headers)
-              : { ip: undefined, attributes: {} };
-            const attributes = {
-              ...deviceContext(userAgent),
-              ...location.attributes,
-              "analytics.identity.mode":
-                location.ip && userAgent ? "daily" : "unattributed",
-            };
-            const identity: Record<string, string> = {};
-            let sessionId: string | undefined;
-            if (location.ip && userAgent) {
-              const visitorId = dailyVisitorId({
-                serviceName: configuration.serviceName,
-                secret: options.secret,
-                ip: location.ip,
-                userAgent,
-                day: DateTime.formatIsoDate(now),
-              });
-              identity["analytics.anonymous_id"] = visitorId;
-              if (storage) {
-                yield* storage.lockVisitor(visitorId);
-                const latest = yield* storage.latestSession({ visitorId });
-                sessionId =
-                  Option.isSome(latest) &&
-                  latest.value.received_at > nowMillis - SESSION_TIMEOUT_MS
-                    ? latest.value.session_id!
-                    : randomUUID();
-              }
-            }
+            const requestContext = yield* resolveRequestContext(
+              request,
+              now,
+              location,
+            );
             let index = 0;
             const resourceLogs = payload.resourceLogs.map((resource) => ({
               ...resource,
@@ -499,9 +607,6 @@ export class Events extends Context.Service<Events>()(
                       ...scope,
                       logRecords: scope.logRecords.map(() => {
                         const record = records[index++]!;
-                        const sessionAttributes = sessionId
-                          ? { "session.id": sessionId }
-                          : undefined;
                         return {
                           ...record,
                           observedTimeUnixNano: (
@@ -526,9 +631,7 @@ export class Events extends Context.Service<Events>()(
                             },
                             ...OtlpResource.entriesToAttributes(
                               Object.entries({
-                                ...attributes,
-                                ...identity,
-                                ...sessionAttributes,
+                                ...requestContext,
                                 ...trustedAttributes,
                                 "app.event.category": "analytics",
                                 "app.event.source": "browser",

@@ -49,15 +49,12 @@ const envelope = (records: ReadonlyArray<unknown>) => ({
 const encode = (value: OtlpLogs) =>
   new TextEncoder().encode(JSON.stringify(value));
 
-const setup = (
-  trustCloudflare = true,
-  identity?: EventsOptions["identity"],
-) => {
+const setup = (withCloudflare = true, identity?: EventsOptions["identity"]) => {
   const layer = Events.baseLayer({
     serviceName: "service-a",
     origin: "https://example.com",
     secret,
-    trustCloudflare,
+    geolocation: withCloudflare ? "cloudflare" : undefined,
     identity,
   });
   const request = (headers: Record<string, string> = {}) =>
@@ -77,6 +74,261 @@ const setup = (
 };
 
 describe("OTLP analytics enrichment", () => {
+  for (const scenario of [
+    {
+      name: "custom",
+      location: {
+        ip: "2001:db8::42",
+        country: "CA",
+        region: "ON",
+        city: "Toronto",
+      },
+    },
+    { name: "IP-only", location: { ip: "2001:db8::42" } },
+    {
+      name: "geography-only",
+      location: { country: "CA", region: "ON", city: "Toronto" },
+    },
+    { name: "null", location: null },
+  ]) {
+    it.effect(
+      `uses ${scenario.name} geolocation once per batch without falling back to Cloudflare`,
+      () => {
+        const { request } = setup();
+        let calls = 0;
+        return Effect.gen(function* () {
+          const service = yield* Events;
+          const now = yield* DateTime.now;
+          const record = event(DateTime.toEpochMillis(now));
+          const output = yield* service.process(
+            encode(envelope([record, record])),
+          );
+          const payload = yield* Schema.decodeUnknownEffect(
+            Schema.fromJsonString(OtlpLogs),
+          )(new TextDecoder().decode(output.body));
+          const records = yield* Schema.decodeUnknownEffect(
+            Schema.Array(EventLogRecord),
+          )(payload.resourceLogs[0]!.scopeLogs[0]!.logRecords);
+          expect(calls).toBe(1);
+          for (const record of records) {
+            const attrs = Object.fromEntries(
+              record.attributes.map(({ key, value }) => [key, value]),
+            );
+            expect(attrs["analytics.anonymous_id"]).toEqual(
+              scenario.location?.ip
+                ? {
+                    stringValue: dailyVisitorId({
+                      serviceName: "custom-geo",
+                      secret,
+                      ip: scenario.location.ip,
+                      userAgent: ua,
+                      day: DateTime.formatIsoDate(now),
+                    }),
+                  }
+                : undefined,
+            );
+            expect(attrs["geo.country.iso_code"]).toEqual(
+              scenario.location?.country ? { stringValue: "CA" } : undefined,
+            );
+            expect(attrs["geo.region.iso_code"]).toEqual(
+              scenario.location?.region ? { stringValue: "CA-ON" } : undefined,
+            );
+            expect(attrs["geo.locality.name"]).toEqual(
+              scenario.location?.city ? { stringValue: "Toronto" } : undefined,
+            );
+            expect(attrs["session.id"]).toBeUndefined();
+          }
+          expect(new TextDecoder().decode(output.body)).not.toContain(
+            "2001:db8::42",
+          );
+        }).pipe(
+          Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
+          Effect.provide(
+            Events.layer({
+              serviceName: "custom-geo",
+              origin: "https://example.com",
+              secret,
+              geolocation: (incoming) =>
+                Effect.sync(() => {
+                  calls++;
+                  expect(incoming.headers["cf-ipcountry"]).toBe("FR");
+                  return scenario.location;
+                }),
+            }),
+          ),
+        );
+      },
+    );
+  }
+
+  it.effect(
+    "does not call geolocation for unrelated or rejected browser batches",
+    () => {
+      const { request } = setup();
+      let calls = 0;
+      return Effect.gen(function* () {
+        const service = yield* Events;
+        const ordinary = encode({
+          resourceLogs: [
+            { scopeLogs: [{ scope: { name: "other" }, logRecords: [] }] },
+          ],
+        });
+        expect((yield* service.process(ordinary)).body).toBe(ordinary);
+        expect(
+          (yield* service
+            .process(encode(envelope([{ ...event(0), timeUnixNano: "-1" }])))
+            .pipe(Effect.flip)).status,
+        ).toBe(400);
+        const valid = encode(
+          envelope([event(DateTime.toEpochMillis(yield* DateTime.now))]),
+        );
+        expect(
+          (yield* service
+            .process(valid)
+            .pipe(
+              Effect.provideService(
+                HttpServerRequest.HttpServerRequest,
+                request({ origin: "https://other.test" }),
+              ),
+              Effect.flip,
+            )).status,
+        ).toBe(403);
+        expect(calls).toBe(0);
+      }).pipe(
+        Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
+        Effect.provide(
+          Events.layer({
+            serviceName: "custom-geo",
+            origin: "https://example.com",
+            secret,
+            geolocation: () =>
+              Effect.sync(() => {
+                calls++;
+                return null;
+              }),
+          }),
+        ),
+      );
+    },
+  );
+
+  for (const scenario of [
+    {
+      name: "verified user",
+      annotations: {
+        "user.id": "verified-user",
+        "organization.id": "verified-org",
+        "app.actor.type": "user",
+        "app.actor.id": "verified-user",
+      },
+      expected: [
+        attr("user.id", "verified-user"),
+        attr("organization.id", "verified-org"),
+        attr("app.actor.type", "user"),
+        attr("app.actor.id", "verified-user"),
+      ],
+    },
+    {
+      name: "organization actor",
+      annotations: {
+        "app.actor.type": "api_key",
+        "app.actor.id": "verified-key",
+        "app.actor.owner.type": "organization",
+        "app.actor.owner.id": "verified-org",
+        "organization.id": "verified-org",
+      },
+      expected: [
+        attr("organization.id", "verified-org"),
+        attr("app.actor.type", "api_key"),
+        attr("app.actor.id", "verified-key"),
+        attr("app.actor.owner.type", "organization"),
+        attr("app.actor.owner.id", "verified-org"),
+      ],
+    },
+  ]) {
+    it.effect(
+      `inherits ${scenario.name} annotations without an identity callback`,
+      () => {
+        const { layer, request } = setup(false, () =>
+          Effect.die("Fallback must not override verified request annotations"),
+        );
+        return Effect.gen(function* () {
+          const service = yield* Events;
+          const now = DateTime.toEpochMillis(yield* DateTime.now);
+          const record = event(now);
+          const output = yield* service.process(
+            encode(
+              envelope([
+                {
+                  ...record,
+                  attributes: [
+                    ...record.attributes,
+                    attr("user.id", "forged-user"),
+                    attr("organization.id", "forged-org"),
+                    attr("app.actor.type", "system"),
+                    attr("app.actor.id", "forged-actor"),
+                    attr("app.actor.owner.id", "forged-owner"),
+                    attr("app.event.category", "audit"),
+                  ],
+                },
+              ]),
+            ),
+          );
+          const payload = yield* Schema.decodeUnknownEffect(
+            Schema.fromJsonString(OtlpLogs),
+          )(new TextDecoder().decode(output.body));
+          const records = yield* Schema.decodeUnknownEffect(
+            Schema.Array(EventLogRecord),
+          )(payload.resourceLogs[0]!.scopeLogs[0]!.logRecords);
+          expect(
+            records[0]!.attributes.filter(
+              ({ key }) =>
+                key === "user.id" ||
+                key === "organization.id" ||
+                key.startsWith("app.actor."),
+            ),
+          ).toEqual(scenario.expected);
+          expect(records[0]!.attributes).toContainEqual(
+            attr("app.event.category", "analytics"),
+          );
+        }).pipe(
+          Effect.annotateLogs(scenario.annotations),
+          Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
+          Effect.provide(layer),
+        );
+      },
+    );
+  }
+
+  for (const annotations of [
+    { "user.id": 42 },
+    { "app.actor.type": "user" },
+    { "app.actor.type": "user", "app.actor.id": 42 },
+    {
+      "app.actor.type": "api_key",
+      "app.actor.id": "key",
+      "app.actor.owner.id": "",
+    },
+  ])
+    it.effect(
+      `rejects invalid request identity/actor annotations before ingestion: ${JSON.stringify(annotations)}`,
+      () => {
+        const { layer, request } = setup(false);
+        return Effect.gen(function* () {
+          const service = yield* Events;
+          const now = DateTime.toEpochMillis(yield* DateTime.now);
+          const error = yield* service
+            .process(encode(envelope([event(now)])))
+            .pipe(Effect.flip);
+          expect(error.status).toBe(503);
+        }).pipe(
+          Effect.annotateLogs(annotations),
+          Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
+          Effect.provide(layer),
+        );
+      },
+    );
+
   it.effect("discards browser audit, actor and executor claims", () => {
     const { layer, request } = setup(true, () =>
       Effect.succeed({
@@ -190,7 +442,7 @@ describe("OTLP analytics enrichment", () => {
             Events.layer({
               origin: "https://example.com",
               secret,
-              trustCloudflare: true,
+              geolocation: "cloudflare",
               serviceName: scenario.serviceName,
             }),
           ),
@@ -232,7 +484,7 @@ describe("OTLP analytics enrichment", () => {
             serviceName: "stateless",
             origin: "https://example.com",
             secret,
-            trustCloudflare: true,
+            geolocation: "cloudflare",
           }),
         ),
       );
@@ -470,6 +722,7 @@ describe("OTLP analytics enrichment", () => {
           expect(output).toContain("unattributed");
           expect(output).not.toContain('"key":"session.id"');
           expect(output).not.toContain("analytics.anonymous_id");
+          if (mode === "untrusted") expect(output).not.toContain('"key":"geo.');
         }).pipe(
           Effect.provideService(
             HttpServerRequest.HttpServerRequest,

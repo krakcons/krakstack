@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { EventAttributesSchema } from "../opentelemetry/schema";
 
 export const EventUuid = Schema.String.check(Schema.isUUID());
@@ -14,6 +14,39 @@ export const EventIdentity = Schema.Struct({
 }).annotate({ identifier: "EventIdentity" });
 
 export type EventIdentity = typeof EventIdentity.Type;
+
+export const EventIpAddress = Schema.String.check(
+  Schema.makeFilter(
+    (value) =>
+      Option.isSome(
+        Schema.decodeUnknownOption(Schema.IpAddressFromString)(value),
+      ) || "Invalid IP address",
+  ),
+).annotate({ identifier: "EventIpAddress" });
+export const EventCountry = Schema.String.check(
+  Schema.isPattern(/^[A-Z]{2}$/),
+  Schema.makeFilter(
+    (value) => !["XX", "T1"].includes(value) || "Unknown country",
+  ),
+).annotate({ identifier: "EventCountry" });
+export const EventRegion = Schema.String.check(
+  Schema.isPattern(/^[A-Z0-9]{1,3}$/),
+).annotate({ identifier: "EventRegion" });
+export const EventCity = Schema.NonEmptyString.check(
+  Schema.isMaxLength(128),
+).annotate({ identifier: "EventCity" });
+export const EventGeolocation = Schema.Struct({
+  ip: Schema.optional(EventIpAddress),
+  country: Schema.optional(EventCountry),
+  region: Schema.optional(EventRegion),
+  city: Schema.optional(EventCity),
+}).annotate({ identifier: "EventGeolocation" });
+export type EventGeolocation = typeof EventGeolocation.Type;
+
+export class EventGeolocationError extends Schema.TaggedError<EventGeolocationError>()(
+  "EventGeolocationError",
+  {},
+) {}
 
 export const BrowserEventOptions = Schema.Struct({
   messageId: Schema.optional(EventId),
@@ -47,6 +80,13 @@ export const AuditAttribution = Schema.Struct({
   "app.actor.type": Schema.NonEmptyString,
   "app.actor.id": Schema.NonEmptyString,
 }).annotate({ identifier: "AuditAttribution" });
+
+/** Verified request attribution, never decoded from browser event attributes. */
+export const RequestActorAttribution = Schema.Struct({
+  ...AuditAttribution.fields,
+  "app.actor.owner.type": Schema.optional(Schema.NonEmptyString),
+  "app.actor.owner.id": Schema.optional(Schema.NonEmptyString),
+}).annotate({ identifier: "RequestActorAttribution" });
 
 export class EventsPersistenceError extends Schema.TaggedError<EventsPersistenceError>()(
   "EventsPersistenceError",
@@ -175,7 +215,7 @@ export const VisitorEventsRequest = Schema.Struct({
 
 export const VisitorEventSession = Schema.Struct({
   event_id: EventId,
-  session_id: Schema.NullOr(EventUuid),
+  session_id: Schema.NullOr(Schema.NonEmptyString),
   received_at: Schema.Finite,
 }).annotate({ identifier: "VisitorEventSession" });
 

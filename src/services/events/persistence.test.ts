@@ -3,18 +3,24 @@ import { SqliteClient } from "@effect/sql-sqlite-node";
 import { describe, expect, it } from "@effect/vitest";
 import { Config, DateTime, Effect, Layer, Redacted, Schema } from "effect";
 import { HttpServerRequest } from "effect/http";
-import { SqlClient } from "effect/sql";
+import { SqlClient, SqlSchema } from "effect/sql";
 import { TestClock } from "effect/testing";
 
-import { Events } from "./index";
-import { EventLogRecord, TrackEvent, OtlpLogs } from "./schema";
+import { Events, type EventsOptions } from "./index";
+import {
+  EventLogRecord,
+  TrackEvent,
+  OtlpLogs,
+  EventSource,
+  StoredEventPayload,
+} from "./schema";
 
 const options = {
   serviceName: `analytics-test-${crypto.randomUUID()}`,
   origin: "https://example.com",
   secret: Redacted.make("test-secret-at-least-thirty-two-characters"),
-  trustCloudflare: true,
-};
+  geolocation: "cloudflare",
+} satisfies EventsOptions;
 const databases = [
   {
     name: "SQLite",
@@ -70,6 +76,15 @@ const request = HttpServerRequest.fromWeb(
     },
   }),
 );
+const searchRequest = HttpServerRequest.fromWeb(
+  new Request("https://example.com/api/search", { headers: request.headers }),
+);
+const VisitRow = Schema.Struct({
+  event_id: Schema.String,
+  source: EventSource,
+  session_id: Schema.NullOr(Schema.NonEmptyString),
+  anonymous_id: Schema.NullOr(Schema.NonEmptyString),
+}).annotate({ identifier: "StoredVisitTestRow" });
 
 const forwardedSession = Effect.fnUntraced(function* (body: Uint8Array) {
   const payload = yield* Schema.decodeUnknownEffect(
@@ -94,11 +109,493 @@ for (const database of databases) {
         yield* sql`DELETE FROM events WHERE service_name IN (${options.serviceName}, ${options.serviceName + "-other"})`;
       }).pipe(Effect.orDie),
     );
-    return { analytics, sql };
+    const visits = SqlSchema.findAll({
+      Request: Schema.Void,
+      Result: VisitRow,
+      execute:
+        () => sql`SELECT event_id, source, session_id, anonymous_id FROM events
+        WHERE service_name = ${options.serviceName} ORDER BY received_at, event_id`,
+    });
+    return { analytics, sql, visits };
   });
   describe.skipIf(!database.enabled)(
     `Events persistence (${database.name})`,
     () => {
+      it.effect(
+        "shares custom geolocation across browser and server visits without storing raw IPs",
+        () =>
+          Effect.gen(function* () {
+            const { sql, visits } = yield* fixture;
+            let calls = 0;
+            const analytics = yield* Events.make({
+              ...options,
+              geolocation: () =>
+                Effect.sync(() => {
+                  calls++;
+                  return {
+                    ip: "2001:db8::42",
+                    country: "CA",
+                    region: "ON",
+                    city: "Toronto",
+                  };
+                }),
+            });
+            yield* analytics
+              .track({ eventId: "custom-search", name: "search" })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+              );
+            const output = yield* analytics
+              .process(batch(DateTime.toEpochMillis(yield* DateTime.now)))
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  request,
+                ),
+              );
+            const rows = yield* visits();
+            expect(rows).toHaveLength(2);
+            expect(rows[0]!.session_id).not.toBeNull();
+            expect(rows[0]!.anonymous_id).not.toBeNull();
+            expect(rows[1]!.session_id).toBe(rows[0]!.session_id);
+            expect(rows[1]!.anonymous_id).toBe(rows[0]!.anonymous_id);
+            expect(yield* forwardedSession(output.body)).toBe(
+              rows[0]!.session_id,
+            );
+            const stored =
+              yield* sql`SELECT payload_json FROM events WHERE service_name = ${options.serviceName} AND event_id = 'custom-search'`;
+            const payload = yield* Schema.decodeUnknownEffect(
+              StoredEventPayload,
+            )(stored[0]);
+            const record = yield* Schema.decodeUnknownEffect(EventLogRecord)(
+              payload.payload_json.resourceLogs[0]?.scopeLogs[0]?.logRecords[0],
+            );
+            expect(record.attributes).toEqual(
+              expect.arrayContaining([
+                attr("geo.country.iso_code", "CA"),
+                attr("geo.region.iso_code", "CA-ON"),
+                attr("geo.locality.name", "Toronto"),
+              ]),
+            );
+            expect(JSON.stringify(payload)).not.toContain("2001:db8::42");
+            yield* analytics.track({
+              eventId: "background-custom-geo",
+              name: "import",
+            });
+            expect(calls).toBe(2);
+            expect(
+              (yield* visits()).find(
+                (row) => row.event_id === "background-custom-geo",
+              )!.session_id,
+            ).toBeNull();
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "rejects failed or invalid custom geolocation without persisting events or extending visits",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, sql } = yield* fixture;
+            yield* analytics
+              .track({ eventId: "original-geo", name: "search" })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+              );
+            const stored =
+              yield* sql`SELECT payload_json, received_at FROM events WHERE service_name = ${options.serviceName}`;
+            const resolvers: ReadonlyArray<
+              Exclude<EventsOptions["geolocation"], string | undefined>
+            > = [
+              () => Effect.fail("provider unavailable"),
+              () => Effect.succeed({ ip: "not-an-ip" }),
+              () => Effect.succeed({ country: "invalid" }),
+              () => Effect.succeed({ region: "CA-ON" }),
+              () => Effect.succeed({ city: "" }),
+            ];
+            for (const geolocation of resolvers) {
+              const failing = yield* Events.make({ ...options, geolocation });
+              expect(
+                yield* failing
+                  .track({ eventId: "failed-geo", name: "search" })
+                  .pipe(
+                    Effect.provideService(
+                      HttpServerRequest.HttpServerRequest,
+                      searchRequest,
+                    ),
+                    Effect.result,
+                  ),
+              ).toMatchObject({
+                _tag: "Failure",
+                failure: { _tag: "EventsPersistenceError" },
+              });
+              expect(
+                yield* failing
+                  .process(batch(DateTime.toEpochMillis(yield* DateTime.now)))
+                  .pipe(
+                    Effect.provideService(
+                      HttpServerRequest.HttpServerRequest,
+                      request,
+                    ),
+                    Effect.result,
+                  ),
+              ).toMatchObject({ _tag: "Failure", failure: { status: 503 } });
+            }
+            expect(
+              yield* sql`SELECT payload_json, received_at FROM events WHERE service_name = ${options.serviceName}`,
+            ).toEqual(stored);
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "shares visits between server events and browser ingestion and counts both as activity",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, sql, visits } = yield* fixture;
+            const track = (eventId: string) =>
+              analytics
+                .track({ eventId, name: "search" })
+                .pipe(
+                  Effect.provideService(
+                    HttpServerRequest.HttpServerRequest,
+                    searchRequest,
+                  ),
+                );
+            const page = () =>
+              Effect.gen(function* () {
+                const output = yield* analytics
+                  .process(batch(DateTime.toEpochMillis(yield* DateTime.now)))
+                  .pipe(
+                    Effect.provideService(
+                      HttpServerRequest.HttpServerRequest,
+                      request,
+                    ),
+                  );
+                return yield* forwardedSession(output.body);
+              });
+            yield* track("first-search");
+            const first = (yield* visits())[0]!;
+            expect(first.session_id).not.toBeNull();
+            expect(first.anonymous_id).not.toBeNull();
+            const stored =
+              yield* sql`SELECT payload_json FROM events WHERE service_name = ${options.serviceName} AND event_id = 'first-search'`;
+            const payload = yield* Schema.decodeUnknownEffect(
+              StoredEventPayload,
+            )(stored[0]);
+            const record = yield* Schema.decodeUnknownEffect(EventLogRecord)(
+              payload.payload_json.resourceLogs[0]?.scopeLogs[0]?.logRecords[0],
+            );
+            expect(record.attributes).toEqual(
+              expect.arrayContaining([
+                attr("session.id", first.session_id!),
+                attr("analytics.anonymous_id", first.anonymous_id!),
+                attr("analytics.identity.mode", "daily"),
+                attr("app.event.source", "server"),
+              ]),
+            );
+            expect(JSON.stringify(payload)).not.toMatch(
+              /203\.0\.113\.42|test-browser/,
+            );
+            yield* TestClock.adjust("29 minutes");
+            expect(yield* page()).toBe(first.session_id);
+            yield* TestClock.adjust("29 minutes");
+            yield* track("record-view");
+            yield* TestClock.adjust("29 minutes");
+            expect(yield* page()).toBe(first.session_id);
+            const active = yield* visits();
+            expect(active).toHaveLength(4);
+            expect(new Set(active.map((row) => row.session_id))).toEqual(
+              new Set([first.session_id]),
+            );
+            expect(new Set(active.map((row) => row.anonymous_id))).toEqual(
+              new Set([first.anonymous_id]),
+            );
+            yield* TestClock.adjust("30 minutes");
+            yield* track("new-visit");
+            const next = (yield* visits()).find(
+              (row) => row.event_id === "new-visit",
+            )!;
+            expect(next.session_id).not.toBeNull();
+            expect(next.session_id).not.toBe(first.session_id);
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "serializes concurrent first browser and server arrivals across service instances",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, visits } = yield* fixture;
+            const second = yield* Events.make(options);
+            const now = DateTime.toEpochMillis(yield* DateTime.now);
+            yield* Effect.forEach(
+              Array.from({ length: 8 }),
+              (_, index) =>
+                Effect.gen(function* () {
+                  if (index % 2) {
+                    yield* analytics
+                      .process(batch(now))
+                      .pipe(
+                        Effect.provideService(
+                          HttpServerRequest.HttpServerRequest,
+                          request,
+                        ),
+                      );
+                  } else {
+                    yield* second
+                      .track({ eventId: `server-${index}`, name: "search" })
+                      .pipe(
+                        Effect.provideService(
+                          HttpServerRequest.HttpServerRequest,
+                          searchRequest,
+                        ),
+                      );
+                  }
+                }),
+              { concurrency: "unbounded" },
+            );
+            const rows = yield* visits();
+            expect(rows).toHaveLength(8);
+            expect(
+              rows.every(
+                (row) => row.session_id !== null && row.anonymous_id !== null,
+              ),
+            ).toBe(true);
+            expect(new Set(rows.map((row) => row.session_id)).size).toBe(1);
+            expect(new Set(rows.map((row) => row.anonymous_id)).size).toBe(1);
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "does not invent visits for background events or missing/untrusted request metadata",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, visits } = yield* fixture;
+            yield* analytics.track({ eventId: "background", name: "import" });
+            const untrusted = yield* Events.make({
+              ...options,
+              geolocation: undefined,
+            });
+            yield* untrusted
+              .track({ eventId: "untrusted", name: "search" })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+              );
+            for (const [eventId, headers] of [
+              ["missing-ip", { "user-agent": "test-browser" }],
+              ["missing-ua", { "cf-connecting-ip": "203.0.113.42" }],
+              [
+                "invalid-ip",
+                {
+                  "cf-connecting-ip": "not-an-ip",
+                  "user-agent": "test-browser",
+                },
+              ],
+            ] satisfies ReadonlyArray<
+              readonly [string, Record<string, string>]
+            >) {
+              yield* analytics.track({ eventId, name: "search" }).pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  HttpServerRequest.fromWeb(
+                    new Request("https://example.com/api/search", {
+                      headers: {
+                        ...headers,
+                        "x-session-id": "forged-session",
+                      },
+                    }),
+                  ),
+                ),
+              );
+            }
+            const rows = yield* visits();
+            expect(rows).toHaveLength(5);
+            expect(
+              rows.every(
+                (row) => row.session_id === null && row.anonymous_id === null,
+              ),
+            ).toBe(true);
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "honors trusted explicit session annotations without accepting request session claims",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, visits } = yield* fixture;
+            yield* analytics
+              .track({ eventId: "explicit", name: "search" })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+                Effect.annotateLogs({ "session.id": "application-session" }),
+              );
+            const output = yield* analytics
+              .process(batch(DateTime.toEpochMillis(yield* DateTime.now)))
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  request,
+                ),
+              );
+            expect(yield* forwardedSession(output.body)).toBe(
+              "application-session",
+            );
+            yield* analytics
+              .track({
+                eventId: "header-claim",
+                name: "view",
+                properties: { "session.id": "property-forgery" },
+              })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  HttpServerRequest.fromWeb(
+                    new Request("https://example.com/api/records/1", {
+                      headers: {
+                        ...request.headers,
+                        "x-session-id": "header-forgery",
+                      },
+                    }),
+                  ),
+                ),
+              );
+            expect(
+              new Set((yield* visits()).map((row) => row.session_id)),
+            ).toEqual(new Set(["application-session"]));
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "keeps server retry attribution across midnight and does not extend activity",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, sql, visits } = yield* fixture;
+            yield* TestClock.adjust("1439 minutes");
+            const input = {
+              eventId: "retry",
+              name: "search",
+              properties: { query: "food" },
+            };
+            yield* analytics
+              .track(input)
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+              );
+            const stored =
+              yield* sql`SELECT session_id, anonymous_id, received_at, payload_json FROM events WHERE service_name = ${options.serviceName}`;
+            const first = (yield* visits())[0]!;
+            yield* TestClock.adjust("2 minutes");
+            for (const retryRequest of [
+              searchRequest,
+              HttpServerRequest.fromWeb(
+                new Request("https://example.com/api/search", {
+                  headers: {
+                    ...request.headers,
+                    "user-agent": "different-browser",
+                    "cf-connecting-ip": "203.0.113.43",
+                  },
+                }),
+              ),
+            ]) {
+              expect(
+                yield* analytics
+                  .track(input)
+                  .pipe(
+                    Effect.provideService(
+                      HttpServerRequest.HttpServerRequest,
+                      retryRequest,
+                    ),
+                  ),
+              ).toEqual({ eventId: input.eventId, inserted: false });
+            }
+            expect(
+              yield* sql`SELECT session_id, anonymous_id, received_at, payload_json FROM events WHERE service_name = ${options.serviceName}`,
+            ).toEqual(stored);
+            yield* analytics
+              .track({ eventId: "new-day", name: "view" })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+              );
+            const next = (yield* visits()).find(
+              (row) => row.event_id === "new-day",
+            )!;
+            expect(next.anonymous_id).not.toBe(first.anonymous_id);
+            expect(next.session_id).not.toBe(first.session_id);
+            yield* TestClock.adjust("29 minutes");
+            yield* analytics
+              .track({ eventId: "new-day", name: "view" })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+              );
+            yield* TestClock.adjust("1 minute");
+            yield* analytics
+              .track({ eventId: "after-idle", name: "view" })
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  searchRequest,
+                ),
+              );
+            expect(
+              (yield* visits()).find((row) => row.event_id === "after-idle")!
+                .session_id,
+            ).not.toBe(next.session_id);
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "rolls back request-attributed server events with the application transaction",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, sql, visits } = yield* fixture;
+            yield* Effect.gen(function* () {
+              yield* analytics.track({
+                eventId: "rollback-session",
+                name: "search",
+              });
+              expect((yield* visits())[0]!.session_id).not.toBeNull();
+              return yield* Effect.fail("abort");
+            }).pipe(
+              sql.withTransaction,
+              Effect.provideService(
+                HttpServerRequest.HttpServerRequest,
+                searchRequest,
+              ),
+              Effect.result,
+            );
+            expect(yield* visits()).toEqual([]);
+            const output = yield* analytics
+              .process(batch(DateTime.toEpochMillis(yield* DateTime.now)))
+              .pipe(
+                Effect.provideService(
+                  HttpServerRequest.HttpServerRequest,
+                  request,
+                ),
+              );
+            expect(yield* forwardedSession(output.body)).toBeDefined();
+            expect(yield* visits()).toHaveLength(1);
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
       it.effect("rejects retries under a different verified principal", () =>
         Effect.gen(function* () {
           const { sql } = yield* fixture;

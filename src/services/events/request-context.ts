@@ -1,37 +1,43 @@
-import { isIP } from "node:net";
 import Bowser from "bowser";
 import { Option, Schema } from "effect";
 
 import type { EventAttributes } from "../opentelemetry/schema";
-
-const IpAddress = Schema.String.check(
-  Schema.makeFilter((value) => isIP(value) !== 0 || "Invalid IP address"),
-);
-const Country = Schema.String.check(
-  Schema.isPattern(/^[A-Z]{2}$/),
-  Schema.makeFilter(
-    (value) => !["XX", "T1"].includes(value) || "Unknown country",
-  ),
-);
-const Location = Schema.NonEmptyString.check(Schema.isMaxLength(128));
-const Region = Schema.String.check(Schema.isPattern(/^[A-Z0-9]{1,3}$/));
+import {
+  EventIpAddress,
+  EventCountry,
+  EventRegion,
+  EventCity,
+  type EventGeolocation,
+} from "./schema";
 
 /** Enable only behind a verified Cloudflare ingress that prevents origin bypass. */
-export const cloudflareContext = (
+export const cloudflareGeolocation = (
   headers: Readonly<Record<string, string | undefined>>,
-) => {
-  const ip = Schema.decodeUnknownOption(IpAddress)(headers["cf-connecting-ip"]);
+): EventGeolocation => ({
+  ip: Option.getOrUndefined(
+    Schema.decodeUnknownOption(EventIpAddress)(headers["cf-connecting-ip"]),
+  ),
+  country: Option.getOrUndefined(
+    Schema.decodeUnknownOption(EventCountry)(headers["cf-ipcountry"]),
+  ),
+  region: Option.getOrUndefined(
+    Schema.decodeUnknownOption(EventRegion)(headers["cf-region-code"]),
+  ),
+  city: Option.getOrUndefined(
+    Schema.decodeUnknownOption(EventCity)(headers["cf-ipcity"]),
+  ),
+});
+
+export const geolocationAttributes = (location: EventGeolocation | null) => {
   const attributes: Record<string, EventAttributes[string]> = {};
-  const country = Schema.decodeUnknownOption(Country)(headers["cf-ipcountry"]);
-  const region = Schema.decodeUnknownOption(Region)(headers["cf-region-code"]);
-  const city = Schema.decodeUnknownOption(Location)(headers["cf-ipcity"]);
-  if (Option.isSome(country)) {
-    attributes["geo.country.iso_code"] = country.value;
-    if (Option.isSome(region))
-      attributes["geo.region.iso_code"] = `${country.value}-${region.value}`;
+  if (location?.country) {
+    attributes["geo.country.iso_code"] = location.country;
+    if (location.region)
+      attributes["geo.region.iso_code"] =
+        `${location.country}-${location.region}`;
   }
-  if (Option.isSome(city)) attributes["geo.locality.name"] = city.value;
-  return { ip: Option.getOrUndefined(ip), attributes };
+  if (location?.city) attributes["geo.locality.name"] = location.city;
+  return attributes;
 };
 
 export const deviceContext = (userAgent: string): EventAttributes => {
