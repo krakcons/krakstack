@@ -11,6 +11,9 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/services/events/index.ts",
+    "../../src/services/events/browser.ts",
+    "../../src/services/events/migrations.ts",
     "../../src/services/agent/client/index.ts",
     "../../src/services/agent/index.ts",
     "../../src/services/agent/schema.ts",

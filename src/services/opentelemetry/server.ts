@@ -2,7 +2,7 @@ import { Config, Effect, Layer, Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { Otlp, OtlpExporter, OtlpSerialization } from "effect/observability";
 
-import { OtlpEvents, track } from "./events";
+import { OtlpEvents, event } from "./events";
 
 export type { EventAttributes, EventOptions } from "./schema";
 
@@ -55,7 +55,7 @@ const ServerEventsLive = Layer.unwrap(
 
 /** Runtime-neutral server telemetry for HTTP applications, workers, and CLIs. */
 export class ServerOtlp {
-  static readonly track = track;
+  static readonly event = event;
 
   static readonly layer = Layer.mergeAll(
     Otlp.layerFromConfig(),

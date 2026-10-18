@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from "@effect/vitest";
-import { Deferred, Effect } from "effect";
+import { Deferred, Effect, Schema } from "effect";
 import {
   FetchHttpClient,
   Headers,
@@ -12,6 +12,30 @@ import { OtlpExporter } from "effect/observability";
 import { afterEach, vi } from "vitest";
 
 import { BrowserOtlp } from "./browser";
+import { ServerOtlp } from "./server";
+
+const EventPayload = Schema.fromJsonString(
+  Schema.Struct({
+    resourceLogs: Schema.Array(
+      Schema.Struct({
+        scopeLogs: Schema.Array(
+          Schema.Struct({
+            scope: Schema.Struct({ name: Schema.String }),
+            logRecords: Schema.Array(
+              Schema.Struct({
+                eventName: Schema.String,
+                severityNumber: Schema.Number,
+                attributes: Schema.Array(
+                  Schema.Struct({ key: Schema.String, value: Schema.Unknown }),
+                ),
+              }),
+            ),
+          }),
+        ),
+      }),
+    ),
+  }),
+).annotate({ identifier: "BrowserEventPayload" });
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -19,6 +43,111 @@ afterEach(() => {
 });
 
 describe("BrowserOtlp", () => {
+  it.effect(
+    "formats generic OTLP events with the same stateless event API as the server",
+    () => {
+      const requests: Array<{ url: string; body: string }> = [];
+      const fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request =
+          input instanceof Request ? input : new Request(input, init);
+        requests.push({ url: request.url, body: await request.text() });
+        return new Response("{}");
+      };
+      const push = history.pushState;
+      return Effect.gen(function* () {
+        expect(BrowserOtlp.event).toBe(ServerOtlp.event);
+        yield* BrowserOtlp.event(
+          "checkout.started",
+          { items: 2 },
+          { messageId: "event-1" },
+        );
+        yield* BrowserOtlp.event("checkout.next");
+        expect(history.pushState).toBe(push);
+        yield* (yield* OtlpExporter.Flusher).flush;
+        expect(requests).toHaveLength(1);
+        expect(requests[0]!.url).toBe("http://localhost:3000/api/otel/v1/logs");
+        const payload = yield* Schema.decodeUnknownEffect(EventPayload)(
+          requests[0]!.body,
+        );
+        const scope = payload.resourceLogs[0]!.scopeLogs[0]!;
+        expect(scope.scope.name).toBe("krakstack.events");
+        expect(scope.logRecords[0]).toEqual({
+          eventName: "checkout.started",
+          severityNumber: 9,
+          attributes: [
+            { key: "items", value: { intValue: 2 } },
+            { key: "log.record.uid", value: { stringValue: "event-1" } },
+          ],
+        });
+        expect(scope.logRecords[1]!.attributes).toEqual([]);
+      }).pipe(
+        Effect.provide(
+          BrowserOtlp.layer({
+            serviceName: "browser-events",
+            events: {},
+            traces: false,
+          }),
+        ),
+        Effect.provideService(
+          FetchHttpClient.Fetch,
+          Object.assign(fetch, { preconnect: globalThis.fetch.preconnect }),
+        ),
+      );
+    },
+  );
+
+  it.effect(
+    "keeps generic event export opt-in and validates event input",
+    () => {
+      let sent = 0;
+      const fetch = async () => {
+        sent++;
+        return new Response("{}");
+      };
+      return Effect.gen(function* () {
+        yield* BrowserOtlp.event("disabled");
+        expect((yield* BrowserOtlp.event("").pipe(Effect.result))._tag).toBe(
+          "Failure",
+        );
+        yield* (yield* OtlpExporter.Flusher).flush;
+        expect(sent).toBe(0);
+      }).pipe(
+        Effect.provide(
+          BrowserOtlp.layer({ serviceName: "disabled-events", traces: false }),
+        ),
+        Effect.provideService(
+          FetchHttpClient.Fetch,
+          Object.assign(fetch, { preconnect: globalThis.fetch.preconnect }),
+        ),
+      );
+    },
+  );
+  it.effect(
+    "does not install analytics page tracking or export page events",
+    () => {
+      const push = history.pushState;
+      const replace = history.replaceState;
+      let sent = 0;
+      const fetch = async () => {
+        sent++;
+        return new Response("{}");
+      };
+      return Effect.gen(function* () {
+        expect(history.pushState).toBe(push);
+        expect(history.replaceState).toBe(replace);
+        yield* (yield* OtlpExporter.Flusher).flush;
+        expect(sent).toBe(0);
+      }).pipe(
+        Effect.provide(
+          BrowserOtlp.layer({ serviceName: "telemetry-only", traces: false }),
+        ),
+        Effect.provideService(
+          FetchHttpClient.Fetch,
+          Object.assign(fetch, { preconnect: globalThis.fetch.preconnect }),
+        ),
+      );
+    },
+  );
   it.effect("removes lifecycle listeners when the layer is disposed", () => {
     const addDocument = vi.spyOn(document, "addEventListener");
     const removeDocument = vi.spyOn(document, "removeEventListener");

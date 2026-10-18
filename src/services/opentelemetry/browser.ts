@@ -1,14 +1,4 @@
-import {
-  Context,
-  Effect,
-  FiberSet,
-  Layer,
-  Predicate,
-  Ref,
-  References,
-  Schema,
-  Stream,
-} from "effect";
+import { Effect, FiberSet, Layer, Predicate, Schema, Stream } from "effect";
 import { FetchHttpClient, HttpClientRequest } from "effect/http";
 import {
   type Otlp,
@@ -19,28 +9,10 @@ import {
   OtlpTracer,
 } from "effect/observability";
 
-import { OtlpEvents, track, type EventExportOptions } from "./events";
-import {
-  BrowserIdentity,
-  PageEvent,
-  type EventAttributes,
-  type EventOptions,
-  type PageOptions,
-} from "./schema";
+import { OtlpEvents, event, type EventExportOptions } from "./events";
+import { BrowserWebVitalsLive } from "./web-vitals";
 
-export type {
-  BrowserIdentity,
-  EventAttributes,
-  EventOptions,
-  PageOptions,
-} from "./schema";
-
-class BrowserIdentityState extends Context.Service<
-  BrowserIdentityState,
-  Ref.Ref<BrowserIdentity>
->()("krakstack/opentelemetry/BrowserIdentity") {
-  static readonly layer = Layer.effect(this, Ref.make<BrowserIdentity>({}));
-}
+export type { EventAttributes, EventOptions } from "./schema";
 
 class BrowserReportedError extends Schema.TaggedError<BrowserReportedError>()(
   "BrowserReportedError",
@@ -152,201 +124,53 @@ export interface BrowserOtlpOptions {
     | false
     | SignalOptions<Parameters<typeof OtlpMetrics.layer>[0]>;
   readonly logs?: false | SignalOptions<Parameters<typeof OtlpLogger.layer>[0]>;
-  readonly events?:
-    | false
-    | (EventExportOptions & {
-        /** Initial page and pathname changes; enabled by default. */
-        readonly pageViews?: boolean;
-      });
+  /** Named OTLP log events; no automatic page tracking or analytics enrichment. */
+  readonly events?: false | EventExportOptions;
+  /** Standard browser.web_vital OTLP events; no analytics service or page tracking required. */
+  readonly webVitals?: boolean;
+  /** Applies to automatic Web Vitals only, not other telemetry signals. */
+  readonly respectDoNotTrack?: boolean;
 }
-
-const browserEffects = {
-  /** Replaces identity for future events; null clears it without emitting an event. */
-  identify: Effect.fnUntraced(function* (input: BrowserIdentity | null) {
-    const identity = yield* Schema.decodeUnknownEffect(BrowserIdentity)(
-      input === null ? {} : input,
-    );
-    const state = yield* BrowserIdentityState;
-    yield* Ref.set(state, identity);
-  }),
-
-  track: Effect.fnUntraced(function* (
-    name: string,
-    properties?: EventAttributes,
-    options?: EventOptions,
-  ) {
-    const state = yield* BrowserIdentityState;
-    const identity = yield* Ref.get(state);
-    const annotations: Record<string, string> = {};
-    if (identity.userId) annotations["user.id"] = identity.userId;
-    if (identity.organizationId)
-      annotations["organization.id"] = identity.organizationId;
-    const scoped = yield* References.CurrentLogAnnotations;
-    yield* track(name, properties, options).pipe(
-      Effect.annotateLogs({ ...annotations, ...scoped }),
-    );
-  }),
-
-  /** Call on initial render and completed SPA navigations; no identifiers are persisted. */
-  page: Effect.fnUntraced(function* (
-    input: PageOptions = {},
-  ): Effect.fn.Return<
-    void,
-    Schema.SchemaError,
-    BrowserIdentityState | OtlpEvents
-  > {
-    const page = yield* Schema.decodeUnknownEffect(PageEvent)(input);
-    const properties = { ...page.properties };
-    if (page.name) properties["analytics.page.name"] = page.name;
-    if (page.category) properties["analytics.page.category"] = page.category;
-    properties["url.path"] =
-      (page.path ?? globalThis.location.pathname).split(/[?#]/, 1)[0] ?? "/";
-    yield* browserEffects.track("browser.page_view", properties, page.options);
-  }),
-};
-
-type BrowserProgram = Effect.Effect<
-  void,
-  Schema.SchemaError,
-  BrowserIdentityState | OtlpEvents
->;
-interface BrowserClient {
-  readonly identity: Ref.Ref<BrowserIdentity>;
-  readonly events: OtlpEvents["Service"];
-}
-const browserClients: Array<BrowserClient> = [];
-const runBrowser = (
-  program: BrowserProgram,
-): Effect.Effect<void, Schema.SchemaError> =>
-  Effect.suspend(() => {
-    const client = browserClients.at(-1);
-    if (!client) return Effect.void;
-    return program.pipe(
-      Effect.provideService(BrowserIdentityState, client.identity),
-      Effect.provideService(OtlpEvents, client.events),
-    );
-  });
-
-const BrowserClientLive = Layer.effectDiscard(
-  Effect.gen(function* () {
-    const identity = yield* BrowserIdentityState;
-    const events = yield* OtlpEvents;
-    yield* Effect.acquireRelease(
-      Effect.sync(() => {
-        const client = { identity, events };
-        browserClients.push(client);
-        return client;
-      }),
-      (client) =>
-        Effect.sync(() => {
-          const index = browserClients.indexOf(client);
-          if (index !== -1) browserClients.splice(index, 1);
-        }),
-    );
-  }),
-);
-
-const pageViewListeners = new Set<() => void>();
-let stopPageViewTracking: (() => void) | undefined;
-
-const subscribePageViews = (listener: () => void) => {
-  if (pageViewListeners.size === 0) {
-    const history = globalThis.history;
-    const pushState = history.pushState;
-    const replaceState = history.replaceState;
-    const notify = () => {
-      for (const onPage of pageViewListeners) onPage();
-    };
-    const trackedPushState: History["pushState"] = (...args) => {
-      pushState.apply(history, args);
-      notify();
-    };
-    const trackedReplaceState: History["replaceState"] = (...args) => {
-      replaceState.apply(history, args);
-      notify();
-    };
-    history.pushState = trackedPushState;
-    history.replaceState = trackedReplaceState;
-    globalThis.addEventListener("popstate", notify);
-    stopPageViewTracking = () => {
-      globalThis.removeEventListener("popstate", notify);
-      if (history.pushState === trackedPushState) history.pushState = pushState;
-      if (history.replaceState === trackedReplaceState)
-        history.replaceState = replaceState;
-    };
-  }
-  pageViewListeners.add(listener);
-  return () => {
-    pageViewListeners.delete(listener);
-    if (pageViewListeners.size === 0) {
-      stopPageViewTracking?.();
-      stopPageViewTracking = undefined;
-    }
-  };
-};
-
-const BrowserPageViewsLive = Layer.effectDiscard(
-  Effect.gen(function* () {
-    const fibers = yield* FiberSet.make();
-    const run = yield* FiberSet.runtime(fibers)<
-      BrowserIdentityState | OtlpEvents
-    >();
-    let previousPath = globalThis.location.pathname;
-    yield* Effect.acquireRelease(
-      Effect.sync(() =>
-        subscribePageViews(() => {
-          const path = globalThis.location.pathname;
-          if (path === previousPath) return;
-          previousPath = path;
-          run(browserEffects.page({ path }).pipe(Effect.ignore));
-        }),
-      ),
-      (unsubscribe) => Effect.sync(unsubscribe),
-    );
-    yield* browserEffects.page({ path: previousPath }).pipe(Effect.ignore);
-  }),
-);
 
 export class BrowserOtlp {
-  /** Uses the active browser layer; invalid identity warns without failing or changing state. */
-  static readonly identify = (identity: BrowserIdentity | null) =>
-    runBrowser(browserEffects.identify(identity)).pipe(
-      Effect.catch(() =>
-        Effect.logWarning(
-          "Invalid browser telemetry identity; keeping previous identity",
-        ),
-      ),
-    );
-  static readonly track = (
-    name: string,
-    properties?: EventAttributes,
-    options?: EventOptions,
-  ) => runBrowser(browserEffects.track(name, properties, options));
-  static readonly page = (options?: PageOptions) =>
-    runBrowser(browserEffects.page(options));
-
-  static readonly pageView = BrowserOtlp.page;
+  static readonly event = event;
 
   static readonly layer = ({
     attributes,
     baseUrl = "/api/otel",
     logs = false,
     events = false,
+    webVitals = false,
+    respectDoNotTrack = true,
     metrics = false,
     serviceName,
     serviceVersion,
     traces = {},
     headers,
   }: BrowserOtlpOptions) => {
-    const { pageViews = true, ...eventOptions } =
-      events === false ? {} : events;
+    const privacy = webVitals
+      ? Schema.decodeUnknownSync(
+          Schema.Struct({
+            globalPrivacyControl: Schema.optional(Schema.Boolean),
+          }),
+        )(navigator)
+      : {};
+    const collectVitals =
+      webVitals &&
+      !(
+        respectDoNotTrack &&
+        (navigator.doNotTrack === "1" ||
+          navigator.doNotTrack === "yes" ||
+          privacy.globalPrivacyControl === true)
+      );
+    const eventOptions = events === false ? undefined : events;
     const resource = { attributes, serviceName, serviceVersion };
     const request = HttpClientRequest.get(baseUrl);
     const signalUrl = (signal: "logs" | "metrics" | "traces") =>
       HttpClientRequest.appendUrl(request, `/v1/${signal}`).url;
     const exporters = Layer.mergeAll(
       OtlpExporter.layerFlusher,
-      events !== false
+      events !== false || collectVitals
         ? OtlpEvents.layer({
             exportInterval: "30 seconds",
             maxBatchSize: 100,
@@ -392,12 +216,9 @@ export class BrowserOtlp {
     );
 
     return Layer.mergeAll(
-      BrowserClientLive,
       BrowserLifecycleFlushingLive,
-      events !== false && pageViews ? BrowserPageViewsLive : Layer.empty,
       traces !== false ? BrowserExceptionTrackingLive : Layer.empty,
-    ).pipe(
-      Layer.provideMerge(Layer.merge(BrowserIdentityState.layer, exporters)),
-    );
+      collectVitals ? BrowserWebVitalsLive : Layer.empty,
+    ).pipe(Layer.provideMerge(exporters));
   };
 }

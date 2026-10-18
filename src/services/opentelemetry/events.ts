@@ -25,6 +25,7 @@ type ExporterOptions = Pick<
   "url" | "headers" | "exportInterval" | "maxBatchSize" | "shutdownTimeout"
 > & {
   readonly resource?: Parameters<typeof OtlpResource.fromConfig>[0];
+  readonly scopeName?: string;
 };
 
 export type EventExportOptions = Partial<
@@ -53,7 +54,7 @@ export class OtlpEvents extends Context.Service<
                   resource,
                   scopeLogs: [
                     {
-                      scope: { name: "krakstack.events" },
+                      scope: { name: options.scopeName ?? "krakstack.events" },
                       logRecords,
                     },
                   ],
@@ -79,12 +80,12 @@ interface EventRecord {
 }
 
 /** Emits an INFO event without creating a tracing span or persisting identity. */
-export const track = Effect.fnUntraced(function* (
+export const event = Effect.fnUntraced(function* (
   name: string,
   properties?: EventAttributes,
   options?: EventOptions,
 ) {
-  const event = yield* Schema.decodeUnknownEffect(TelemetryEvent)({
+  const decoded = yield* Schema.decodeUnknownEffect(TelemetryEvent)({
     name,
     properties,
     options,
@@ -92,23 +93,23 @@ export const track = Effect.fnUntraced(function* (
   const events = yield* OtlpEvents;
   const clock = yield* Clock.Clock;
   const observedTime = clock.currentTimeNanosUnsafe().toString();
-  const timestamp = event.options?.timestamp
+  const timestamp = decoded.options?.timestamp
     ? (
-        BigInt(DateTime.toEpochMillis(event.options.timestamp)) * 1_000_000n
+        BigInt(DateTime.toEpochMillis(decoded.options.timestamp)) * 1_000_000n
       ).toString()
     : observedTime;
   const span = yield* Effect.currentSpan.pipe(Effect.option);
-  const attributes = { ...event.options?.context, ...event.properties };
-  if (event.options?.userId) attributes["user.id"] = event.options.userId;
-  if (event.options?.anonymousId)
-    attributes["analytics.anonymous_id"] = event.options.anonymousId;
-  if (event.options?.sessionId)
-    attributes["session.id"] = event.options.sessionId;
-  if (event.options?.messageId)
-    attributes["log.record.uid"] = event.options.messageId;
+  const attributes = { ...decoded.options?.context, ...decoded.properties };
+  if (decoded.options?.userId) attributes["user.id"] = decoded.options.userId;
+  if (decoded.options?.anonymousId)
+    attributes["analytics.anonymous_id"] = decoded.options.anonymousId;
+  if (decoded.options?.sessionId)
+    attributes["session.id"] = decoded.options.sessionId;
+  if (decoded.options?.messageId)
+    attributes["log.record.uid"] = decoded.options.messageId;
   const annotations = yield* References.CurrentLogAnnotations;
   events.push({
-    eventName: event.name,
+    eventName: decoded.name,
     timeUnixNano: timestamp,
     observedTimeUnixNano: observedTime,
     severityNumber: 9,

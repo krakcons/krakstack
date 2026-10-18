@@ -1,5 +1,21 @@
 import { Schema } from "effect";
 
+export const BrowserWebVital = Schema.Struct({
+  name: Schema.Literals(["LCP", "INP", "CLS", "FCP", "TTFB"]),
+  id: Schema.NonEmptyString.check(Schema.isMaxLength(64)),
+  value: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
+  delta: Schema.Finite,
+  rating: Schema.Literals(["good", "needs-improvement", "poor"]),
+  navigationType: Schema.Literals([
+    "navigate",
+    "reload",
+    "back-forward",
+    "back-forward-cache",
+    "prerender",
+    "restore",
+  ]),
+}).annotate({ identifier: "BrowserWebVital" });
+
 const EventAttributeValue = Schema.Union([
   Schema.String,
   Schema.Finite,
@@ -29,21 +45,5 @@ export const TelemetryEvent = Schema.Struct({
   options: Schema.optional(EventOptionsSchema),
 }).annotate({ identifier: "TelemetryEvent" });
 
-export const PageEvent = Schema.Struct({
-  name: Schema.optional(Schema.NonEmptyString),
-  category: Schema.optional(Schema.NonEmptyString),
-  path: Schema.optional(Schema.NonEmptyString),
-  properties: Schema.optional(EventAttributesSchema),
-  options: Schema.optional(EventOptionsSchema),
-}).annotate({ identifier: "PageEvent" });
-
 export type EventAttributes = typeof EventAttributesSchema.Type;
 export type EventOptions = typeof EventOptionsSchema.Type;
-export type PageOptions = typeof PageEvent.Type;
-
-export const BrowserIdentity = Schema.Struct({
-  userId: Schema.optional(Schema.NonEmptyString),
-  organizationId: Schema.optional(Schema.NonEmptyString),
-}).annotate({ identifier: "BrowserTelemetryIdentity" });
-
-export type BrowserIdentity = typeof BrowserIdentity.Type;

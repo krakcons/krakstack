@@ -17,6 +17,18 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./events": {
+      "types": "./dist/services/events/index.d.ts",
+      "import": "./dist/services/events/index.js"
+    },
+    "./events/browser": {
+      "types": "./dist/services/events/browser.d.ts",
+      "import": "./dist/services/events/browser.js"
+    },
+    "./events/migrations": {
+      "types": "./dist/services/events/migrations.d.ts",
+      "import": "./dist/services/events/migrations.js"
+    },
     "./agent": {
       "types": "./dist/services/agent/index.d.ts",
       "import": "./dist/services/agent/index.js"
@@ -248,6 +260,7 @@
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-virtual": "^3.14.5",
     "@xberg-io/xberg": "1.0.14",
+    "bowser": "^2.14.1",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.3.0",
@@ -255,9 +268,16 @@
     "effect": "^4.0.0",
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "web-vitals": "^5.1.0"
   },
   "peerDependenciesMeta": {
+    "web-vitals": {
+      "optional": true
+    },
+    "bowser": {
+      "optional": true
+    },
     "@aws-sdk/client-sesv2": {
       "optional": true
     },
