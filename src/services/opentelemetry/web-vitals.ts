@@ -32,7 +32,7 @@ export const WebVitals = Context.Reference<{
 });
 
 /** https://opentelemetry.io/docs/specs/semconv/browser/browser-events/ */
-export const BrowserWebVitalsLive = Layer.effectDiscard(
+const WebVitalsLive = Layer.effectDiscard(
   Effect.gen(function* () {
     const vitals = yield* WebVitals;
     const events = yield* OtlpEvents;
@@ -91,3 +91,29 @@ export const BrowserWebVitalsLive = Layer.effectDiscard(
     );
   }),
 );
+
+export interface BrowserWebVitalsOptions {
+  readonly respectDoNotTrack?: boolean;
+}
+
+export class BrowserWebVitals {
+  /** Provide a browser telemetry layer with events enabled; no exporter is created here. */
+  static readonly layer = ({
+    respectDoNotTrack = true,
+  }: BrowserWebVitalsOptions = {}) =>
+    Layer.unwrap(
+      Effect.gen(function* () {
+        const privacy = yield* Schema.decodeUnknownEffect(
+          Schema.Struct({
+            globalPrivacyControl: Schema.optional(Schema.Boolean),
+          }),
+        )(navigator);
+        const optedOut =
+          respectDoNotTrack &&
+          (navigator.doNotTrack === "1" ||
+            navigator.doNotTrack === "yes" ||
+            privacy.globalPrivacyControl === true);
+        return optedOut ? Layer.empty : WebVitalsLive;
+      }),
+    );
+}

@@ -7,6 +7,12 @@ import { SqlClient, SqlSchema } from "effect/sql";
 import { TestClock } from "effect/testing";
 
 import { Events, type EventsOptions } from "./index";
+import { Otlp } from "../opentelemetry";
+import { OtlpResource } from "effect/observability";
+
+const telemetry = Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() });
+const eventsLayer = (options: EventsOptions) =>
+  Events.layer(options).pipe(Layer.provideMerge(telemetry));
 import {
   EventLogRecord,
   TrackEvent,
@@ -100,7 +106,7 @@ const forwardedSession = Effect.fnUntraced(function* (body: Uint8Array) {
 });
 
 for (const database of databases) {
-  const layer = Events.layer(options).pipe(Layer.provideMerge(database.layer));
+  const layer = eventsLayer(options).pipe(Layer.provideMerge(database.layer));
   const fixture = Effect.gen(function* () {
     const analytics = yield* Events;
     const sql = yield* SqlClient.SqlClient;
@@ -1229,7 +1235,7 @@ it.effect("rejects server recording when no SqlClient is injected", () =>
       _tag: "Failure",
       failure: { operation: "persistence-disabled" },
     });
-  }).pipe(Effect.provide(Events.layer(options))),
+  }).pipe(Effect.provide(eventsLayer(options))),
 );
 
 it.effect(
@@ -1275,7 +1281,7 @@ it.effect(
       expect(yield* sql`SELECT event_id FROM events`).toHaveLength(0);
     }).pipe(
       Effect.provide(
-        Events.layer(options).pipe(
+        eventsLayer(options).pipe(
           Layer.provideMerge(SqliteClient.layer({ filename: ":memory:" })),
         ),
       ),

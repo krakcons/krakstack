@@ -3,7 +3,7 @@ import { ConfigProvider, DateTime, Effect, Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { OtlpExporter } from "effect/observability";
 
-import { ServerOtlp } from "./server";
+import { Otlp } from "./index";
 
 const LogsPayload = Schema.fromJsonString(
   Schema.Struct({
@@ -40,7 +40,7 @@ const setup = (config: Record<string, string | undefined> = {}) => {
   };
   const provide = <A, E, R>(program: Effect.Effect<A, E, R>) =>
     program.pipe(
-      Effect.provide(ServerOtlp.layer),
+      Effect.provide(Otlp.layer),
       Effect.provideService(FetchHttpClient.Fetch, fetch),
       Effect.provide(
         ConfigProvider.layer(
@@ -73,7 +73,7 @@ describe("OTLP server events", () => {
         return Effect.gen(function* () {
           const context = yield* Effect.gen(function* () {
             const span = yield* Effect.currentSpan;
-            yield* ServerOtlp.event("app.order.completed", {
+            yield* Otlp.event("app.order.completed", {
               "order.id": "order-1",
             });
             return { traceId: span.traceId, spanId: span.spanId };
@@ -111,7 +111,7 @@ describe("OTLP server events", () => {
       return Effect.gen(function* () {
         yield* Effect.all(
           [
-            ServerOtlp.event(
+            Otlp.event(
               "first",
               { "user.id": "property-user", "organization.id": "property-org" },
               {
@@ -125,7 +125,7 @@ describe("OTLP server events", () => {
                 "request.id": "request-1",
               }),
             ),
-            ServerOtlp.event("second").pipe(
+            Otlp.event("second").pipe(
               Effect.annotateLogs({
                 "user.id": "user-2",
                 "organization.id": "org-2",
@@ -134,7 +134,7 @@ describe("OTLP server events", () => {
           ],
           { concurrency: "unbounded" },
         );
-        yield* ServerOtlp.event("background");
+        yield* Otlp.event("background");
         yield* (yield* OtlpExporter.Flusher).flush;
         const payload = yield* Schema.decodeUnknownEffect(LogsPayload)(
           requests[0]!.body,
@@ -169,7 +169,7 @@ describe("OTLP server events", () => {
   it.effect("maps per-call options without persisting identity", () => {
     const { requests, provide } = setup();
     return Effect.gen(function* () {
-      yield* ServerOtlp.event(
+      yield* Otlp.event(
         "order",
         { "app.plan": "pro", "user.id": "overridden" },
         {
@@ -181,7 +181,7 @@ describe("OTLP server events", () => {
           context: { "app.plan": "free", "app.locale": "fr" },
         },
       );
-      yield* ServerOtlp.event("next");
+      yield* Otlp.event("next");
       yield* (yield* OtlpExporter.Flusher).flush;
       const payload = yield* Schema.decodeUnknownEffect(LogsPayload)(
         requests[0]!.body,
@@ -208,13 +208,10 @@ describe("OTLP server events", () => {
   it.effect("rejects invalid names and non-finite values", () => {
     const { provide } = setup();
     return Effect.gen(function* () {
-      expect((yield* ServerOtlp.event("").pipe(Effect.result))._tag).toBe(
-        "Failure",
-      );
+      expect((yield* Otlp.event("").pipe(Effect.result))._tag).toBe("Failure");
       expect(
-        (yield* ServerOtlp.event("event", { count: Infinity }).pipe(
-          Effect.result,
-        ))._tag,
+        (yield* Otlp.event("event", { count: Infinity }).pipe(Effect.result))
+          ._tag,
       ).toBe("Failure");
     }).pipe(provide);
   });
@@ -228,7 +225,7 @@ describe("OTLP server events", () => {
       () => {
         const { requests, provide } = setup(config);
         return Effect.gen(function* () {
-          yield* ServerOtlp.event("order");
+          yield* Otlp.event("order");
           yield* (yield* OtlpExporter.Flusher).flush;
           expect(requests).toHaveLength(0);
         }).pipe(provide);

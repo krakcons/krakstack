@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.50",
+  "version": "0.1.51",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -61,9 +61,13 @@
       "types": "./dist/services/opentelemetry/browser.d.ts",
       "import": "./dist/services/opentelemetry/browser.js"
     },
-    "./opentelemetry/server": {
-      "types": "./dist/services/opentelemetry/server.d.ts",
-      "import": "./dist/services/opentelemetry/server.js"
+    "./opentelemetry/web-vitals": {
+      "types": "./dist/services/opentelemetry/web-vitals.d.ts",
+      "import": "./dist/services/opentelemetry/web-vitals.js"
+    },
+    "./opentelemetry": {
+      "types": "./dist/services/opentelemetry/index.d.ts",
+      "import": "./dist/services/opentelemetry/index.js"
     },
     "./docs": {
       "types": "./dist/lib/docs.d.ts",
@@ -244,7 +248,9 @@
     "prepack": "bun run check:release"
   },
   "dependencies": {
-    "@oxlint/plugins": "1.78.0"
+    "@oxlint/plugins": "1.78.0",
+    "bowser": "^2.14.1",
+    "web-vitals": "^5.1.0"
   },
   "peerDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
@@ -260,7 +266,6 @@
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-virtual": "^3.14.5",
     "@xberg-io/xberg": "1.0.14",
-    "bowser": "^2.14.1",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.3.0",
@@ -268,16 +273,9 @@
     "effect": "^4.0.0",
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "web-vitals": "^5.1.0"
+    "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
-    "web-vitals": {
-      "optional": true
-    },
-    "bowser": {
-      "optional": true
-    },
     "@aws-sdk/client-sesv2": {
       "optional": true
     },

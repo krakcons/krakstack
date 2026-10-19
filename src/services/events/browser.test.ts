@@ -1,14 +1,30 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from "@effect/vitest";
-import { Deferred, Effect, Schema } from "effect";
+import { Deferred, Effect, Layer, Schema } from "effect";
 import { createBrowserHistory } from "@tanstack/react-router";
 import { FetchHttpClient } from "effect/http";
 import { OtlpExporter } from "effect/observability";
 
-import { BrowserEvents } from "./browser";
-import { BrowserOtlp } from "../opentelemetry/browser";
+import { BrowserEvents, type BrowserEventsOptions } from "./browser";
+import { BrowserOtlp, type BrowserOtlpOptions } from "../opentelemetry/browser";
 import { EventLogRecord, OtlpLogs } from "./schema";
+
+const browserLayer = ({
+  enabled,
+  respectDoNotTrack,
+  pageViews,
+  locale,
+  sanitizePath,
+  ...telemetry
+}: BrowserEventsOptions & BrowserOtlpOptions) =>
+  BrowserEvents.layer({
+    enabled,
+    respectDoNotTrack,
+    pageViews,
+    locale,
+    sanitizePath,
+  }).pipe(Layer.provideMerge(BrowserOtlp.layer(telemetry)));
 
 describe("BrowserEvents", () => {
   it.effect(
@@ -27,7 +43,7 @@ describe("BrowserEvents", () => {
         yield* BrowserOtlp.event("generic", { count: 1 });
         yield* BrowserEvents.track("analytics", { count: 2 });
         yield* (yield* OtlpExporter.Flusher).flush;
-        expect(requests).toHaveLength(2);
+        expect(requests).toHaveLength(1);
         const payloads = yield* Effect.forEach(requests, (body) =>
           Schema.decodeUnknownEffect(Schema.fromJsonString(OtlpLogs))(body),
         );
@@ -58,11 +74,10 @@ describe("BrowserEvents", () => {
         ).toBe(true);
       }).pipe(
         Effect.provide(
-          BrowserEvents.layer({
+          browserLayer({
             serviceName: "both",
             traces: false,
             pageViews: false,
-            events: {},
           }),
         ),
         Effect.provideService(
@@ -105,7 +120,7 @@ describe("BrowserEvents", () => {
           yield* (yield* OtlpExporter.Flusher).flush;
         }).pipe(
           Effect.provide(
-            BrowserEvents.layer({
+            browserLayer({
               serviceName: "navigation",
               traces: false,
             }),
@@ -178,7 +193,7 @@ describe("BrowserEvents", () => {
           yield* (yield* OtlpExporter.Flusher).flush;
         }).pipe(
           Effect.provide(
-            BrowserEvents.layer({
+            browserLayer({
               serviceName: "runtime",
               traces: false,
               pageViews: false,
@@ -228,7 +243,7 @@ describe("BrowserEvents", () => {
           expect(yield* Deferred.await(sent)).toBe(true);
         }).pipe(
           Effect.provide(
-            BrowserEvents.layer({
+            browserLayer({
               serviceName: "lifecycle",
               traces: false,
               pageViews: false,
@@ -270,7 +285,7 @@ describe("BrowserEvents", () => {
           yield* flusher.flush;
         }).pipe(
           Effect.provide(
-            BrowserEvents.layer({ serviceName: "privacy", traces: false }),
+            browserLayer({ serviceName: "privacy", traces: false }),
           ),
           Effect.provideService(
             FetchHttpClient.Fetch,
@@ -321,7 +336,7 @@ describe("BrowserEvents", () => {
           yield* flusher.flush;
         }).pipe(
           Effect.provide(
-            BrowserEvents.layer({
+            browserLayer({
               serviceName: "analytics-web",
               traces: false,
               pageViews: false,
@@ -384,7 +399,7 @@ describe("BrowserEvents", () => {
       expect(sent).toBe(0);
     }).pipe(
       Effect.provide(
-        BrowserEvents.layer({
+        browserLayer({
           serviceName: "opt-out",
           enabled: false,
           traces: false,

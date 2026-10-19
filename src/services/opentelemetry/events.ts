@@ -47,28 +47,36 @@ export class OtlpEvents extends Context.Service<
         return yield* OtlpExporter.make({
           ...options,
           label: "OtlpEvents",
-          body: (logRecords) => [
-            serialization.logs({
-              resourceLogs: [
-                {
-                  resource,
-                  scopeLogs: [
-                    {
-                      scope: { name: options.scopeName ?? "krakstack.events" },
-                      logRecords,
-                    },
-                  ],
-                },
-              ],
-            }),
-            Effect.void,
-          ],
+          body: (logRecords: Array<EventRecord>) => {
+            const scopes = new Map<string, Array<EventRecord>>();
+            for (const { scopeName, ...record } of logRecords) {
+              const name = scopeName ?? options.scopeName ?? "krakstack.events";
+              const records = scopes.get(name);
+              if (records) records.push(record);
+              else scopes.set(name, [record]);
+            }
+            return [
+              serialization.logs({
+                resourceLogs: [
+                  {
+                    resource,
+                    scopeLogs: Array.from(scopes, ([name, records]) => ({
+                      scope: { name },
+                      logRecords: records,
+                    })),
+                  },
+                ],
+              }),
+              Effect.void,
+            ];
+          },
         });
       }),
     );
 }
 
 interface EventRecord {
+  readonly scopeName?: string;
   readonly eventName: string;
   readonly timeUnixNano: string;
   readonly observedTimeUnixNano: string;

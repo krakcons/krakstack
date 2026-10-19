@@ -9,7 +9,7 @@ import {
   HttpServerRequest,
   HttpServerResponse,
 } from "effect/http";
-import { ServerOtlp } from "./server";
+import { Otlp } from "./index";
 import { OtlpLogsProcessor, OtlpProcessingError } from "./processor";
 
 export { OtlpLogsProcessor, OtlpProcessingError } from "./processor";
@@ -136,6 +136,7 @@ const proxyOtlp = (
 
 const otlpProxyLayer = Layer.unwrap(
   Effect.gen(function* () {
+    yield* Otlp;
     const baseUrl = yield* Config.URL("OTEL_EXPORTER_OTLP_ENDPOINT");
     const processor = yield* Effect.serviceOption(OtlpLogsProcessor);
     const exporters = yield* Config.all({
@@ -175,9 +176,5 @@ const serverServices = HttpServer.layerServices.pipe(
 );
 
 export class HttpApiOtlp {
-  static readonly layer = Layer.mergeAll(
-    ServerOtlp.layer,
-    otlpProxyLayer,
-    serverServices,
-  );
+  static readonly layer = Layer.mergeAll(otlpProxyLayer, serverServices);
 }

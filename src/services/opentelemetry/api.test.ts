@@ -1,10 +1,137 @@
 import { describe, expect, it } from "@effect/vitest";
-import { ConfigProvider, Effect, Layer } from "effect";
+import {
+  ConfigProvider,
+  DateTime,
+  Effect,
+  Layer,
+  Redacted,
+  Schema,
+} from "effect";
 import { FetchHttpClient, HttpRouter } from "effect/http";
 
 import { HttpApiOtlp, OtlpLogsProcessor, OtlpProcessingError } from "./api";
+import { Otlp } from "./index";
+import { Events } from "../events";
+import { EventLogRecord, OtlpLogs } from "../events/schema";
 
 describe("HttpApiOtlp", () => {
+  it.live(
+    "composes ingestion and application services over one Otlp foundation",
+    () =>
+      Effect.gen(function* () {
+        const requests: string[] = [];
+        const fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+          requests.push(
+            await (
+              input instanceof Request ? input : new Request(input, init)
+            ).text(),
+          );
+          return new Response("{}");
+        };
+        const application = Events.layer({
+          origin: "https://example.com",
+          secret: Redacted.make("test-secret-at-least-thirty-two-characters"),
+        }).pipe(Layer.provideMerge(Otlp.layer));
+        const server = HttpApiOtlp.layer.pipe(
+          Layer.provide(Events.ingestionLayer),
+          Layer.provideMerge(application),
+          Layer.provide(
+            ConfigProvider.layer(
+              ConfigProvider.fromUnknown({
+                OTEL_SERVICE_NAME: "test-api",
+                OTEL_SDK_DISABLED: "true",
+                OTEL_EXPORTER_OTLP_ENDPOINT: "http://collector:4318",
+                OTEL_LOGS_EXPORTER: "otlp",
+              }),
+            ),
+          ),
+          Layer.provide(
+            Layer.succeed(
+              FetchHttpClient.Fetch,
+              Object.assign(fetch, { preconnect: globalThis.fetch.preconnect }),
+            ),
+          ),
+        );
+        const web = HttpRouter.toWebHandler(server, { disableLogger: true });
+        yield* Effect.addFinalizer(() => Effect.promise(() => web.dispose()));
+        const timestamp = (
+          BigInt(DateTime.toEpochMillis(yield* DateTime.now)) * 1_000_000n
+        ).toString();
+        const response = yield* Effect.promise(() =>
+          web.handler(
+            new Request("http://localhost/api/otel/v1/logs", {
+              method: "POST",
+              headers: {
+                origin: "https://example.com",
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({
+                resourceLogs: [
+                  {
+                    scopeLogs: [
+                      {
+                        scope: { name: "krakstack.application.events" },
+                        logRecords: [
+                          {
+                            eventName: "order.completed",
+                            timeUnixNano: timestamp,
+                            attributes: [
+                              {
+                                key: "app.event.schema.version",
+                                value: { stringValue: "1" },
+                              },
+                              {
+                                key: "analytics.page_view.id",
+                                value: {
+                                  stringValue:
+                                    "123e4567-e89b-42d3-a456-426614174000",
+                                },
+                              },
+                              {
+                                key: "log.record.uid",
+                                value: { stringValue: "order-completed" },
+                              },
+                              {
+                                key: "url.path",
+                                value: { stringValue: "/orders" },
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      {
+                        scope: { name: "krakstack.events" },
+                        logRecords: [
+                          { eventName: "browser.web_vital", attributes: [] },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              }),
+            }),
+          ),
+        );
+        expect(response.status).toBe(200);
+        expect(requests).toHaveLength(1);
+        const payload = yield* Schema.decodeUnknownEffect(
+          Schema.fromJsonString(OtlpLogs),
+        )(requests[0]);
+        const scopes = payload.resourceLogs.flatMap(
+          (resource) => resource.scopeLogs,
+        );
+        const records = yield* Schema.decodeUnknownEffect(
+          Schema.Array(EventLogRecord),
+        )(scopes[0]?.logRecords);
+        expect(records[0]?.attributes).toContainEqual({
+          key: "log.record.uid",
+          value: { stringValue: expect.any(String) },
+        });
+        expect(scopes[1]?.logRecords).toEqual([
+          { eventName: "browser.web_vital", attributes: [] },
+        ]);
+      }).pipe(Effect.scoped),
+  );
   for (const failure of ["http", "network"] as const) {
     it.effect(
       `acknowledges committed analytics on ${failure} failure but preserves generic delivery failures`,
@@ -17,6 +144,7 @@ describe("HttpApiOtlp", () => {
           };
           const web = HttpRouter.toWebHandler(
             HttpApiOtlp.layer.pipe(
+              Layer.provideMerge(Otlp.layer),
               Layer.provide(
                 Layer.succeed(OtlpLogsProcessor, {
                   process: (body) =>
@@ -84,6 +212,7 @@ describe("HttpApiOtlp", () => {
         };
         const web = HttpRouter.toWebHandler(
           HttpApiOtlp.layer.pipe(
+            Layer.provideMerge(Otlp.layer),
             Layer.provide(
               Layer.succeed(OtlpLogsProcessor, {
                 process: (bytes) => {
@@ -166,6 +295,7 @@ describe("HttpApiOtlp", () => {
         };
         const web = HttpRouter.toWebHandler(
           HttpApiOtlp.layer.pipe(
+            Layer.provideMerge(Otlp.layer),
             Layer.provide(
               ConfigProvider.layer(
                 ConfigProvider.fromUnknown({
@@ -218,6 +348,7 @@ describe("HttpApiOtlp", () => {
     Effect.gen(function* () {
       const web = HttpRouter.toWebHandler(
         HttpApiOtlp.layer.pipe(
+          Layer.provideMerge(Otlp.layer),
           Layer.provide(
             ConfigProvider.layer(
               ConfigProvider.fromUnknown({

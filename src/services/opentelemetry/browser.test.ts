@@ -12,7 +12,7 @@ import { OtlpExporter } from "effect/observability";
 import { afterEach, vi } from "vitest";
 
 import { BrowserOtlp } from "./browser";
-import { ServerOtlp } from "./server";
+import { Otlp } from "./index";
 
 const EventPayload = Schema.fromJsonString(
   Schema.Struct({
@@ -55,7 +55,7 @@ describe("BrowserOtlp", () => {
       };
       const push = history.pushState;
       return Effect.gen(function* () {
-        expect(BrowserOtlp.event).toBe(ServerOtlp.event);
+        expect(BrowserOtlp.event).toBe(Otlp.event);
         yield* BrowserOtlp.event(
           "checkout.started",
           { items: 2 },
@@ -97,7 +97,7 @@ describe("BrowserOtlp", () => {
   );
 
   it.effect(
-    "keeps generic event export opt-in and validates event input",
+    "supports explicit event export opt-out and validates event input",
     () => {
       let sent = 0;
       const fetch = async () => {
@@ -113,7 +113,11 @@ describe("BrowserOtlp", () => {
         expect(sent).toBe(0);
       }).pipe(
         Effect.provide(
-          BrowserOtlp.layer({ serviceName: "disabled-events", traces: false }),
+          BrowserOtlp.layer({
+            serviceName: "disabled-events",
+            traces: false,
+            events: false,
+          }),
         ),
         Effect.provideService(
           FetchHttpClient.Fetch,

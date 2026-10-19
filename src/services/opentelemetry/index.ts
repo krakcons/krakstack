@@ -1,6 +1,11 @@
-import { Config, Effect, Layer, Schema } from "effect";
+import { Config, Context, Effect, Layer, Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
-import { Otlp, OtlpExporter, OtlpSerialization } from "effect/observability";
+import {
+  Otlp as EffectOtlp,
+  OtlpExporter,
+  OtlpResource,
+  OtlpSerialization,
+} from "effect/observability";
 
 import { OtlpEvents, event } from "./events";
 
@@ -54,11 +59,17 @@ const ServerEventsLive = Layer.unwrap(
 );
 
 /** Runtime-neutral server telemetry for HTTP applications, workers, and CLIs. */
-export class ServerOtlp {
+export class Otlp extends Context.Service<
+  Otlp,
+  {
+    readonly resource: Effect.Effect<OtlpResource.Resource>;
+  }
+>()("krakstack/opentelemetry/Otlp") {
   static readonly event = event;
 
   static readonly layer = Layer.mergeAll(
-    Otlp.layerFromConfig(),
+    Layer.succeed(this, { resource: OtlpResource.fromConfig() }),
+    EffectOtlp.layerFromConfig(),
     ServerEventsLive,
   ).pipe(
     Layer.provideMerge(OtlpExporter.layerFlusher),

@@ -1,5 +1,21 @@
 # @krak-stack/registry
 
+## 0.1.51
+
+### Patch Changes
+
+- 0e67ce7: Add application events, server audit recording, and cookieless browser analytics through the OTLP/HTTP JSON logs endpoint.
+  - Install: `service-events`, or the `@krak-stack/registry/events`, `/events/browser`, and `/events/migrations` exports.
+  - Default OTLP: forward analytics to your telemetry backend; use `Otlp.event` for server telemetry.
+  - Optional SQL: PostgreSQL/SQLite persistence for in-app queries, visit timelines, and transactional audit records. `Events.track` requires SQL and supports verified actor context.
+  - Browser: `BrowserEvents` provides event/page tracking, automatic SPA views, DNT/GPC support, and path sanitization.
+  - Enrichment: trusted Cloudflare/custom geolocation and daily visitor IDs, without browser storage or automatic raw IP storage.
+  - Web Vitals: a separate `BrowserWebVitals` layer reuses the browser event exporter, respects DNT/GPC, and keeps `web-vitals` out of base browser imports.
+  - Dependencies: Bowser and Web Vitals are regular package dependencies, so package consumers do not need to declare them separately.
+  - Composition: `BrowserEvents` and `BrowserWebVitals` consume `BrowserOtlp`; server-side `Events` and `HttpApiOtlp` consume `Otlp`. Browser event export is enabled by default, batching is shared, and `Events.ingestionLayer` connects HTTP ingestion to application recording.
+
+  SQL is authoritative for persisted events; collector forwarding is best effort. Audit classification provides an application audit trail, not immutable archival storage or a compliance guarantee.
+
 ## 0.1.50
 
 ### Patch Changes

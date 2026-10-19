@@ -55,7 +55,8 @@
     "../../src/services/health/index.ts",
     "../../src/services/opentelemetry/api.ts",
     "../../src/services/opentelemetry/browser.ts",
-    "../../src/services/opentelemetry/server.ts"
+    "../../src/services/opentelemetry/web-vitals.ts",
+    "../../src/services/opentelemetry/index.ts"
   ],
   "include": []
 }

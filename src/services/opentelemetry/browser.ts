@@ -10,7 +10,6 @@ import {
 } from "effect/observability";
 
 import { OtlpEvents, event, type EventExportOptions } from "./events";
-import { BrowserWebVitalsLive } from "./web-vitals";
 
 export type { EventAttributes, EventOptions } from "./schema";
 
@@ -126,10 +125,6 @@ export interface BrowserOtlpOptions {
   readonly logs?: false | SignalOptions<Parameters<typeof OtlpLogger.layer>[0]>;
   /** Named OTLP log events; no automatic page tracking or analytics enrichment. */
   readonly events?: false | EventExportOptions;
-  /** Standard browser.web_vital OTLP events; no analytics service or page tracking required. */
-  readonly webVitals?: boolean;
-  /** Applies to automatic Web Vitals only, not other telemetry signals. */
-  readonly respectDoNotTrack?: boolean;
 }
 
 export class BrowserOtlp {
@@ -139,30 +134,13 @@ export class BrowserOtlp {
     attributes,
     baseUrl = "/api/otel",
     logs = false,
-    events = false,
-    webVitals = false,
-    respectDoNotTrack = true,
+    events = {},
     metrics = false,
     serviceName,
     serviceVersion,
     traces = {},
     headers,
   }: BrowserOtlpOptions) => {
-    const privacy = webVitals
-      ? Schema.decodeUnknownSync(
-          Schema.Struct({
-            globalPrivacyControl: Schema.optional(Schema.Boolean),
-          }),
-        )(navigator)
-      : {};
-    const collectVitals =
-      webVitals &&
-      !(
-        respectDoNotTrack &&
-        (navigator.doNotTrack === "1" ||
-          navigator.doNotTrack === "yes" ||
-          privacy.globalPrivacyControl === true)
-      );
     const eventOptions = events === false ? undefined : events;
     const resource = { attributes, serviceName, serviceVersion };
     const request = HttpClientRequest.get(baseUrl);
@@ -170,7 +148,7 @@ export class BrowserOtlp {
       HttpClientRequest.appendUrl(request, `/v1/${signal}`).url;
     const exporters = Layer.mergeAll(
       OtlpExporter.layerFlusher,
-      events !== false || collectVitals
+      events !== false
         ? OtlpEvents.layer({
             exportInterval: "30 seconds",
             maxBatchSize: 100,
@@ -218,7 +196,6 @@ export class BrowserOtlp {
     return Layer.mergeAll(
       BrowserLifecycleFlushingLive,
       traces !== false ? BrowserExceptionTrackingLive : Layer.empty,
-      collectVitals ? BrowserWebVitalsLive : Layer.empty,
     ).pipe(Layer.provideMerge(exporters));
   };
 }

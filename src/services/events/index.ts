@@ -18,6 +18,7 @@ import {
   OtlpProcessingError,
 } from "../opentelemetry/processor";
 import { OtlpResource } from "effect/observability";
+import { Otlp } from "../opentelemetry";
 import {
   cloudflareGeolocation,
   geolocationAttributes,
@@ -191,9 +192,10 @@ export class Events extends Context.Service<Events>()(
   {
     make: (options: EventsOptions) =>
       Effect.gen(function* () {
-        const resource = yield* OtlpResource.fromConfig({
-          serviceName: options.serviceName,
-        });
+        const telemetry = yield* Otlp;
+        const resource = options.serviceName
+          ? yield* OtlpResource.fromConfig({ serviceName: options.serviceName })
+          : yield* telemetry.resource;
         const configuration = yield* Schema.decodeUnknownEffect(Configuration)({
           ...options,
           serviceName: OtlpResource.serviceNameUnsafe(resource),
@@ -740,5 +742,5 @@ export class Events extends Context.Service<Events>()(
       ),
     );
 
-  static readonly processorLayer = Layer.effect(OtlpLogsProcessor, Events);
+  static readonly ingestionLayer = Layer.effect(OtlpLogsProcessor, Events);
 }

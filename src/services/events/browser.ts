@@ -1,9 +1,6 @@
-import { BrowserOtlp, type BrowserOtlpOptions } from "../opentelemetry/browser";
 import type { EventAttributes } from "../opentelemetry/schema";
 import { OtlpEvents, event } from "../opentelemetry/events";
 import { Context, Effect, FiberSet, Layer, Option, Schema } from "effect";
-import { FetchHttpClient, HttpClientRequest } from "effect/http";
-import { OtlpSerialization } from "effect/observability";
 
 import {
   BrowserEventOptions,
@@ -14,7 +11,7 @@ import {
 export type { BrowserEventOptions, BrowserPageOptions } from "./schema";
 export type { EventAttributes } from "../opentelemetry/schema";
 
-export interface BrowserEventsOptions extends BrowserOtlpOptions {
+export interface BrowserEventsOptions {
   readonly enabled?: boolean;
   readonly respectDoNotTrack?: boolean;
   readonly pageViews?: boolean;
@@ -164,16 +161,14 @@ export class BrowserEvents {
   static readonly page = (options?: BrowserPageOptions) =>
     runBrowser(page(options));
 
-  /** Use instead of a second BrowserOtlp layer; no identifiers are persisted. */
+  /** Requires BrowserOtlp; no identifiers are persisted. */
   static readonly layer = ({
     enabled = true,
     respectDoNotTrack = true,
     pageViews = true,
-    webVitals = false,
     locale,
     sanitizePath,
-    ...options
-  }: BrowserEventsOptions) => {
+  }: BrowserEventsOptions = {}) => {
     const privacy = Schema.decodeUnknownSync(
       Schema.Struct({ globalPrivacyControl: Schema.optional(Schema.Boolean) }),
     )(navigator);
@@ -218,43 +213,23 @@ export class BrowserEvents {
       }
       return { ...attributes, ...optional };
     };
-    const events = disabled
-      ? OtlpEvents.disabledLayer
-      : OtlpEvents.layer({
-          scopeName: "krakstack.application.events",
-          exportInterval: "5 seconds",
-          maxBatchSize: 20,
-          shutdownTimeout: "3 seconds",
-          url: HttpClientRequest.get(options.baseUrl ?? "/api/otel").pipe(
-            HttpClientRequest.appendUrl("/v1/logs"),
-          ).url,
-          resource: {
-            serviceName: options.serviceName,
-            serviceVersion: options.serviceVersion,
-            attributes: options.attributes,
-          },
-          headers: options.headers,
-        }).pipe(
-          Layer.provide(OtlpSerialization.layerJson),
-          Layer.provide(FetchHttpClient.layer),
-        );
     const client = Layer.effect(
       BrowserEventsClient,
       Effect.gen(function* () {
+        const exporter = yield* OtlpEvents;
         return {
-          events: yield* OtlpEvents,
+          events: {
+            push: (record: Parameters<typeof exporter.push>[0]) => {
+              if (!disabled)
+                exporter.push({
+                  ...record,
+                  scopeName: "krakstack.application.events",
+                });
+            },
+          },
           context: disabled ? () => ({}) : context,
         };
       }),
-    ).pipe(
-      Layer.provide(events),
-      Layer.provideMerge(
-        BrowserOtlp.layer({
-          ...options,
-          webVitals: !disabled && webVitals,
-          respectDoNotTrack,
-        }),
-      ),
     );
     const browser = Layer.mergeAll(
       BrowserClientLive,

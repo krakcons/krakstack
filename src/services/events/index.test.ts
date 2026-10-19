@@ -1,9 +1,22 @@
 import { describe, expect, it } from "@effect/vitest";
-import { ConfigProvider, DateTime, Effect, Redacted, Schema } from "effect";
+import {
+  ConfigProvider,
+  DateTime,
+  Effect,
+  Layer,
+  Redacted,
+  Schema,
+} from "effect";
 import { HttpServerRequest } from "effect/http";
 
 import { Events, dailyVisitorId, type EventsOptions } from "./index";
 import { EventLogRecord, OtlpLogs } from "./schema";
+import { Otlp } from "../opentelemetry";
+import { OtlpResource } from "effect/observability";
+
+const telemetry = Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() });
+const eventsLayer = (options: EventsOptions) =>
+  Events.layer(options).pipe(Layer.provide(telemetry));
 
 const secret = Redacted.make("test-secret-at-least-thirty-two-characters");
 const id = "123e4567-e89b-42d3-a456-426614174000";
@@ -56,7 +69,7 @@ const setup = (withCloudflare = true, identity?: EventsOptions["identity"]) => {
     secret,
     geolocation: withCloudflare ? "cloudflare" : undefined,
     identity,
-  });
+  }).pipe(Layer.provide(telemetry));
   const request = (headers: Record<string, string> = {}) =>
     HttpServerRequest.fromWeb(
       new Request("https://example.com/api/otel/v1/logs", {
@@ -144,7 +157,7 @@ describe("OTLP analytics enrichment", () => {
         }).pipe(
           Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
           Effect.provide(
-            Events.layer({
+            eventsLayer({
               serviceName: "custom-geo",
               origin: "https://example.com",
               secret,
@@ -197,7 +210,7 @@ describe("OTLP analytics enrichment", () => {
       }).pipe(
         Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
         Effect.provide(
-          Events.layer({
+          eventsLayer({
             serviceName: "custom-geo",
             origin: "https://example.com",
             secret,
@@ -439,7 +452,7 @@ describe("OTLP analytics enrichment", () => {
         }).pipe(
           Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
           Effect.provide(
-            Events.layer({
+            eventsLayer({
               origin: "https://example.com",
               secret,
               geolocation: "cloudflare",
@@ -480,7 +493,7 @@ describe("OTLP analytics enrichment", () => {
       }).pipe(
         Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
         Effect.provide(
-          Events.layer({
+          eventsLayer({
             serviceName: "stateless",
             origin: "https://example.com",
             secret,
