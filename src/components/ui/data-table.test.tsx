@@ -17,6 +17,7 @@ import {
   DataTable,
   DataTableListSummary,
   DataTableListCell,
+  DataTableReferenceCell,
   buildDataTableRows,
   filterDataTableRows,
   getDataTableWidth,
@@ -66,6 +67,60 @@ const state: DataTablePublicState = {
   page: 0,
   pageSize: 2,
 };
+
+describe("reference columns", () => {
+  it("searches and exports labels and secondary text, not image URLs", () => {
+    const input = [{ name: "Ada Lovelace", email: "ada@example.test" }];
+    const columns = normalizeDataTableColumns<(typeof input)[number]>([
+      {
+        colId: "user",
+        headerName: "User",
+        type: "reference",
+        typeOptions: {
+          getItem: (row) => ({
+            label: row.name,
+            description: row.email,
+            imageSrc: "/private-photo.png",
+          }),
+        },
+      },
+    ]);
+    const rows = buildDataTableRows(input, columns);
+    expect(filterDataTableRows(rows, columns, "ada@example.test")).toHaveLength(
+      1,
+    );
+    expect(filterDataTableRows(rows, columns, "Lovelace")).toHaveLength(1);
+    expect(filterDataTableRows(rows, columns, "private-photo")).toHaveLength(0);
+    expect(getDataTableExportValue(rows[0], columns[0])).toBe(
+      "Ada Lovelace — ada@example.test",
+    );
+  });
+
+  it("falls back after an image failure and accepts a refreshed profile image", () => {
+    const { rerender } = render(
+      <DataTableReferenceCell
+        item={{
+          label: "Ada Lovelace",
+          description: "ada@example.test",
+          imageSrc: "/old.png",
+        }}
+      />,
+    );
+    fireEvent.error(screen.getByRole("img", { name: "Ada Lovelace" }));
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("AL")).toBeTruthy();
+    rerender(
+      <DataTableReferenceCell
+        item={{ label: "Ada Lovelace", imageSrc: "/new.png" }}
+      />,
+    );
+    expect(
+      screen.getByRole("img", { name: "Ada Lovelace" }).getAttribute("src"),
+    ).toBe("/new.png");
+    rerender(<DataTableReferenceCell item={null} emptyLabel="No reference" />);
+    expect(screen.getByText("No reference")).toBeTruthy();
+  });
+});
 
 describe.each(["table", "gallery"] as const)(
   "DataTable empty groups in %s view",

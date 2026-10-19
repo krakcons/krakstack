@@ -156,6 +156,19 @@ const projectColumns = ({
     ),
   },
   {
+    colId: "ownerProfile",
+    headerName: m.data_table_preview_user(),
+    type: "reference",
+    minWidth: 210,
+    typeOptions: {
+      getItem: (project) => ({
+        label: project.owner,
+        description: `${project.owner.toLowerCase()}@example.com`,
+        imageSrc: project.owner === "Hedy" ? null : "/demo-member.svg",
+      }),
+    },
+  },
+  {
     field: "status",
     headerName: "Status",
     cellRenderer: ({ data }) => (

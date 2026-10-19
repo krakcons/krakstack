@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.51",
+  "version": "0.1.52",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -17,6 +17,18 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./events/client": {
+      "types": "./dist/services/events/client/audit-log-table.d.ts",
+      "import": "./dist/services/events/client/audit-log-table.js"
+    },
+    "./events/schema": {
+      "types": "./dist/services/events/schema.d.ts",
+      "import": "./dist/services/events/schema.js"
+    },
+    "./events/record": {
+      "types": "./dist/services/events/record.d.ts",
+      "import": "./dist/services/events/record.js"
+    },
     "./events": {
       "types": "./dist/services/events/index.d.ts",
       "import": "./dist/services/events/index.js"

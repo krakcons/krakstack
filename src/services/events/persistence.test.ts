@@ -128,6 +128,102 @@ for (const database of databases) {
     `Events persistence (${database.name})`,
     () => {
       it.effect(
+        "queries paginated organization audit logs without projecting their OTLP schema",
+        () =>
+          Effect.gen(function* () {
+            const { analytics: events } = yield* fixture;
+            const record = (
+              id: string,
+              name: string,
+              organizationId = "org-a",
+            ) =>
+              events
+                .track({
+                  eventId: id,
+                  name,
+                  category: "audit",
+                  target: { id, name: `Record ${id}`, type: "document" },
+                })
+                .pipe(
+                  Effect.annotateLogs({
+                    "organization.id": organizationId,
+                    "user.id": "member-1",
+                    "user.roles": ["member"],
+                    "app.actor.type": "user",
+                    "app.actor.id": "member-1",
+                  }),
+                );
+            yield* record("a", "document.created");
+            yield* record("b", "document.deleted");
+            yield* record("c", "invoice.created", "org-b");
+            yield* events.track({
+              name: "analytics.clicked",
+              identity: { organizationId: "org-a" },
+            });
+            const first = yield* events.listAudit({
+              organizationId: "org-a",
+              pageSize: 1,
+              sort: [{ id: "eventName", direction: "asc" }],
+            });
+            expect(first.meta).toEqual({
+              page: 0,
+              pageSize: 1,
+              total: 2,
+              pageCount: 2,
+            });
+            expect(first.data[0].eventName).toBe("document.created");
+            expect(first.data[0].attributes).toContainEqual(
+              attr("app.audit.target.id", "a"),
+            );
+            expect(first.data[0].attributes).toContainEqual({
+              key: "user.roles",
+              value: { arrayValue: { values: [{ stringValue: "member" }] } },
+            });
+            const next = yield* events.listAudit({
+              organizationId: "org-a",
+              page: 1,
+              pageSize: 1,
+              sort: [{ id: "eventName", direction: "asc" }],
+            });
+            expect(next.data[0].eventName).toBe("document.deleted");
+            const filtered = yield* events.listAudit({
+              organizationId: "org-a",
+              globalFilter: "Record b",
+            });
+            expect(filtered.meta.total).toBe(1);
+            expect(filtered.data[0].eventName).toBe("document.deleted");
+            const byTarget = yield* events.listAudit({
+              organizationId: "org-a",
+              pageSize: 1,
+              sort: [{ id: "record", direction: "desc" }],
+            });
+            expect(byTarget.data[0].eventName).toBe("document.deleted");
+            expect(
+              (yield* events.listAudit({ organizationId: "missing" })).data,
+            ).toEqual([]);
+            expect(
+              (yield* events
+                .listAudit({ organizationId: "org-a", pageSize: 101 })
+                .pipe(Effect.result))._tag,
+            ).toBe("Failure");
+            expect(
+              (yield* events
+                .listAudit({
+                  organizationId: "org-a",
+                  sort: [{ id: "injected", direction: "asc" }],
+                })
+                .pipe(Effect.result))._tag,
+            ).toBe("Failure");
+            const other = yield* Events.make({
+              ...options,
+              serviceName: `${options.serviceName}-other`,
+            });
+            expect(
+              (yield* other.listAudit({ organizationId: "org-a" })).meta.total,
+            ).toBe(0);
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+      it.effect(
         "shares custom geolocation across browser and server visits without storing raw IPs",
         () =>
           Effect.gen(function* () {
@@ -657,6 +753,7 @@ for (const database of databases) {
               eventId,
               name: "order.completed",
               category: "audit",
+              target: { id: "order-1", name: "Order 1", type: "order" },
               properties: { total: 42 },
             } satisfies TrackEvent;
             const actor = {
@@ -960,14 +1057,13 @@ for (const database of databases) {
                 eventId: "audit-actor",
                 name: "document.deleted",
                 category: "audit",
+                target: { id: "doc-1", name: "Document 1", type: "document" },
                 identity: {
                   userId: "spoofed-user",
                   organizationId: "spoofed-org",
                 },
                 properties: {
                   "actor.id": "property-actor",
-                  target_type: "document",
-                  target_id: "doc-1",
                   outcome: "success",
                   reason: "requested",
                 },
@@ -975,14 +1071,12 @@ for (const database of databases) {
               .pipe(
                 Effect.annotateLogs({
                   "organization.id": "org-verified",
-                  "app.actor.type": "api_key",
-                  "app.actor.id": "key-1",
-                  "app.actor.owner.type": "organization",
-                  "app.actor.owner.id": "org-verified",
+                  "app.actor.type": "organization",
+                  "app.actor.id": "org-verified",
+                  "app.auth.method": "api_key",
+                  "app.auth.credential.id": "key-1",
                   "gen_ai.agent.id": "agent-1",
                   "mcp.method.name": "tools/call",
-                  "app.executor.type": "ai_agent",
-                  "app.access.channel": "mcp",
                   "integration.request.id": "request-1",
                   "log.record.uid": "must-not-override",
                 }),
@@ -1008,11 +1102,14 @@ for (const database of databases) {
               record.attributes.map(({ key, value }) => [key, value]),
             );
             expect(attrs).toMatchObject({
-              "app.actor.type": { stringValue: "api_key" },
-              "app.actor.id": { stringValue: "key-1" },
-              "app.actor.owner.id": { stringValue: "org-verified" },
+              "app.actor.type": { stringValue: "organization" },
+              "app.actor.id": { stringValue: "org-verified" },
+              "app.auth.method": { stringValue: "api_key" },
+              "app.auth.credential.id": { stringValue: "key-1" },
               "app.event.category": { stringValue: "audit" },
-              "app.target_id": { stringValue: "doc-1" },
+              "app.audit.target.id": { stringValue: "doc-1" },
+              "app.audit.target.name": { stringValue: "Document 1" },
+              "app.audit.target.type": { stringValue: "document" },
               "app.outcome": { stringValue: "success" },
               "gen_ai.agent.id": { stringValue: "agent-1" },
               "mcp.method.name": { stringValue: "tools/call" },
@@ -1034,6 +1131,11 @@ for (const database of databases) {
               eventId: "audit-system",
               name: "retention.executed",
               category: "audit",
+              target: {
+                id: "retention",
+                name: "Retention policy",
+                type: "policy",
+              },
             } satisfies TrackEvent;
             yield* analytics.track(event).pipe(
               Effect.annotateLogs({
@@ -1050,7 +1152,7 @@ for (const database of databases) {
               (yield* analytics
                 .track({ ...event, eventId: "partial-annotation" })
                 .pipe(
-                  Effect.annotateLogs({ "app.actor.type": "api_key" }),
+                  Effect.annotateLogs({ "app.actor.type": "user" }),
                   Effect.result,
                 ))._tag,
             ).toBe("Failure");
@@ -1077,7 +1179,7 @@ for (const database of databases) {
       );
 
       it.effect(
-        "uses one recording path without requiring target/outcome and protects category from properties and annotations",
+        "requires typed audit targets but not outcomes and protects category from properties and annotations",
         () =>
           Effect.gen(function* () {
             const { analytics: events, sql } = yield* fixture;
@@ -1085,29 +1187,45 @@ for (const database of databases) {
               eventId: "optional-outcome",
               name: "document.deleted",
               category: "audit",
+              target: { id: "doc-1", name: "Document 1", type: "document" },
             } satisfies TrackEvent;
             const actor = {
               "app.actor.type": "user",
               "app.actor.id": "user-1",
+              "app.auth.method": "session",
+              "app.auth.impersonator.id": "admin-1",
             };
             expect(
               (yield* events.track(input).pipe(
                 Effect.annotateLogs({
                   ...actor,
                   "app.event.category": "analytics",
+                  "app.audit.target.id": "stale-target",
+                  "user.full_name": "Verified member",
+                  "app.user.image": "https://example.com/member.png",
+                  "user.roles": ["admin", "member"],
                 }),
               )).inserted,
             ).toBe(true);
             expect(
-              (yield* events.track(input).pipe(Effect.annotateLogs(actor)))
-                .inserted,
+              (yield* events.track(input).pipe(
+                Effect.annotateLogs({
+                  ...actor,
+                  "user.full_name": "Changed display name",
+                  "app.user.image": "https://example.com/new-photo.png",
+                  "user.roles": ["admin", "member"],
+                }),
+              )).inserted,
             ).toBe(false);
             // Only the explicit category selects audit policy, never attributes.
             const tracked = {
               ...input,
               eventId: "ordinary-track",
               category: "analytics",
-              properties: { "event.category": "audit" },
+              properties: {
+                "event.category": "audit",
+                "auth.impersonator.id": "forged-admin",
+              },
             } satisfies TrackEvent;
             yield* events.track(tracked).pipe(
               Effect.annotateLogs({
@@ -1135,13 +1253,57 @@ for (const database of databases) {
                 record.attributes.map(({ key, value }) => [key, value]),
               );
               expect(attrs["app.audit.outcome"]).toBeUndefined();
+              if (row.event_id === "optional-outcome") {
+                expect(attrs["app.actor.id"]).toEqual({
+                  stringValue: "user-1",
+                });
+                expect(attrs["app.auth.impersonator.id"]).toEqual({
+                  stringValue: "admin-1",
+                });
+              } else {
+                expect(attrs["app.auth.impersonator.id"]).toBeUndefined();
+              }
               expect(attrs["app.event.category"]).toEqual({
                 stringValue:
                   row.event_id === "ordinary-track" ? "analytics" : "audit",
               });
               expect(attrs["app.target_id"]).toBeUndefined();
               expect(attrs["app.outcome"]).toBeUndefined();
+              if (row.event_id === "optional-outcome") {
+                expect(attrs["app.audit.target.id"]).toEqual({
+                  stringValue: "doc-1",
+                });
+                expect(attrs["user.full_name"]).toBeUndefined();
+                expect(attrs["app.user.image"]).toBeUndefined();
+                expect(attrs["user.roles"]).toEqual({
+                  arrayValue: {
+                    values: [
+                      { stringValue: "admin" },
+                      { stringValue: "member" },
+                    ],
+                  },
+                });
+              }
             }
+          }).pipe(Effect.scoped, Effect.provide(layer)),
+      );
+
+      it.effect(
+        "generates a fresh ID for each call without an explicit ID",
+        () =>
+          Effect.gen(function* () {
+            const { analytics, sql } = yield* fixture;
+            const first = yield* analytics.track({ name: "generated" });
+            const second = yield* analytics.track({ name: "generated" });
+            expect(first.inserted).toBe(true);
+            expect(second.inserted).toBe(true);
+            expect(first.eventId).not.toBe(second.eventId);
+            expect(
+              Schema.is(Schema.String.check(Schema.isUUID()))(first.eventId),
+            ).toBe(true);
+            expect(
+              yield* sql`SELECT event_id FROM events WHERE service_name = ${options.serviceName}`,
+            ).toHaveLength(2);
           }).pipe(Effect.scoped, Effect.provide(layer)),
       );
 

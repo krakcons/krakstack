@@ -1,5 +1,23 @@
 # @krak-stack/registry
 
+## 0.1.52
+
+### Patch Changes
+
+- Replace AuditLogTable's profile resolver callbacks with an application-supplied `actors` list and export `AuditActor`. Match responsible actors by type and ID and resolve user impersonators from the same list. Use neutral labels for unavailable profiles so loading or partial member lists do not misidentify users as former members.
+- Add `Events.listAudit` using the shared Query schema for organization-scoped pagination, filtering, and sorting. Return unchanged OTLP EventLogRecord values in the standard paginated response. Export a bilingual AuditLogTable from `events/client` with application-owned live member profiles, standard query state, and the shared KrakStack locale.
+
+  Include audit queries and the table in the Events registry item and documentation. Include the opt-in Browser Web Vitals layer and its documentation in the OpenTelemetry registry item, without changing package subpath imports.
+
+  Present audit history in five columns: Time, Action, Target, Actor, and Method. Separate the responsible user or organization from request authentication. Resolve current profiles in the application, while retaining key identities, historical roles, and target types in unchanged log records. Include localized labels and safe identity fallbacks.
+
+  Define principal attribution as `app.actor.type/id`, authentication as `app.auth.method` and API-key identity as `app.auth.credential.id`. Method displays User session, API Key, or Unknown from verified authentication only, without interpreting agent, channel, or user-agent metadata. Protect auth annotations from browser claims. Document the application vocabulary and its relationship to OTel and OCSF.
+
+  Retain the verified impersonator ID as `app.auth.impersonator.id` while keeping the effective user as Actor. Show localized impersonation attribution in the Actor cell, resolving profiles from the application-provided actors list and falling back to the retained ID when a profile is unavailable. Never infer membership status from a missing profile or change Method during impersonation.
+
+- Add a `reference` table column and reusable `DataTableReferenceCell` for an image beside stacked primary/secondary text, such as a user's name and email. Include configurable circle/square images, initials/image-error fallbacks, and readable search, sorting, and exports without exposing image URLs.
+- Require a typed `target: { id, name, type }` on audit events and generate an event UUID when `eventId` is omitted. Persist historical `user.roles`, but exclude user display names/photos from recorded events so applications can resolve current profiles by actor ID. Browser claims cannot override auth-owned attribution. Existing audit callers must supply a target; explicit IDs retain retry deduplication.
+
 ## 0.1.51
 
 ### Patch Changes

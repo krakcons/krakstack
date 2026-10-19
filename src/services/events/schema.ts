@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from "effect";
 import { EventAttributesSchema } from "../opentelemetry/schema";
+import { Query } from "@/lib/query";
 
 export const EventUuid = Schema.String.check(Schema.isUUID());
 export const EventId = Schema.NonEmptyString.check(Schema.isMaxLength(100));
@@ -65,15 +66,50 @@ export const BrowserPage = Schema.Struct({
 export type BrowserEventOptions = typeof BrowserEventOptions.Type;
 export type BrowserPageOptions = typeof BrowserPage.Type;
 
-export const TrackEvent = Schema.Struct({
-  eventId: EventId,
+export const AuditTarget = Schema.Struct({
+  id: Schema.NonEmptyString.check(Schema.isMaxLength(256)),
+  name: Schema.NonEmptyString.check(Schema.isMaxLength(2048)),
+  type: Schema.NonEmptyString.check(Schema.isMaxLength(128)),
+}).annotate({ identifier: "AuditTarget" });
+export type AuditTarget = typeof AuditTarget.Type;
+
+const trackEventFields = {
+  eventId: Schema.optional(EventId),
   name: Schema.NonEmptyString.check(Schema.isMaxLength(128)),
   properties: Schema.optional(EventAttributesSchema),
   identity: Schema.optional(EventIdentity),
   timestamp: Schema.optional(Schema.DateTimeUtc),
-  category: Schema.optional(Schema.Literals(["analytics", "audit"])),
-}).annotate({ identifier: "TrackEvent" });
+};
+export const TrackEvent = Schema.Union([
+  Schema.Struct({
+    ...trackEventFields,
+    category: Schema.optional(Schema.Literal("analytics")),
+  }),
+  Schema.Struct({
+    ...trackEventFields,
+    category: Schema.Literal("audit"),
+    target: AuditTarget,
+  }),
+]).annotate({ identifier: "TrackEvent" });
 export type TrackEvent = typeof TrackEvent.Type;
+
+export const ListAudit = Schema.Struct({
+  organizationId: Schema.NonEmptyString,
+  ...Query.fields,
+}).annotate({ identifier: "ListAudit" });
+
+export const AuditSortId = Schema.Literals([
+  "time",
+  "eventName",
+  "recordType",
+  "record",
+  "actorType",
+  "actorId",
+]).annotate({ identifier: "AuditSortId" });
+
+export const AuditCount = Schema.Struct({ total: Schema.Int }).annotate({
+  identifier: "AuditCount",
+});
 
 /** Minimal attribution contract; actor types and resolution belong to auth. */
 export const AuditAttribution = Schema.Struct({
@@ -84,8 +120,11 @@ export const AuditAttribution = Schema.Struct({
 /** Verified request attribution, never decoded from browser event attributes. */
 export const RequestActorAttribution = Schema.Struct({
   ...AuditAttribution.fields,
-  "app.actor.owner.type": Schema.optional(Schema.NonEmptyString),
-  "app.actor.owner.id": Schema.optional(Schema.NonEmptyString),
+  "app.auth.method": Schema.optional(Schema.NonEmptyString),
+  "app.auth.credential.id": Schema.optional(Schema.NonEmptyString),
+  /** Initiating admin from a verified session; actor and user IDs remain the effective user. */
+  "app.auth.impersonator.id": Schema.optional(Schema.NonEmptyString),
+  "user.roles": Schema.optional(Schema.Array(Schema.String)),
 }).annotate({ identifier: "RequestActorAttribution" });
 
 export class EventsPersistenceError extends Schema.TaggedError<EventsPersistenceError>()(

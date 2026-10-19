@@ -155,6 +155,71 @@ export interface DataTableListItem {
   value?: string;
 }
 
+export interface DataTableReferenceItem {
+  label: string;
+  /** Secondary text, such as a user's email or a record identifier. */
+  description?: string | null;
+  imageSrc?: string | null;
+}
+
+export interface DataTableReferenceOptions<TData> {
+  getItem: (row: TData) => DataTableReferenceItem | null | undefined;
+  emptyLabel?: ReactNode;
+  imageVariant?: "circle" | "square";
+}
+
+export const DataTableReferenceCell = ({
+  item,
+  emptyLabel = "—",
+  imageVariant = "circle",
+}: {
+  item: DataTableReferenceItem | null | undefined;
+  emptyLabel?: ReactNode;
+  imageVariant?: "circle" | "square";
+}) => {
+  const [failedImage, setFailedImage] = useState<string>();
+  if (!item) return emptyLabel;
+  const initials = item.label
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word.slice(0, 1))
+    .join("")
+    .toLocaleUpperCase();
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <div
+        className={cn(
+          "bg-muted flex size-8 shrink-0 items-center justify-center overflow-hidden text-xs font-medium",
+          imageVariant === "circle" ? "rounded-full" : "rounded-md",
+        )}
+      >
+        {item.imageSrc && item.imageSrc !== failedImage ? (
+          <img
+            src={item.imageSrc}
+            alt={item.label}
+            className="size-full object-cover"
+            onError={() => setFailedImage(item.imageSrc ?? undefined)}
+          />
+        ) : (
+          <span aria-hidden="true">{initials}</span>
+        )}
+      </div>
+      <div className="flex min-w-0 flex-col leading-tight">
+        <span className="truncate font-medium">{item.label}</span>
+        {item.description ? (
+          <span className="text-muted-foreground truncate text-xs">
+            {item.description}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+const referenceText = (item: DataTableReferenceItem | null | undefined) =>
+  item ? [item.label, item.description].filter(Boolean).join(" — ") : "";
+
 export interface DataTableListOption extends DataTableListItem {
   value: string;
 }
@@ -287,6 +352,7 @@ type DataTableColumnType<TData> =
   | DataTableDateType
   | { type: "number"; typeOptions?: DataTableNumberOptions }
   | { type: "boolean"; typeOptions?: DataTableBooleanOptions<TData> }
+  | { type: "reference"; typeOptions: DataTableReferenceOptions<TData> }
   | { type: "list"; typeOptions: DataTableListColumn<TData> };
 
 export type DataTableColDef<TData extends RowData> =
@@ -677,9 +743,11 @@ export const buildDataTableRows = <TData extends RowData>(
                   .getItems(data)
                   .map((item) => item.label)
                   .join(", ")
-              : colDef.field
-                ? data[colDef.field]
-                : undefined;
+              : colDef.type === "reference"
+                ? referenceText(colDef.typeOptions.getItem(data))
+                : colDef.field
+                  ? data[colDef.field]
+                  : undefined;
           return [column.id, value];
         }),
       ),
@@ -1311,6 +1379,16 @@ const renderCell = <TData extends RowData>(
   const CellRenderer = column.colDef.cellRenderer;
   if (CellRenderer) return <CellRenderer {...params} />;
   const colDef = column.colDef;
+  if (colDef.type === "reference") {
+    if (colDef.valueFormatter) return colDef.valueFormatter(params);
+    return (
+      <DataTableReferenceCell
+        item={colDef.typeOptions.getItem(row.data)}
+        emptyLabel={colDef.typeOptions.emptyLabel}
+        imageVariant={colDef.typeOptions.imageVariant}
+      />
+    );
+  }
   if (colDef.type === "number") {
     if (colDef.valueFormatter) return colDef.valueFormatter(params);
     const number = Option.getOrUndefined(decodeNumberValue(value));

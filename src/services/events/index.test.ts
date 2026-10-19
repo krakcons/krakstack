@@ -230,32 +230,41 @@ describe("OTLP analytics enrichment", () => {
       name: "verified user",
       annotations: {
         "user.id": "verified-user",
+        "user.roles": ["admin"],
         "organization.id": "verified-org",
         "app.actor.type": "user",
         "app.actor.id": "verified-user",
+        "app.auth.method": "session",
+        "app.auth.impersonator.id": "verified-admin",
       },
       expected: [
         attr("user.id", "verified-user"),
         attr("organization.id", "verified-org"),
         attr("app.actor.type", "user"),
         attr("app.actor.id", "verified-user"),
+        attr("app.auth.method", "session"),
+        attr("app.auth.impersonator.id", "verified-admin"),
+        {
+          key: "user.roles",
+          value: { arrayValue: { values: [{ stringValue: "admin" }] } },
+        },
       ],
     },
     {
       name: "organization actor",
       annotations: {
-        "app.actor.type": "api_key",
-        "app.actor.id": "verified-key",
-        "app.actor.owner.type": "organization",
-        "app.actor.owner.id": "verified-org",
+        "app.actor.type": "organization",
+        "app.actor.id": "verified-org",
+        "app.auth.method": "api_key",
+        "app.auth.credential.id": "verified-key",
         "organization.id": "verified-org",
       },
       expected: [
         attr("organization.id", "verified-org"),
-        attr("app.actor.type", "api_key"),
-        attr("app.actor.id", "verified-key"),
-        attr("app.actor.owner.type", "organization"),
-        attr("app.actor.owner.id", "verified-org"),
+        attr("app.actor.type", "organization"),
+        attr("app.actor.id", "verified-org"),
+        attr("app.auth.method", "api_key"),
+        attr("app.auth.credential.id", "verified-key"),
       ],
     },
   ]) {
@@ -280,7 +289,13 @@ describe("OTLP analytics enrichment", () => {
                     attr("organization.id", "forged-org"),
                     attr("app.actor.type", "system"),
                     attr("app.actor.id", "forged-actor"),
-                    attr("app.actor.owner.id", "forged-owner"),
+                    attr("app.auth.method", "forged-method"),
+                    attr("app.auth.credential.id", "forged-key"),
+                    attr("app.auth.impersonator.id", "forged-admin"),
+                    attr("user.full_name", "Forged member"),
+                    attr("app.user.image", "https://example.com/forged.png"),
+                    attr("user.roles", "owner"),
+                    attr("app.audit.target.id", "forged-target"),
                     attr("app.event.category", "audit"),
                   ],
                 },
@@ -296,14 +311,21 @@ describe("OTLP analytics enrichment", () => {
           expect(
             records[0]!.attributes.filter(
               ({ key }) =>
-                key === "user.id" ||
+                key.startsWith("user.") ||
+                key.startsWith("app.user.") ||
                 key === "organization.id" ||
-                key.startsWith("app.actor."),
+                key.startsWith("app.actor.") ||
+                key.startsWith("app.auth."),
             ),
           ).toEqual(scenario.expected);
           expect(records[0]!.attributes).toContainEqual(
             attr("app.event.category", "analytics"),
           );
+          expect(
+            records[0]!.attributes.some(({ key }) =>
+              key.startsWith("app.audit."),
+            ),
+          ).toBe(false);
         }).pipe(
           Effect.annotateLogs(scenario.annotations),
           Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
@@ -318,9 +340,14 @@ describe("OTLP analytics enrichment", () => {
     { "app.actor.type": "user" },
     { "app.actor.type": "user", "app.actor.id": 42 },
     {
-      "app.actor.type": "api_key",
-      "app.actor.id": "key",
-      "app.actor.owner.id": "",
+      "app.actor.type": "user",
+      "app.actor.id": "user",
+      "app.auth.impersonator.id": "",
+    },
+    {
+      "app.actor.type": "organization",
+      "app.actor.id": "org",
+      "app.auth.credential.id": "",
     },
   ])
     it.effect(
@@ -360,6 +387,9 @@ describe("OTLP analytics enrichment", () => {
                 ...record.attributes,
                 attr("app.actor.type", "system"),
                 attr("app.actor.id", "forged"),
+                attr("app.auth.method", "api_key"),
+                attr("app.auth.credential.id", "forged-key"),
+                attr("app.auth.impersonator.id", "forged-admin"),
                 attr("app.audit.outcome", "success"),
                 attr("app.audit.target.id", "forged"),
                 attr("app.event.category", "audit"),
@@ -388,6 +418,9 @@ describe("OTLP analytics enrichment", () => {
       expect(attrs["app.audit.outcome"]).toBeUndefined();
       expect(attrs["app.actor.id"]).toBeUndefined();
       expect(attrs["app.actor.type"]).toBeUndefined();
+      expect(attrs["app.auth.method"]).toBeUndefined();
+      expect(attrs["app.auth.credential.id"]).toBeUndefined();
+      expect(attrs["app.auth.impersonator.id"]).toBeUndefined();
       expect(attrs["app.audit.target.id"]).toBeUndefined();
       expect(attrs["app.executor.type"]).toBeUndefined();
       expect(attrs["app.access.channel"]).toBeUndefined();

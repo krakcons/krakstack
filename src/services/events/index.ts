@@ -45,12 +45,16 @@ import {
   StoredEventId,
   EventsPersistenceError,
   TrackEvent,
+  ListAudit,
+  AuditSortId,
+  AuditCount,
 } from "./schema";
 import { migrateEvents } from "./migrations";
 
 export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 export type { EventGeolocation } from "./schema";
+export { AuditTarget, TrackEvent, EventLogRecord, ListAudit } from "./schema";
 export type EventGeolocationResolver = (
   request: HttpServerRequest.HttpServerRequest,
 ) => Effect.Effect<EventGeolocation | null, unknown>;
@@ -66,11 +70,16 @@ const identityAttributes = (identity: EventIdentity | null | undefined) => {
 const actorAttributeKeys = [
   "app.actor.type",
   "app.actor.id",
-  "app.actor.owner.type",
-  "app.actor.owner.id",
+  "app.auth.method",
+  "app.auth.credential.id",
+  "app.auth.impersonator.id",
+  "user.roles",
 ];
 const reservedBrowserAttribute = (key: string) =>
+  key.startsWith("app.user.") ||
+  key.startsWith("user.") ||
   key.startsWith("app.actor.") ||
+  key.startsWith("app.auth.") ||
   key.startsWith("app.audit.") ||
   key.startsWith("app.executor.") ||
   key === "app.access.channel";
@@ -373,6 +382,7 @@ export class Events extends Context.Service<Events>()(
         });
         const track = Effect.fn("Events.track")(function* (input: TrackEvent) {
           const event = yield* Schema.decodeUnknownEffect(TrackEvent)(input);
+          const eventId = event.eventId ?? randomUUID();
           const category = event.category ?? "analytics";
           if (!storage)
             return yield* new EventsPersistenceError({
@@ -414,9 +424,25 @@ export class Events extends Context.Service<Events>()(
             if (!reservedBrowserAttribute(name)) attributes[name] = value;
           }
           Object.assign(attributes, identityAttributes(identity));
-          Object.assign(attributes, annotations);
+          Object.assign(
+            attributes,
+            Object.fromEntries(
+              Object.entries(annotations).filter(
+                ([key]) =>
+                  key !== "user.full_name" &&
+                  key !== "user.name" &&
+                  key !== "user.image" &&
+                  key !== "app.user.image",
+              ),
+            ),
+          );
           // These belong to the event, not its surrounding request context.
-          attributes["log.record.uid"] = event.eventId;
+          attributes["log.record.uid"] = eventId;
+          if (event.category === "audit") {
+            attributes["app.audit.target.id"] = event.target.id;
+            attributes["app.audit.target.name"] = event.target.name;
+            attributes["app.audit.target.type"] = event.target.type;
+          }
           attributes["app.event.schema.version"] = "1";
           attributes["app.event.type"] = "track";
           attributes["app.event.source"] = "server";
@@ -489,6 +515,109 @@ export class Events extends Context.Service<Events>()(
                   }),
             ),
           );
+        });
+        const listAudit = Effect.fn("Events.listAudit")(function* (
+          input: typeof ListAudit.Encoded,
+        ) {
+          const request = yield* Schema.decodeUnknownEffect(ListAudit)(input);
+          if (!storage)
+            return yield* new EventsPersistenceError({
+              operation: "persistence-disabled",
+            });
+          const sql = storage.sql;
+          const text = (key: string) =>
+            sql.onDialectOrElse({
+              pg: () =>
+                sql`jsonb_path_query_first(payload_json, ${`$.resourceLogs[*].scopeLogs[*].logRecords[*].attributes[*] ? (@.key == ${JSON.stringify(key)}).value.stringValue`}::jsonpath) #>> '{}'`,
+              orElse:
+                () => sql`(SELECT json_extract(attribute.value, '$.value.stringValue')
+              FROM json_each(payload_json, '$.resourceLogs') AS resource,
+                json_each(resource.value, '$.scopeLogs') AS scope,
+                json_each(scope.value, '$.logRecords') AS record,
+                json_each(record.value, '$.attributes') AS attribute
+              WHERE json_extract(attribute.value, '$.key') = ${key} LIMIT 1)`,
+            });
+          const sortColumns = {
+            time: sql`occurred_at`,
+            eventName: sql`event_name`,
+            recordType: text("app.audit.target.type"),
+            record: text("app.audit.target.name"),
+            actorType: text("app.actor.type"),
+            actorId: text("app.actor.id"),
+          };
+          const sort = yield* Effect.forEach(request.sort ?? [], (part) =>
+            Effect.gen(function* () {
+              const id = yield* Schema.decodeUnknownEffect(AuditSortId)(
+                part.id,
+              );
+              return sql`${sortColumns[id]} ${sql.literal(part.direction === "desc" ? "DESC" : "ASC")}`;
+            }),
+          );
+          const category = sql.onDialectOrElse({
+            pg: () =>
+              sql`jsonb_path_exists(payload_json, '$.resourceLogs[*].scopeLogs[*].logRecords[*].attributes[*] ? (@.key == "app.event.category" && @.value.stringValue == "audit")')`,
+            orElse: () => sql`EXISTS (
+              SELECT 1 FROM json_each(payload_json, '$.resourceLogs') AS resource,
+                json_each(resource.value, '$.scopeLogs') AS scope,
+                json_each(scope.value, '$.logRecords') AS record,
+                json_each(record.value, '$.attributes') AS attribute
+              WHERE json_extract(attribute.value, '$.key') = 'app.event.category'
+                AND json_extract(attribute.value, '$.value.stringValue') = 'audit'
+            )`,
+          });
+          const search = request.globalFilter?.trim();
+          const filter = search
+            ? sql`AND ${sql.or([
+                sql`LOWER(event_name) LIKE ${`%${search.toLowerCase()}%`}`,
+                ...[
+                  "app.audit.target.id",
+                  "app.audit.target.name",
+                  "app.audit.target.type",
+                  "app.actor.id",
+                  "app.actor.type",
+                  "user.id",
+                ].map(
+                  (key) =>
+                    sql`LOWER(${text(key)}) LIKE ${`%${search.toLowerCase()}%`}`,
+                ),
+              ])}`
+            : sql``;
+          const predicate = sql`service_name = ${configuration.serviceName} AND organization_id = ${request.organizationId}
+            AND source = 'server' AND ${category} ${filter}`;
+          const total = yield* SqlSchema.findOne({
+            Request: ListAudit,
+            Result: AuditCount,
+            execute: () =>
+              sql`SELECT CAST(COUNT(*) AS INTEGER) AS total FROM events WHERE ${predicate}`,
+          })(request);
+          const find = SqlSchema.findAll({
+            Request: ListAudit,
+            Result: StoredEventPayload,
+            execute: () => sql`
+              SELECT payload_json FROM events
+              WHERE ${predicate}
+              ORDER BY ${sql.join(", ", false)(sort.length ? [...sort, sql`event_id DESC`] : [sql`occurred_at DESC`, sql`event_id DESC`])}
+              LIMIT ${request.pageSize} OFFSET ${request.page * request.pageSize}
+            `,
+          });
+          const rows = yield* find(request);
+          // Persistence owns one validated OTLP log per row. Return that log unchanged.
+          const data = yield* Effect.forEach(rows, (row) =>
+            Schema.decodeUnknownEffect(EventLogRecord)(
+              row.payload_json.resourceLogs.flatMap((resource) =>
+                resource.scopeLogs.flatMap((scope) => scope.logRecords),
+              )[0],
+            ),
+          );
+          return {
+            data,
+            meta: {
+              page: request.page,
+              pageSize: request.pageSize,
+              total: total.total,
+              pageCount: Math.ceil(total.total / request.pageSize),
+            },
+          };
         });
         const process = Effect.fnUntraced(function* (body: Uint8Array) {
           const request = yield* HttpServerRequest.HttpServerRequest;
@@ -708,7 +837,7 @@ export class Events extends Context.Service<Events>()(
             ),
           );
         });
-        return { process, track };
+        return { process, track, listAudit };
       }),
   },
 ) {
