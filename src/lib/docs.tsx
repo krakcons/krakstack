@@ -760,7 +760,8 @@ const DocsArticle = ({
 };
 
 const useActiveDocsHeading = (headings: ReadonlyArray<DocsHeading>) => {
-  const [activeHeadingId, setActiveHeadingId] = useState(headings[0]?.id);
+  // SSR cannot know the browser's hash target or restored scroll position.
+  const [activeHeadingId, setActiveHeadingId] = useState<string>();
 
   useEffect(() => {
     const elements = headings.flatMap((heading) => {

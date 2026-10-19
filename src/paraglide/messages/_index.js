@@ -2,6 +2,7 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Effect_Form_Preview_Image_LabelInputs */
 /** @typedef {{}} Data_Table_Preview_TrueInputs */
 /** @typedef {{}} Data_Table_Preview_FalseInputs */
 /** @typedef {{}} Data_Table_Preview_ShippedInputs */
@@ -140,6 +141,20 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Preview image" |
+*
+* @param {Effect_Form_Preview_Image_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const effect_form_preview_image_label = /** @type {((inputs?: Effect_Form_Preview_Image_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Effect_Form_Preview_Image_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.effect_form_preview_image_label(inputs)
+	return __fr.effect_form_preview_image_label(inputs)
+});
 /**
 * | output |
 * | --- |
