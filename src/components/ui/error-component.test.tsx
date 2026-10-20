@@ -57,6 +57,45 @@ afterEach(() => {
 });
 
 describe("ErrorComponent", () => {
+  for (const error of [
+    undefined,
+    null,
+    "private thrown value",
+    42,
+    { name: "PrivateError", message: "private thrown value" },
+  ]) {
+    it(`handles a non-Error router failure without exposing its contents (${String(error)})`, async () => {
+      let copied = "";
+      setClipboard({
+        writeText: async (value) => {
+          copied = value;
+        },
+      });
+      await renderError({ error, reset: () => {}, messages: { en: messages } });
+
+      expect(screen.getByText(messages.description)).toBeDefined();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Copy error details" }),
+      );
+      await waitFor(() =>
+        expect(copied).toContain(
+          `Error: Error\nMessage: ${messages.description}`,
+        ),
+      );
+      expect(copied).not.toMatch(/private thrown value|PrivateError/);
+      expect(copied).not.toContain("Reference:");
+    });
+  }
+
+  it("uses the localized fallback for a non-Error router failure", async () => {
+    await renderError({ error: null, locale: "fr", reset: () => {} });
+    expect(
+      screen.getByText(
+        "Une erreur est survenue lors du chargement de cette page. Veuillez réessayer.",
+      ),
+    ).toBeDefined();
+  });
+
   const traceId = "70c292c924fb19051793b87d70e565a7";
   const spanId = "185e348d831d215b";
   for (const headers of [

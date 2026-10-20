@@ -140,12 +140,17 @@ export const ErrorComponent = ({
     }),
     [locale, messages],
   );
-  const reference = diagnostics?.reference ?? getErrorTraceId(error);
+  const standardError = error instanceof Error ? error : undefined;
+  const errorName = standardError?.name ?? labels.errorLabel;
+  const errorMessage = standardError?.message.trim() || labels.description;
+  const reference =
+    diagnostics?.reference ??
+    (standardError ? getErrorTraceId(standardError) : undefined);
   const report = useMemo(
     () =>
       [
-        `${labels.errorLabel}: ${error.name}`,
-        `${labels.messageLabel}: ${error.message.trim() || labels.description}`,
+        `${labels.errorLabel}: ${errorName}`,
+        `${labels.messageLabel}: ${errorMessage}`,
         "",
         `${labels.pageLabel}: ${pathname}`,
         `${labels.timeLabel}: ${new Date().toISOString()}`,
@@ -157,7 +162,8 @@ export const ErrorComponent = ({
         ...(reference ? [`${labels.referenceLabel}: ${reference}`] : []),
       ].join("\n"),
     [
-      error,
+      errorName,
+      errorMessage,
       pathname,
       locale,
       labels,
@@ -188,9 +194,7 @@ export const ErrorComponent = ({
           <EmptyTitle>
             <h1>{labels.title}</h1>
           </EmptyTitle>
-          <EmptyDescription>
-            {error.message.trim() || labels.description}
-          </EmptyDescription>
+          <EmptyDescription>{errorMessage}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <div className="flex flex-wrap justify-center gap-2">
