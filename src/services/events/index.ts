@@ -408,10 +408,6 @@ export class Events extends Context.Service<Events>()(
           const event = yield* Schema.decodeUnknownEffect(TrackEvent)(input);
           const eventId = event.eventId ?? (yield* crypto.randomUUIDv7);
           const category = event.category ?? "analytics";
-          if (!storage)
-            return yield* new EventsPersistenceError({
-              operation: "persistence-disabled",
-            });
           const receivedAt = yield* DateTime.now;
           const now = DateTime.toEpochMillis(receivedAt);
           const request = yield* Effect.serviceOption(
@@ -509,33 +505,36 @@ export class Events extends Context.Service<Events>()(
                 spanId: Option.isSome(span) ? span.value.spanId : undefined,
               },
             );
-            const result = yield* storage.persist({
-              source: "server",
-              compareTimestamp: event.timestamp !== undefined,
-              record: validated,
-              now,
-              payload: {
-                resourceLogs: [
-                  {
-                    resource,
-                    scopeLogs: [
+            const result = storage
+              ? yield* storage.persist({
+                  source: "server",
+                  compareTimestamp: event.timestamp !== undefined,
+                  record: validated,
+                  now,
+                  payload: {
+                    resourceLogs: [
                       {
-                        scope: { name: "krakstack.application.events" },
-                        logRecords: [validated],
+                        resource,
+                        scopeLogs: [
+                          {
+                            scope: { name: "krakstack.application.events" },
+                            logRecords: [validated],
+                          },
+                        ],
                       },
                     ],
                   },
-                ],
-              },
-            });
+                })
+              : { eventId, inserted: false };
             return {
               ...result,
               attributes: { ...requestContext, ...attributes },
             };
           }).pipe(
-            storage.sql.withTransaction,
+            (effect) =>
+              storage ? storage.sql.withTransaction(effect) : effect,
             Effect.tap((result) =>
-              result.inserted
+              !storage || result.inserted
                 ? Otlp.event(event.name, result.attributes, {
                     messageId: result.eventId,
                     timestamp: event.timestamp ?? receivedAt,

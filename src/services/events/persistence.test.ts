@@ -1462,18 +1462,96 @@ for (const database of databases) {
   );
 }
 
-it.effect("rejects server recording when no SqlClient is injected", () =>
-  Effect.gen(function* () {
-    const analytics = yield* Events;
-    expect(
-      yield* analytics
-        .track({ eventId: "disabled", name: "purchase" })
-        .pipe(Effect.result),
-    ).toMatchObject({
-      _tag: "Failure",
-      failure: { operation: "persistence-disabled" },
-    });
-  }).pipe(Effect.provide(eventsLayer(options))),
+it.effect(
+  "exports analytics and audit events without an injected SqlClient",
+  () => {
+    const records: Array<Parameters<OtlpEvents["Service"]["push"]>[0]> = [];
+    const layer = Events.layerWith(options).pipe(
+      Layer.provideMerge(
+        Layer.merge(
+          telemetry,
+          Layer.succeed(OtlpEvents, {
+            push: (record) => {
+              records.push(record);
+            },
+          }),
+        ),
+      ),
+    );
+    return Effect.gen(function* () {
+      const events = yield* Events;
+      const input = {
+        eventId: "otel-only",
+        name: "purchase",
+        properties: { total: 42 },
+      };
+      const track = events
+        .track(input)
+        .pipe(
+          Effect.provideService(
+            HttpServerRequest.HttpServerRequest,
+            searchRequest,
+          ),
+          Effect.annotateLogs({
+            "user.id": "user-1",
+            "user.name": "Private name",
+          }),
+        );
+      expect(yield* track).toEqual({ eventId: input.eventId, inserted: false });
+      // Without SQL, there is no durable deduplication across calls.
+      yield* track;
+      yield* events
+        .track({
+          eventId: "audit-otel-only",
+          name: "document.deleted",
+          category: "audit",
+          target: { id: "document-1", name: "Document", type: "document" },
+        })
+        .pipe(
+          Effect.annotateLogs({
+            "app.actor.type": "system",
+            "app.actor.id": "worker",
+          }),
+        );
+      expect(records).toHaveLength(3);
+      const record = records[0]!;
+      expect(record.eventName).toBe(input.name);
+      expect(record.scopeName).toBe("krakstack.application.events");
+      expect(record.attributes).toContainEqual(
+        attr("log.record.uid", input.eventId),
+      );
+      expect(record.attributes).toContainEqual(attr("user.id", "user-1"));
+      expect(
+        record.attributes.some(
+          ({ key }) => key === "user.name" || key === "session.id",
+        ),
+      ).toBe(false);
+      expect(record.attributes).toContainEqual(
+        attr("analytics.identity.mode", "daily"),
+      );
+      expect(record.traceId).toBeDefined();
+      expect(record.spanId).toBeDefined();
+      expect(records[2]!.attributes).toContainEqual(
+        attr("app.event.category", "audit"),
+      );
+      expect(records[2]!.attributes).toContainEqual(
+        attr("app.audit.target.id", "document-1"),
+      );
+      expect((yield* events.track({ name: "" }).pipe(Effect.result))._tag).toBe(
+        "Failure",
+      );
+      expect(
+        (yield* events
+          .track({
+            name: "invalid-audit",
+            category: "audit",
+            target: { id: "1", name: "Document", type: "document" },
+          })
+          .pipe(Effect.result))._tag,
+      ).toBe("Failure");
+      expect(records).toHaveLength(3);
+    }).pipe(Effect.provide(layer));
+  },
 );
 
 it.effect(
