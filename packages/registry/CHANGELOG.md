@@ -1,5 +1,13 @@
 # @krak-stack/registry
 
+## 0.1.53
+
+### Patch Changes
+
+- Use Effect Crypto for secret-salted SHA-256 visitor IDs and generated UUIDv7 event and visit IDs. Applications must provide a platform Crypto layer alongside Otlp. The versioned visitor derivation changes IDs from the previous HMAC algorithm.
+
+  Replace the Events layer factories with default `Events.layer` / `Events.baseLayer` values and partial `Events.layerWith(options)` / `Events.baseLayerWith(options)` overrides. Missing secret and origin options read server-only `APP_SECRET` and the origin of `VITE_SITE_URL`; explicit values skip their environment lookup. Geolocation remains opt-in. Migrate existing `Events.layer(options)` and `Events.baseLayer(options)` calls to their With counterparts.
+
 ## 0.1.52
 
 ### Patch Changes

@@ -1,6 +1,7 @@
-import { createHmac, randomUUID } from "node:crypto";
 import {
+  Config,
   Context,
+  Crypto,
   DateTime,
   Effect,
   Layer,
@@ -12,6 +13,7 @@ import {
 } from "effect";
 import { HttpServerRequest } from "effect/http";
 import { SqlClient, SqlSchema } from "effect/sql";
+import { Hex } from "effect/encoding";
 
 import {
   OtlpLogsProcessor,
@@ -177,30 +179,50 @@ const eventContent = (
       .sort((a, b) => a.key.localeCompare(b.key)),
   });
 
-export const dailyVisitorId = (input: {
+export const dailyVisitorId = Effect.fnUntraced(function* (input: {
   readonly serviceName: string;
   readonly ip: string;
   readonly userAgent: string;
   readonly day: string;
   readonly secret: Redacted.Redacted<string>;
-}) =>
-  createHmac("sha256", Redacted.value(input.secret))
-    .update(
+}) {
+  const crypto = yield* Crypto.Crypto;
+  const encoder = new TextEncoder();
+  // Keep the daily salt server-only. Separate domains and structured inputs
+  // prevent accidental reuse and ambiguous concatenation across features.
+  const salt = yield* crypto.digest(
+    "SHA-256",
+    encoder.encode(
       JSON.stringify([
-        "analytics.visitor.v1",
+        "analytics.visitor.salt.v2",
+        Redacted.value(input.secret),
+        input.serviceName,
+        input.day,
+      ]),
+    ),
+  );
+  const digest = yield* crypto.digest(
+    "SHA-256",
+    encoder.encode(
+      JSON.stringify([
+        "analytics.visitor.v2",
         input.serviceName,
         input.day,
         input.ip,
         input.userAgent,
+        Hex.encode(salt),
       ]),
-    )
-    .digest("hex");
+    ),
+  );
+  return Hex.encode(digest);
+});
 
 export class Events extends Context.Service<Events>()(
   "krakstack/events/Events",
   {
     make: (options: EventsOptions) =>
       Effect.gen(function* () {
+        const crypto = yield* Crypto.Crypto;
         const telemetry = yield* Otlp;
         const resource = options.serviceName
           ? yield* OtlpResource.fromConfig({ serviceName: options.serviceName })
@@ -351,13 +373,13 @@ export class Events extends Context.Service<Events>()(
           const userAgent = request.headers["user-agent"]?.slice(0, 2048) ?? "";
           const visitorId =
             location?.ip && userAgent
-              ? dailyVisitorId({
+              ? yield* dailyVisitorId({
                   serviceName: configuration.serviceName,
                   secret: options.secret,
                   ip: location.ip,
                   userAgent,
                   day: DateTime.formatIsoDate(now),
-                })
+                }).pipe(Effect.provideService(Crypto.Crypto, crypto))
               : undefined;
           let sessionId: string | undefined;
           if (visitorId && storage) {
@@ -368,7 +390,7 @@ export class Events extends Context.Service<Events>()(
               latest.value.received_at >
                 DateTime.toEpochMillis(now) - SESSION_TIMEOUT_MS
                 ? latest.value.session_id!
-                : randomUUID();
+                : yield* crypto.randomUUIDv7;
           }
           const identity: Record<string, string> = {};
           if (visitorId) identity["analytics.anonymous_id"] = visitorId;
@@ -382,7 +404,7 @@ export class Events extends Context.Service<Events>()(
         });
         const track = Effect.fn("Events.track")(function* (input: TrackEvent) {
           const event = yield* Schema.decodeUnknownEffect(TrackEvent)(input);
-          const eventId = event.eventId ?? randomUUID();
+          const eventId = event.eventId ?? (yield* crypto.randomUUIDv7);
           const category = event.category ?? "analytics";
           if (!storage)
             return yield* new EventsPersistenceError({
@@ -841,12 +863,26 @@ export class Events extends Context.Service<Events>()(
       }),
   },
 ) {
-  static readonly baseLayer = (options: EventsOptions) =>
-    Layer.effect(this, this.make(options));
+  /** Missing options resolve from APP_SECRET, VITE_SITE_URL and Otlp. */
+  static readonly baseLayerWith = (options: Partial<EventsOptions> = {}) =>
+    Layer.effect(
+      this,
+      Effect.gen(function* () {
+        const origin =
+          options.origin ??
+          (yield* Config.URL("VITE_SITE_URL").pipe(
+            Config.map((url) => url.origin),
+          ));
+        const secret = options.secret ?? (yield* Config.Redacted("APP_SECRET"));
+        return yield* Events.make({ ...options, origin, secret });
+      }),
+    );
+
+  static readonly baseLayer = this.baseLayerWith();
 
   /** An injected PostgreSQL/SQLite SqlClient enables persistence and the initial migration. */
-  static readonly layer = (options: EventsOptions) =>
-    this.baseLayer(options).pipe(
+  static readonly layerWith = (options: Partial<EventsOptions> = {}) =>
+    this.baseLayerWith(options).pipe(
       Layer.provide(
         Layer.effectDiscard(
           Effect.gen(function* () {
@@ -870,6 +906,8 @@ export class Events extends Context.Service<Events>()(
         ),
       ),
     );
+
+  static readonly layer = this.layerWith();
 
   static readonly ingestionLayer = Layer.effect(OtlpLogsProcessor, Events);
 }

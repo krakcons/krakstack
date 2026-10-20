@@ -1,6 +1,7 @@
 import { PgClient } from "@effect/sql-pg";
 import { SqliteClient } from "@effect/sql-sqlite-node";
 import { describe, expect, it } from "@effect/vitest";
+import { BrowserCrypto } from "@effect/platform-browser";
 import { Config, DateTime, Effect, Layer, Redacted, Schema } from "effect";
 import { HttpServerRequest } from "effect/http";
 import { SqlClient, SqlSchema } from "effect/sql";
@@ -10,9 +11,12 @@ import { Events, type EventsOptions } from "./index";
 import { Otlp } from "../opentelemetry";
 import { OtlpResource } from "effect/observability";
 
-const telemetry = Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() });
+const telemetry = Layer.merge(
+  Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() }),
+  BrowserCrypto.layer,
+);
 const eventsLayer = (options: EventsOptions) =>
-  Events.layer(options).pipe(Layer.provideMerge(telemetry));
+  Events.layerWith(options).pipe(Layer.provideMerge(telemetry));
 import {
   EventLogRecord,
   TrackEvent,
@@ -1289,7 +1293,7 @@ for (const database of databases) {
       );
 
       it.effect(
-        "generates a fresh ID for each call without an explicit ID",
+        "generates a fresh UUIDv7 for each call without an explicit ID",
         () =>
           Effect.gen(function* () {
             const { analytics, sql } = yield* fixture;
@@ -1301,6 +1305,8 @@ for (const database of databases) {
             expect(
               Schema.is(Schema.String.check(Schema.isUUID()))(first.eventId),
             ).toBe(true);
+            expect(first.eventId[14]).toBe("7");
+            expect(second.eventId[14]).toBe("7");
             expect(
               yield* sql`SELECT event_id FROM events WHERE service_name = ${options.serviceName}`,
             ).toHaveLength(2);

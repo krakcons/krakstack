@@ -2,6 +2,8 @@ import { Config, Effect, Layer, Option } from "effect";
 import { HttpRouter, HttpServer } from "effect/http";
 import { HttpApiOtlp } from "@krak-stack/registry/opentelemetry/api";
 import { Otlp } from "@krak-stack/registry/opentelemetry";
+import { Events } from "@krak-stack/registry/events";
+import { BrowserCrypto } from "@effect/platform-browser";
 import { HttpApiScalar } from "effect/http-api";
 import { HealthService } from "@krak-stack/registry/service-health";
 
@@ -13,7 +15,15 @@ const telemetryLayer = Layer.unwrap(
   Config.option(Config.URL("OTEL_EXPORTER_OTLP_ENDPOINT")).pipe(
     Effect.map((endpoint) =>
       Option.isSome(endpoint)
-        ? HttpApiOtlp.layer.pipe(Layer.provideMerge(Otlp.layer))
+        ? HttpApiOtlp.layer.pipe(
+            Layer.provide(Events.ingestionLayer),
+            Layer.provideMerge(
+              Events.layerWith({ geolocation: "cloudflare" }).pipe(
+                Layer.provide(BrowserCrypto.layer),
+                Layer.provideMerge(Otlp.layer),
+              ),
+            ),
+          )
         : Layer.merge(Otlp.layer, HttpServer.layerServices),
     ),
   ),

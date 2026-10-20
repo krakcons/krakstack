@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/assets",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Organization-scoped Effect asset storage, durable document processing, and searchable passages with PostgreSQL, S3, and Xberg.",
   "homepage": "https://krakstack.net/docs/assets",
   "license": "MIT",
@@ -56,7 +56,7 @@
     "fmt": "oxfmt src package.json tsconfig.json README.md"
   },
   "dependencies": {
-    "@krak-stack/registry": "0.1.50",
+    "@krak-stack/registry": "0.1.53",
     "@xberg-io/xberg": "1.0.14"
   },
   "devDependencies": {

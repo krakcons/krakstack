@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { BrowserCrypto } from "@effect/platform-browser";
 import {
   ConfigProvider,
   DateTime,
@@ -14,9 +15,12 @@ import { EventLogRecord, OtlpLogs } from "./schema";
 import { Otlp } from "../opentelemetry";
 import { OtlpResource } from "effect/observability";
 
-const telemetry = Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() });
+const telemetry = Layer.merge(
+  Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() }),
+  BrowserCrypto.layer,
+);
 const eventsLayer = (options: EventsOptions) =>
-  Events.layer(options).pipe(Layer.provide(telemetry));
+  Events.layerWith(options).pipe(Layer.provideMerge(telemetry));
 
 const secret = Redacted.make("test-secret-at-least-thirty-two-characters");
 const id = "123e4567-e89b-42d3-a456-426614174000";
@@ -63,13 +67,13 @@ const encode = (value: OtlpLogs) =>
   new TextEncoder().encode(JSON.stringify(value));
 
 const setup = (withCloudflare = true, identity?: EventsOptions["identity"]) => {
-  const layer = Events.baseLayer({
+  const layer = Events.baseLayerWith({
     serviceName: "service-a",
     origin: "https://example.com",
     secret,
     geolocation: withCloudflare ? "cloudflare" : undefined,
     identity,
-  }).pipe(Layer.provide(telemetry));
+  }).pipe(Layer.provideMerge(telemetry));
   const request = (headers: Record<string, string> = {}) =>
     HttpServerRequest.fromWeb(
       new Request("https://example.com/api/otel/v1/logs", {
@@ -87,6 +91,146 @@ const setup = (withCloudflare = true, identity?: EventsOptions["identity"]) => {
 };
 
 describe("OTLP analytics enrichment", () => {
+  for (const scenario of [
+    {
+      name: "default layer",
+      layer: Events.layer,
+      config: {
+        APP_SECRET: Redacted.value(secret),
+        VITE_SITE_URL: "https://example.com/docs",
+      },
+      attributed: false,
+    },
+    {
+      name: "default migration-free layer",
+      layer: Events.baseLayer,
+      config: {
+        APP_SECRET: Redacted.value(secret),
+        VITE_SITE_URL: "https://example.com",
+      },
+      attributed: false,
+    },
+    {
+      name: "geolocation-only override",
+      layer: Events.layerWith({ geolocation: "cloudflare" }),
+      config: {
+        APP_SECRET: Redacted.value(secret),
+        VITE_SITE_URL: "https://example.com",
+      },
+      attributed: true,
+    },
+    {
+      name: "explicit origin with default secret",
+      layer: Events.layerWith({
+        origin: "https://example.com",
+        geolocation: "cloudflare",
+      }),
+      config: {
+        APP_SECRET: Redacted.value(secret),
+        VITE_SITE_URL: "not-a-url",
+      },
+      attributed: true,
+    },
+    {
+      name: "explicit secret with default origin",
+      layer: Events.layerWith({ secret, geolocation: "cloudflare" }),
+      config: {
+        APP_SECRET: "invalid-unused-secret",
+        VITE_SITE_URL: "https://example.com",
+      },
+      attributed: true,
+    },
+    {
+      name: "fully explicit configuration without environment variables",
+      layer: Events.layerWith({
+        origin: "https://example.com",
+        secret,
+        geolocation: "cloudflare",
+      }),
+      config: {},
+      attributed: true,
+    },
+  ]) {
+    it.effect(`resolves ${scenario.name}`, () => {
+      const { request } = setup();
+      return Effect.gen(function* () {
+        const service = yield* Events;
+        const now = yield* DateTime.now;
+        const output = yield* service.process(
+          encode(envelope([event(DateTime.toEpochMillis(now))])),
+        );
+        const payload = yield* Schema.decodeUnknownEffect(
+          Schema.fromJsonString(OtlpLogs),
+        )(new TextDecoder().decode(output.body));
+        const record = yield* Schema.decodeUnknownEffect(EventLogRecord)(
+          payload.resourceLogs[0]!.scopeLogs[0]!.logRecords[0],
+        );
+        const identity = record.attributes.find(
+          ({ key }) => key === "analytics.anonymous_id",
+        );
+        if (scenario.attributed) {
+          expect(identity).toEqual(
+            attr(
+              "analytics.anonymous_id",
+              yield* dailyVisitorId({
+                serviceName: "config-test",
+                day: DateTime.formatIsoDate(now),
+                ip: "203.0.113.42",
+                userAgent: ua,
+                secret,
+              }),
+            ),
+          );
+        } else {
+          expect(identity).toBeUndefined();
+        }
+      }).pipe(
+        Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
+        Effect.provide(scenario.layer),
+        Effect.provide(telemetry),
+        Effect.provide(
+          ConfigProvider.layer(
+            ConfigProvider.fromUnknown({
+              ...scenario.config,
+              OTEL_SERVICE_NAME: "config-test",
+            }),
+          ),
+        ),
+      );
+    });
+  }
+
+  for (const config of [
+    {},
+    { APP_SECRET: Redacted.value(secret) },
+    { VITE_SITE_URL: "https://example.com" },
+    { APP_SECRET: Redacted.value(secret), VITE_SITE_URL: "not-a-url" },
+    { APP_SECRET: "too-short", VITE_SITE_URL: "https://example.com" },
+  ]) {
+    it.effect(
+      `rejects missing or invalid default configuration: ${Object.keys(config).join(", ") || "empty"}`,
+      () =>
+        Effect.gen(function* () {
+          const result = yield* Effect.gen(function* () {
+            yield* Events;
+          }).pipe(
+            Effect.provide(Events.layer),
+            Effect.provide(telemetry),
+            Effect.provide(
+              ConfigProvider.layer(
+                ConfigProvider.fromUnknown({
+                  ...config,
+                  OTEL_SERVICE_NAME: "config-test",
+                }),
+              ),
+            ),
+            Effect.result,
+          );
+          expect(result._tag).toBe("Failure");
+        }),
+    );
+  }
+
   for (const scenario of [
     {
       name: "custom",
@@ -130,7 +274,7 @@ describe("OTLP analytics enrichment", () => {
             expect(attrs["analytics.anonymous_id"]).toEqual(
               scenario.location?.ip
                 ? {
-                    stringValue: dailyVisitorId({
+                    stringValue: yield* dailyVisitorId({
                       serviceName: "custom-geo",
                       secret,
                       ip: scenario.location.ip,
@@ -470,7 +614,7 @@ describe("OTLP analytics enrichment", () => {
           expect(record.attributes).toContainEqual(
             attr(
               "analytics.anonymous_id",
-              dailyVisitorId({
+              yield* dailyVisitorId({
                 serviceName: scenario.expected,
                 ip: "203.0.113.42",
                 userAgent: ua,
@@ -839,23 +983,31 @@ describe("OTLP analytics enrichment", () => {
     },
   );
 
-  it("scopes pseudonymous identity to the site, UTC day and secret", () => {
-    const input = {
-      serviceName: "service-a",
-      ip: "203.0.113.42",
-      userAgent: ua,
-      day: "2026-10-18",
-      secret,
-    };
-    const original = dailyVisitorId(input);
-    expect(dailyVisitorId(input)).toBe(original);
-    for (const change of [
-      { serviceName: "service-b" },
-      { day: "2026-10-19" },
-      { secret: Redacted.make("another-secure-secret") },
-      { ip: "203.0.113.43" },
-    ]) {
-      expect(dailyVisitorId({ ...input, ...change })).not.toBe(original);
-    }
-  });
+  it.effect(
+    "scopes pseudonymous identity to the site, UTC day and secret",
+    () =>
+      Effect.gen(function* () {
+        const input = {
+          serviceName: "service-a",
+          ip: "203.0.113.42",
+          userAgent: ua,
+          day: "2026-10-18",
+          secret,
+        };
+        const original = yield* dailyVisitorId(input);
+        expect(original).toMatch(/^[a-f0-9]{64}$/);
+        expect(yield* dailyVisitorId(input)).toBe(original);
+        for (const change of [
+          { serviceName: "service-b" },
+          { day: "2026-10-19" },
+          { secret: Redacted.make("another-secure-secret") },
+          { ip: "203.0.113.43" },
+          { userAgent: "different-browser" },
+        ]) {
+          expect(yield* dailyVisitorId({ ...input, ...change })).not.toBe(
+            original,
+          );
+        }
+      }).pipe(Effect.provide(BrowserCrypto.layer)),
+  );
 });

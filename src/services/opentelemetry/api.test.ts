@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { BrowserCrypto } from "@effect/platform-browser";
 import {
   ConfigProvider,
   DateTime,
@@ -28,10 +29,13 @@ describe("HttpApiOtlp", () => {
           );
           return new Response("{}");
         };
-        const application = Events.layer({
+        const application = Events.layerWith({
           origin: "https://example.com",
           secret: Redacted.make("test-secret-at-least-thirty-two-characters"),
-        }).pipe(Layer.provideMerge(Otlp.layer));
+        }).pipe(
+          Layer.provideMerge(Otlp.layer),
+          Layer.provide(BrowserCrypto.layer),
+        );
         const server = HttpApiOtlp.layer.pipe(
           Layer.provide(Events.ingestionLayer),
           Layer.provideMerge(application),
