@@ -52,8 +52,8 @@
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/highlight": "^0.0.10",
     "@tanstack/react-form": "^1.33.0",
-    "@tanstack/react-router": "^1.170.15",
-    "@tanstack/react-start": "^1.168.25",
+    "@tanstack/react-router": "^1.170.41",
+    "@tanstack/react-start": "^1.168.60",
     "@tanstack/react-virtual": "^3.14.5",
     "@xberg-io/xberg": "1.0.14",
     "bowser": "^2.14.1",
@@ -95,7 +95,7 @@
     "oxfmt": "^0.47.0",
     "oxlint": "1.78.0",
     "typescript": "7.0.1-rc",
-    "vite": "^8.0.16",
+    "vite": "^8.1.6",
     "vitest": "^5.0.3"
   }
 }
