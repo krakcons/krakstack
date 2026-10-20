@@ -9,10 +9,12 @@ import { TestClock } from "effect/testing";
 
 import { Events, type EventsOptions } from "./index";
 import { Otlp } from "../opentelemetry";
+import { OtlpEvents } from "../opentelemetry/events";
 import { OtlpResource } from "effect/observability";
 
-const telemetry = Layer.merge(
+const telemetry = Layer.mergeAll(
   Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() }),
+  OtlpEvents.disabledLayer,
   BrowserCrypto.layer,
 );
 const eventsLayer = (options: EventsOptions) =>
@@ -131,6 +133,74 @@ for (const database of databases) {
   describe.skipIf(!database.enabled)(
     `Events persistence (${database.name})`,
     () => {
+      it.effect(
+        "exports newly persisted server events without exporting retries or conflicts",
+        () => {
+          const records: Array<Parameters<OtlpEvents["Service"]["push"]>[0]> =
+            [];
+          const exportingLayer = Events.layerWith(options).pipe(
+            Layer.provideMerge(
+              Layer.merge(
+                telemetry,
+                Layer.succeed(OtlpEvents, {
+                  push: (record) => {
+                    records.push(record);
+                  },
+                }),
+              ),
+            ),
+            Layer.provideMerge(database.layer),
+          );
+          return Effect.gen(function* () {
+            const { analytics, visits } = yield* fixture;
+            const input = {
+              eventId: "exported-event",
+              name: "order.completed",
+              properties: { total: 42 },
+            };
+            const track = analytics.track(input).pipe(
+              Effect.provideService(
+                HttpServerRequest.HttpServerRequest,
+                searchRequest,
+              ),
+              Effect.annotateLogs({
+                "user.id": "user-1",
+                "user.name": "Private name",
+              }),
+            );
+            expect((yield* track).inserted).toBe(true);
+            expect((yield* track).inserted).toBe(false);
+            expect(
+              (yield* analytics
+                .track({ ...input, name: "different" })
+                .pipe(Effect.result))._tag,
+            ).toBe("Failure");
+            expect(records).toHaveLength(1);
+            const record = records[0]!;
+            expect(record.eventName).toBe(input.name);
+            expect(record.scopeName).toBe("krakstack.application.events");
+            expect(record.attributes).toContainEqual(
+              attr("log.record.uid", input.eventId),
+            );
+            expect(record.attributes).toContainEqual(attr("user.id", "user-1"));
+            expect(record.attributes).toContainEqual({
+              key: "app.total",
+              value: { intValue: 42 },
+            });
+            expect(
+              record.attributes.some(({ key }) => key === "user.name"),
+            ).toBe(false);
+            const rows = yield* visits();
+            expect(rows).toHaveLength(1);
+            expect(record.attributes).toContainEqual(
+              attr("session.id", rows[0]!.session_id!),
+            );
+            expect(record.traceId).toBeDefined();
+            expect(record.spanId).toBeDefined();
+          }).pipe(Effect.scoped, Effect.provide(exportingLayer));
+        },
+      );
+
       it.effect(
         "queries paginated organization audit logs without projecting their OTLP schema",
         () =>

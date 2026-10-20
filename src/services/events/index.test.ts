@@ -13,10 +13,12 @@ import { HttpServerRequest } from "effect/http";
 import { Events, dailyVisitorId, type EventsOptions } from "./index";
 import { EventLogRecord, OtlpLogs } from "./schema";
 import { Otlp } from "../opentelemetry";
+import { OtlpEvents } from "../opentelemetry/events";
 import { OtlpResource } from "effect/observability";
 
-const telemetry = Layer.merge(
+const telemetry = Layer.mergeAll(
   Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() }),
+  OtlpEvents.disabledLayer,
   BrowserCrypto.layer,
 );
 const eventsLayer = (options: EventsOptions) =>

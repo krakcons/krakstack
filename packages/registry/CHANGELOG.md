@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.1.54
+
+### Patch Changes
+
+- Emit newly persisted server events through `Otlp.event` as well as SQL, preserving enriched attributes, event IDs, timestamps, and trace context in the application event scope. Duplicate retries and conflicts do not emit again. OTLP delivery remains best effort and is not atomic with an outer application transaction.
+
 ## 0.1.53
 
 ### Patch Changes

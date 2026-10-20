@@ -21,6 +21,7 @@ import {
 } from "../opentelemetry/processor";
 import { OtlpResource } from "effect/observability";
 import { Otlp } from "../opentelemetry";
+import { OtlpEvents } from "../opentelemetry/events";
 import {
   cloudflareGeolocation,
   geolocationAttributes,
@@ -224,6 +225,7 @@ export class Events extends Context.Service<Events>()(
       Effect.gen(function* () {
         const crypto = yield* Crypto.Crypto;
         const telemetry = yield* Otlp;
+        const exporter = yield* OtlpEvents;
         const resource = options.serviceName
           ? yield* OtlpResource.fromConfig({ serviceName: options.serviceName })
           : yield* telemetry.resource;
@@ -507,7 +509,7 @@ export class Events extends Context.Service<Events>()(
                 spanId: Option.isSome(span) ? span.value.spanId : undefined,
               },
             );
-            return yield* storage.persist({
+            const result = yield* storage.persist({
               source: "server",
               compareTimestamp: event.timestamp !== undefined,
               record: validated,
@@ -526,8 +528,30 @@ export class Events extends Context.Service<Events>()(
                 ],
               },
             });
+            return {
+              ...result,
+              attributes: { ...requestContext, ...attributes },
+            };
           }).pipe(
             storage.sql.withTransaction,
+            Effect.tap((result) =>
+              result.inserted
+                ? Otlp.event(event.name, result.attributes, {
+                    messageId: result.eventId,
+                    timestamp: event.timestamp ?? receivedAt,
+                  }).pipe(
+                    Effect.provideService(OtlpEvents, {
+                      push: (record) =>
+                        exporter.push({
+                          ...record,
+                          scopeName: "krakstack.application.events",
+                        }),
+                    }),
+                    // Use only the sanitized, authoritative event attributes.
+                    Effect.provideService(References.CurrentLogAnnotations, {}),
+                  )
+                : Effect.void,
+            ),
             Effect.map(({ eventId, inserted }) => ({ eventId, inserted })),
             Effect.mapError((error) =>
               error._tag === "EventConflictError"
