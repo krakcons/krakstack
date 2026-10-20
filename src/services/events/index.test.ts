@@ -15,6 +15,10 @@ import { EventLogRecord, OtlpLogs } from "./schema";
 import { Otlp } from "../opentelemetry";
 import { OtlpEvents } from "../opentelemetry/events";
 import { OtlpResource } from "effect/observability";
+import {
+  ANALYTICS_CONSENT_COOKIE,
+  ANALYTICS_NOTICE_VERSION,
+} from "../opentelemetry/consent";
 
 const telemetry = Layer.mergeAll(
   Layer.succeed(Otlp, { resource: OtlpResource.fromConfig() }),
@@ -68,13 +72,18 @@ const envelope = (records: ReadonlyArray<unknown>) => ({
 const encode = (value: OtlpLogs) =>
   new TextEncoder().encode(JSON.stringify(value));
 
-const setup = (withCloudflare = true, identity?: EventsOptions["identity"]) => {
+const setup = (
+  withCloudflare = true,
+  identity?: EventsOptions["identity"],
+  requireConsent = false,
+) => {
   const layer = Events.baseLayerWith({
     serviceName: "service-a",
     origin: "https://example.com",
     secret,
     geolocation: withCloudflare ? "cloudflare" : undefined,
     identity,
+    requireConsent,
   }).pipe(Layer.provideMerge(telemetry));
   const request = (headers: Record<string, string> = {}) =>
     HttpServerRequest.fromWeb(
@@ -93,6 +102,79 @@ const setup = (withCloudflare = true, identity?: EventsOptions["identity"]) => {
 };
 
 describe("OTLP analytics enrichment", () => {
+  for (const choice of ["missing", "declined", "accepted", "dnt", "gpc"]) {
+    it.effect(
+      `consent-gated ingestion handles ${choice} before enrichment`,
+      () => {
+        let identityLookups = 0;
+        const { layer, request } = setup(
+          true,
+          () =>
+            Effect.sync(() => {
+              identityLookups++;
+              return null;
+            }),
+          true,
+        );
+        const now = Date.now();
+        const cookie = `${ANALYTICS_CONSENT_COOKIE}=${encodeURIComponent(
+          JSON.stringify({
+            version: ANALYTICS_NOTICE_VERSION,
+            choice: choice === "declined" ? "declined" : "accepted",
+            revision: "test-consent",
+            issuedAt: now,
+            expiresAt: now + 86400000,
+          }),
+        )}`;
+        const headers: Record<string, string> = {};
+        if (choice !== "missing") headers.cookie = cookie;
+        if (choice === "dnt") headers.dnt = "1";
+        if (choice === "gpc") headers["sec-gpc"] = "1";
+        return Effect.gen(function* () {
+          const events = yield* Events;
+          const timestamp = DateTime.toEpochMillis(yield* DateTime.now);
+          const result = yield* events.process(
+            encode(envelope([event(timestamp)])),
+          );
+          const payload = yield* Schema.decodeUnknownEffect(
+            Schema.fromJsonString(OtlpLogs),
+          )(new TextDecoder().decode(result.body));
+          const scopes = payload.resourceLogs.flatMap(
+            (resource) => resource.scopeLogs,
+          );
+          expect(
+            scopes.some(
+              (scope) => scope.scope?.name === "krakstack.application.events",
+            ),
+          ).toBe(choice === "accepted");
+          expect(
+            scopes.some((scope) => scope.scope?.name === "ordinary.logs"),
+          ).toBe(true);
+          expect(identityLookups).toBe(choice === "accepted" ? 1 : 0);
+          const tracked = yield* events.track({ name: "server.usage" });
+          expect(tracked.inserted).toBe(false);
+          yield* events
+            .track({
+              name: "security.change",
+              category: "audit",
+              target: { id: "1", type: "permission", name: "Role change" },
+            })
+            .pipe(
+              Effect.annotateLogs({
+                "app.actor.type": "user",
+                "app.actor.id": "user-1",
+              }),
+            );
+        }).pipe(
+          Effect.provide(layer),
+          Effect.provideService(
+            HttpServerRequest.HttpServerRequest,
+            request(headers),
+          ),
+        );
+      },
+    );
+  }
   for (const scenario of [
     {
       name: "default layer",

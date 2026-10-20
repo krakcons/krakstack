@@ -5,6 +5,13 @@
 ### Patch Changes
 
 - Emit newly persisted server events through `Otlp.event` as well as SQL, preserving enriched attributes, event IDs, timestamps, and trace context in the application event scope. Duplicate retries and conflicts do not emit again. OTLP delivery remains best effort and is not atomic with an outer application transaction.
+- Export server events when SQL persistence is not configured; `inserted: false` then means no database row was written, not that telemetry was suppressed.
+
+- Add `TrackingNotice` with English/French defaults, optional copy overrides, a custom privacy-policy link, and persistent analytics preferences. Import it from `@krak-stack/registry/events/tracking-notice`.
+- Require consent by default for BrowserEvents and BrowserWebVitals. Remember choices for 180 days, honor DNT/GPC, and invalidate unsent events after withdrawal. Existing consumers must mount the notice or explicitly configure `requireConsent: false`.
+- Add optional server consent enforcement through `Events.layerWith({ requireConsent: true })`, while preserving necessary audit recording. Keep essential browser error reporting independent, with sanitized messages and stack locations.
+- Collect Web Vitals only when consent predates navigation; withdrawal disables it for the rest of the document. Already-started exports, including retries, may finish after withdrawal.
+- Reorganize Events and OpenTelemetry documentation around setup and practical examples.
 
 ## 0.1.53
 

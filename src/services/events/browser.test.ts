@@ -9,9 +9,14 @@ import { OtlpExporter } from "effect/observability";
 import { BrowserEvents, type BrowserEventsOptions } from "./browser";
 import { BrowserOtlp, type BrowserOtlpOptions } from "../opentelemetry/browser";
 import { EventLogRecord, OtlpLogs } from "./schema";
+import {
+  ANALYTICS_CONSENT_COOKIE,
+  saveAnalyticsPreference,
+} from "../opentelemetry/consent";
 
 const browserLayer = ({
   enabled,
+  requireConsent = false,
   respectDoNotTrack,
   pageViews,
   locale,
@@ -20,6 +25,7 @@ const browserLayer = ({
 }: BrowserEventsOptions & BrowserOtlpOptions) =>
   BrowserEvents.layer({
     enabled,
+    requireConsent,
     respectDoNotTrack,
     pageViews,
     locale,
@@ -27,6 +33,69 @@ const browserLayer = ({
   }).pipe(Layer.provideMerge(BrowserOtlp.layer(telemetry)));
 
 describe("BrowserEvents", () => {
+  it.effect(
+    "gates capture and discards revoked queued analytics without replay",
+    () => {
+      const requests: string[] = [];
+      const fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        requests.push(
+          await (
+            input instanceof Request ? input : new Request(input, init)
+          ).text(),
+        );
+        return new Response("{}");
+      };
+      return Effect.gen(function* () {
+        document.cookie = `${ANALYTICS_CONSENT_COOKIE}=; Max-Age=0; Path=/`;
+        const push = history.pushState;
+        yield* Effect.addFinalizer(() =>
+          Effect.sync(() => {
+            document.cookie = `${ANALYTICS_CONSENT_COOKIE}=; Max-Age=0; Path=/`;
+            expect(history.pushState).toBe(push);
+          }),
+        );
+        yield* Effect.gen(function* () {
+          yield* BrowserEvents.track("before-acceptance");
+          yield* (yield* OtlpExporter.Flusher).flush;
+          expect(requests).toHaveLength(0);
+          saveAnalyticsPreference("accepted");
+          yield* BrowserEvents.track("revoked");
+          saveAnalyticsPreference("declined");
+          yield* BrowserEvents.track("declined");
+          saveAnalyticsPreference("accepted");
+          yield* BrowserEvents.track("accepted");
+          yield* (yield* OtlpExporter.Flusher).flush;
+        }).pipe(
+          Effect.provide(
+            browserLayer({
+              serviceName: "consent",
+              traces: false,
+              requireConsent: true,
+            }),
+          ),
+          Effect.provideService(FetchHttpClient.Fetch, fetch),
+        );
+        const payloads = yield* Effect.forEach(requests, (body) =>
+          Schema.decodeUnknownEffect(Schema.fromJsonString(OtlpLogs))(body),
+        );
+        const names = payloads.flatMap((payload) =>
+          payload.resourceLogs.flatMap((resource) =>
+            resource.scopeLogs.flatMap((scope) =>
+              scope.logRecords.map(
+                (record) =>
+                  Schema.decodeUnknownSync(EventLogRecord)(record).eventName,
+              ),
+            ),
+          ),
+        );
+        expect(names).toContain("accepted");
+        expect(names).toContain("browser.page_view");
+        expect(names).not.toContain("revoked");
+        expect(names).not.toContain("declined");
+        expect(names).not.toContain("before-acceptance");
+      }).pipe(Effect.scoped);
+    },
+  );
   it.effect(
     "keeps generic events separate from analytics scope and page context",
     () => {

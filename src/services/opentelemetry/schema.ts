@@ -1,5 +1,18 @@
 import { Schema } from "effect";
 
+export const BrowserAnalyticsPreference = Schema.Struct({
+  version: Schema.String,
+  choice: Schema.Literals(["accepted", "declined"]),
+  /** A consent revision, not a visitor identifier; never exported with telemetry. */
+  revision: Schema.String,
+  issuedAt: Schema.Finite,
+  expiresAt: Schema.Finite,
+}).annotate({ identifier: "BrowserAnalyticsPreference" });
+
+export const BrowserPrivacySignals = Schema.Struct({
+  globalPrivacyControl: Schema.optional(Schema.Boolean),
+}).annotate({ identifier: "BrowserPrivacySignals" });
+
 export const BrowserWebVital = Schema.Struct({
   name: Schema.Literals(["LCP", "INP", "CLS", "FCP", "TTFB"]),
   id: Schema.NonEmptyString.check(Schema.isMaxLength(64)),

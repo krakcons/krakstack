@@ -53,6 +53,7 @@ import {
   AuditCount,
 } from "./schema";
 import { migrateEvents } from "./migrations";
+import { hasAnalyticsConsent } from "../opentelemetry/consent";
 
 export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
@@ -88,6 +89,8 @@ const reservedBrowserAttribute = (key: string) =>
   key === "app.access.channel";
 
 export interface EventsOptions {
+  /** Enforce the shared browser preference for ingestion and request-scoped analytics. */
+  readonly requireConsent?: boolean;
   /** Defaults to the server's OTEL_SERVICE_NAME / OTEL_RESOURCE_ATTRIBUTES. */
   readonly serviceName?: string;
   readonly origin: string;
@@ -414,6 +417,17 @@ export class Events extends Context.Service<Events>()(
             HttpServerRequest.HttpServerRequest,
           );
           const annotations = yield* References.CurrentLogAnnotations;
+          if (
+            category === "analytics" &&
+            options.requireConsent &&
+            (Option.isNone(request) ||
+              !hasAnalyticsConsent(
+                request.value.headers.cookie ?? "",
+                request.value.headers,
+              ))
+          ) {
+            return { eventId, inserted: false };
+          }
           // Request identity replaces the entire explicit identity: never combine
           // a verified API key with a caller-supplied user or owner.
           const hasIdentity = [
@@ -468,14 +482,20 @@ export class Events extends Context.Service<Events>()(
           attributes["app.event.source"] = "server";
           attributes["app.event.category"] = category;
           const span = yield* Effect.currentSpan.pipe(Effect.option);
-          const location = Option.isSome(request)
-            ? yield* resolveGeolocation(request.value).pipe(
-                Effect.mapError(
-                  () =>
-                    new EventsPersistenceError({ operation: "geolocation" }),
-                ),
-              )
-            : null;
+          const location =
+            Option.isSome(request) &&
+            (!options.requireConsent ||
+              hasAnalyticsConsent(
+                request.value.headers.cookie ?? "",
+                request.value.headers,
+              ))
+              ? yield* resolveGeolocation(request.value).pipe(
+                  Effect.mapError(
+                    () =>
+                      new EventsPersistenceError({ operation: "geolocation" }),
+                  ),
+                )
+              : null;
           const entry = {
             eventName: event.name,
             timeUnixNano: (
@@ -486,13 +506,19 @@ export class Events extends Context.Service<Events>()(
             observedTimeUnixNano: (BigInt(now) * 1_000_000n).toString(),
           };
           return yield* Effect.gen(function* () {
-            const requestContext = Option.isSome(request)
-              ? yield* resolveRequestContext(
-                  request.value,
-                  receivedAt,
-                  location,
-                )
-              : {};
+            const requestContext =
+              Option.isSome(request) &&
+              (!options.requireConsent ||
+                hasAnalyticsConsent(
+                  request.value.headers.cookie ?? "",
+                  request.value.headers,
+                ))
+                ? yield* resolveRequestContext(
+                    request.value,
+                    receivedAt,
+                    location,
+                  )
+                : {};
             const validated = yield* Schema.decodeUnknownEffect(EventLogRecord)(
               {
                 ...entry,
@@ -666,11 +692,51 @@ export class Events extends Context.Service<Events>()(
         });
         const process = Effect.fnUntraced(function* (body: Uint8Array) {
           const request = yield* HttpServerRequest.HttpServerRequest;
-          const payload = yield* Schema.decodeUnknownEffect(codec)(
+          let payload = yield* Schema.decodeUnknownEffect(codec)(
             new TextDecoder().decode(body),
           ).pipe(
             Effect.mapError(() => new OtlpProcessingError({ status: 400 })),
           );
+          if (
+            options.requireConsent &&
+            !hasAnalyticsConsent(request.headers.cookie ?? "", request.headers)
+          ) {
+            payload = {
+              ...payload,
+              resourceLogs: payload.resourceLogs.map((resource) => ({
+                ...resource,
+                scopeLogs: resource.scopeLogs
+                  .filter(
+                    (scope) =>
+                      scope.scope?.name !== "krakstack.application.events",
+                  )
+                  .map((scope) => ({
+                    ...scope,
+                    logRecords: scope.logRecords.filter((record) => {
+                      const parsed = Schema.decodeUnknownOption(
+                        Schema.Struct({
+                          eventName: Schema.optional(Schema.String),
+                        }),
+                      )(record);
+                      return (
+                        Option.isNone(parsed) ||
+                        parsed.value.eventName !== "browser.web_vital"
+                      );
+                    }),
+                  })),
+              })),
+            };
+            return {
+              body: new TextEncoder().encode(
+                yield* Schema.encodeEffect(codec)(payload).pipe(
+                  Effect.mapError(
+                    () => new OtlpProcessingError({ status: 503 }),
+                  ),
+                ),
+              ),
+              persisted: false,
+            };
+          }
           const analyticsScopes = payload.resourceLogs
             .flatMap((resource) => resource.scopeLogs)
             .filter(

@@ -1,6 +1,18 @@
 import type { EventAttributes } from "../opentelemetry/schema";
 import { OtlpEvents, event } from "../opentelemetry/events";
 import { Context, Effect, FiberSet, Layer, Option, Schema } from "effect";
+import {
+  analyticsAllowed,
+  analyticsExportGuard,
+  browserPrivacyEnabled,
+  subscribeAnalyticsConsent,
+} from "../opentelemetry/consent";
+export {
+  analyticsAllowed,
+  analyticsConsentSnapshot,
+  saveAnalyticsPreference,
+  subscribeAnalyticsConsent,
+} from "../opentelemetry/consent";
 
 import {
   BrowserEventOptions,
@@ -13,6 +25,8 @@ export type { EventAttributes } from "../opentelemetry/schema";
 
 export interface BrowserEventsOptions {
   readonly enabled?: boolean;
+  /** Opt in to the shared notice policy. Defaults to true. */
+  readonly requireConsent?: boolean;
   readonly respectDoNotTrack?: boolean;
   readonly pageViews?: boolean;
   readonly locale?: () => string;
@@ -32,6 +46,7 @@ class BrowserEventsClient extends Context.Service<
   BrowserEventsClient,
   {
     readonly events: OtlpEvents["Service"];
+    readonly allowed: () => boolean;
     readonly context: (
       name: string,
       properties?: EventAttributes,
@@ -45,6 +60,7 @@ const emit = Effect.fnUntraced(function* (
   options?: BrowserEventOptions,
 ) {
   const client = yield* BrowserEventsClient;
+  if (!client.allowed()) return;
   const decoded = yield* Schema.decodeUnknownEffect(BrowserEventOptions)(
     options ?? {},
   );
@@ -56,6 +72,8 @@ const emit = Effect.fnUntraced(function* (
 });
 
 const page = Effect.fnUntraced(function* (input: BrowserPageOptions = {}) {
+  const client = yield* BrowserEventsClient;
+  if (!client.allowed()) return;
   const decoded = yield* Schema.decodeUnknownEffect(BrowserPage)(input);
   const properties = eventProperties(decoded.properties);
   if (decoded.name) properties["analytics.page.name"] = decoded.name;
@@ -149,6 +167,17 @@ const BrowserPageViewsLive = Layer.effectDiscard(
       (unsubscribe) => Effect.sync(unsubscribe),
     );
     yield* page({ path: previousPath }).pipe(Effect.ignore);
+    yield* Effect.acquireRelease(
+      Effect.sync(() => {
+        let allowed = analyticsAllowed();
+        return subscribeAnalyticsConsent(() => {
+          const active = analyticsAllowed();
+          if (active && !allowed) run(page().pipe(Effect.ignore));
+          allowed = active;
+        });
+      }),
+      (unsubscribe) => Effect.sync(unsubscribe),
+    );
   }),
 );
 
@@ -164,20 +193,16 @@ export class BrowserEvents {
   /** Requires BrowserOtlp; no identifiers are persisted. */
   static readonly layer = ({
     enabled = true,
+    requireConsent = true,
     respectDoNotTrack = true,
     pageViews = true,
     locale,
     sanitizePath,
   }: BrowserEventsOptions = {}) => {
-    const privacy = Schema.decodeUnknownSync(
-      Schema.Struct({ globalPrivacyControl: Schema.optional(Schema.Boolean) }),
-    )(navigator);
-    const disabled =
-      !enabled ||
-      (respectDoNotTrack &&
-        (navigator.doNotTrack === "1" ||
-          navigator.doNotTrack === "yes" ||
-          privacy.globalPrivacyControl === true));
+    const allowed = () =>
+      enabled &&
+      (!respectDoNotTrack || !browserPrivacyEnabled()) &&
+      (!requireConsent || analyticsAllowed());
     let previousPath: string | undefined;
     let pageViewId = crypto.randomUUID();
     const context = (
@@ -218,22 +243,24 @@ export class BrowserEvents {
       Effect.gen(function* () {
         const exporter = yield* OtlpEvents;
         return {
+          allowed,
           events: {
             push: (record: Parameters<typeof exporter.push>[0]) => {
-              if (!disabled)
+              if (allowed())
                 exporter.push({
                   ...record,
+                  canExport: requireConsent ? analyticsExportGuard() : allowed,
                   scopeName: "krakstack.application.events",
                 });
             },
           },
-          context: disabled ? () => ({}) : context,
+          context,
         };
       }),
     );
     const browser = Layer.mergeAll(
       BrowserClientLive,
-      !disabled && pageViews ? BrowserPageViewsLive : Layer.empty,
+      enabled && pageViews ? BrowserPageViewsLive : Layer.empty,
     ).pipe(Layer.provideMerge(client));
     return browser;
   };

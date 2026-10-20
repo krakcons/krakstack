@@ -49,7 +49,8 @@ export class OtlpEvents extends Context.Service<
           label: "OtlpEvents",
           body: (logRecords: Array<EventRecord>) => {
             const scopes = new Map<string, Array<EventRecord>>();
-            for (const { scopeName, ...record } of logRecords) {
+            for (const { scopeName, canExport, ...record } of logRecords) {
+              if (canExport && !canExport()) continue;
               const name = scopeName ?? options.scopeName ?? "krakstack.events";
               const records = scopes.get(name);
               if (records) records.push(record);
@@ -76,6 +77,8 @@ export class OtlpEvents extends Context.Service<
 }
 
 interface EventRecord {
+  /** Local-only revocation check; never serialized into OTLP. */
+  readonly canExport?: () => boolean;
   readonly scopeName?: string;
   readonly eventName: string;
   readonly timeUnixNano: string;

@@ -17,6 +17,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./events/tracking-notice": {
+      "types": "./dist/services/events/client/tracking-notice.d.ts",
+      "import": "./dist/services/events/client/tracking-notice.js"
+    },
     "./events/client": {
       "types": "./dist/services/events/client/audit-log-table.d.ts",
       "import": "./dist/services/events/client/audit-log-table.js"

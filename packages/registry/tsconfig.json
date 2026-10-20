@@ -11,6 +11,7 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/services/events/client/tracking-notice.tsx",
     "../../src/services/events/record.ts",
     "../../src/services/events/client/audit-log-table.tsx",
     "../../src/services/events/index.ts",

@@ -11,8 +11,85 @@ import { EventLogRecord, OtlpLogs } from "../events/schema";
 import { BrowserWebVitals, WebVitals } from "./web-vitals";
 import { OtlpEvents } from "./events";
 import { BrowserEvents } from "../events/browser";
+import { ANALYTICS_CONSENT_COOKIE, saveAnalyticsPreference } from "./consent";
 
 describe("browser Web Vitals", () => {
+  it.effect(
+    "does not replay a document when acceptance happens after page load",
+    () => {
+      let subscriptions = 0;
+      return Effect.gen(function* () {
+        document.cookie = `${ANALYTICS_CONSENT_COOKIE}=; Max-Age=0; Path=/`;
+        yield* Effect.gen(function* () {
+          saveAnalyticsPreference("accepted");
+          expect(subscriptions).toBe(0);
+        }).pipe(Effect.provide(BrowserWebVitals.layer()));
+      }).pipe(
+        Effect.provideService(OtlpEvents, { push: () => {} }),
+        Effect.provideService(WebVitals, {
+          subscribe: () => {
+            subscriptions++;
+            return () => {};
+          },
+        }),
+        Effect.ensuring(
+          Effect.sync(() => {
+            document.cookie = `${ANALYTICS_CONSENT_COOKIE}=; Max-Age=0; Path=/`;
+          }),
+        ),
+      );
+    },
+  );
+  it.effect(
+    "stops document measurements permanently on withdrawal and discards queued metrics",
+    () => {
+      let observer: ((metric: Metric) => void) | undefined;
+      let subscriptions = 0;
+      const records: Array<Parameters<OtlpEvents["Service"]["push"]>[0]> = [];
+      return Effect.gen(function* () {
+        const issuedAt = Math.floor(performance.timeOrigin) - 1;
+        document.cookie = `${ANALYTICS_CONSENT_COOKIE}=${encodeURIComponent(JSON.stringify({ version: "1", choice: "accepted", revision: "before-navigation", issuedAt, expiresAt: issuedAt + 180 * 86400000 }))}; Path=/`;
+        yield* Effect.gen(function* () {
+          expect(subscriptions).toBe(1);
+          const metric: Metric = {
+            name: "LCP",
+            id: "document",
+            value: 100,
+            delta: 100,
+            rating: "good",
+            navigationType: "navigate",
+            entries: [],
+          };
+          observer?.(metric);
+          expect(records).toHaveLength(1);
+          saveAnalyticsPreference("declined");
+          expect(observer).toBeUndefined();
+          saveAnalyticsPreference("accepted");
+          expect(subscriptions).toBe(1);
+          expect(observer).toBeUndefined();
+          expect(records[0]?.canExport?.()).toBe(false);
+        }).pipe(Effect.provide(BrowserWebVitals.layer()));
+      }).pipe(
+        Effect.provideService(OtlpEvents, {
+          push: (record) => records.push(record),
+        }),
+        Effect.provideService(WebVitals, {
+          subscribe: (callback) => {
+            subscriptions++;
+            observer = callback;
+            return () => {
+              observer = undefined;
+            };
+          },
+        }),
+        Effect.ensuring(
+          Effect.sync(() => {
+            document.cookie = `${ANALYTICS_CONSENT_COOKIE}=; Max-Age=0; Path=/`;
+          }),
+        ),
+      );
+    },
+  );
   it.effect(
     "is opt-in and privacy-gated, emits semantic conventions without analytics context, and releases subscribers",
     () => {
@@ -49,7 +126,7 @@ describe("browser Web Vitals", () => {
         });
         yield* Effect.void.pipe(
           Effect.provide(
-            BrowserWebVitals.layer().pipe(
+            BrowserWebVitals.layer({ requireConsent: false }).pipe(
               Layer.provideMerge(
                 BrowserOtlp.layer({
                   serviceName: "disabled",
@@ -79,7 +156,7 @@ describe("browser Web Vitals", () => {
           yield* (yield* OtlpExporter.Flusher).flush;
         }).pipe(
           Effect.provide(
-            BrowserWebVitals.layer().pipe(
+            BrowserWebVitals.layer({ requireConsent: false }).pipe(
               Layer.provideMerge(
                 BrowserOtlp.layer({
                   serviceName: "vitals",
@@ -177,7 +254,12 @@ describe("browser Web Vitals", () => {
               value: signal === "dnt" ? "1" : true,
             });
             yield* Effect.void.pipe(
-              Effect.provide(BrowserWebVitals.layer({ respectDoNotTrack })),
+              Effect.provide(
+                BrowserWebVitals.layer({
+                  respectDoNotTrack,
+                  requireConsent: false,
+                }),
+              ),
             );
             expect(subscribed).toBe(respectDoNotTrack ? 0 : 1);
           }).pipe(
@@ -232,8 +314,8 @@ describe("browser Web Vitals", () => {
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
-            BrowserEvents.layer({ pageViews: false }),
-            BrowserWebVitals.layer(),
+            BrowserEvents.layer({ pageViews: false, requireConsent: false }),
+            BrowserWebVitals.layer({ requireConsent: false }),
           ).pipe(
             Layer.provideMerge(
               BrowserOtlp.layer({ serviceName: "composed", traces: false }),

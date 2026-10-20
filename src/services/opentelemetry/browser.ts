@@ -22,19 +22,42 @@ class BrowserReportedError extends Schema.TaggedError<BrowserReportedError>()(
   },
 ) {}
 
-const reportBrowserException = (exception: BrowserReportedError) =>
-  Effect.fail(exception).pipe(
+const reportBrowserException = (exception: BrowserReportedError) => {
+  const sanitized = sanitizeBrowserException(exception);
+  return Effect.fail(
+    new BrowserReportedError({ type: exception.type, ...sanitized }),
+  ).pipe(
     Effect.withSpan("browser.exception", {
       root: true,
       sampled: true,
       attributes: {
         "exception.type": exception.type,
-        "exception.message": exception.message,
-        "exception.stacktrace": exception.stack ?? "",
+        "exception.message": sanitized.message,
+        "exception.stacktrace": sanitized.stack ?? "",
       },
     }),
     Effect.ignoreCause,
   );
+};
+
+/** Essential diagnostics omit arbitrary messages, functions, URL queries and directories. */
+export const sanitizeBrowserException = (input: {
+  readonly type: string;
+  readonly stack?: string;
+}) => ({
+  message:
+    input.type === "window.error"
+      ? "Browser error"
+      : "Unhandled promise rejection",
+  stack: input.stack
+    ?.split("\n")
+    .slice(1, 21)
+    .flatMap((line) => {
+      const match = line.match(/([a-zA-Z0-9_.-]+\.(?:m?js|tsx?)):(\d+):(\d+)/);
+      return match ? [`${match[1]}:${match[2]}:${match[3]}`] : [];
+    })
+    .join("\n"),
+});
 
 const BrowserExceptionTrackingLive = Layer.effectDiscard(
   Stream.merge(

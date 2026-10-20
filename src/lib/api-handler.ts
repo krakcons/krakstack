@@ -18,7 +18,10 @@ const telemetryLayer = Layer.unwrap(
         ? HttpApiOtlp.layer.pipe(
             Layer.provide(Events.ingestionLayer),
             Layer.provideMerge(
-              Events.layerWith({ geolocation: "cloudflare" }).pipe(
+              Events.layerWith({
+                geolocation: "cloudflare",
+                requireConsent: true,
+              }).pipe(
                 Layer.provide(BrowserCrypto.layer),
                 Layer.provideMerge(Otlp.layer),
               ),
