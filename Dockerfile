@@ -4,10 +4,8 @@ WORKDIR /app
 
 # Env
 ARG VITE_SITE_URL
-ARG VITE_ANALYTICS_WEBSITE_ID
 
 ENV VITE_SITE_URL=$VITE_SITE_URL
-ENV VITE_ANALYTICS_WEBSITE_ID=$VITE_ANALYTICS_WEBSITE_ID
 
 # Install workspace dependencies without running the root prepare script before
 # its source files are available.
