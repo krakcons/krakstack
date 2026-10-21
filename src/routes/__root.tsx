@@ -15,7 +15,6 @@ import { getLocale, locales } from "@/paraglide/runtime";
 import appCss from "../styles.css?url";
 import { ErrorComponent } from "@/components/ui/error-component";
 import { telemetryRuntime } from "@/lib/browser-telemetry";
-import { TrackingNotice } from "@krak-stack/registry/events/tracking-notice";
 
 export const Route = createRootRoute({
   search: {
@@ -86,12 +85,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <KrakstackProvider locale={getLocale()} locales={locales}>
           <ThemeProvider>
-            <TooltipProvider>
-              {children}
-              <footer className="border-t px-4 py-4 text-center">
-                <TrackingNotice />
-              </footer>
-            </TooltipProvider>
+            <TooltipProvider>{children}</TooltipProvider>
           </ThemeProvider>
         </KrakstackProvider>
 

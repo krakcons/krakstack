@@ -4,12 +4,12 @@ import { describe, expect, it } from "@effect/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach } from "vitest";
 import type { EventLogRecord } from "../schema";
-import { AuditLogTable, type AuditActor } from "./audit-log-table";
+import { AuditLogTable } from "./audit-log-table";
 
 afterEach(cleanup);
 
 const entry = (
-  type: AuditActor["type"],
+  type: "user" | "organization",
   id: string,
   impersonatorId?: string,
 ): EventLogRecord => {
@@ -31,6 +31,36 @@ const entry = (
 };
 
 describe("audit actor resolution", () => {
+  it("uses supplied actors and recorded target labels without changing historical snapshots", () => {
+    const record = {
+      ...entry("user", "user-a", "admin-a"),
+      attributes: [
+        ...entry("user", "user-a", "admin-a").attributes,
+        ...Object.entries({
+          "app.audit.target.type": "course",
+          "app.audit.target.id": "course-a",
+          "app.audit.target.name": "Safety course",
+        }).map(([key, stringValue]) => ({ key, value: { stringValue } })),
+      ],
+    };
+    const before = structuredClone(record);
+    render(
+      <AuditLogTable
+        entries={[record]}
+        rowCount={1}
+        actors={[
+          { type: "user", id: "user-a", label: "Resolved actor" },
+          { type: "user", id: "admin-a", label: "Resolved administrator" },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Resolved actor")).toBeTruthy();
+    expect(
+      screen.getByText("Impersonated by: Resolved administrator"),
+    ).toBeTruthy();
+    expect(screen.getByText("Safety course")).toBeTruthy();
+    expect(record).toEqual(before);
+  });
   it("matches both type and ID and resolves impersonators from user actors", () => {
     render(
       <AuditLogTable
@@ -44,16 +74,19 @@ describe("audit actor resolution", () => {
             type: "user",
             id: "shared",
             label: "Ada",
-            description: "ada@example.test",
           },
           { type: "organization", id: "shared", label: "Acme" },
-          { type: "organization", id: "admin", label: "Not the impersonator" },
+          {
+            type: "organization",
+            id: "admin",
+            label: "Not the impersonator",
+          },
           { type: "user", id: "admin", label: "Grace" },
         ]}
       />,
     );
     expect(screen.getByText("Ada")).toBeTruthy();
-    expect(screen.getByText("ada@example.test")).toBeTruthy();
+    expect(screen.queryByText("ada@example.test")).toBeNull();
     expect(screen.getByText("Acme")).toBeTruthy();
     expect(screen.getByText("Impersonated by: Grace")).toBeTruthy();
     expect(screen.queryByText("Not the impersonator")).toBeNull();

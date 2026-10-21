@@ -20,7 +20,7 @@ const telemetryLayer = Layer.unwrap(
             Layer.provideMerge(
               Events.layerWith({
                 geolocation: "cloudflare",
-                requireConsent: true,
+                requireConsent: false,
               }).pipe(
                 Layer.provide(BrowserCrypto.layer),
                 Layer.provideMerge(Otlp.layer),
