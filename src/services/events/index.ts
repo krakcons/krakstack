@@ -48,7 +48,7 @@ import {
   StoredEventId,
   EventsPersistenceError,
   TrackEvent,
-  ListAudit,
+  ListEvents,
   AuditSortId,
   AuditCount,
 } from "./schema";
@@ -58,7 +58,7 @@ import { hasAnalyticsConsent } from "../opentelemetry/consent";
 export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 export type { EventGeolocation } from "./schema";
-export { AuditTarget, TrackEvent, EventLogRecord, ListAudit } from "./schema";
+export { AuditTarget, TrackEvent, EventLogRecord, ListEvents } from "./schema";
 export type EventGeolocationResolver = (
   request: HttpServerRequest.HttpServerRequest,
 ) => Effect.Effect<EventGeolocation | null, unknown>;
@@ -463,8 +463,10 @@ export class Events extends Context.Service<Events>()(
             Object.fromEntries(
               Object.entries(annotations).filter(
                 ([key]) =>
-                  key !== "user.full_name" &&
-                  key !== "user.name" &&
+                  (category === "audit" ||
+                    !["user.full_name", "user.name", "user.email"].includes(
+                      key,
+                    )) &&
                   key !== "user.image" &&
                   key !== "app.user.image",
               ),
@@ -587,10 +589,10 @@ export class Events extends Context.Service<Events>()(
             ),
           );
         });
-        const listAudit = Effect.fn("Events.listAudit")(function* (
-          input: typeof ListAudit.Encoded,
+        const list = Effect.fn("Events.list")(function* (
+          input: typeof ListEvents.Encoded,
         ) {
-          const request = yield* Schema.decodeUnknownEffect(ListAudit)(input);
+          const request = yield* Schema.decodeUnknownEffect(ListEvents)(input);
           if (!storage)
             return yield* new EventsPersistenceError({
               operation: "persistence-disabled",
@@ -624,18 +626,11 @@ export class Events extends Context.Service<Events>()(
               return sql`${sortColumns[id]} ${sql.literal(part.direction === "desc" ? "DESC" : "ASC")}`;
             }),
           );
-          const category = sql.onDialectOrElse({
-            pg: () =>
-              sql`jsonb_path_exists(payload_json, '$.resourceLogs[*].scopeLogs[*].logRecords[*].attributes[*] ? (@.key == "app.event.category" && @.value.stringValue == "audit")')`,
-            orElse: () => sql`EXISTS (
-              SELECT 1 FROM json_each(payload_json, '$.resourceLogs') AS resource,
-                json_each(resource.value, '$.scopeLogs') AS scope,
-                json_each(scope.value, '$.logRecords') AS record,
-                json_each(record.value, '$.attributes') AS attribute
-              WHERE json_extract(attribute.value, '$.key') = 'app.event.category'
-                AND json_extract(attribute.value, '$.value.stringValue') = 'audit'
-            )`,
-          });
+          const source =
+            request.category === "audit" ? sql`AND source = 'server'` : sql``;
+          const event = request.eventName
+            ? sql`AND event_name = ${request.eventName}`
+            : sql``;
           const search = request.globalFilter?.trim();
           const filter = search
             ? sql`AND ${sql.or([
@@ -654,15 +649,15 @@ export class Events extends Context.Service<Events>()(
               ])}`
             : sql``;
           const predicate = sql`service_name = ${configuration.serviceName} AND organization_id = ${request.organizationId}
-            AND source = 'server' AND ${category} ${filter}`;
+            AND ${text("app.event.category")} = ${request.category} ${source} ${event} ${filter}`;
           const total = yield* SqlSchema.findOne({
-            Request: ListAudit,
+            Request: ListEvents,
             Result: AuditCount,
             execute: () =>
               sql`SELECT CAST(COUNT(*) AS INTEGER) AS total FROM events WHERE ${predicate}`,
           })(request);
           const find = SqlSchema.findAll({
-            Request: ListAudit,
+            Request: ListEvents,
             Result: StoredEventPayload,
             execute: () => sql`
               SELECT payload_json FROM events
@@ -672,7 +667,7 @@ export class Events extends Context.Service<Events>()(
             `,
           });
           const rows = yield* find(request);
-          // Persistence owns one validated OTLP log per row. Return that log unchanged.
+          // Return the recorded event, including its event-time user attributes.
           const data = yield* Effect.forEach(rows, (row) =>
             Schema.decodeUnknownEffect(EventLogRecord)(
               row.payload_json.resourceLogs.flatMap((resource) =>
@@ -948,7 +943,7 @@ export class Events extends Context.Service<Events>()(
             ),
           );
         });
-        return { process, track, listAudit };
+        return { process, track, list };
       }),
   },
 ) {

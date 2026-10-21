@@ -1,19 +1,28 @@
 import type { ReactNode } from "react";
+import { ListFilterIcon } from "lucide-react";
 import {
   DataTable,
   DataTableReferenceCell,
   type DataTableColDef,
-  type DataTableProps,
   type DataTableStatus,
   type DataTableReferenceItem,
 } from "@/components/ui/data-table";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
-import type { EventLogRecord } from "../schema";
+import {
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarGroup,
+  MenubarItem,
+} from "@/components/ui/menubar";
+import type { EventLogRecord, EventQuery } from "../schema";
 import { eventTextAttribute } from "../record";
 
 const translations = {
   en: {
-    title: "Audit log",
+    title: "Activity history",
+    event: "Action",
+    allEvents: "All actions",
     time: "Time",
     action: "Action",
     target: "Target",
@@ -27,7 +36,9 @@ const translations = {
     methodUnknown: "Unknown",
   },
   fr: {
-    title: "Journal d’audit",
+    title: "Historique d’activité",
+    event: "Action",
+    allEvents: "Toutes les actions",
     time: "Date",
     action: "Action",
     target: "Cible",
@@ -42,32 +53,29 @@ const translations = {
   },
 };
 export type AuditLogMessages = typeof translations.en;
-export type AuditActor = DataTableReferenceItem & {
-  type: "user" | "organization";
-  id: string;
+export type AuditLogTableProps = DataTableStatus & {
+  /** Full application-owned event catalog, with localized display labels. */
+  events?: readonly { value: string; label: string }[];
+  state?: EventQuery;
+  onStateChange?: (state: EventQuery) => void;
+  entries: readonly EventLogRecord[];
+  /** Total matching records from the query response; paging lives in state. */
+  rowCount: number;
+  /** Display time zone for the dateTime column. Defaults to America/New_York. */
+  timeZone?: string;
+  /** Overrides the shared KrakstackProvider locale when supplied. */
+  locale?: string;
+  messages?: Readonly<Record<string, Partial<AuditLogMessages>>>;
+  renderAction?: (entry: EventLogRecord) => ReactNode;
 };
-
-export type AuditLogTableProps = DataTableStatus &
-  Pick<DataTableProps<EventLogRecord>, "state" | "onStateChange"> & {
-    entries: readonly EventLogRecord[];
-    /** Total matching records from the query response; paging lives in state. */
-    rowCount: number;
-    /** Overrides the shared KrakstackProvider locale when supplied. */
-    locale?: string;
-    messages?: Readonly<Record<string, Partial<AuditLogMessages>>>;
-    /** Current profiles the viewer may access. Matched by type and ID, including user impersonators.
-     * Missing profiles use neutral labels: the list may be loading, incomplete, or unavailable.
-     */
-    actors?: readonly AuditActor[];
-    renderAction?: (entry: EventLogRecord) => ReactNode;
-  };
 
 export const AuditLogTable = ({
   entries,
+  events = [],
   rowCount,
+  timeZone = "America/New_York",
   locale: localeOverride,
   messages,
-  actors = [],
   renderAction,
   state,
   onStateChange,
@@ -85,19 +93,22 @@ export const AuditLogTable = ({
     ["session", labels.methodSession],
     ["api_key", labels.methodApiKey],
   ]);
-  const actorsByKey = new Map(
-    actors.map((actor) => [`${actor.type}:${actor.id}`, actor]),
-  );
   const getActor = (entry: EventLogRecord): DataTableReferenceItem => {
     const type = eventTextAttribute(entry, "app.actor.type");
-    const id = eventTextAttribute(entry, "app.actor.id");
-    const actor = actorsByKey.get(`${type}:${id}`);
-    if (actor) return actor;
+    const id =
+      eventTextAttribute(entry, "app.actor.id") ??
+      eventTextAttribute(entry, "user.id");
     if (type === "organization") {
       return { label: labels.actorOrganization, description: id };
     }
-    if (type === "user") {
-      return { label: labels.actorMember, description: id };
+    if (type === "user" || eventTextAttribute(entry, "user.id") !== null) {
+      const fullName = eventTextAttribute(entry, "user.full_name");
+      const name = eventTextAttribute(entry, "user.name");
+      const email = eventTextAttribute(entry, "user.email");
+      return {
+        label: fullName || name || email || labels.actorMember,
+        description: fullName || name ? email || id : id,
+      };
     }
     return { label: type ?? labels.actor, description: id };
   };
@@ -106,13 +117,17 @@ export const AuditLogTable = ({
       colId: "time",
       headerName: labels.time,
       type: "dateTime",
+      typeOptions: { timeZone },
       valueGetter: ({ data }) =>
         new Date(Number(BigInt(data.timeUnixNano) / 1_000_000n)),
     },
     {
       field: "eventName",
       headerName: labels.action,
-      cellRenderer: ({ data }) => renderAction?.(data) ?? data.eventName,
+      cellRenderer: ({ data }) =>
+        renderAction?.(data) ??
+        events.find((event) => event.value === data.eventName)?.label ??
+        data.eventName,
     },
     {
       colId: "record",
@@ -123,11 +138,13 @@ export const AuditLogTable = ({
         getItem: (entry) => {
           const id = eventTextAttribute(entry, "app.audit.target.id");
           const name = eventTextAttribute(entry, "app.audit.target.name");
+          const type = eventTextAttribute(entry, "app.audit.target.type");
           return id === null
             ? null
             : {
-                label: name || id,
-                description: name && name !== id ? id : null,
+                label: name && name !== id ? name : type || labels.target,
+                description:
+                  name && name !== id && type ? `${type} · ${id}` : id,
               };
         },
       },
@@ -150,9 +167,7 @@ export const AuditLogTable = ({
             <DataTableReferenceCell item={getActor(data)} />
             {impersonatorId !== null ? (
               <span className="text-muted-foreground text-xs">
-                {labels.impersonatedBy}:{" "}
-                {actorsByKey.get(`user:${impersonatorId}`)?.label ??
-                  impersonatorId}
+                {labels.impersonatedBy}: {impersonatorId}
               </span>
             ) : null}
           </div>
@@ -172,13 +187,69 @@ export const AuditLogTable = ({
     },
   ];
   return (
-    <section aria-label={labels.title}>
+    <section aria-label={labels.title} className="flex flex-col gap-4">
       <DataTable
         locale={locale}
         status={status}
         state={state}
-        onStateChange={onStateChange}
+        onStateChange={
+          onStateChange
+            ? (next) =>
+                onStateChange({
+                  ...next,
+                  eventName: state?.eventName,
+                })
+            : undefined
+        }
         features={{
+          toolbar:
+            state && onStateChange
+              ? {
+                  items: (
+                    <MenubarMenu>
+                      <MenubarTrigger>
+                        <ListFilterIcon
+                          aria-hidden="true"
+                          data-icon="inline-start"
+                        />
+                        {labels.event}
+                        {state.eventName
+                          ? `: ${events.find((event) => event.value === state.eventName)?.label ?? state.eventName}`
+                          : ""}
+                      </MenubarTrigger>
+                      <MenubarContent className="w-80">
+                        <MenubarGroup>
+                          <MenubarItem
+                            onClick={() =>
+                              onStateChange({
+                                ...state,
+                                eventName: undefined,
+                                page: 0,
+                              })
+                            }
+                          >
+                            {labels.allEvents}
+                          </MenubarItem>
+                          {events.map((event) => (
+                            <MenubarItem
+                              key={event.value}
+                              onClick={() =>
+                                onStateChange({
+                                  ...state,
+                                  eventName: event.value,
+                                  page: 0,
+                                })
+                              }
+                            >
+                              {event.label}
+                            </MenubarItem>
+                          ))}
+                        </MenubarGroup>
+                      </MenubarContent>
+                    </MenubarMenu>
+                  ),
+                }
+              : false,
           pagination: { mode: "server", rowCount },
         }}
         columnDefs={columns}
