@@ -93,10 +93,19 @@ export const TrackEvent = Schema.Union([
 ]).annotate({ identifier: "TrackEvent" });
 export type TrackEvent = typeof TrackEvent.Type;
 
-export const ListAudit = Schema.Struct({
-  organizationId: Schema.NonEmptyString,
+export const EventQuery = Schema.Struct({
   ...Query.fields,
-}).annotate({ identifier: "ListAudit" });
+  /** Exact, case-sensitive event name; combined with category and query filters. */
+  eventName: Schema.optional(trackEventFields.name),
+}).annotate({ identifier: "EventQuery" });
+export type EventQuery = typeof EventQuery.Type;
+export const EventQueryStandard = Schema.toStandardSchemaV1(EventQuery);
+
+export const ListEvents = Schema.Struct({
+  organizationId: Schema.NonEmptyString,
+  category: Schema.Literals(["audit", "analytics"]),
+  ...EventQuery.fields,
+}).annotate({ identifier: "ListEvents" });
 
 export const AuditSortId = Schema.Literals([
   "time",

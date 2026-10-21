@@ -11,7 +11,7 @@ import {
 import { HttpServerRequest } from "effect/http";
 
 import { Events, dailyVisitorId, type EventsOptions } from "./index";
-import { EventLogRecord, OtlpLogs } from "./schema";
+import { EventLogRecord, ListEvents, OtlpLogs } from "./schema";
 import { Otlp } from "../opentelemetry";
 import { OtlpEvents } from "../opentelemetry/events";
 import { OtlpResource } from "effect/observability";
@@ -102,6 +102,79 @@ const setup = (
 };
 
 describe("OTLP analytics enrichment", () => {
+  it("requires an explicit supported category when listing events", () => {
+    const decode = Schema.decodeUnknownOption(ListEvents);
+    expect(decode({ organizationId: "org-a" })._tag).toBe("None");
+    expect(decode({ organizationId: "org-a", category: "all" })._tag).toBe(
+      "None",
+    );
+    for (const category of ["audit", "analytics"]) {
+      expect(decode({ organizationId: "org-a", category })._tag).toBe("Some");
+    }
+    for (const eventName of ["", "a".repeat(129)]) {
+      expect(
+        decode({ organizationId: "org-a", category: "audit", eventName })._tag,
+      ).toBe("None");
+    }
+    expect(
+      decode({
+        organizationId: "org-a",
+        category: "audit",
+        eventName: "document.created",
+      })._tag,
+    ).toBe("Some");
+  });
+
+  it.effect("keeps standard user snapshots for audit events only", () =>
+    Effect.gen(function* () {
+      let exported = 0;
+      const snapshots = {
+        "user.full_name": "Ada Lovelace",
+        "user.name": "ada",
+        "user.email": "ada@example.test",
+      };
+      const events = yield* Events.make({
+        serviceName: "audit-snapshots",
+        origin: "https://example.com",
+        secret,
+      }).pipe(
+        Effect.provideService(OtlpEvents, {
+          push: (record) => {
+            exported++;
+            for (const [key, value] of Object.entries(snapshots)) {
+              const attribute = record.attributes.find(
+                (item) => item.key === key,
+              );
+              if (record.eventName === "document.updated") {
+                expect(attribute).toEqual(attr(key, value));
+              } else {
+                expect(attribute).toBeUndefined();
+              }
+            }
+          },
+        }),
+      );
+      yield* events
+        .track({
+          name: "document.updated",
+          category: "audit",
+          target: { id: "doc-a", name: "Document", type: "document" },
+        })
+        .pipe(
+          Effect.annotateLogs({
+            ...snapshots,
+            "user.id": "user-a",
+            "app.actor.type": "user",
+            "app.actor.id": "user-a",
+          }),
+        );
+      yield* events
+        .track({ name: "analytics.clicked" })
+        .pipe(Effect.annotateLogs(snapshots));
+      expect(exported).toBe(2);
+    }).pipe(Effect.provide(telemetry)),
+  );
+
   for (const choice of ["missing", "declined", "accepted", "dnt", "gpc"]) {
     it.effect(
       `consent-gated ingestion handles ${choice} before enrichment`,

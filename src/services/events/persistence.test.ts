@@ -234,7 +234,8 @@ for (const database of databases) {
               name: "analytics.clicked",
               identity: { organizationId: "org-a" },
             });
-            const first = yield* events.listAudit({
+            const first = yield* events.list({
+              category: "audit",
               organizationId: "org-a",
               pageSize: 1,
               sort: [{ id: "eventName", direction: "asc" }],
@@ -253,36 +254,80 @@ for (const database of databases) {
               key: "user.roles",
               value: { arrayValue: { values: [{ stringValue: "member" }] } },
             });
-            const next = yield* events.listAudit({
+            const next = yield* events.list({
+              category: "audit",
               organizationId: "org-a",
               page: 1,
               pageSize: 1,
               sort: [{ id: "eventName", direction: "asc" }],
             });
             expect(next.data[0].eventName).toBe("document.deleted");
-            const filtered = yield* events.listAudit({
+            const filtered = yield* events.list({
+              category: "audit",
               organizationId: "org-a",
               globalFilter: "Record b",
             });
             expect(filtered.meta.total).toBe(1);
             expect(filtered.data[0].eventName).toBe("document.deleted");
-            const byTarget = yield* events.listAudit({
+            const byEvent = yield* events.list({
+              category: "audit",
+              organizationId: "org-a",
+              eventName: "document.created",
+              page: 1,
+              pageSize: 1,
+            });
+            expect(byEvent.data).toEqual([]);
+            expect(byEvent.meta.total).toBe(1);
+            expect(byEvent.meta.pageCount).toBe(1);
+            for (const eventName of [
+              "document.created",
+              "invoice.created",
+              "document.%",
+              "document.created' OR 1=1 --",
+            ]) {
+              const page = yield* events.list({
+                category: "audit",
+                organizationId: "org-a",
+                eventName,
+                globalFilter: "Record b",
+              });
+              expect(page.data).toEqual([]);
+              expect(page.meta.total).toBe(0);
+            }
+            const created = yield* events.list({
+              category: "audit",
+              organizationId: "org-a",
+              eventName: "document.created",
+            });
+            expect(created.data.map((entry) => entry.eventName)).toEqual([
+              "document.created",
+            ]);
+            const byTarget = yield* events.list({
+              category: "audit",
               organizationId: "org-a",
               pageSize: 1,
               sort: [{ id: "record", direction: "desc" }],
             });
             expect(byTarget.data[0].eventName).toBe("document.deleted");
             expect(
-              (yield* events.listAudit({ organizationId: "missing" })).data,
+              (yield* events.list({
+                category: "audit",
+                organizationId: "missing",
+              })).data,
             ).toEqual([]);
             expect(
               (yield* events
-                .listAudit({ organizationId: "org-a", pageSize: 101 })
+                .list({
+                  category: "audit",
+                  organizationId: "org-a",
+                  pageSize: 101,
+                })
                 .pipe(Effect.result))._tag,
             ).toBe("Failure");
             expect(
               (yield* events
-                .listAudit({
+                .list({
+                  category: "audit",
                   organizationId: "org-a",
                   sort: [{ id: "injected", direction: "asc" }],
                 })
@@ -293,8 +338,19 @@ for (const database of databases) {
               serviceName: `${options.serviceName}-other`,
             });
             expect(
-              (yield* other.listAudit({ organizationId: "org-a" })).meta.total,
+              (yield* other.list({
+                category: "audit",
+                organizationId: "org-a",
+              })).meta.total,
             ).toBe(0);
+            const analytics = yield* events.list({
+              category: "analytics",
+              organizationId: "org-a",
+              eventName: "analytics.clicked",
+            });
+            expect(analytics.data.map((entry) => entry.eventName)).toEqual([
+              "analytics.clicked",
+            ]);
           }).pipe(Effect.scoped, Effect.provide(layer)),
       );
       it.effect(
@@ -1276,6 +1332,7 @@ for (const database of databases) {
                   "app.event.category": "analytics",
                   "app.audit.target.id": "stale-target",
                   "user.full_name": "Verified member",
+                  "user.email": "member@example.test",
                   "app.user.image": "https://example.com/member.png",
                   "user.roles": ["admin", "member"],
                 }),
@@ -1347,7 +1404,12 @@ for (const database of databases) {
                 expect(attrs["app.audit.target.id"]).toEqual({
                   stringValue: "doc-1",
                 });
-                expect(attrs["user.full_name"]).toBeUndefined();
+                expect(attrs["user.full_name"]).toEqual({
+                  stringValue: "Verified member",
+                });
+                expect(attrs["user.email"]).toEqual({
+                  stringValue: "member@example.test",
+                });
                 expect(attrs["app.user.image"]).toBeUndefined();
                 expect(attrs["user.roles"]).toEqual({
                   arrayValue: {
