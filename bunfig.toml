@@ -1,0 +1,5 @@
+[fmt]
+printWidth = 80
+sortPackageJson = true
+sortTailwindcss = true
+svelte = false

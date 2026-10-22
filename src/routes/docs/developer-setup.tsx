@@ -37,7 +37,7 @@ bunx shadcn@latest add @krak-stack/pagination`;
 
 const verificationCommands = `bun check
 bun lint
-bun fmt:check`;
+bun fmt --check`;
 
 const opencodeConfig = `{
   "$schema": "https://opencode.ai/config.json",

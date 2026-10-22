@@ -2,15 +2,15 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "lint-format",
   "title": "Lint & Format Config",
-  "description": "Production-ready Oxfmt and Oxlint configuration for KrakStack projects, including vendored anti-slop rules, Tailwind class sorting, and React/TypeScript correctness checks.",
+  "description": "Production-ready Bun formatter and Oxlint configuration for KrakStack projects, including vendored anti-slop rules, Tailwind class sorting, and React/TypeScript correctness checks.",
   "dependencies": [],
-  "devDependencies": ["@oxlint/plugins", "oxfmt", "oxlint"],
+  "devDependencies": ["@oxlint/plugins", "oxlint"],
   "files": [
     {
-      "path": ".oxfmtrc.json",
-      "content": "{\n  \"$schema\": \"./node_modules/oxfmt/configuration_schema.json\",\n  \"printWidth\": 80,\n  \"sortTailwindcss\": true\n}\n",
+      "path": "bunfig.toml",
+      "content": "[fmt]\nprintWidth = 80\nsortPackageJson = true\nsortTailwindcss = true\nsvelte = false\n",
       "type": "registry:file",
-      "target": "~/.oxfmtrc.json"
+      "target": "~/bunfig.toml"
     },
     {
       "path": ".oxlintrc.json",
@@ -134,8 +134,8 @@
     }
   ],
   "meta": {
-    "updatedAt": "2026-10-13"
+    "updatedAt": "2026-10-22"
   },
-  "docs": "## Overview\n\n`lint-format` installs root-level Oxfmt and Oxlint configuration for KrakStack projects. It includes editable source for KrakStack's Oxlint plugin, initially based on anti-slop's opinionated rules for rejecting low-evidence TypeScript and JavaScript patterns. The plugin is vendored so each project can inspect, customize, and extend its rules.\n\n## Included Files\n\n- `.oxfmtrc.json` — Oxfmt config with 80-column formatting and Tailwind CSS class sorting\n- `.oxlintrc.json` — Oxlint config for React, TypeScript, browser, Node, and the vendored plugin\n- `tools/oxlint/anti-slop/` — editable Oxlint plugin source and shared rule utilities\n\n## Choices\n\n- Vendors plugin source instead of coupling projects to a fixed lint package release\n- Enables all anti-slop rules as errors\n- Ignores installed agent tooling and the plugin source itself\n- Uses JSON config files so CLI tooling can load them reliably across Node and Bun runtimes\n- Enables `sortTailwindcss` for shadcn/Tailwind projects\n- Disables `eslint/require-yield` because Effect uses generator functions as a DSL\n- Enables Vitest globals only in test files\n\n## Usage\n\nInstall the registry item:\n\n```bash\nbunx shadcn@latest add @krak-stack/lint-format\n```\n\nRecommended package scripts:\n\n```json\n{\n  \"scripts\": {\n    \"lint\": \"oxlint\",\n    \"fmt\": \"oxfmt\",\n    \"fmt:check\": \"oxfmt --check .\"\n  }\n}\n```\n\nRun checks locally or in CI:\n\n```bash\nbun run fmt:check\nbun run lint\n```",
+  "docs": "## Overview\n\n`lint-format` installs root-level Bun formatter and Oxlint configuration for KrakStack projects. It includes editable source for KrakStack's Oxlint plugin, initially based on anti-slop's opinionated rules for rejecting low-evidence TypeScript and JavaScript patterns. The plugin is vendored so each project can inspect, customize, and extend its rules.\n\n## Included Files\n\n- `bunfig.toml` — Bun formatter config with 80-column formatting, package key sorting, and Tailwind CSS class sorting\n- `.oxlintrc.json` — Oxlint config for React, TypeScript, browser, Node, and the vendored plugin\n- `tools/oxlint/anti-slop/` — editable Oxlint plugin source and shared rule utilities\n\n## Choices\n\n- Vendors plugin source instead of coupling projects to a fixed lint package release\n- Enables all anti-slop rules as errors\n- Ignores installed agent tooling and the plugin source itself\n- Uses Bun's built-in formatter with settings in the `[fmt]` section of `bunfig.toml`; no formatter dependency or package script is needed\n- Enables `sortTailwindcss` for shadcn/Tailwind projects\n- Disables `eslint/require-yield` because Effect uses generator functions as a DSL\n- Enables Vitest globals only in test files\n\n## Usage\n\nUse Bun 1.4.4 or later. Install the registry item:\n\n```bash\nbunx shadcn@latest add @krak-stack/lint-format\n```\n\nIf you already have a `bunfig.toml`, merge its existing sections with the supplied `[fmt]` section rather than replacing unrelated settings.\n\nFormat directly with Bun:\n\n```bash\nbun fmt\n```\n\nRun checks locally or in CI:\n\n```bash\nbun fmt --check\nbunx oxlint\n```",
   "type": "registry:lib"
 }
