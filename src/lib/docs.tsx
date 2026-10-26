@@ -971,6 +971,7 @@ export const DocsLayout = ({
       const navItem: NavGroup["items"][number] = {
         label: () => item.title,
         href: item.path,
+        exact: true,
       };
       const ItemIcon = iconFor(docs.icons, item.icon);
       if (ItemIcon) navItem.icon = ItemIcon;
