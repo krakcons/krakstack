@@ -204,7 +204,7 @@ export const ErrorComponent = ({
                 {labels.retry}
               </Button>
             )}
-            <Link to="/" className={buttonVariants({ variant: "outline" })}>
+            <Link to="/" className={cn(buttonVariants({ variant: "outline" }))}>
               {labels.home}
             </Link>
           </div>

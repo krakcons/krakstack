@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## Unreleased
+
+### Patch Changes
+
+- Merge the error component's homepage link classes with `cn` so its outline border is visible instead of being overridden by the base transparent border.
+
 ## 0.1.55
 
 ### Patch Changes
