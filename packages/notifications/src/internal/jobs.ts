@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import { Effect } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -21,8 +22,11 @@ export const allocateDeliveryJob = Effect.fn(
   readonly jobGeneration: number;
   readonly now: Date;
 }) {
-  const jobId = globalThis.crypto.randomUUID();
-  const attemptId = globalThis.crypto.randomUUID();
+  const random = yield* SecureRandom.SecureRandom.pipe(
+    Effect.provide(SecureRandom.layerWebCrypto),
+  );
+  const jobId = yield* random.uuidV7();
+  const attemptId = yield* random.uuidV7();
   const attempt = input.attempts + 1;
   const generation = input.jobGeneration + 1;
 
@@ -90,7 +94,10 @@ export const allocateReminderJob = Effect.fn(
   readonly jobGeneration: number;
   readonly now: Date;
 }) {
-  const jobId = globalThis.crypto.randomUUID();
+  const random = yield* SecureRandom.SecureRandom.pipe(
+    Effect.provide(SecureRandom.layerWebCrypto),
+  );
+  const jobId = yield* random.uuidV7();
   const attempt = input.attempts + 1;
   const generation = input.jobGeneration + 1;
 

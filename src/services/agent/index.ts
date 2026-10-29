@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import {
   Context,
   Data,
@@ -52,6 +53,9 @@ export class AgentService extends Context.Service<AgentService>()(
   "AgentService",
   {
     make: Effect.gen(function* () {
+      const random = yield* SecureRandom.SecureRandom.pipe(
+        Effect.provide(SecureRandom.layerWebCrypto),
+      );
       const streamErrorDetails = (error: Response.ErrorPart["error"]) => {
         const details = Option.getOrUndefined(
           decodeAgentStreamErrorDetails(error),
@@ -258,7 +262,7 @@ export class AgentService extends Context.Service<AgentService>()(
         Tools extends Record<string, Tool.Any>,
       >({ action, history, systemPrompt, toolkit }: AgentStreamOptions<Tools>) {
         const model = yield* LanguageModel.LanguageModel;
-        const messageId = crypto.randomUUID();
+        const messageId = yield* random.uuidV7();
         const conversation = history
           ? yield* Chat.fromJson(history)
           : yield* Chat.fromPrompt([{ role: "system", content: systemPrompt }]);

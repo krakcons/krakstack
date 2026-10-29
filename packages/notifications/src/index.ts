@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -245,6 +246,9 @@ export interface NotificationServiceContract {
 }
 
 const makeNotificationService = Effect.gen(function* () {
+  const random = yield* SecureRandom.SecureRandom.pipe(
+    Effect.provide(SecureRandom.layerWebCrypto),
+  );
   const sql = (yield* SqlClient.SqlClient).withoutTransforms();
   const queues = yield* NotificationQueueService;
 
@@ -670,8 +674,7 @@ const makeNotificationService = Effect.gen(function* () {
             };
           }
 
-          const notificationId =
-            inbox === null ? null : globalThis.crypto.randomUUID();
+          const notificationId = inbox === null ? null : yield* random.uuidV7();
           if (inbox !== null) {
             const recipientUserId = input.scope.recipientUserId;
             if (recipientUserId === null) {
@@ -715,7 +718,7 @@ const makeNotificationService = Effect.gen(function* () {
 
           const deliveryIds: Array<string> = [];
           for (const intent of input.deliveries) {
-            const deliveryId = globalThis.crypto.randomUUID();
+            const deliveryId = yield* random.uuidV7();
             const idempotencyKey = deliveryIdempotencyKey(
               input.idempotencyKey,
               intent.key,
@@ -983,11 +986,7 @@ const makeNotificationService = Effect.gen(function* () {
   const mutateInbox = Effect.fn("NotificationService.mutateInbox")(
     function* (input: {
       readonly operation:
-        | "markRead"
-        | "markUnread"
-        | "archive"
-        | "restore"
-        | "removeInbox";
+        "markRead" | "markUnread" | "archive" | "restore" | "removeInbox";
       readonly value: InboxMutationInputType;
     }) {
       const value = yield* decodeInput(
@@ -1140,7 +1139,7 @@ const makeNotificationService = Effect.gen(function* () {
         rawInput,
       );
       const now = yield* DateTime.nowAsDate;
-      const id = globalThis.crypto.randomUUID();
+      const id = yield* random.uuidV7();
       const rows = yield* sql`
         INSERT INTO notification_settings (
           id,
@@ -1289,7 +1288,7 @@ const makeNotificationService = Effect.gen(function* () {
         rawInput,
       );
       const now = yield* DateTime.nowAsDate;
-      const id = globalThis.crypto.randomUUID();
+      const id = yield* random.uuidV7();
       const recipientAddress = canonicalRecipientAddress(
         input.channel,
         input.recipientAddress,
@@ -1693,7 +1692,7 @@ const makeNotificationService = Effect.gen(function* () {
             return replay;
           }
 
-          const reminderId = globalThis.crypto.randomUUID();
+          const reminderId = yield* random.uuidV7();
           const expired =
             input.expiresAt !== null &&
             input.expiresAt.getTime() <= now.getTime();

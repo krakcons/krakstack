@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { SecureRandom } from "effect/crypto";
 import { useState } from "react";
 import { BookOpenIcon, FileTextIcon } from "lucide-react";
 
@@ -9,6 +11,10 @@ import {
   type AgentState,
   type AgentSubmitAction,
 } from "@krak-stack/registry/agent/client";
+
+const random = Effect.runSync(
+  SecureRandom.SecureRandom.pipe(Effect.provide(SecureRandom.layerWebCrypto)),
+);
 
 type PreviewResource = {
   readonly id: string;
@@ -43,13 +49,13 @@ export function AgentPreview() {
       messages: [
         ...current.messages,
         {
-          id: crypto.randomUUID(),
+          id: Effect.runSync(random.uuidV7()),
           role: "user",
           text: action.text,
           tools: [],
         },
         {
-          id: crypto.randomUUID(),
+          id: Effect.runSync(random.uuidV7()),
           role: "assistant",
           text: "This preview is ready to connect to your streaming agent endpoint.",
           tools: [],

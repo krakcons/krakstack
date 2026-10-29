@@ -1,6 +1,7 @@
-import { createHash } from "node:crypto";
+import * as NodeCrypto from "@effect/platform-node-shared/NodeCrypto";
+import { Digest } from "effect/crypto";
 
-import { Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 import type { PublishInput, ScheduleReminderInput } from "../schema.js";
 
@@ -36,7 +37,14 @@ export const canonicalJsonString = (value: Json): string =>
   JSON.stringify(canonicalizeJson(value));
 
 const sha256 = (value: Json): string =>
-  createHash("sha256").update(canonicalJsonString(value)).digest("hex");
+  Effect.runSync(
+    Digest.Digest.use((digest) =>
+      digest.digestHex(
+        Digest.sha256,
+        new TextEncoder().encode(canonicalJsonString(value)),
+      ),
+    ).pipe(Effect.provide(NodeCrypto.layerDigest)),
+  );
 
 const canonicalReferences = (
   references: PublishInput["deliveries"][number]["references"],

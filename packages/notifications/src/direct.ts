@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import { Context, Effect, Layer, Schema } from "effect";
 
 import { canonicalRecipientAddress } from "./internal/idempotency.js";
@@ -28,6 +29,9 @@ export class DirectNotificationDispatcher extends Context.Service<
   static readonly layer = Layer.effect(
     this,
     Effect.gen(function* () {
+      const random = yield* SecureRandom.SecureRandom.pipe(
+        Effect.provide(SecureRandom.layerWebCrypto),
+      );
       const registry = yield* NotificationTransportRegistry;
       const dispatch = Effect.fn("DirectNotificationDispatcher.dispatch")(
         function* (rawInput: DirectNotificationInput) {
@@ -51,7 +55,7 @@ export class DirectNotificationDispatcher extends Context.Service<
               input.channel,
               input.recipientAddress,
             ),
-            dispatchId: globalThis.crypto.randomUUID(),
+            dispatchId: yield* random.uuidV7(),
             deliveryId: null,
             attempt: 1,
           }).pipe(

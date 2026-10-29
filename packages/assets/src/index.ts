@@ -1,4 +1,13 @@
-import { Context, Effect, Layer, Option, Schema, Semaphore } from "effect";
+import { Digest, SecureRandom } from "effect/crypto";
+import {
+  Array,
+  Context,
+  Effect,
+  Layer,
+  Option,
+  Schema,
+  Semaphore,
+} from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { extract, ExtractInputKind } from "@xberg-io/xberg";
 import { S3Service } from "@krak-stack/registry/service-s3";
@@ -78,18 +87,15 @@ const validateUpload = (payload: AssetUploadPayload) => {
 };
 
 const sha256 = (bytes: Uint8Array) =>
-  Effect.promise(() =>
-    crypto.subtle.digest("SHA-256", Uint8Array.from(bytes)),
-  ).pipe(
-    Effect.map((digest) =>
-      Array.from(new Uint8Array(digest), (byte) =>
-        byte.toString(16).padStart(2, "0"),
-      ).join(""),
-    ),
+  Digest.Digest.use((digest) => digest.digestHex(Digest.sha256, bytes)).pipe(
+    Effect.provide(Digest.layerWebCrypto),
   );
 
 const make = (options: AssetProcessingOptions) =>
   Effect.gen(function* () {
+    const random = yield* SecureRandom.SecureRandom.pipe(
+      Effect.provide(SecureRandom.layerWebCrypto),
+    );
     yield* Schema.decodeUnknownEffect(AssetProcessingLimitsSchema)(options);
     const sql = yield* SqlClient.SqlClient;
     const s3 = yield* S3Service;
@@ -146,7 +152,7 @@ const make = (options: AssetProcessingOptions) =>
       asset: typeof AssetRowSchema.Type,
     ) {
       if (!PROCESSABLE_MIME_TYPES.has(asset.mimeType)) return;
-      const candidateId = crypto.randomUUID();
+      const candidateId = yield* random.uuidV7();
       const processing = yield* SqlSchema.findOne({
         Request: AssetRowSchema,
         Result: AssetProcessingSchema,
@@ -193,7 +199,8 @@ const make = (options: AssetProcessingOptions) =>
           return yield* new AssetNotFound({ assetId: payload.assetId });
       }
 
-      const uploadToken = crypto.randomUUID();
+      // Upload capabilities remain opaque; UUIDv7 is reserved for entity IDs.
+      const uploadToken = yield* random.uuidV4();
       const objectKey = `organizations/${organizationId}/uploads/${uploadToken}`;
       return {
         uploadToken,
@@ -499,7 +506,12 @@ const make = (options: AssetProcessingOptions) =>
             offset < validated.chunks.length;
             offset += 100
           ) {
-            yield* sql`INSERT INTO asset_chunks ${sql.insert(validated.chunks.slice(offset, offset + 100).map((chunk) => ({ ...chunk, processingId })))}`;
+            const chunks = validated.chunks
+              .slice(offset, offset + 100)
+              .map((chunk) => ({ ...chunk, processingId }));
+            if (Array.isArrayNonEmpty(chunks)) {
+              yield* sql`INSERT INTO asset_chunks ${sql.insert(chunks)}`;
+            }
           }
           yield* sql`UPDATE asset_processings SET status = 'completed', content = ${validated.content}, content_byte_size = ${validated.contentByteSize}, truncated = false, failure = NULL, completed_at = ${new Date()} WHERE id = ${processingId} AND status = 'running'`;
         }),

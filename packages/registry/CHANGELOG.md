@@ -6,6 +6,13 @@
 
 - Merge the error component's homepage link classes with `cn` so its outline border is visible instead of being overridden by the base transparent border.
 
+## 0.1.56
+
+### Patch Changes
+
+- Upgrade to Effect 4.1.0 and use Effect crypto services for UUIDv7 entity IDs, hashing, and secure capability generation. Preserve existing deterministic fingerprints and random upload capability tokens.
+- d3000ed: Use exact matching for documentation sidebar links so Introduction is only highlighted on its own page.
+
 ## 0.1.55
 
 ### Patch Changes

@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import type { EventAttributes } from "../opentelemetry/schema";
 import { OtlpEvents, event } from "../opentelemetry/events";
 import { Context, Effect, FiberSet, Layer, Option, Schema } from "effect";
@@ -199,12 +200,17 @@ export class BrowserEvents {
     locale,
     sanitizePath,
   }: BrowserEventsOptions = {}) => {
+    const random = Effect.runSync(
+      SecureRandom.SecureRandom.pipe(
+        Effect.provide(SecureRandom.layerWebCrypto),
+      ),
+    );
     const allowed = () =>
       enabled &&
       (!respectDoNotTrack || !browserPrivacyEnabled()) &&
       (!requireConsent || analyticsAllowed());
     let previousPath: string | undefined;
-    let pageViewId = crypto.randomUUID();
+    let pageViewId = Effect.runSync(random.uuidV7());
     const context = (
       name: string,
       properties?: EventAttributes,
@@ -215,12 +221,12 @@ export class BrowserEvents {
       const path = Option.getOrElse(explicitPath, () => location.pathname);
       if (location.pathname !== previousPath || name === "browser.page_view") {
         previousPath = location.pathname;
-        pageViewId = crypto.randomUUID();
+        pageViewId = Effect.runSync(random.uuidV7());
       }
       const attributes = {
         "app.event.schema.version": "1",
         "analytics.page_view.id": pageViewId,
-        "log.record.uid": crypto.randomUUID(),
+        "log.record.uid": Effect.runSync(random.uuidV7()),
         "url.path": sanitizePath?.(path) ?? path,
         "browser.language": navigator.language.slice(0, 256),
       };

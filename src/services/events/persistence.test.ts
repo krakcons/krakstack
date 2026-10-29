@@ -1547,18 +1547,16 @@ it.effect(
         name: "purchase",
         properties: { total: 42 },
       };
-      const track = events
-        .track(input)
-        .pipe(
-          Effect.provideService(
-            HttpServerRequest.HttpServerRequest,
-            searchRequest,
-          ),
-          Effect.annotateLogs({
-            "user.id": "user-1",
-            "user.name": "Private name",
-          }),
-        );
+      const track = events.track(input).pipe(
+        Effect.provideService(
+          HttpServerRequest.HttpServerRequest,
+          searchRequest,
+        ),
+        Effect.annotateLogs({
+          "user.id": "user-1",
+          "user.name": "Private name",
+        }),
+      );
       expect(yield* track).toEqual({ eventId: input.eventId, inserted: false });
       // Without SQL, there is no durable deduplication across calls.
       yield* track;

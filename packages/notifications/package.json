@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PostgreSQL-backed Effect notification inbox, delivery, and reminder primitives.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",
@@ -69,20 +69,23 @@
     "test": "vitest run",
     "prepack": "bun run check:release"
   },
+  "dependencies": {
+    "@effect/platform-node-shared": "4.1.0"
+  },
   "devDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
-    "@effect/sql-pg": "4.0.0",
-    "@effect/vitest": "4.0.0",
+    "@effect/sql-pg": "4.1.0",
+    "@effect/vitest": "4.1.0",
     "@types/node": "^22.19.21",
     "@types/nodemailer": "^8.0.1",
-    "effect": "4.0.0",
+    "effect": "4.1.0",
     "nodemailer": "^9.0.6",
     "typescript": "7.0.1-rc",
     "vitest": "^5.0.3"
   },
   "peerDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
-    "effect": "^4.0.0",
+    "effect": "^4.1.0",
     "nodemailer": "^9.0.6"
   },
   "peerDependenciesMeta": {

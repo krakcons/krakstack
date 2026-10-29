@@ -1,7 +1,6 @@
 import {
   Config,
   Context,
-  Crypto,
   DateTime,
   Effect,
   Layer,
@@ -11,6 +10,7 @@ import {
   References,
   Schema,
 } from "effect";
+import { Digest, SecureRandom } from "effect/crypto";
 import { HttpServerRequest } from "effect/http";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { Hex } from "effect/encoding";
@@ -190,12 +190,14 @@ export const dailyVisitorId = Effect.fnUntraced(function* (input: {
   readonly day: string;
   readonly secret: Redacted.Redacted<string>;
 }) {
-  const crypto = yield* Crypto.Crypto;
+  const digestService = yield* Digest.Digest.pipe(
+    Effect.provide(Digest.layerWebCrypto),
+  );
   const encoder = new TextEncoder();
   // Keep the daily salt server-only. Separate domains and structured inputs
   // prevent accidental reuse and ambiguous concatenation across features.
-  const salt = yield* crypto.digest(
-    "SHA-256",
+  const salt = yield* digestService.digest(
+    Digest.sha256,
     encoder.encode(
       JSON.stringify([
         "analytics.visitor.salt.v2",
@@ -205,8 +207,8 @@ export const dailyVisitorId = Effect.fnUntraced(function* (input: {
       ]),
     ),
   );
-  const digest = yield* crypto.digest(
-    "SHA-256",
+  const digest = yield* digestService.digest(
+    Digest.sha256,
     encoder.encode(
       JSON.stringify([
         "analytics.visitor.v2",
@@ -226,7 +228,9 @@ export class Events extends Context.Service<Events>()(
   {
     make: (options: EventsOptions) =>
       Effect.gen(function* () {
-        const crypto = yield* Crypto.Crypto;
+        const random = yield* SecureRandom.SecureRandom.pipe(
+          Effect.provide(SecureRandom.layerWebCrypto),
+        );
         const telemetry = yield* Otlp;
         const exporter = yield* OtlpEvents;
         const resource = options.serviceName
@@ -384,7 +388,7 @@ export class Events extends Context.Service<Events>()(
                   ip: location.ip,
                   userAgent,
                   day: DateTime.formatIsoDate(now),
-                }).pipe(Effect.provideService(Crypto.Crypto, crypto))
+                })
               : undefined;
           let sessionId: string | undefined;
           if (visitorId && storage) {
@@ -395,7 +399,7 @@ export class Events extends Context.Service<Events>()(
               latest.value.received_at >
                 DateTime.toEpochMillis(now) - SESSION_TIMEOUT_MS
                 ? latest.value.session_id!
-                : yield* crypto.randomUUIDv7;
+                : yield* random.uuidV7();
           }
           const identity: Record<string, string> = {};
           if (visitorId) identity["analytics.anonymous_id"] = visitorId;
@@ -409,7 +413,7 @@ export class Events extends Context.Service<Events>()(
         });
         const track = Effect.fn("Events.track")(function* (input: TrackEvent) {
           const event = yield* Schema.decodeUnknownEffect(TrackEvent)(input);
-          const eventId = event.eventId ?? (yield* crypto.randomUUIDv7);
+          const eventId = event.eventId ?? (yield* random.uuidV7());
           const category = event.category ?? "analytics";
           const receivedAt = yield* DateTime.now;
           const now = DateTime.toEpochMillis(receivedAt);

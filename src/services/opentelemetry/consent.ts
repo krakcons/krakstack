@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import { Effect, Option, Schema } from "effect";
 import { BrowserAnalyticsPreference, BrowserPrivacySignals } from "./schema";
 
@@ -102,7 +103,11 @@ export const saveAnalyticsPreference = (choice: "accepted" | "declined") => {
   const issuedAt = Date.now();
   const value = Schema.encodeSync(codec)({
     choice,
-    revision: crypto.randomUUID(),
+    revision: Effect.runSync(
+      SecureRandom.SecureRandom.use((random) => random.uuidV7()).pipe(
+        Effect.provide(SecureRandom.layerWebCrypto),
+      ),
+    ),
     version: ANALYTICS_NOTICE_VERSION,
     issuedAt,
     expiresAt: issuedAt + lifetime,

@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import { Effect, Layer, Option, Schema, Stream } from "effect";
 import { Atom, Reactivity } from "effect/reactivity";
 
@@ -8,6 +9,10 @@ import type {
   AgentReference,
   AgentRequest,
 } from "../schema";
+
+const random = Effect.runSync(
+  SecureRandom.SecureRandom.pipe(Effect.provide(SecureRandom.layerWebCrypto)),
+);
 
 export type AgentToolStatus =
   | "running"
@@ -231,7 +236,7 @@ export const makeAgentAtoms = <Resource, Failure = ErrorOptions["cause"]>({
           ? [
               ...current.messages,
               {
-                id: crypto.randomUUID(),
+                id: Effect.runSync(random.uuidV7()),
                 role: "user" as const,
                 text: submitAction.text,
                 tools: [],

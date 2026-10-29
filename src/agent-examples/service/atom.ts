@@ -1,3 +1,4 @@
+import { SecureRandom } from "effect/crypto";
 import { Effect } from "effect";
 import { AsyncResult, Atom } from "effect/reactivity";
 
@@ -6,6 +7,10 @@ import type {
   Example,
   UpdateExamplePayload,
 } from "./schema";
+
+const random = Effect.runSync(
+  SecureRandom.SecureRandom.pipe(Effect.provide(SecureRandom.layerWebCrypto)),
+);
 
 const seed: ReadonlyArray<Example> = [];
 
@@ -22,7 +27,7 @@ const current = (
 const optimisticExample = (payload: CreateExamplePayload): Example => {
   const now = new Date();
   return {
-    id: `optimistic-${crypto.randomUUID()}`,
+    id: `optimistic-${Effect.runSync(random.uuidV7())}`,
     userId: "current-user",
     name: payload.name,
     description: payload.description ?? null,

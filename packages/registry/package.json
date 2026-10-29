@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.55",
+  "version": "0.1.56",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -271,8 +271,8 @@
   "peerDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
-    "@effect/atom-react": "^4.0.0",
-    "@effect/platform-browser": "^4.0.0",
+    "@effect/atom-react": "^4.1.0",
+    "@effect/platform-browser": "^4.1.0",
     "@iconify/react": "^6.0.2",
     "@inlang/paraglide-js": "^2.19.0",
     "@lucas-barake/effect-form": "1.1.0",
@@ -286,7 +286,7 @@
     "cmdk": "^1.1.1",
     "cn": "^0.3.0",
     "drizzle-orm": "^1.0.0-rc.4-5d5b77c",
-    "effect": "^4.0.0",
+    "effect": "^4.1.0",
     "lucide-react": "^1.18.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

@@ -115,6 +115,11 @@ describe("notification idempotency", () => {
       maxAttempts: 3,
     };
 
+    // Independently computed SHA-256 of the canonical version-1 payload.
+    expect(reminderFingerprint(reminder)).toBe(
+      "94ac7675a2e10e225522f92bd364ec890d78787e9054e3a3658a93421d3a2863",
+    );
+
     expect(reminderFingerprint({ ...reminder, handlerVersion: 2 })).not.toBe(
       reminderFingerprint(reminder),
     );

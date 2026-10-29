@@ -3,6 +3,7 @@ import {
   FileSystem,
   Layer,
   Path,
+  Queue,
   Stdio,
   Stream,
   Terminal,
@@ -19,6 +20,9 @@ export const httpApiCliEnvironmentLayer = (args: ReadonlyArray<string>) =>
       Terminal.make({
         columns: Effect.succeed(80),
         rows: Effect.succeed(24),
+        size: Queue.make<Terminal.Size>().pipe(
+          Effect.tap((queue) => Queue.offer(queue, { columns: 80, rows: 24 })),
+        ),
         readInput: Effect.die("Terminal input is not supported"),
         readLine: Effect.die("Terminal input is not supported"),
         display: () => Effect.void,
