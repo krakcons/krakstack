@@ -49,6 +49,7 @@ import {
   EventsPersistenceError,
   TrackEvent,
   ListEvents,
+  EventColumnFilter,
   AuditSortId,
   AuditCount,
 } from "./schema";
@@ -597,6 +598,9 @@ export class Events extends Context.Service<Events>()(
           input: typeof ListEvents.Encoded,
         ) {
           const request = yield* Schema.decodeUnknownEffect(ListEvents)(input);
+          const columnFilters = yield* Schema.decodeUnknownEffect(
+            Schema.Array(EventColumnFilter),
+          )(request.filters ?? []);
           if (!storage)
             return yield* new EventsPersistenceError({
               operation: "persistence-disabled",
@@ -635,6 +639,45 @@ export class Events extends Context.Service<Events>()(
           const event = request.eventName
             ? sql`AND event_name = ${request.eventName}`
             : sql``;
+          const actorName = sql`COALESCE(NULLIF(${text("user.full_name")}, ''), NULLIF(${text("user.name")}, ''), NULLIF(${text("user.email")}, ''), ${text("app.actor.type")}, '')`;
+          const actor = sql`${actorName} || ' ' || COALESCE(${text("user.email")}, '') || ' ' || COALESCE(${text("app.actor.id")}, ${text("user.id")}, '')`;
+          const record = sql`COALESCE(${text("app.audit.target.name")}, '') || ' ' || COALESCE(${text("app.audit.target.type")}, '') || ' ' || COALESCE(${text("app.audit.target.id")}, '')`;
+          const method = sql`CASE WHEN ${text("app.auth.method")} IN ('session', 'api_key') THEN ${text("app.auth.method")} ELSE 'unknown' END`;
+          const predicates = columnFilters.map((filter) => {
+            switch (filter.kind) {
+              case "values": {
+                const column =
+                  filter.id === "eventName" ? sql`event_name` : method;
+                return sql`AND ${sql.or(filter.values.map((value) => sql`${column} = ${value}`))}`;
+              }
+              case "date": {
+                const from = filter.from
+                  ? sql`AND occurred_at >= ${new Date(`${filter.from}T00:00:00.000Z`).getTime()}`
+                  : sql``;
+                const to = filter.to
+                  ? sql`AND occurred_at < ${new Date(`${filter.to}T00:00:00.000Z`).getTime() + 86_400_000}`
+                  : sql``;
+                return sql`${from} ${to}`;
+              }
+              case "text": {
+                const column = filter.id === "actor" ? actor : record;
+                const value = filter.value.toLowerCase();
+                if (filter.operator === "equals")
+                  return sql`AND LOWER(${column}) = ${value}`;
+                const escaped = value.replace(/[\\%_]/g, "\\$&");
+                const pattern =
+                  filter.operator === "startsWith"
+                    ? `${escaped}%`
+                    : filter.operator === "endsWith"
+                      ? `%${escaped}`
+                      : `%${escaped}%`;
+                return sql`AND LOWER(${column}) LIKE ${pattern} ESCAPE ${"\\"}`;
+              }
+              default:
+                return sql``;
+            }
+          });
+          const actions = sql.join(" ", false)(predicates);
           const search = request.globalFilter?.trim();
           const filter = search
             ? sql`AND ${sql.or([
@@ -653,7 +696,7 @@ export class Events extends Context.Service<Events>()(
               ])}`
             : sql``;
           const predicate = sql`service_name = ${configuration.serviceName} AND organization_id = ${request.organizationId}
-            AND ${text("app.event.category")} = ${request.category} ${source} ${event} ${filter}`;
+            AND ${text("app.event.category")} = ${request.category} ${source} ${event} ${actions} ${filter}`;
           const total = yield* SqlSchema.findOne({
             Request: ListEvents,
             Result: AuditCount,

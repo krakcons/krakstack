@@ -2706,21 +2706,25 @@ const ViewMenu = <TData extends RowData>({
         <span className="hidden sm:inline">{store.config.labels.view}</span>
       </MenubarTrigger>
       <MenubarContent align="end">
-        <MenubarRadioGroup
-          onValueChange={(view) => {
-            if (view === "table" || view === "gallery") {
-              changeState(setStore, (state) => ({ ...state, view }));
-            }
-          }}
-          value={store.state.view}
-        >
-          <MenubarRadioItem value="table">
-            <Rows3 /> {store.config.labels.tableView}
-          </MenubarRadioItem>
-          <MenubarRadioItem value="gallery">
-            <LayoutGrid /> {store.config.labels.galleryView}
-          </MenubarRadioItem>
-        </MenubarRadioGroup>
+        <MenubarGroup>
+          <MenubarLabel>{store.config.labels.view}</MenubarLabel>
+          <MenubarSeparator />
+          <MenubarRadioGroup
+            onValueChange={(view) => {
+              if (view === "table" || view === "gallery") {
+                changeState(setStore, (state) => ({ ...state, view }));
+              }
+            }}
+            value={store.state.view}
+          >
+            <MenubarRadioItem value="table">
+              <Rows3 /> {store.config.labels.tableView}
+            </MenubarRadioItem>
+            <MenubarRadioItem value="gallery">
+              <LayoutGrid /> {store.config.labels.galleryView}
+            </MenubarRadioItem>
+          </MenubarRadioGroup>
+        </MenubarGroup>
       </MenubarContent>
     </MenubarMenu>
   );

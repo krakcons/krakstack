@@ -10,14 +10,17 @@ import { AuditLogTable } from "./audit-log-table";
 afterEach(cleanup);
 
 describe("server event-name filter", () => {
-  it("resets the page, preserves the event during search, and supports clearing", () => {
+  it("resets the page, preserves shared action filters during search, and supports clearing", async () => {
     const changes: EventQuery[] = [];
     const ControlledTable = () => {
       const [state, setState] = useState<EventQuery>({ page: 2, pageSize: 20 });
       return (
         <AuditLogTable
           entries={[]}
-          events={[{ value: "task.updated", label: "Task updated" }]}
+          events={[
+            { value: "task.updated", label: "Task updated" },
+            { value: "task.created", label: "Task created" },
+          ]}
           rowCount={80}
           state={state}
           onStateChange={(next) => {
@@ -28,29 +31,93 @@ describe("server event-name filter", () => {
       );
     };
     render(<ControlledTable />);
-    fireEvent.click(screen.getByRole("menuitem", { name: "Action" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Task updated" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Action" }));
+    fireEvent.click(
+      await screen.findByRole("menuitemcheckbox", { name: "Task updated" }),
+    );
     expect(changes.at(-1)).toMatchObject({
       page: 0,
       pageSize: 20,
-      eventName: "task.updated",
+      filters: [{ id: "eventName", kind: "values", values: ["task.updated"] }],
     });
+    fireEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: "Task created" }),
+    );
+    expect(changes.at(-1)?.filters).toEqual([
+      {
+        id: "eventName",
+        kind: "values",
+        values: ["task.updated", "task.created"],
+      },
+    ]);
+    fireEvent.keyDown(
+      screen.getByRole("menuitemcheckbox", { name: "Task created" }),
+      { key: "Escape" },
+    );
     fireEvent.change(screen.getByPlaceholderText("Filter results..."), {
       target: { value: "Ada" },
     });
     expect(changes.at(-1)).toMatchObject({
       page: 0,
-      eventName: "task.updated",
+      filters: [
+        {
+          id: "eventName",
+          kind: "values",
+          values: ["task.updated", "task.created"],
+        },
+      ],
       globalFilter: "Ada",
     });
     fireEvent.click(
-      screen.getByRole("menuitem", { name: "Action: Task updated" }),
+      await screen.findByRole("menuitem", { name: "Clear all filters" }),
     );
-    fireEvent.click(screen.getByRole("menuitem", { name: "All actions" }));
     expect(changes.at(-1)).toMatchObject({
       page: 0,
       eventName: undefined,
+      filters: undefined,
       globalFilter: "Ada",
+    });
+  });
+  it("exposes old event-name links as selected shared filters", async () => {
+    render(
+      <AuditLogTable
+        entries={[]}
+        events={[{ value: "task.updated", label: "Task updated" }]}
+        rowCount={0}
+        state={{ page: 0, pageSize: 20, eventName: "task.updated" }}
+        onStateChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Action" }));
+    expect(
+      (
+        await screen.findByRole("menuitemcheckbox", { name: "Task updated" })
+      ).getAttribute("aria-checked"),
+    ).toBe("true");
+  });
+  it("offers every supported server column and sends stable method values", async () => {
+    const changes: EventQuery[] = [];
+    render(
+      <AuditLogTable
+        entries={[]}
+        rowCount={0}
+        state={{ page: 3, pageSize: 20 }}
+        onStateChange={(next) => changes.push(next)}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    for (const name of ["Time", "Action", "Target", "Actor", "Method"]) {
+      expect(await screen.findByRole("menuitem", { name })).toBeTruthy();
+    }
+    fireEvent.click(screen.getByRole("menuitem", { name: "Method" }));
+    fireEvent.click(
+      await screen.findByRole("menuitemcheckbox", { name: "User session" }),
+    );
+    expect(changes.at(-1)).toMatchObject({
+      page: 0,
+      filters: [{ id: "method", kind: "values", values: ["session"] }],
     });
   });
 });

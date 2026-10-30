@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ListFilterIcon } from "lucide-react";
 import {
   DataTable,
   DataTableReferenceCell,
@@ -8,13 +7,6 @@ import {
   type DataTableReferenceItem,
 } from "@/components/ui/data-table";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
-import {
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarGroup,
-  MenubarItem,
-} from "@/components/ui/menubar";
 import type { EventLogRecord, EventQuery } from "../schema";
 import { eventTextAttribute } from "../record";
 
@@ -93,6 +85,17 @@ export const AuditLogTable = ({
     ["session", labels.methodSession],
     ["api_key", labels.methodApiKey],
   ]);
+  const tableState: EventQuery | undefined =
+    state?.eventName &&
+    !state.filters?.some((filter) => filter.id === "eventName")
+      ? {
+          ...state,
+          filters: [
+            ...(state.filters ?? []),
+            { id: "eventName", kind: "values", values: [state.eventName] },
+          ],
+        }
+      : state;
   const getActor = (entry: EventLogRecord): DataTableReferenceItem => {
     const type = eventTextAttribute(entry, "app.actor.type");
     const id =
@@ -124,6 +127,7 @@ export const AuditLogTable = ({
     {
       field: "eventName",
       headerName: labels.action,
+      filterOptions: events,
       cellRenderer: ({ data }) =>
         renderAction?.(data) ??
         events.find((event) => event.value === data.eventName)?.label ??
@@ -132,6 +136,12 @@ export const AuditLogTable = ({
     {
       colId: "record",
       headerName: labels.target,
+      filterValueGetter: ({ data }) =>
+        [
+          eventTextAttribute(data, "app.audit.target.name") ?? "",
+          eventTextAttribute(data, "app.audit.target.type") ?? "",
+          eventTextAttribute(data, "app.audit.target.id") ?? "",
+        ].join(" "),
       type: "reference",
       typeOptions: {
         imageVariant: "square",
@@ -152,6 +162,18 @@ export const AuditLogTable = ({
     {
       colId: "actor",
       headerName: labels.actor,
+      filterValueGetter: ({ data }) =>
+        [
+          eventTextAttribute(data, "user.full_name") ||
+            eventTextAttribute(data, "user.name") ||
+            eventTextAttribute(data, "user.email") ||
+            eventTextAttribute(data, "app.actor.type") ||
+            "",
+          eventTextAttribute(data, "user.email") ?? "",
+          eventTextAttribute(data, "app.actor.id") ??
+            eventTextAttribute(data, "user.id") ??
+            "",
+        ].join(" "),
       sortable: false,
       type: "reference",
       typeOptions: {
@@ -177,6 +199,17 @@ export const AuditLogTable = ({
     {
       colId: "method",
       headerName: labels.method,
+      filterOptions: [
+        { value: "session", label: labels.methodSession },
+        { value: "api_key", label: labels.methodApiKey },
+        { value: "unknown", label: labels.methodUnknown },
+      ],
+      filterValueGetter: ({ data }) => {
+        const method = eventTextAttribute(data, "app.auth.method");
+        return method === "session" || method === "api_key"
+          ? method
+          : "unknown";
+      },
       sortable: false,
       valueGetter: ({ data }) => {
         const method = eventTextAttribute(data, "app.auth.method");
@@ -191,65 +224,18 @@ export const AuditLogTable = ({
       <DataTable
         locale={locale}
         status={status}
-        state={state}
+        state={tableState}
         onStateChange={
           onStateChange
             ? (next) =>
                 onStateChange({
                   ...next,
-                  eventName: state?.eventName,
+                  eventName: undefined,
                 })
             : undefined
         }
         features={{
-          toolbar:
-            state && onStateChange
-              ? {
-                  items: (
-                    <MenubarMenu>
-                      <MenubarTrigger>
-                        <ListFilterIcon
-                          aria-hidden="true"
-                          data-icon="inline-start"
-                        />
-                        {labels.event}
-                        {state.eventName
-                          ? `: ${events.find((event) => event.value === state.eventName)?.label ?? state.eventName}`
-                          : ""}
-                      </MenubarTrigger>
-                      <MenubarContent className="w-80">
-                        <MenubarGroup>
-                          <MenubarItem
-                            onClick={() =>
-                              onStateChange({
-                                ...state,
-                                eventName: undefined,
-                                page: 0,
-                              })
-                            }
-                          >
-                            {labels.allEvents}
-                          </MenubarItem>
-                          {events.map((event) => (
-                            <MenubarItem
-                              key={event.value}
-                              onClick={() =>
-                                onStateChange({
-                                  ...state,
-                                  eventName: event.value,
-                                  page: 0,
-                                })
-                              }
-                            >
-                              {event.label}
-                            </MenubarItem>
-                          ))}
-                        </MenubarGroup>
-                      </MenubarContent>
-                    </MenubarMenu>
-                  ),
-                }
-              : false,
+          filtering: !!onStateChange,
           pagination: { mode: "server", rowCount },
         }}
         columnDefs={columns}

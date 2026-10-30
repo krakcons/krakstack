@@ -225,6 +225,9 @@ for (const database of databases) {
                     "user.roles": ["member"],
                     "app.actor.type": "user",
                     "app.actor.id": "member-1",
+                    "user.full_name": "Ada Lovelace",
+                    "user.email": "ada@example.test",
+                    "app.auth.method": id === "a" ? "session" : "api_key",
                   }),
                 );
             yield* record("a", "document.created");
@@ -279,6 +282,93 @@ for (const database of databases) {
             expect(byEvent.data).toEqual([]);
             expect(byEvent.meta.total).toBe(1);
             expect(byEvent.meta.pageCount).toBe(1);
+            const byActions = yield* events.list({
+              category: "audit",
+              organizationId: "org-a",
+              filters: [
+                {
+                  id: "eventName",
+                  kind: "values",
+                  values: ["document.created", "document.deleted"],
+                },
+              ],
+              pageSize: 1,
+            });
+            expect(byActions.meta.total).toBe(2);
+            expect(byActions.meta.pageCount).toBe(2);
+            expect(byActions.data).toHaveLength(1);
+            const auditDay = new Date(
+              Number(BigInt(first.data[0].timeUnixNano) / 1_000_000n),
+            )
+              .toISOString()
+              .slice(0, 10);
+            const typedFilters = yield* events.list({
+              category: "audit",
+              organizationId: "org-a",
+              filters: [
+                {
+                  id: "actor",
+                  kind: "text",
+                  operator: "contains",
+                  value: "ADA@EXAMPLE.TEST",
+                },
+                {
+                  id: "record",
+                  kind: "text",
+                  operator: "contains",
+                  value: "Record a",
+                },
+                { id: "method", kind: "values", values: ["session"] },
+                { id: "time", kind: "date", from: auditDay, to: auditDay },
+              ],
+            });
+            expect(typedFilters.meta.total).toBe(1);
+            expect(typedFilters.data[0].eventName).toBe("document.created");
+            for (const value of ["%", "_", "' OR 1=1 --"]) {
+              expect(
+                (yield* events.list({
+                  category: "audit",
+                  organizationId: "org-a",
+                  filters: [
+                    { id: "actor", kind: "text", operator: "contains", value },
+                  ],
+                })).meta.total,
+              ).toBe(0);
+            }
+            expect(
+              (yield* events.list({
+                category: "audit",
+                organizationId: "org-a",
+                filters: [{ id: "time", kind: "date", to: "1960-01-01" }],
+              })).meta.total,
+            ).toBe(0);
+            const searchedActions = yield* events.list({
+              category: "audit",
+              organizationId: "org-a",
+              globalFilter: "Record b",
+              filters: [
+                {
+                  id: "eventName",
+                  kind: "values",
+                  values: ["document.created", "document.deleted"],
+                },
+              ],
+            });
+            expect(searchedActions.meta.total).toBe(1);
+            expect(searchedActions.data[0].eventName).toBe("document.deleted");
+            expect(
+              (yield* events.list({
+                category: "audit",
+                organizationId: "missing",
+                filters: [
+                  {
+                    id: "eventName",
+                    kind: "values",
+                    values: ["document.created"],
+                  },
+                ],
+              })).meta.total,
+            ).toBe(0);
             for (const eventName of [
               "document.created",
               "invoice.created",

@@ -1,6 +1,6 @@
 import { Effect, Option, Schema } from "effect";
 import { EventAttributesSchema } from "../opentelemetry/schema";
-import { Query } from "@/lib/query";
+import { ColumnFilter, ColumnFilters, Query } from "@/lib/query";
 
 export const EventUuid = Schema.String.check(Schema.isUUID());
 export const EventId = Schema.NonEmptyString.check(Schema.isMaxLength(100));
@@ -93,8 +93,36 @@ export const TrackEvent = Schema.Union([
 ]).annotate({ identifier: "TrackEvent" });
 export type TrackEvent = typeof TrackEvent.Type;
 
+export const EventActionFilter = Schema.Struct({
+  id: Schema.Literal("eventName"),
+  kind: Schema.Literal("values"),
+  values: Schema.NonEmptyArray(trackEventFields.name),
+}).annotate({ identifier: "EventActionFilter" });
+
+export const EventColumnFilter = ColumnFilter.check(
+  Schema.makeFilter((filter) =>
+    filter.id === "eventName"
+      ? Schema.is(EventActionFilter)(filter)
+      : filter.id === "time"
+        ? filter.kind === "date"
+        : filter.id === "actor" || filter.id === "record"
+          ? filter.kind === "text"
+          : filter.id === "method"
+            ? filter.kind === "values" &&
+              filter.values.every((value) =>
+                ["session", "api_key", "unknown"].includes(value),
+              )
+            : false,
+  ),
+).annotate({ identifier: "EventColumnFilter" });
+
+const EventColumnFilters = ColumnFilters.check(
+  Schema.makeFilter((filters) => filters.every(Schema.is(EventColumnFilter))),
+).annotate({ identifier: "EventColumnFilters" });
+
 export const EventQuery = Schema.Struct({
   ...Query.fields,
+  filters: Schema.optional(EventColumnFilters),
   /** Exact, case-sensitive event name; combined with category and query filters. */
   eventName: Schema.optional(trackEventFields.name),
 }).annotate({ identifier: "EventQuery" });

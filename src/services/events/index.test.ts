@@ -123,6 +123,38 @@ describe("OTLP analytics enrichment", () => {
         eventName: "document.created",
       })._tag,
     ).toBe("Some");
+    expect(
+      decode({
+        organizationId: "org-a",
+        category: "audit",
+        filters: [
+          {
+            id: "eventName",
+            kind: "values",
+            values: ["document.created", "document.deleted"],
+          },
+        ],
+      })._tag,
+    ).toBe("Some");
+    for (const filter of [
+      { id: "unsupported", kind: "values", values: ["document.created"] },
+      {
+        id: "eventName",
+        kind: "text",
+        operator: "contains",
+        value: "document",
+      },
+      { id: "eventName", kind: "values", values: [""] },
+      { id: "method", kind: "values", values: ["injected"] },
+      { id: "time", kind: "text", operator: "equals", value: "today" },
+    ])
+      expect(
+        decode({
+          organizationId: "org-a",
+          category: "audit",
+          filters: [filter],
+        })._tag,
+      ).toBe("None");
   });
 
   it.effect("keeps standard user snapshots for audit events only", () =>

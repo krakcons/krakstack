@@ -6,6 +6,13 @@
 
 - Merge the error component's homepage link classes with `cn` so its outline border is visible instead of being overridden by the base transparent border.
 
+## 0.1.58
+
+### Patch Changes
+
+- Replace the audit table's custom Action menu with the shared Action multi-select filter, populated from the application's full localized action catalog. Preserve legacy eventName links and migrate edits to shared filter state. Execute action, UTC date-range, actor/target text, and method filters on the server before pagination, sharing the same service-, organization-, and category-scoped predicate with the total count. Validate supported field/kind combinations and method values, and escape literal text searches.
+- Give the data table View menu a localized heading and separator, matching the other toolbar menus.
+
 ## 0.1.57
 
 ### Patch Changes
