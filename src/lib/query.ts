@@ -1,4 +1,5 @@
 import {
+  DateTime,
   Effect,
   Option,
   Schema,
@@ -148,6 +149,88 @@ export const SortParams = Schema.declare(Schema.is(SortParamsArray), {
     ),
 });
 
+export const TextFilterOperator = Schema.Literals([
+  "contains",
+  "equals",
+  "startsWith",
+  "endsWith",
+]).annotate({ identifier: "TextFilterOperator" });
+
+const FilterCalendarDate = Schema.String.check(
+  Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/),
+  Schema.makeFilter((value) =>
+    Option.exists(
+      DateTime.make(value),
+      (date) => DateTime.formatIsoDateUtc(date) === value,
+    ),
+  ),
+).annotate({ identifier: "FilterCalendarDate" });
+
+export const ColumnFilter = Schema.Union([
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    kind: Schema.Literal("text"),
+    operator: TextFilterOperator,
+    value: Schema.NonEmptyString,
+  }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    kind: Schema.Literal("number"),
+    min: Schema.optional(Schema.Finite),
+    max: Schema.optional(Schema.Finite),
+  }).check(
+    Schema.makeFilter(
+      (range) =>
+        (range.min !== undefined || range.max !== undefined) &&
+        (range.min === undefined ||
+          range.max === undefined ||
+          range.min <= range.max),
+    ),
+  ),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    kind: Schema.Literal("date"),
+    from: Schema.optional(FilterCalendarDate),
+    to: Schema.optional(FilterCalendarDate),
+  }).check(
+    Schema.makeFilter(
+      (range) =>
+        (range.from !== undefined || range.to !== undefined) &&
+        (range.from === undefined ||
+          range.to === undefined ||
+          range.from <= range.to),
+    ),
+  ),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    kind: Schema.Literal("boolean"),
+    value: Schema.Boolean,
+  }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    kind: Schema.Literal("values"),
+    values: Schema.NonEmptyArray(Schema.String),
+  }),
+]).annotate({ identifier: "ColumnFilter" });
+
+export type ColumnFilter = typeof ColumnFilter.Type;
+const ColumnFiltersArray = Schema.Array(ColumnFilter);
+
+/** Structured in router/JSON state; schema-validated JSON in HTTP query strings. */
+export const ColumnFilters = Schema.declare(Schema.is(ColumnFiltersArray), {
+  identifier: "ColumnFilters",
+  toCodec: () =>
+    Schema.link<readonly ColumnFilter[]>()(
+      ColumnFiltersArray,
+      SchemaTransformation.passthrough(),
+    ),
+  toCodecStringTree: () =>
+    Schema.link<readonly ColumnFilter[]>()(
+      Schema.fromJsonString(ColumnFiltersArray),
+      SchemaTransformation.passthrough(),
+    ),
+});
+
 export const Query = Schema.Struct({
   page: Schema.optional(
     Schema.Union([Schema.Number, Schema.NumberFromString]).check(
@@ -180,6 +263,7 @@ export const Query = Schema.Struct({
   ),
   globalFilter: Schema.optional(Schema.String),
   sort: Schema.optional(SortParams),
+  filters: Schema.optional(ColumnFilters),
 }).annotate({
   identifier: "Query",
   title: "Query",

@@ -80,5 +80,27 @@ describe("DataTable preview URL state", () => {
       }),
     );
     expect(await screen.findByDisplayValue("Release")).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole("menuitem", { name: "Filters" })[0]!);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Project" }));
+    fireEvent.change(await screen.findByLabelText("Value"), {
+      target: { value: "Release" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({
+        globalFilter: "Release",
+        filters: [
+          { id: "name", kind: "text", operator: "contains", value: "Release" },
+        ],
+      }),
+    );
+    fireEvent.keyDown(screen.getByLabelText("Value"), { key: "Escape" });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Clear all filters" }),
+    );
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ globalFilter: "Release" }),
+    );
   });
 });

@@ -10,6 +10,7 @@ import {
 
 import {
   PaginatedResponse,
+  ColumnFilter,
   Query,
   QueryStandard,
   SortParamFromString,
@@ -17,6 +18,66 @@ import {
 } from "./query";
 
 describe("Query", () => {
+  it("round-trips typed filters through router, JSON, and HTTP codecs", async () => {
+    const filters = Schema.decodeUnknownSync(Schema.Array(ColumnFilter))([
+      {
+        id: "learner.email",
+        kind: "text",
+        operator: "contains",
+        value: "example.com",
+      },
+      { id: "score", kind: "number", min: 0, max: 10 },
+      { id: "createdAt", kind: "date", from: "2026-01-01", to: "2026-01-31" },
+      { id: "active", kind: "boolean", value: false },
+      { id: "tags", kind: "values", values: ["one", "two"] },
+    ]);
+    const query = { page: 0, pageSize: 20, filters };
+    expect(await QueryStandard["~standard"].validate({ filters })).toEqual({
+      value: query,
+    });
+    for (const codec of [
+      Query,
+      Schema.toCodecJson(Query),
+      Schema.toCodecStringTree(Query),
+    ]) {
+      const encoded = Schema.encodeSync(codec)(query);
+      expect(Schema.decodeUnknownSync(codec)(encoded)).toEqual(query);
+    }
+    expect(Schema.encodeSync(Schema.toCodecStringTree(Query))(query)).toEqual({
+      filters: JSON.stringify(filters),
+    });
+    expect(Schema.encodeSync(Schema.toCodecJson(Query))(query)).toEqual({
+      filters,
+    });
+    expect(
+      Schema.decodeUnknownSync(Schema.toCodecStringTree(Query))({
+        filters: "[]",
+      }),
+    ).toEqual({ page: 0, pageSize: 20, filters: [] });
+  });
+
+  it("rejects malformed filters, nonfinite and reversed ranges, and invalid dates", () => {
+    for (const filter of [
+      { id: "name", kind: "text", operator: "invalid", value: "text" },
+      { id: "score", kind: "number" },
+      { id: "score", kind: "number", min: Infinity },
+      { id: "score", kind: "number", min: "10" },
+      { id: "score", kind: "number", min: 20, max: 10 },
+      { id: "createdAt", kind: "date", from: "2026-02-30" },
+      { id: "createdAt", kind: "date", from: "2026-02-01", to: "2026-01-01" },
+      { id: "active", kind: "boolean", value: "false" },
+      { id: "tags", kind: "values", values: [] },
+    ])
+      expect(() =>
+        Schema.decodeUnknownSync(Query)({ filters: [filter] }),
+      ).toThrow();
+    expect(() =>
+      Schema.decodeUnknownSync(Schema.toCodecStringTree(Query))({
+        filters: "not-json",
+      }),
+    ).toThrow();
+  });
+
   it("decodes numeric strings from legacy router redirects and encodes numbers", async () => {
     const input = { page: "0", pageSize: "10", globalFilter: "collection-1" };
     const decoded = { page: 0, pageSize: 10, globalFilter: "collection-1" };

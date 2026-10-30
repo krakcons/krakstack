@@ -6,6 +6,18 @@
 
 - Merge the error component's homepage link classes with `cn` so its outline border is visible instead of being overridden by the base transparent border.
 
+## 0.1.57
+
+### Patch Changes
+
+- Add logical `fields` to data-table columns for independent search, sorting, filtering, and separate CSV/JSON fields while keeping combined cells. Built-in exports default to all filtered, sorted loaded rows; use `scope: "currentPage"` for the current page.
+
+  Add typed column filters with text operators, numeric/UTC date ranges, boolean choices, and multi-select values. Share filter state between toolbar and column headers, including logical-field submenus, active indicators, and scoped clearing. Preserve validated filters in router, JSON, and HTTP query state. Server pagination and fetching unloaded exports remain application-owned.
+
+  Support stable `filterValueGetter` values, searchable option lists, application-owned count badges, and wider filter menus. Put Selected bulk actions first in the menubar and give Sort by and Filters consistent popup headings and separators.
+
+- 4d7f3c2: Use Effect CSV for DataTable downloads, including correct escaping of carriage returns and empty single-column records.
+
 ## 0.1.56
 
 ### Patch Changes

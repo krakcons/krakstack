@@ -21,8 +21,11 @@ import {
   downloadCsv,
   buildDataTableRows,
   filterDataTableRows,
+  filterDataTableColumnRows,
   getDataTableWidth,
   getDataTableExportValue,
+  getDataTableExportColumns,
+  getDataTableSortColumns,
   getDataTableSelectableRows,
   normalizeDataTableColumns,
   paginateDataTableRows,
@@ -34,6 +37,7 @@ import {
   type DataTablePublicState,
 } from "./data-table";
 import { MenubarMenu, MenubarTrigger } from "./menubar";
+import type { ColumnFilter } from "@/lib/query";
 
 afterEach(() => {
   cleanup();
@@ -68,6 +72,751 @@ const state: DataTablePublicState = {
   page: 0,
   pageSize: 2,
 };
+
+describe("logical column fields", () => {
+  type Person = { name: string | null; email: string; score: number };
+  const people: Person[] = [
+    { name: "Alex", email: "z@example.com", score: 10 },
+    { name: "Blair", email: "a@example.com", score: 2 },
+    { name: null, email: "invite@example.com", score: 20 },
+  ];
+  const personColumns: DataTableColDef<Person>[] = [
+    {
+      colId: "learner",
+      headerName: "Learner",
+      type: "reference",
+      valueGetter: ({ data }) => data.name,
+      typeOptions: {
+        getItem: (row) => ({
+          label: row.name || row.email,
+          description: row.email,
+        }),
+      },
+      fields: [
+        {
+          id: "name",
+          headerName: "Name",
+          valueGetter: ({ data }) => data.name ?? "",
+        },
+        {
+          id: "email",
+          headerName: "Email",
+          valueGetter: ({ data }) => data.email,
+        },
+        {
+          id: "score",
+          headerName: "Score",
+          type: "number",
+          valueGetter: ({ data }) => data.score,
+          export: false,
+        },
+      ],
+    },
+  ];
+
+  it("keeps one display column while sharing named values across search, sort, and export", () => {
+    const normalized = normalizeDataTableColumns(personColumns);
+    const rows = buildDataTableRows(people, normalized);
+    expect(normalized.map((column) => column.id)).toEqual(["learner"]);
+    expect(rows[0]?.values.get("learner")).toBe("Alex");
+    expect(
+      filterDataTableRows(rows, normalized, "z@example.com").map(
+        (row) => row.data,
+      ),
+    ).toEqual([people[0]]);
+    expect(
+      sortDataTableRows(rows, normalized, [
+        { id: "learner.name", direction: "asc" },
+      ]).map((row) => row.data.name),
+    ).toEqual([null, "Alex", "Blair"]);
+    expect(
+      sortDataTableRows(rows, normalized, [
+        { id: "learner.email", direction: "asc" },
+      ]).map((row) => row.data.email),
+    ).toEqual(["a@example.com", "invite@example.com", "z@example.com"]);
+    expect(
+      sortDataTableRows(rows, normalized, [
+        { id: "learner.score", direction: "asc" },
+      ]).map((row) => row.data.score),
+    ).toEqual([2, 10, 20]);
+    const exported = getDataTableExportColumns(normalized);
+    expect(exported.map((column) => column.id)).toEqual([
+      "learner.name",
+      "learner.email",
+    ]);
+    expect(
+      exported.map((column) => getDataTableExportValue(rows[2]!, column)),
+    ).toEqual(["", "invite@example.com"]);
+    expect(getDataTableExportColumns([])).toEqual([]);
+  });
+
+  it("respects field and parent sorting/search switches and custom comparators", () => {
+    const normalized = normalizeDataTableColumns<Person>([
+      {
+        colId: "person",
+        headerName: "Person",
+        valueGetter: () => "display",
+        fields: [
+          {
+            id: "name",
+            headerName: "Name",
+            valueGetter: ({ data }) => data.name,
+            sortable: false,
+            searchable: false,
+          },
+          {
+            id: "email",
+            headerName: "Email",
+            valueGetter: ({ data }) => data.email,
+            comparator: (_left, _right, left, right) =>
+              left.score - right.score,
+          },
+        ],
+      },
+    ]);
+    const rows = buildDataTableRows(people, normalized);
+    expect(
+      getDataTableSortColumns(normalized).map((column) => column.id),
+    ).toEqual(["person.email"]);
+    expect(filterDataTableRows(rows, normalized, "Alex")).toEqual([]);
+    expect(
+      sortDataTableRows(rows, normalized, [
+        { id: "person.email", direction: "asc" },
+      ]).map((row) => row.data.score),
+    ).toEqual([2, 10, 20]);
+    const disabled = normalizeDataTableColumns(
+      personColumns.map((column) => ({
+        ...column,
+        sortable: false,
+        searchable: false,
+      })),
+    );
+    expect(getDataTableSortColumns(disabled)).toEqual([]);
+    expect(
+      filterDataTableRows(
+        buildDataTableRows(people, disabled),
+        disabled,
+        "example.com",
+      ),
+    ).toEqual([]);
+  });
+
+  it("rejects ambiguous logical IDs instead of overwriting model values", () => {
+    expect(() =>
+      normalizeDataTableColumns([
+        ...personColumns,
+        { colId: "learner.email", headerName: "Collision" },
+      ]),
+    ).toThrow("field IDs must be nonempty and unique");
+    expect(() =>
+      normalizeDataTableColumns<Person>([
+        {
+          colId: "learner",
+          headerName: "Learner",
+          fields: [
+            {
+              id: "email",
+              headerName: "Email",
+              valueGetter: ({ data }) => data.email,
+            },
+            {
+              id: "email",
+              headerName: "Duplicate",
+              valueGetter: ({ data }) => data.email,
+            },
+          ],
+        },
+      ]),
+    ).toThrow("field IDs must be nonempty and unique");
+  });
+
+  it.each(["header", "toolbar"] as const)(
+    "sorts by an individual field from the %s menu",
+    async (menu) => {
+      const onStateChange = vi.fn();
+      render(
+        <DataTable
+          columnDefs={personColumns}
+          rowData={people}
+          onStateChange={onStateChange}
+        />,
+      );
+      if (menu === "header") {
+        fireEvent.click(screen.getByRole("button", { name: "Learner" }));
+        fireEvent.click(await screen.findByRole("menuitem", { name: "Email" }));
+      } else {
+        fireEvent.click(screen.getByRole("menuitem", { name: "Sort by" }));
+        fireEvent.click(
+          await screen.findByRole("menuitem", { name: "Learner / Email" }),
+        );
+      }
+      fireEvent.click(
+        await screen.findByRole("menuitem", { name: "Ascending" }),
+      );
+      expect(onStateChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          page: 0,
+          sort: [{ id: "learner.email", direction: "asc" }],
+        }),
+      );
+      const table = screen.getByRole("table");
+      const rows = within(table).getAllByRole("row").slice(1);
+      expect(within(rows[0]!).getByText("Blair")).toBeTruthy();
+      expect(within(rows[1]!).getAllByText("invite@example.com")).toHaveLength(
+        2,
+      );
+      expect(within(rows[2]!).getByText("Alex")).toBeTruthy();
+      if (menu === "header") {
+        fireEvent.click(screen.getByRole("button", { name: "Learner" }));
+        fireEvent.click(
+          await screen.findByRole("menuitem", { name: "Clear sorting" }),
+        );
+        expect(onStateChange).toHaveBeenLastCalledWith(
+          expect.objectContaining({ sort: [] }),
+        );
+      }
+    },
+  );
+
+  it.each(["CSV", "JSON"] as const)(
+    "expands visible fields in built-in %s exports across filtered pages",
+    async (format) => {
+      const createObjectURL = vi.fn((_blob: Blob) => "blob:export");
+      vi.stubGlobal(
+        "URL",
+        class extends URL {
+          static override createObjectURL = createObjectURL;
+          static override revokeObjectURL = vi.fn();
+        },
+      );
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+        () => {},
+      );
+      render(
+        <DataTable
+          columnDefs={[
+            ...personColumns,
+            { field: "score", headerName: "Private score" },
+          ]}
+          rowData={[
+            ...people,
+            { name: "Excluded", email: "other@elsewhere.com", score: 0 },
+            { name: "Over limit", email: "high@example.com", score: 100 },
+          ]}
+          initialState={{
+            pageSize: 1,
+            globalFilter: "example.com",
+            filters: [{ id: "learner.score", kind: "number", max: 20 }],
+            sort: [{ id: "learner.email", direction: "asc" }],
+            columnVisibility: { score: false },
+          }}
+          features={{ export: { baseName: "learners" } }}
+        />,
+      );
+      fireEvent.click(screen.getByRole("menuitem", { name: "Export" }));
+      fireEvent.click(await screen.findByRole("menuitem", { name: format }));
+      const blob = createObjectURL.mock.calls[0]![0];
+      const content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsText(blob);
+      });
+      expect(content).toBe(
+        format === "CSV"
+          ? "Name,Email\nBlair,a@example.com\n,invite@example.com\nAlex,z@example.com"
+          : JSON.stringify(
+              [
+                { "learner.name": "Blair", "learner.email": "a@example.com" },
+                { "learner.name": "", "learner.email": "invite@example.com" },
+                { "learner.name": "Alex", "learner.email": "z@example.com" },
+              ],
+              null,
+              2,
+            ),
+      );
+    },
+  );
+});
+
+describe("typed column filters", () => {
+  type FilterRow = {
+    name: string;
+    score: number | null;
+    active: boolean | null;
+    createdAt: string;
+    tags: { value: string; label: string }[];
+  };
+  const filterColumns: DataTableColDef<FilterRow>[] = [
+    { field: "name", headerName: "Name" },
+    { field: "score", headerName: "Score", type: "number" },
+    { field: "active", headerName: "Active", type: "boolean" },
+    { field: "createdAt", headerName: "Created", type: "dateTime" },
+    {
+      field: "tags",
+      headerName: "Tags",
+      type: "list",
+      typeOptions: { getItems: (row) => row.tags, emptyLabel: "No tags" },
+    },
+  ];
+  const filterRows: FilterRow[] = [
+    {
+      name: "Alpha",
+      score: 0,
+      active: false,
+      createdAt: "2026-01-01T00:00:00Z",
+      tags: [{ value: "red", label: "Red" }],
+    },
+    {
+      name: "Beta",
+      score: 10,
+      active: true,
+      createdAt: "2026-01-31T23:59:59Z",
+      tags: [{ value: "blue", label: "Blue" }],
+    },
+    {
+      name: "Gamma",
+      score: 20,
+      active: false,
+      createdAt: "2026-02-01T00:00:00Z",
+      tags: [{ value: "green", label: "Green" }],
+    },
+    {
+      name: "Missing",
+      score: null,
+      active: null,
+      createdAt: "invalid",
+      tags: [],
+    },
+  ];
+  const filter = (filters: readonly ColumnFilter[]) => {
+    const normalized = normalizeDataTableColumns(filterColumns);
+    return filterDataTableColumnRows(
+      buildDataTableRows(filterRows, normalized),
+      normalized,
+      filters,
+    ).map((row) => row.data.name);
+  };
+
+  it("combines inclusive ranges, false, text, and selectable values with AND", () => {
+    expect(filter([{ id: "score", kind: "number", min: 0, max: 10 }])).toEqual([
+      "Alpha",
+      "Beta",
+    ]);
+    expect(filter([{ id: "active", kind: "boolean", value: false }])).toEqual([
+      "Alpha",
+      "Gamma",
+    ]);
+    expect(
+      filter([
+        { id: "createdAt", kind: "date", from: "2026-01-01", to: "2026-01-31" },
+      ]),
+    ).toEqual(["Alpha", "Beta"]);
+    expect(
+      filter([
+        { id: "tags", kind: "values", values: ["red", "blue"] },
+        { id: "score", kind: "number", min: 0, max: 10 },
+        { id: "active", kind: "boolean", value: false },
+      ]),
+    ).toEqual(["Alpha"]);
+    expect(
+      filter([
+        { id: "name", kind: "text", operator: "equals", value: "ALPHA" },
+      ]),
+    ).toEqual(["Alpha"]);
+    expect(
+      filter([
+        { id: "name", kind: "text", operator: "startsWith", value: "be" },
+      ]),
+    ).toEqual(["Beta"]);
+    expect(
+      filter([{ id: "name", kind: "text", operator: "endsWith", value: "ma" }]),
+    ).toEqual(["Gamma"]);
+    expect(
+      filter([
+        { id: "stale", kind: "text", operator: "contains", value: "none" },
+      ]),
+    ).toEqual(filterRows.map((row) => row.name));
+  });
+
+  it("filters logical fields and honors filterable flags and enum options", () => {
+    const columns = normalizeDataTableColumns<FilterRow>([
+      {
+        colId: "person",
+        headerName: "Person",
+        fields: [
+          {
+            id: "name",
+            headerName: "Name",
+            valueGetter: ({ data }) => data.name,
+            filterOptions: [{ value: "Alpha", label: "First" }],
+          },
+          {
+            id: "score",
+            headerName: "Score",
+            type: "number",
+            valueGetter: ({ data }) => data.score,
+            filterable: false,
+          },
+        ],
+      },
+    ]);
+    const rows = buildDataTableRows(filterRows, columns);
+    expect(
+      filterDataTableColumnRows(rows, columns, [
+        { id: "person.name", kind: "values", values: ["Alpha"] },
+      ]).map((row) => row.data.name),
+    ).toEqual(["Alpha"]);
+    expect(
+      filterDataTableColumnRows(rows, columns, [
+        { id: "person.score", kind: "number", min: 100 },
+      ]),
+    ).toHaveLength(4);
+  });
+
+  it("applies text filters, resets pagination, and clears controlled URL filters", async () => {
+    const onStateChange = vi.fn();
+    const { rerender } = render(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        initialState={{ page: 1, pageSize: 2 }}
+        onStateChange={onStateChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Name" }));
+    fireEvent.change(await screen.findByLabelText("Value"), {
+      target: { value: "ALP" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+    const filters: ColumnFilter[] = [
+      { id: "name", kind: "text", operator: "contains", value: "ALP" },
+    ];
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 0, filters }),
+    );
+    expect(within(screen.getByRole("table")).queryByText("Beta")).toBeNull();
+    fireEvent.keyDown(screen.getByLabelText("Value"), { key: "Escape" });
+    rerender(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        state={{ page: 0, pageSize: 20, filters }}
+      />,
+    );
+    expect(within(screen.getByRole("table")).queryByText("Beta")).toBeNull();
+    rerender(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        state={{ page: 0, pageSize: 20 }}
+      />,
+    );
+    expect(within(screen.getByRole("table")).getByText("Beta")).toBeTruthy();
+  });
+
+  it("validates range drafts without replacing the last valid filter", async () => {
+    const onStateChange = vi.fn();
+    render(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        onStateChange={onStateChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Score" }));
+    fireEvent.change(await screen.findByLabelText("Minimum"), {
+      target: { value: "20" },
+    });
+    fireEvent.change(screen.getByLabelText("Maximum"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(onStateChange).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Minimum"), {
+      target: { value: "0" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        filters: [{ id: "score", kind: "number", min: 0, max: 10 }],
+      }),
+    );
+    expect(within(screen.getByRole("table")).queryByText("Gamma")).toBeNull();
+  });
+
+  it("filters by list IDs and boolean false without closing the value picker", async () => {
+    render(<DataTable columnDefs={filterColumns} rowData={filterRows} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Tags" }));
+    fireEvent.click(
+      await screen.findByRole("menuitemcheckbox", { name: "Red" }),
+    );
+    expect(
+      screen
+        .getByRole("menuitemcheckbox", { name: "Red" })
+        .getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(within(screen.getByRole("table")).queryByText("Beta")).toBeNull();
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Blue" }));
+    expect(within(screen.getByRole("table")).getByText("Beta")).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("menuitemcheckbox", { name: "Blue" }), {
+      key: "Escape",
+    });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Active" }));
+    fireEvent.click(
+      await screen.findByRole("menuitemradio", { name: "False" }),
+    );
+    expect(within(screen.getByRole("table")).queryByText("Beta")).toBeNull();
+    expect(within(screen.getByRole("table")).getByText("Alpha")).toBeTruthy();
+  });
+
+  it("shares filters between the header and toolbar without clearing other columns", async () => {
+    const onStateChange = vi.fn();
+    const scoreFilter: ColumnFilter = { id: "score", kind: "number", max: 10 };
+    render(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        initialState={{ filters: [scoreFilter] }}
+        onStateChange={onStateChange}
+      />,
+    );
+    const header = screen.getByRole("button", { name: "Name" });
+    fireEvent.click(header);
+    fireEvent.click(
+      within(await screen.findByRole("menu")).getByRole("menuitem", {
+        name: "Filters",
+      }),
+    );
+    fireEvent.change(await screen.findByLabelText("Value"), {
+      target: { value: "ALP" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        page: 0,
+        filters: [
+          scoreFilter,
+          { id: "name", kind: "text", operator: "contains", value: "ALP" },
+        ],
+      }),
+    );
+    expect(header.getAttribute("aria-description")).toBe("Filters: 1");
+    expect(within(screen.getByRole("table")).queryByText("Beta")).toBeNull();
+    fireEvent.click(header);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Name" }));
+    expect(await screen.findByDisplayValue("ALP")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Clear filter" }));
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: [scoreFilter] }),
+    );
+    expect(header.getAttribute("aria-description")).toBeNull();
+    expect(within(screen.getByRole("table")).getByText("Beta")).toBeTruthy();
+  });
+
+  it("filters logical fields from the header and clears only that parent column", async () => {
+    const onStateChange = vi.fn();
+    const tagsFilter: ColumnFilter = {
+      id: "tags",
+      kind: "values",
+      values: ["red"],
+    };
+    render(
+      <DataTable
+        columnDefs={[
+          {
+            colId: "person",
+            headerName: "Person",
+            fields: [
+              {
+                id: "name",
+                headerName: "Name",
+                valueGetter: ({ data }) => data.name,
+              },
+              {
+                id: "score",
+                headerName: "Score",
+                type: "number",
+                valueGetter: ({ data }) => data.score,
+              },
+            ],
+          },
+          filterColumns[4]!,
+        ]}
+        rowData={filterRows}
+        initialState={{ filters: [tagsFilter] }}
+        onStateChange={onStateChange}
+      />,
+    );
+    const header = screen.getByRole("button", { name: "Person" });
+    fireEvent.click(header);
+    fireEvent.click(
+      within(await screen.findByRole("menu")).getByRole("menuitem", {
+        name: "Filters",
+      }),
+    );
+    const menu = screen.getAllByRole("menu").at(-1)!;
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "Name" }));
+    fireEvent.change(await screen.findByLabelText("Value"), {
+      target: { value: "Alpha" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply filter" }));
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        filters: [
+          tagsFilter,
+          {
+            id: "person.name",
+            kind: "text",
+            operator: "contains",
+            value: "Alpha",
+          },
+        ],
+      }),
+    );
+    fireEvent.click(header);
+    fireEvent.click(header);
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Clear filter" }),
+    );
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: [tagsFilter] }),
+    );
+    expect(header.getAttribute("aria-description")).toBeNull();
+  });
+
+  it("keeps header filtering available without sorting or hiding and respects opt-outs", async () => {
+    const { rerender } = render(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        features={{ sorting: false, columnVisibility: false }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Name" }));
+    expect(
+      within(await screen.findByRole("menu")).getByRole("menuitem", {
+        name: "Filters",
+      }),
+    ).toBeTruthy();
+    rerender(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        features={{ sorting: false, columnVisibility: false, filtering: false }}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Name" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Filters" })).toBeNull();
+  });
+
+  it("uses stable filter values without changing display or export values", () => {
+    const columns = normalizeDataTableColumns<FilterRow>([
+      {
+        colId: "status",
+        headerName: "Status",
+        valueGetter: ({ data }) => `Label: ${data.name}`,
+        filterValueGetter: ({ data }) => data.name,
+        filterOptions: [{ value: "Alpha", label: "First" }],
+      },
+    ]);
+    const rows = buildDataTableRows(filterRows, columns);
+    expect(
+      filterDataTableColumnRows(rows, columns, [
+        { id: "status", kind: "values", values: ["Alpha"] },
+      ]).map((row) => row.data.name),
+    ).toEqual(["Alpha"]);
+    expect(getDataTableExportValue(rows[0]!, columns[0]!)).toBe("Label: Alpha");
+  });
+
+  it("searches longer option lists without discarding selections", async () => {
+    const onStateChange = vi.fn();
+    render(
+      <DataTable<FilterRow>
+        columnDefs={[
+          {
+            field: "name",
+            headerName: "Name",
+            filterOptions: [
+              { value: "Alpha", label: "First" },
+              { value: "Beta", label: "Second" },
+              ...Array.from({ length: 8 }, (_, index) => ({
+                value: `other-${index}`,
+                label: `Other ${index}`,
+              })),
+            ],
+          },
+        ]}
+        rowData={filterRows}
+        onStateChange={onStateChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Name" }));
+    const search = await screen.findByLabelText("Filter results...");
+    fireEvent.change(search, { target: { value: "First" } });
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "First" }));
+    fireEvent.change(search, { target: { value: "Second" } });
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Second" }));
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        filters: [{ id: "name", kind: "values", values: ["Alpha", "Beta"] }],
+      }),
+    );
+    expect(within(screen.getByRole("table")).getByText("Alpha")).toBeTruthy();
+    expect(within(screen.getByRole("table")).getByText("Beta")).toBeTruthy();
+  });
+
+  it("shows application-owned option counts without changing their filter values", async () => {
+    const onStateChange = vi.fn();
+    render(
+      <DataTable<FilterRow>
+        columnDefs={[
+          {
+            field: "name",
+            headerName: "Name",
+            filterOptions: [{ value: "Alpha", label: "Requests", count: 1 }],
+          },
+        ]}
+        rowData={filterRows}
+        onStateChange={onStateChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Name" }));
+    const option = await screen.findByRole("menuitemcheckbox", {
+      name: /Requests/,
+    });
+    expect(within(option).getByText("1")).toBeTruthy();
+    fireEvent.click(option);
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        filters: [{ id: "name", kind: "values", values: ["Alpha"] }],
+      }),
+    );
+  });
+
+  it("leaves server-side filtering to the app", () => {
+    render(
+      <DataTable
+        columnDefs={filterColumns}
+        rowData={filterRows}
+        state={{
+          page: 0,
+          pageSize: 20,
+          filters: [{ id: "score", kind: "number", min: 100 }],
+        }}
+        features={{ pagination: { mode: "server", rowCount: 100 } }}
+      />,
+    );
+    expect(within(screen.getByRole("table")).getByText("Alpha")).toBeTruthy();
+  });
+});
 
 describe("CSV downloads", () => {
   it.each([
@@ -117,7 +866,7 @@ describe("CSV downloads", () => {
       downloadCsv(headers, rows, "records.json");
 
       expect(click).toHaveBeenCalledOnce();
-    expect(click.mock.instances[0]).toHaveProperty("download", "records.csv");
+      expect(click.mock.instances[0]).toHaveProperty("download", "records.csv");
       const blob = createObjectURL.mock.calls[0]![0];
       expect(blob.type).toBe("text/csv;charset=utf-8");
       const content = await new Promise<string>((resolve, reject) => {
@@ -1381,9 +2130,9 @@ describe("DataTable model", () => {
         reader.readAsText(blob);
       });
       expect(content).toBe(
-        scope === "filteredRows"
-          ? "Name,Score\nAlpha,30\nBeta,10\nGamma,20"
-          : "Name,Score\nAlpha,30",
+        scope === "currentPage"
+          ? "Name,Score\nAlpha,30"
+          : "Name,Score\nAlpha,30\nBeta,10\nGamma,20",
       );
     },
   );

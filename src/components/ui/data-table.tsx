@@ -6,6 +6,7 @@ import { AsyncResult, Atom } from "effect/reactivity";
 import {
   ArrowDown,
   ArrowUp,
+  Check,
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
@@ -15,6 +16,7 @@ import {
   FileText,
   GripVertical,
   LayoutGrid,
+  ListFilter,
   MoreHorizontal,
   Plus,
   RefreshCw,
@@ -29,6 +31,7 @@ import {
   isValidElement,
   useCallback,
   useContext,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -56,6 +59,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loading } from "@/components/ui/loading";
 import {
   Menubar,
@@ -93,7 +105,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { QueryType, SortDirection } from "@/lib/query";
+import {
+  ColumnFilter,
+  TextFilterOperator,
+  type QueryType,
+  type SortDirection,
+} from "@/lib/query";
 import { cn } from "@/lib/utils";
 
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
@@ -359,6 +376,30 @@ type DataTableColumnType<TData> =
 export type DataTableColDef<TData extends RowData> =
   DataTableBaseColDef<TData> & DataTableColumnType<TData>;
 
+/** A logical field within one visual column. IDs are local to the parent column. */
+export type DataTableColumnField<TData extends RowData> = Pick<
+  DataTableBaseColDef<TData>,
+  | "headerName"
+  | "comparator"
+  | "sortable"
+  | "searchable"
+  | "filterable"
+  | "filterOptions"
+  | "filterValueGetter"
+> & {
+  id: string;
+  valueGetter: NonNullable<DataTableBaseColDef<TData>["valueGetter"]>;
+  /** Exclude a field from export without removing it from search or sorting. */
+  export?: boolean;
+} & DataTableColumnType<TData>;
+
+export interface DataTableFilterOption {
+  value: string;
+  label: string;
+  /** Optional application-owned count (for example, actionable requests). */
+  count?: number;
+}
+
 export interface DataTableBaseColDef<TData extends RowData> {
   field?: keyof TData & string;
   colId?: string;
@@ -369,6 +410,11 @@ export interface DataTableBaseColDef<TData extends RowData> {
   // Cell value types are intentionally owned and narrowed by each consumer.
   // oxlint-disable-next-line anti-slop/no-unknown-returns
   valueGetter?: (params: DataTableValueGetterParams<TData>) => unknown;
+  /** Independently searchable, sortable, and exported values; display stays combined.
+   * Sort state and JSON exports use stable IDs such as `learner.email`.
+   * Hiding the visual column also hides its fields from export.
+   */
+  fields?: readonly DataTableColumnField<TData>[];
   valueFormatter?: (params: DataTableCellRendererParams<TData>) => ReactNode;
   cellRenderer?: (params: DataTableCellRendererParams<TData>) => ReactNode;
   sortable?: boolean;
@@ -381,6 +427,12 @@ export interface DataTableBaseColDef<TData extends RowData> {
   ) => number;
   // oxlint-enable anti-slop/no-unknown-parameters
   searchable?: boolean;
+  /** Typed filters are inferred from the column type. Parent false disables all fields. */
+  filterable?: boolean;
+  /** Offer a multi-select filter instead of free text; values match the model value. */
+  filterOptions?: readonly DataTableFilterOption[];
+  /** A stable scalar value for filtering, independent of display/search/export. */
+  filterValueGetter?: DataTableBaseColDef<TData>["valueGetter"];
   hideable?: boolean;
   resizable?: boolean;
   width?: number;
@@ -443,7 +495,7 @@ export interface DataTableExportAction {
 
 export interface DataTableExportFeature {
   baseName: string;
-  /** Both scopes operate only on rows already supplied to the table. */
+  /** Defaults to all filtered, sorted rows. Both scopes use only loaded rows. */
   scope?: "currentPage" | "filteredRows";
   /** Set false to offer only app-provided actions. Defaults to true. */
   builtIn?: boolean;
@@ -461,6 +513,7 @@ export interface DataTableFeatures<TData> {
         items: ReactNode;
       };
   search?: boolean;
+  filtering?: boolean;
   sorting?: boolean;
   pagination?: DataTablePaginationFeature;
   columnVisibility?: boolean;
@@ -475,8 +528,7 @@ export interface DataTableFeatures<TData> {
           | { label?: string; items: readonly DataTableBulkAction<TData>[] };
       };
   rowActions?:
-    | false
-    | { label?: string; items: readonly DataTableRowAction<TData>[] };
+    false | { label?: string; items: readonly DataTableRowAction<TData>[] };
   export?: false | DataTableExportFeature;
   gallery?:
     | false
@@ -498,6 +550,23 @@ export type DataTableMessages = PaginationMessages & {
   empty: string;
   loading: string;
   filter: string;
+  filters: string;
+  filtersClear: string;
+  filterClear: string;
+  filterApply: string;
+  filterValue: string;
+  filterOperator: string;
+  filterContains: string;
+  filterEquals: string;
+  filterStartsWith: string;
+  filterEndsWith: string;
+  filterMin: string;
+  filterMax: string;
+  filterFrom: string;
+  filterTo: string;
+  filterTrue: string;
+  filterFalse: string;
+  filterInvalid: string;
   export: string;
   exportCsv: string;
   exportJson: string;
@@ -537,6 +606,23 @@ const messages = {
     empty: "No results.",
     loading: "Loading...",
     filter: "Filter results...",
+    filters: "Filters",
+    filtersClear: "Clear all filters",
+    filterClear: "Clear filter",
+    filterApply: "Apply filter",
+    filterValue: "Value",
+    filterOperator: "Operator",
+    filterContains: "Contains",
+    filterEquals: "Equals",
+    filterStartsWith: "Starts with",
+    filterEndsWith: "Ends with",
+    filterMin: "Minimum",
+    filterMax: "Maximum",
+    filterFrom: "From (UTC)",
+    filterTo: "To (UTC)",
+    filterTrue: "True",
+    filterFalse: "False",
+    filterInvalid: "Enter a valid filter. Ranges must be in ascending order.",
     export: "Export",
     exportCsv: "CSV",
     exportJson: "JSON",
@@ -569,6 +655,24 @@ const messages = {
     empty: "Aucun résultat.",
     loading: "Chargement...",
     filter: "Filtrer les résultats...",
+    filters: "Filtres",
+    filtersClear: "Effacer tous les filtres",
+    filterClear: "Effacer le filtre",
+    filterApply: "Appliquer le filtre",
+    filterValue: "Valeur",
+    filterOperator: "Opérateur",
+    filterContains: "Contient",
+    filterEquals: "Égal à",
+    filterStartsWith: "Commence par",
+    filterEndsWith: "Se termine par",
+    filterMin: "Minimum",
+    filterMax: "Maximum",
+    filterFrom: "Du (UTC)",
+    filterTo: "Au (UTC)",
+    filterTrue: "Vrai",
+    filterFalse: "Faux",
+    filterInvalid:
+      "Saisissez un filtre valide. Les bornes doivent être dans l’ordre croissant.",
     export: "Exporter",
     exportCsv: "CSV",
     exportJson: "JSON",
@@ -693,7 +797,7 @@ export const normalizeDataTableColumns = <TData extends RowData>(
   columnSizing: Readonly<Record<string, number>> = {},
 ): DataTableColumn<TData>[] => {
   const ids = new Set<string>();
-  return columnDefs.map((colDef) => {
+  const columns = columnDefs.map((colDef) => {
     const id = colDef.field ?? colDef.colId;
     if (!id) {
       throw new Error("DataTable columns require a field or colId");
@@ -711,7 +815,53 @@ export const normalizeDataTableColumns = <TData extends RowData>(
       ),
     };
   });
+  for (const column of columns) {
+    for (const field of column.colDef.fields ?? []) {
+      const id = `${column.id}.${field.id}`;
+      if (!field.id || ids.has(id)) {
+        throw new Error(
+          `DataTable field IDs must be nonempty and unique: ${id}`,
+        );
+      }
+      ids.add(id);
+    }
+  }
+  return columns;
 };
+
+const getDataTableFieldColumns = <TData extends RowData>(
+  column: DataTableColumn<TData>,
+): DataTableColumn<TData>[] =>
+  (column.colDef.fields ?? []).map(({ id, export: _export, ...colDef }) => ({
+    id: `${column.id}.${id}`,
+    colDef: { ...colDef, colId: `${column.id}.${id}` },
+    width: column.width,
+  }));
+
+/** Resolve logical sort targets without adding visual columns. */
+export const getDataTableSortColumns = <TData extends RowData>(
+  columns: readonly DataTableColumn<TData>[],
+): DataTableColumn<TData>[] =>
+  columns.flatMap((column) =>
+    column.colDef.sortable === false
+      ? []
+      : (column.colDef.fields?.length
+          ? getDataTableFieldColumns(column)
+          : [column]
+        ).filter(({ colDef }) => colDef.sortable !== false),
+  );
+
+/** Expand only visible columns, retaining field labels and typed export formats. */
+export const getDataTableExportColumns = <TData extends RowData>(
+  visibleColumns: readonly DataTableColumn<TData>[],
+): DataTableColumn<TData>[] =>
+  visibleColumns.flatMap((column) =>
+    column.colDef.fields?.length
+      ? getDataTableFieldColumns(column).filter(
+          (_field, index) => column.colDef.fields?.[index]?.export !== false,
+        )
+      : [column],
+  );
 
 export const getDataTableWidth = <TData extends RowData>(
   columns: readonly DataTableColumn<TData>[],
@@ -735,22 +885,24 @@ export const buildDataTableRows = <TData extends RowData>(
       data,
       index,
       values: new Map(
-        columns.map((column) => {
-          const { colDef } = column;
-          const value = colDef.valueGetter
-            ? colDef.valueGetter({ data, rowId: id, rowIndex: index, colDef })
-            : colDef.type === "list"
-              ? colDef.typeOptions
-                  .getItems(data)
-                  .map((item) => item.label)
-                  .join(", ")
-              : colDef.type === "reference"
-                ? referenceText(colDef.typeOptions.getItem(data))
-                : colDef.field
-                  ? data[colDef.field]
-                  : undefined;
-          return [column.id, value];
-        }),
+        columns
+          .flatMap((column) => [column, ...getDataTableFieldColumns(column)])
+          .map((column) => {
+            const { colDef } = column;
+            const value = colDef.valueGetter
+              ? colDef.valueGetter({ data, rowId: id, rowIndex: index, colDef })
+              : colDef.type === "list"
+                ? colDef.typeOptions
+                    .getItems(data)
+                    .map((item) => item.label)
+                    .join(", ")
+                : colDef.type === "reference"
+                  ? referenceText(colDef.typeOptions.getItem(data))
+                  : colDef.field
+                    ? data[colDef.field]
+                    : undefined;
+            return [column.id, value];
+          }),
       ),
     };
   });
@@ -887,8 +1039,13 @@ export const filterDataTableRows = <TData extends RowData>(
 ): DataTableModelRow<TData>[] => {
   const query = globalFilter.trim().toLocaleLowerCase();
   if (!query) return [...rows];
-  const searchable = columns.filter(
-    ({ colDef }) => colDef.searchable !== false,
+  const searchable = columns.flatMap((column) =>
+    column.colDef.searchable === false
+      ? []
+      : (column.colDef.fields?.length
+          ? getDataTableFieldColumns(column)
+          : [column]
+        ).filter(({ colDef }) => colDef.searchable !== false),
   );
   return rows.filter((row) =>
     searchable.some((column) => {
@@ -918,12 +1075,137 @@ export const filterDataTableRows = <TData extends RowData>(
   );
 };
 
+export const getDataTableFilterColumns = <TData extends RowData>(
+  columns: readonly DataTableColumn<TData>[],
+): DataTableColumn<TData>[] =>
+  columns.flatMap((column) =>
+    column.colDef.filterable === false
+      ? []
+      : (column.colDef.fields?.length
+          ? getDataTableFieldColumns(column)
+          : [column]
+        ).filter(({ colDef }) => colDef.filterable !== false),
+  );
+
+const getDataTableFilterKind = <TData extends RowData>({
+  colDef,
+}: DataTableColumn<TData>) =>
+  colDef.filterOptions || colDef.type === "list"
+    ? "values"
+    : colDef.type === "number"
+      ? "number"
+      : colDef.type === "date" || colDef.type === "dateTime"
+        ? "date"
+        : colDef.type === "boolean"
+          ? "boolean"
+          : "text";
+
+const getDataTableFilterOptions = <TData extends RowData>(
+  rows: readonly DataTableModelRow<TData>[],
+  column: DataTableColumn<TData>,
+): readonly DataTableFilterOption[] => {
+  const { colDef } = column;
+  if (colDef.filterOptions) return colDef.filterOptions;
+  const options = new Map<string, { value: string; label: string }>();
+  if (colDef.type === "list") {
+    for (const row of rows) {
+      for (const item of colDef.typeOptions.getItems(row.data)) {
+        const value = item.value ?? item.label;
+        options.set(value, { value, label: item.label });
+      }
+    }
+  }
+  return [...options.values()].sort((left, right) =>
+    left.label.localeCompare(right.label),
+  );
+};
+
+/** AND across columns, OR within a multi-select filter. Unknown/stale IDs are ignored. */
+export const filterDataTableColumnRows = <TData extends RowData>(
+  rows: readonly DataTableModelRow<TData>[],
+  columns: readonly DataTableColumn<TData>[],
+  filters: readonly ColumnFilter[],
+): DataTableModelRow<TData>[] => {
+  const byId = new Map(
+    getDataTableFilterColumns(columns).map((column) => [column.id, column]),
+  );
+  return rows.filter((row) =>
+    filters.every((filter) => {
+      const column = byId.get(filter.id);
+      if (!column || getDataTableFilterKind(column) !== filter.kind)
+        return true;
+      const value = column.colDef.filterValueGetter
+        ? column.colDef.filterValueGetter({
+            data: row.data,
+            rowId: row.id,
+            rowIndex: row.index,
+            colDef: column.colDef,
+          })
+        : row.values.get(column.id);
+      switch (filter.kind) {
+        case "text": {
+          const text = String(value ?? "").toLocaleLowerCase();
+          const query = filter.value.toLocaleLowerCase();
+          switch (filter.operator) {
+            case "contains":
+              return text.includes(query);
+            case "equals":
+              return text === query;
+            case "startsWith":
+              return text.startsWith(query);
+            case "endsWith":
+              return text.endsWith(query);
+          }
+        }
+        case "number": {
+          const number = Option.getOrUndefined(decodeNumberValue(value));
+          return (
+            number !== undefined &&
+            (filter.min === undefined || number >= filter.min) &&
+            (filter.max === undefined || number <= filter.max)
+          );
+        }
+        case "date": {
+          const date = resolveDate(
+            value,
+            column.colDef.type === "dateTime" ? "dateTime" : "date",
+          );
+          if (!date) return false;
+          const day = DateTime.formatIsoDateUtc(date.instant);
+          return (
+            (filter.from === undefined || day >= filter.from) &&
+            (filter.to === undefined || day <= filter.to)
+          );
+        }
+        case "boolean":
+          return (
+            Option.getOrUndefined(decodeBooleanValue(value)) === filter.value
+          );
+        case "values": {
+          const values =
+            column.colDef.type === "list"
+              ? column.colDef.typeOptions
+                  .getItems(row.data)
+                  .map((item) => item.value ?? item.label)
+              : [String(value ?? "")];
+          return filter.values.some((selected) => values.includes(selected));
+        }
+      }
+    }),
+  );
+};
+
 export const sortDataTableRows = <TData extends RowData>(
   rows: readonly DataTableModelRow<TData>[],
   columns: readonly DataTableColumn<TData>[],
   sorting: NonNullable<QueryType["sort"]>,
 ): DataTableModelRow<TData>[] => {
-  const byId = new Map(columns.map((column) => [column.id, column]));
+  const byId = new Map(
+    [...columns, ...getDataTableSortColumns(columns)].map((column) => [
+      column.id,
+      column,
+    ]),
+  );
   return rows
     .map((row, stableIndex) => ({ row, stableIndex }))
     .sort((left, right) => {
@@ -1021,6 +1303,7 @@ const sameDataTableState = (left: DataTableState, right: DataTableState) =>
   left.page === right.page &&
   left.pageSize === right.pageSize &&
   left.globalFilter === right.globalFilter &&
+  left.filters === right.filters &&
   left.sort === right.sort &&
   left.columnVisibility === right.columnVisibility &&
   left.columnSizing === right.columnSizing &&
@@ -1153,6 +1436,7 @@ const queryFromState = (state: DataTablePublicState): DataTablePublicState => ({
   page: state.page,
   pageSize: state.pageSize,
   globalFilter: state.globalFilter,
+  filters: state.filters,
   sort: state.sort,
 });
 
@@ -1177,6 +1461,7 @@ const sameQueryState = (left: QueryType, right: QueryType) =>
   left.page === right.page &&
   left.pageSize === right.pageSize &&
   left.globalFilter === right.globalFilter &&
+  left.filters === right.filters &&
   left.sort === right.sort;
 
 const initialPublicState = <TData extends RowData>(
@@ -1207,11 +1492,15 @@ const buildDataTableModel = <TData extends RowData>(
   const server = pagination !== false && pagination.mode === "server";
   const filteredRows = server
     ? [...rows]
-    : filterDataTableRows(
-        rows,
+    : filterDataTableColumnRows(
+        filterDataTableRows(
+          rows,
+          columns,
+          store.state.globalFilter ?? "",
+          store.config.locale,
+        ),
         columns,
-        store.state.globalFilter ?? "",
-        store.config.locale,
+        store.state.filters ?? [],
       );
   const sortedRows = server
     ? filteredRows
@@ -1337,6 +1626,7 @@ const canReorderRows = <TData extends RowData>(
     !!store.config.features.reordering &&
     !getActiveGrouping(store).length &&
     !store.state.globalFilter &&
+    !store.state.filters?.length &&
     !store.state.sort?.length &&
     !(pagination && pagination.mode === "server")
   );
@@ -1410,10 +1700,10 @@ const renderCell = <TData extends RowData>(
       <label
         data-slot="data-table-boolean-cell"
         className={cn(
-          "flex min-h-16 w-full items-center justify-start border border-transparent px-2 outline-none focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 focus-within:ring-inset in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0 in-[[data-slot=table-cell]]:min-h-0",
+          "focus-within:border-ring focus-within:ring-ring/50 flex min-h-16 w-full items-center justify-start border border-transparent px-2 outline-none focus-within:ring-3 focus-within:ring-inset in-[[data-slot=table-cell]]:absolute in-[[data-slot=table-cell]]:inset-0 in-[[data-slot=table-cell]]:min-h-0",
           options?.onChange &&
             !options.disabled?.(row.data) &&
-            "cursor-pointer hover:bg-muted/50",
+            "hover:bg-muted/50 cursor-pointer",
         )}
         onClick={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
@@ -1679,6 +1969,7 @@ const DataTableToolbar = <TData extends RowData>({
   const hasToolbar =
     !!toolbar ||
     features.search !== false ||
+    features.filtering !== false ||
     features.sorting !== false ||
     features.columnVisibility !== false ||
     !!features.export ||
@@ -1696,9 +1987,10 @@ const DataTableToolbar = <TData extends RowData>({
       )
     : [];
   const exportRows =
-    features.export && features.export.scope === "filteredRows"
-      ? model.filteredRows
-      : model.pageRows;
+    features.export && features.export.scope === "currentPage"
+      ? model.pageRows
+      : model.sortedRows;
+  const exportColumns = getDataTableExportColumns(model.visibleColumns);
   const exportFeature = features.export;
   const exportActions = exportFeature ? (exportFeature.actions ?? []) : [];
   const builtInExport = exportFeature && exportFeature.builtIn !== false;
@@ -1760,7 +2052,6 @@ const DataTableToolbar = <TData extends RowData>({
       ) : null}
       <div className="-m-1 flex overflow-x-auto p-1">
         <Menubar className="h-auto w-max min-w-full justify-start bg-transparent shadow-none [&_[data-slot=menubar-trigger]]:gap-2 [&_[data-slot=menubar-trigger]_svg]:size-4">
-          {toolbar && toolbar.items}
           {visibleBulkActions.length ? (
             <MenubarMenu>
               <MenubarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary/90">
@@ -1789,6 +2080,10 @@ const DataTableToolbar = <TData extends RowData>({
                 </MenubarGroup>
               </MenubarContent>
             </MenubarMenu>
+          ) : null}
+          {toolbar && toolbar.items}
+          {features.filtering !== false ? (
+            <FilterMenu tableAtom={tableAtom} />
           ) : null}
           {grouping ? (
             <MenubarMenu>
@@ -1864,9 +2159,9 @@ const DataTableToolbar = <TData extends RowData>({
                         disabled={exporting || !exportRows.length}
                         onClick={() =>
                           downloadCsv(
-                            model.visibleColumns.map(columnLabel),
+                            exportColumns.map(columnLabel),
                             exportRows.map((row) =>
-                              model.visibleColumns.map((column) =>
+                              exportColumns.map((column) =>
                                 String(
                                   getDataTableExportValue(
                                     row,
@@ -1891,7 +2186,7 @@ const DataTableToolbar = <TData extends RowData>({
                           downloadJson(
                             exportRows.map((row) =>
                               Object.fromEntries(
-                                model.visibleColumns.map((column) => [
+                                exportColumns.map((column) => [
                                   column.id,
                                   getDataTableExportValue(
                                     row,
@@ -1941,14 +2236,386 @@ const DataTableToolbar = <TData extends RowData>({
   );
 };
 
+type DataTableFilterDraft = {
+  id: string;
+  kind: ColumnFilter["kind"];
+  operator?: typeof TextFilterOperator.Type;
+  value?: string | boolean;
+  min?: number;
+  max?: number;
+  from?: string;
+  to?: string;
+  values?: readonly string[];
+};
+
+const withColumnFilter = (
+  state: DataTableState,
+  id: string,
+  filter: ColumnFilter | undefined,
+): DataTableState => {
+  const filters = (state.filters ?? []).filter((current) => current.id !== id);
+  if (filter) filters.push(filter);
+  return { ...state, page: 0, filters: filters.length ? filters : undefined };
+};
+
+const FilterEditor = <TData extends RowData>({
+  column,
+  rows,
+  current,
+  labels,
+  onChange,
+}: {
+  column: DataTableColumn<TData>;
+  rows: readonly DataTableModelRow<TData>[];
+  current: ColumnFilter | undefined;
+  labels: DataTableMessages;
+  onChange: (filter: ColumnFilter | undefined) => void;
+}) => {
+  const inputId = useId();
+  const kind = getDataTableFilterKind(column);
+  const [primary, setPrimary] = useState(
+    current?.kind === "text"
+      ? current.value
+      : current?.kind === "number"
+        ? String(current.min ?? "")
+        : current?.kind === "date"
+          ? (current.from ?? "")
+          : "",
+  );
+  const [secondary, setSecondary] = useState(
+    current?.kind === "number"
+      ? String(current.max ?? "")
+      : current?.kind === "date"
+        ? (current.to ?? "")
+        : "",
+  );
+  const [operator, setOperator] = useState<typeof TextFilterOperator.Type>(
+    current?.kind === "text" ? current.operator : "contains",
+  );
+  const operatorOptions = [
+    { value: "contains", label: labels.filterContains },
+    { value: "equals", label: labels.filterEquals },
+    { value: "startsWith", label: labels.filterStartsWith },
+    { value: "endsWith", label: labels.filterEndsWith },
+  ];
+  const [invalid, setInvalid] = useState(false);
+  const [optionSearch, setOptionSearch] = useState("");
+  const apply = (candidate: DataTableFilterDraft) => {
+    const decoded = Schema.decodeUnknownOption(ColumnFilter)(candidate);
+    if (Option.isNone(decoded)) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    onChange(decoded.value);
+  };
+  if (kind === "boolean") {
+    return (
+      <MenubarGroup>
+        <MenubarRadioGroup
+          value={current?.kind === "boolean" ? String(current.value) : ""}
+          onValueChange={(value) =>
+            apply({ id: column.id, kind, value: value === "true" })
+          }
+        >
+          <MenubarRadioItem value="true" closeOnClick={false}>
+            {column.colDef.type === "boolean"
+              ? (column.colDef.typeOptions?.trueLabel ?? labels.filterTrue)
+              : labels.filterTrue}
+          </MenubarRadioItem>
+          <MenubarRadioItem value="false" closeOnClick={false}>
+            {column.colDef.type === "boolean"
+              ? (column.colDef.typeOptions?.falseLabel ?? labels.filterFalse)
+              : labels.filterFalse}
+          </MenubarRadioItem>
+        </MenubarRadioGroup>
+        <MenubarSeparator />
+        <MenubarItem closeOnClick={false} onClick={() => onChange(undefined)}>
+          {labels.filterClear}
+        </MenubarItem>
+      </MenubarGroup>
+    );
+  }
+  if (kind === "values") {
+    const selected: readonly string[] =
+      current?.kind === "values" ? current.values : [];
+    const options = getDataTableFilterOptions(rows, column);
+    const filteredOptions = options.filter((option) =>
+      option.label
+        .toLocaleLowerCase()
+        .includes(optionSearch.trim().toLocaleLowerCase()),
+    );
+    return (
+      <MenubarGroup>
+        {options.length > 8 ? (
+          <div className="p-1">
+            <Input
+              aria-label={labels.filter}
+              placeholder={labels.filter}
+              value={optionSearch}
+              onChange={(event) => setOptionSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Escape") event.stopPropagation();
+              }}
+            />
+          </div>
+        ) : null}
+        {filteredOptions.map((option) => (
+          <MenubarCheckboxItem
+            key={option.value}
+            checked={selected.includes(option.value)}
+            closeOnClick={false}
+            onCheckedChange={(checked) => {
+              const values = checked
+                ? [...selected, option.value]
+                : selected.filter((value) => value !== option.value);
+              if (values.length) apply({ id: column.id, kind, values });
+              else onChange(undefined);
+            }}
+          >
+            <span className="min-w-0 flex-1 truncate">{option.label}</span>
+            {option.count !== undefined ? (
+              <Badge variant="secondary" className="ml-auto shrink-0">
+                {option.count}
+              </Badge>
+            ) : null}
+          </MenubarCheckboxItem>
+        ))}
+        {!filteredOptions.length ? (
+          <div className="text-muted-foreground px-2 py-1.5 text-sm">
+            {labels.empty}
+          </div>
+        ) : null}
+        <MenubarSeparator />
+        <MenubarItem closeOnClick={false} onClick={() => onChange(undefined)}>
+          {labels.filterClear}
+        </MenubarItem>
+      </MenubarGroup>
+    );
+  }
+  return (
+    <form
+      className="flex flex-col gap-3 p-2"
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") event.stopPropagation();
+      }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (kind === "text")
+          apply({ id: column.id, kind, operator, value: primary.trim() });
+        else if (kind === "date")
+          apply({
+            id: column.id,
+            kind,
+            from: primary || undefined,
+            to: secondary || undefined,
+          });
+        else {
+          const min = primary
+            ? Schema.decodeUnknownOption(Schema.FiniteFromString)(primary)
+            : Option.some(undefined);
+          const max = secondary
+            ? Schema.decodeUnknownOption(Schema.FiniteFromString)(secondary)
+            : Option.some(undefined);
+          if (Option.isNone(min) || Option.isNone(max)) {
+            setInvalid(true);
+            return;
+          }
+          apply({ id: column.id, kind, min: min.value, max: max.value });
+        }
+      }}
+    >
+      <FieldGroup>
+        {kind === "text" ? (
+          <Field>
+            <FieldLabel htmlFor={`${inputId}-operator`}>
+              {labels.filterOperator}
+            </FieldLabel>
+            <Select
+              items={operatorOptions}
+              value={operator}
+              onValueChange={(value) => {
+                const decoded =
+                  Schema.decodeUnknownOption(TextFilterOperator)(value);
+                if (Option.isSome(decoded)) setOperator(decoded.value);
+              }}
+            >
+              <SelectTrigger id={`${inputId}-operator`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {operatorOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+        ) : null}
+        <Field data-invalid={invalid || undefined}>
+          <FieldLabel htmlFor={`${inputId}-primary`}>
+            {kind === "text"
+              ? labels.filterValue
+              : kind === "date"
+                ? labels.filterFrom
+                : labels.filterMin}
+          </FieldLabel>
+          <Input
+            id={`${inputId}-primary`}
+            type={
+              kind === "text" ? "text" : kind === "date" ? "date" : "number"
+            }
+            step={kind === "number" ? "any" : undefined}
+            value={primary}
+            aria-invalid={invalid || undefined}
+            onChange={(event) => {
+              setPrimary(event.target.value);
+              setInvalid(false);
+            }}
+          />
+        </Field>
+        {kind !== "text" ? (
+          <Field data-invalid={invalid || undefined}>
+            <FieldLabel htmlFor={`${inputId}-secondary`}>
+              {kind === "date" ? labels.filterTo : labels.filterMax}
+            </FieldLabel>
+            <Input
+              id={`${inputId}-secondary`}
+              type={kind === "date" ? "date" : "number"}
+              step={kind === "number" ? "any" : undefined}
+              value={secondary}
+              aria-invalid={invalid || undefined}
+              onChange={(event) => {
+                setSecondary(event.target.value);
+                setInvalid(false);
+              }}
+            />
+          </Field>
+        ) : null}
+      </FieldGroup>
+      {invalid ? (
+        <p role="alert" className="text-destructive text-sm">
+          {labels.filterInvalid}
+        </p>
+      ) : null}
+      <div className="flex gap-2">
+        <Button type="submit" size="sm">
+          {labels.filterApply}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setPrimary("");
+            setSecondary("");
+            setInvalid(false);
+            onChange(undefined);
+          }}
+        >
+          {labels.filterClear}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+const FilterMenu = <TData extends RowData>({
+  tableAtom,
+}: {
+  tableAtom: TableAtom<TData>;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const model = deriveModel(store);
+  const columns = model.columns.flatMap((parent) =>
+    getDataTableFilterColumns([parent]).map((column) => ({
+      column,
+      label:
+        column.id === parent.id
+          ? columnLabel(column)
+          : `${columnLabel(parent)} / ${columnLabel(column)}`,
+    })),
+  );
+  if (!columns.length) return null;
+  const filters = store.state.filters ?? [];
+  const update = (id: string, filter: ColumnFilter | undefined) =>
+    changeState(setStore, (state) => withColumnFilter(state, id, filter));
+  return (
+    <MenubarMenu>
+      <MenubarTrigger aria-label={store.config.labels.filters}>
+        <ListFilter />
+        <span>{store.config.labels.filters}</span>
+        {filters.length ? (
+          <Badge variant="secondary">{filters.length}</Badge>
+        ) : null}
+      </MenubarTrigger>
+      <MenubarContent align="end" className="w-80 max-w-[calc(100vw-2rem)]">
+        <MenubarGroup>
+          <MenubarLabel>{store.config.labels.filters}</MenubarLabel>
+          <MenubarSeparator />
+          {columns.map(({ column, label }) => (
+            <MenubarSub key={column.id}>
+              <MenubarSubTrigger>
+                <span className="min-w-0 flex-1 truncate">{label}</span>
+                {filters.some((filter) => filter.id === column.id) ? (
+                  <Check />
+                ) : null}
+              </MenubarSubTrigger>
+              <MenubarSubContent className="w-80 max-w-[calc(100vw-2rem)]">
+                <FilterEditor
+                  column={column}
+                  rows={model.rows}
+                  current={filters.find((filter) => filter.id === column.id)}
+                  labels={store.config.labels}
+                  onChange={(filter) => update(column.id, filter)}
+                />
+              </MenubarSubContent>
+            </MenubarSub>
+          ))}
+          {filters.length ? (
+            <>
+              <MenubarSeparator />
+              <MenubarItem
+                onClick={() =>
+                  changeState(setStore, (state) => ({
+                    ...state,
+                    page: 0,
+                    filters: undefined,
+                  }))
+                }
+              >
+                <X />
+                {store.config.labels.filtersClear}
+              </MenubarItem>
+            </>
+          ) : null}
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
+  );
+};
+
 const SortMenu = <TData extends RowData>({
   tableAtom,
 }: {
   tableAtom: TableAtom<TData>;
 }) => {
   const [store, setStore] = useTableAtom(tableAtom);
-  const columns = deriveModel(store).columns.filter(
-    ({ colDef }) => colDef.sortable !== false,
+  const columns = deriveModel(store).columns.flatMap((column) =>
+    getDataTableSortColumns([column]).map((field) =>
+      field.id === column.id
+        ? field
+        : {
+            ...field,
+            colDef: {
+              ...field.colDef,
+              headerName: `${columnLabel(column)} / ${columnLabel(field)}`,
+            },
+          },
+    ),
   );
   if (!columns.length) return null;
   const current = store.state.sort?.[0];
@@ -1973,50 +2640,54 @@ const SortMenu = <TData extends RowData>({
         <span className="hidden sm:inline">{store.config.labels.sortBy}</span>
       </MenubarTrigger>
       <MenubarContent align="end" className="w-52">
-        {columns.map((column) => {
-          const sortState = store.state.sort?.find(
-            ({ id }) => id === column.id,
-          );
-          return (
-            <MenubarSub key={column.id}>
-              <MenubarSubTrigger>
-                {sortState ? (
-                  sortState.direction === "desc" ? (
-                    <ArrowDown />
-                  ) : (
-                    <ArrowUp />
-                  )
-                ) : null}
-                {columnLabel(column)}
-              </MenubarSubTrigger>
-              <MenubarSubContent>
-                <MenubarItem onClick={() => sort(column.id, "asc")}>
-                  <ArrowUp /> {store.config.labels.sortAsc}
-                </MenubarItem>
-                <MenubarItem onClick={() => sort(column.id, "desc")}>
-                  <ArrowDown /> {store.config.labels.sortDesc}
-                </MenubarItem>
-                {sortState ? (
-                  <>
-                    <MenubarSeparator />
-                    <MenubarItem
-                      onClick={() =>
-                        changeState(setStore, (state) => ({
-                          ...state,
-                          sort: state.sort?.filter(
-                            ({ id }) => id !== column.id,
-                          ),
-                        }))
-                      }
-                    >
-                      <X /> {store.config.labels.sortClear}
-                    </MenubarItem>
-                  </>
-                ) : null}
-              </MenubarSubContent>
-            </MenubarSub>
-          );
-        })}
+        <MenubarGroup>
+          <MenubarLabel>{store.config.labels.sortBy}</MenubarLabel>
+          <MenubarSeparator />
+          {columns.map((column) => {
+            const sortState = store.state.sort?.find(
+              ({ id }) => id === column.id,
+            );
+            return (
+              <MenubarSub key={column.id}>
+                <MenubarSubTrigger>
+                  {sortState ? (
+                    sortState.direction === "desc" ? (
+                      <ArrowDown />
+                    ) : (
+                      <ArrowUp />
+                    )
+                  ) : null}
+                  {columnLabel(column)}
+                </MenubarSubTrigger>
+                <MenubarSubContent>
+                  <MenubarItem onClick={() => sort(column.id, "asc")}>
+                    <ArrowUp /> {store.config.labels.sortAsc}
+                  </MenubarItem>
+                  <MenubarItem onClick={() => sort(column.id, "desc")}>
+                    <ArrowDown /> {store.config.labels.sortDesc}
+                  </MenubarItem>
+                  {sortState ? (
+                    <>
+                      <MenubarSeparator />
+                      <MenubarItem
+                        onClick={() =>
+                          changeState(setStore, (state) => ({
+                            ...state,
+                            sort: state.sort?.filter(
+                              ({ id }) => id !== column.id,
+                            ),
+                          }))
+                        }
+                      >
+                        <X /> {store.config.labels.sortClear}
+                      </MenubarItem>
+                    </>
+                  ) : null}
+                </MenubarSubContent>
+              </MenubarSub>
+            );
+          })}
+        </MenubarGroup>
       </MenubarContent>
     </MenubarMenu>
   );
@@ -2383,7 +3054,7 @@ const TableDataRow = <TData extends RowData>({
   return (
     <TableRow
       className={cn(
-        "group/row h-16 data-[drag-source=true]:opacity-40 data-[drop-position=before]:[&>td]:border-t-2 data-[drop-position=before]:[&>td]:border-primary data-[drop-position=after]:[&>td]:border-b-2 data-[drop-position=after]:[&>td]:border-primary",
+        "group/row data-[drop-position=before]:[&>td]:border-primary data-[drop-position=after]:[&>td]:border-primary h-16 data-[drag-source=true]:opacity-40 data-[drop-position=after]:[&>td]:border-b-2 data-[drop-position=before]:[&>td]:border-t-2",
         store.config.onRowClicked && "cursor-pointer",
       )}
       data-state={store.state.rowSelection[row.id] && "selected"}
@@ -2424,7 +3095,7 @@ const TableDataRow = <TData extends RowData>({
       {model.visibleColumns.map((column) => (
         <TableCell
           className={cn(
-            "min-w-24 overflow-hidden has-[[data-slot=data-table-list-cell]]:relative has-[[data-slot=data-table-list-cell]]:p-0 has-[[data-slot=data-table-boolean-cell]]:relative has-[[data-slot=data-table-boolean-cell]]:p-0",
+            "min-w-24 overflow-hidden has-[[data-slot=data-table-boolean-cell]]:relative has-[[data-slot=data-table-boolean-cell]]:p-0 has-[[data-slot=data-table-list-cell]]:relative has-[[data-slot=data-table-list-cell]]:p-0",
             column.colDef.truncate ? "whitespace-nowrap" : "whitespace-normal",
           )}
           key={column.id}
@@ -2596,25 +3267,61 @@ const ColumnHeaderMenu = <TData extends RowData>({
 }) => {
   const [store, setStore] = useTableAtom(tableAtom);
   const columnId = useRequiredId(ColumnIdContext);
-  const column = deriveModel(store).columns.find(({ id }) => id === columnId);
+  const model = deriveModel(store);
+  const column = model.columns.find(({ id }) => id === columnId);
   if (!column) return null;
+  const sortColumns = getDataTableSortColumns([column]);
+  const filterColumns = getDataTableFilterColumns([column]);
+  const filteringEnabled =
+    store.config.features.filtering !== false && filterColumns.length > 0;
+  const ownsFilter = (id: string) =>
+    id === column.id ||
+    getDataTableFieldColumns(column).some((field) => field.id === id);
+  const activeFilters = (store.state.filters ?? []).filter(({ id }) =>
+    ownsFilter(id),
+  );
+  const filterEditor = (field: DataTableColumn<TData>) => (
+    <FilterEditor
+      column={field}
+      rows={model.rows}
+      current={store.state.filters?.find((filter) => filter.id === field.id)}
+      labels={store.config.labels}
+      onChange={(filter) =>
+        changeState(setStore, (state) =>
+          withColumnFilter(state, field.id, filter),
+        )
+      }
+    />
+  );
   const sortingEnabled =
-    store.config.features.sorting !== false && column.colDef.sortable !== false;
+    store.config.features.sorting !== false && sortColumns.length > 0;
   const hidingEnabled =
     store.config.features.columnVisibility !== false &&
     column.colDef.hideable !== false;
-  const sort = store.state.sort?.find(({ id }) => id === column.id);
+  const ownsSort = (id: string) =>
+    id === column.id || sortColumns.some((field) => field.id === id);
+  const sort = store.state.sort?.find(({ id }) => ownsSort(id));
   const update = (next: (state: DataTableState) => DataTableState) =>
     changeState(setStore, next);
-  const setSort = (direction: SortDirection) =>
+  const setSort = (id: string, direction: SortDirection) =>
     update((state) => ({
       ...state,
-      sort: [{ id: column.id, direction }],
+      sort: [{ id, direction }],
       page: 0,
     }));
   const label = columnLabel(column);
+  const sortItems = (field: DataTableColumn<TData>) => (
+    <>
+      <DropdownMenuItem onClick={() => setSort(field.id, "asc")}>
+        <ArrowUp /> {store.config.labels.sortAsc}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => setSort(field.id, "desc")}>
+        <ArrowDown /> {store.config.labels.sortDesc}
+      </DropdownMenuItem>
+    </>
+  );
 
-  if (!sortingEnabled && !hidingEnabled) {
+  if (!sortingEnabled && !hidingEnabled && !filteringEnabled) {
     return <div className="truncate px-2">{column.colDef.headerName}</div>;
   }
 
@@ -2624,10 +3331,16 @@ const ColumnHeaderMenu = <TData extends RowData>({
         render={
           <Button
             aria-label={label}
+            aria-description={
+              activeFilters.length
+                ? `${store.config.labels.filters}: ${activeFilters.length}`
+                : undefined
+            }
             className="absolute inset-0 h-full w-full min-w-0 justify-start rounded-none px-2 pr-4 focus-visible:ring-inset"
             variant="ghost"
           >
             <span className="truncate">{column.colDef.headerName}</span>
+            {activeFilters.length ? <ListFilter /> : null}
             {sort ? (
               sort.direction === "desc" ? (
                 <ArrowDown />
@@ -2642,18 +3355,26 @@ const ColumnHeaderMenu = <TData extends RowData>({
         <DropdownMenuGroup>
           {sortingEnabled ? (
             <>
-              <DropdownMenuItem onClick={() => setSort("asc")}>
-                <ArrowUp /> {store.config.labels.sortAsc}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSort("desc")}>
-                <ArrowDown /> {store.config.labels.sortDesc}
-              </DropdownMenuItem>
+              {column.colDef.fields?.length
+                ? sortColumns.map((field) => (
+                    <DropdownMenuSub key={field.id}>
+                      <DropdownMenuSubTrigger>
+                        {columnLabel(field)}
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuGroup>
+                          {sortItems(field)}
+                        </DropdownMenuGroup>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  ))
+                : sortItems(column)}
               {sort ? (
                 <DropdownMenuItem
                   onClick={() =>
                     update((state) => ({
                       ...state,
-                      sort: state.sort?.filter(({ id }) => id !== column.id),
+                      sort: state.sort?.filter(({ id }) => !ownsSort(id)),
                     }))
                   }
                 >
@@ -2662,7 +3383,64 @@ const ColumnHeaderMenu = <TData extends RowData>({
               ) : null}
             </>
           ) : null}
-          {sortingEnabled && hidingEnabled ? <DropdownMenuSeparator /> : null}
+          {sortingEnabled && filteringEnabled ? (
+            <DropdownMenuSeparator />
+          ) : null}
+          {filteringEnabled ? (
+            <>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <ListFilter />
+                  {store.config.labels.filters}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-80 max-w-[calc(100vw-2rem)]">
+                  {column.colDef.fields?.length ? (
+                    <DropdownMenuGroup>
+                      {filterColumns.map((field) => (
+                        <DropdownMenuSub key={field.id}>
+                          <DropdownMenuSubTrigger>
+                            {columnLabel(field)}
+                            {activeFilters.some(
+                              (filter) => filter.id === field.id,
+                            ) ? (
+                              <Check />
+                            ) : null}
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="w-80 max-w-[calc(100vw-2rem)]">
+                            {filterEditor(field)}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      ))}
+                    </DropdownMenuGroup>
+                  ) : (
+                    filterEditor(column)
+                  )}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              {activeFilters.length ? (
+                <DropdownMenuItem
+                  onClick={() =>
+                    update((state) => {
+                      const filters = state.filters?.filter(
+                        ({ id }) => !ownsFilter(id),
+                      );
+                      return {
+                        ...state,
+                        page: 0,
+                        filters: filters?.length ? filters : undefined,
+                      };
+                    })
+                  }
+                >
+                  <X />
+                  {store.config.labels.filterClear}
+                </DropdownMenuItem>
+              ) : null}
+            </>
+          ) : null}
+          {(sortingEnabled || filteringEnabled) && hidingEnabled ? (
+            <DropdownMenuSeparator />
+          ) : null}
           {hidingEnabled ? (
             <DropdownMenuItem
               onClick={() =>
@@ -2843,7 +3621,7 @@ const GalleryCard = <TData extends RowData>({
   return (
     <Card
       className={cn(
-        "relative gap-3 data-[drag-source=true]:opacity-40 data-[drop-position=before]:border-t-2 data-[drop-position=before]:border-t-primary data-[drop-position=after]:border-b-2 data-[drop-position=after]:border-b-primary",
+        "data-[drop-position=before]:border-t-primary data-[drop-position=after]:border-b-primary relative gap-3 data-[drag-source=true]:opacity-40 data-[drop-position=after]:border-b-2 data-[drop-position=before]:border-t-2",
         store.config.onRowClicked && "cursor-pointer",
       )}
       data-table-row={row.id}
