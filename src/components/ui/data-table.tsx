@@ -1,6 +1,7 @@
 import { useAtom, useAtomSet } from "@effect/atom-react";
 import { BrowserKeyValueStore } from "@effect/platform-browser";
-import { DateTime, Option, Schema } from "effect";
+import { DateTime, Effect, Option, Schema, Stream } from "effect";
+import { Csv } from "effect/encoding";
 import { AsyncResult, Atom } from "effect/reactivity";
 import {
   ArrowDown,
@@ -1521,20 +1522,21 @@ const withExtension = (fileName: string, extension: string) =>
     ? fileName.replace(/\.[^/.]+$/, `.${extension}`)
     : `${fileName}.${extension}`;
 
-const escapeCsvValue = (value: CsvValue) => {
-  if (value === null || value === undefined) return "";
-  const text = String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-};
-
 export const downloadCsv = (
   headers: CsvValue[],
   data: CsvValue[][],
   fileName = "data.csv",
 ) => {
-  const content = [headers, ...data]
-    .map((row) => row.map(escapeCsvValue).join(","))
-    .join("\n");
+  const content = Effect.runSync(
+    Stream.fromIterable([headers, ...data]).pipe(
+      Stream.map((row) =>
+        row.map((value) => (value == null ? "" : String(value))),
+      ),
+      Stream.pipeThroughChannel(Csv.encodeString({ newline: "\n" })),
+      Stream.runCollect,
+      Effect.map((parts) => parts.join("").slice(0, -1)),
+    ),
+  );
   downloadBlob(
     content,
     "text/csv;charset=utf-8",

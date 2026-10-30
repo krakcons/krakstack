@@ -18,6 +18,7 @@ import {
   DataTableListSummary,
   DataTableListCell,
   DataTableReferenceCell,
+  downloadCsv,
   buildDataTableRows,
   filterDataTableRows,
   getDataTableWidth,
@@ -67,6 +68,68 @@ const state: DataTablePublicState = {
   page: 0,
   pageSize: 2,
 };
+
+describe("CSV downloads", () => {
+  it.each([
+    {
+      name: "commas, quotes, and line breaks",
+      headers: ["Name", "Description"],
+      rows: [["Housing, support", 'A "quoted" value\rwith\nline breaks']],
+      expected:
+        'Name,Description\n"Housing, support","A ""quoted"" value\rwith\nline breaks"',
+    },
+    {
+      name: "numbers, booleans, and empty values",
+      headers: ["Count", "Active", "Missing", "Unset", "Empty"],
+      rows: [
+        [0, false, null, undefined, ""],
+        [42, true, null, undefined, ""],
+      ],
+      expected: "Count,Active,Missing,Unset,Empty\n0,false,,,\n42,true,,,",
+    },
+    {
+      name: "an empty single-column record",
+      headers: ["Name"],
+      rows: [[null]],
+      expected: 'Name\n""',
+    },
+    {
+      name: "headers without data",
+      headers: ["Name", "Count"],
+      rows: [],
+      expected: "Name,Count",
+    },
+  ])(
+    "encodes $name and preserves download metadata",
+    async ({ headers, rows, expected }) => {
+      const createObjectURL = vi.fn((_blob: Blob) => "blob:export");
+      vi.stubGlobal(
+        "URL",
+        class extends URL {
+          static override createObjectURL = createObjectURL;
+          static override revokeObjectURL = vi.fn();
+        },
+      );
+      const click = vi
+        .spyOn(HTMLAnchorElement.prototype, "click")
+        .mockImplementation(() => {});
+
+      downloadCsv(headers, rows, "records.json");
+
+      expect(click).toHaveBeenCalledOnce();
+    expect(click.mock.instances[0]).toHaveProperty("download", "records.csv");
+      const blob = createObjectURL.mock.calls[0]![0];
+      expect(blob.type).toBe("text/csv;charset=utf-8");
+      const content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsText(blob);
+      });
+      expect(content).toBe(expected);
+    },
+  );
+});
 
 describe("reference columns", () => {
   it("searches and exports labels and secondary text, not image URLs", () => {
