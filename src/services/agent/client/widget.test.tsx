@@ -101,3 +101,98 @@ describe("AgentWidget references", () => {
     expect(screen.queryByText("References")).toBeNull();
   });
 });
+
+describe("AgentWidget tool activity", () => {
+  it("shows every pending approval outside the collapsed trace", () => {
+    const onSubmit = vi.fn();
+    render(
+      <AgentWidget
+        state={{
+          ...initialAgentState,
+          messages: [
+            {
+              id: "assistant",
+              role: "assistant",
+              text: "",
+              tools: ["first", "second"].map((id) => ({
+                type: "tool-call",
+                messageId: "assistant",
+                toolCallId: id,
+                approvalId: `approval:${id}`,
+                name: id,
+                input: {},
+                metadata: { destructive: false },
+                status: "approval-required",
+              })),
+            },
+          ],
+        }}
+        onInterrupt={vi.fn()}
+        onReset={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open AI Assistant" }));
+    expect(screen.getAllByRole("button", { name: "Approve" })).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole("button", { name: "Cancel" })[1]);
+    expect(onSubmit).toHaveBeenCalledWith({
+      type: "approval",
+      approvalId: "approval:second",
+      toolCallId: "second",
+      approved: false,
+    });
+  });
+
+  it("keeps approvals actionable while previous tool activity is collapsed", () => {
+    const onSubmit = vi.fn();
+    render(
+      <AgentWidget
+        state={{
+          ...initialAgentState,
+          messages: [
+            {
+              id: "assistant",
+              role: "assistant",
+              text: "",
+              tools: [
+                {
+                  type: "tool-call",
+                  messageId: "assistant",
+                  toolCallId: "search",
+                  name: "Search documents",
+                  input: {},
+                  metadata: { destructive: false },
+                  status: "completed",
+                },
+                {
+                  type: "tool-call",
+                  messageId: "assistant",
+                  toolCallId: "delete",
+                  approvalId: "approval",
+                  name: "Delete draft",
+                  input: { id: "draft" },
+                  metadata: { destructive: true },
+                  status: "approval-required",
+                },
+              ],
+            },
+          ],
+        }}
+        onInterrupt={vi.fn()}
+        onReset={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open AI Assistant" }));
+    expect(screen.queryByText("Search documents")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Tool activity" }));
+    expect(screen.getByText("Search documents")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      type: "approval",
+      approvalId: "approval",
+      toolCallId: "delete",
+      approved: true,
+    });
+  });
+});

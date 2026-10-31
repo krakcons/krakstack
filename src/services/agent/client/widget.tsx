@@ -3,36 +3,31 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import {
   ArrowDownIcon,
   BotIcon,
-  ChevronDownIcon,
   Maximize2Icon,
   MessageCircleDashedIcon,
   Minimize2Icon,
   MinusIcon,
   SendIcon,
   SquareIcon,
+  WrenchIcon,
   XIcon,
 } from "lucide-react";
 import type { AgentEvent } from "../schema";
 
 import { MarkdownContent } from "@/lib/markdown/content";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Attachment,
+  AttachmentAction,
+  AttachmentActions,
+  AttachmentContent,
+  AttachmentMedia,
+  AttachmentTitle,
+} from "@/components/ui/attachment";
 import { Badge } from "@/components/ui/badge";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Command,
   CommandEmpty,
@@ -61,7 +56,15 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "@/components/ui/input-group";
-import { Marker, MarkerContent } from "@/components/ui/marker";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
 import { Message, MessageContent } from "@/components/ui/message";
 import {
   MessageScroller,
@@ -77,10 +80,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Trace,
+  TraceCollapsible,
+  TraceCollapsibleContent,
+  TraceCollapsibleTrigger,
+  TraceDescription,
+  TraceIcon,
+  TraceLine,
+  TraceTitle,
+} from "@/components/ui/trace";
 import { cn } from "@/lib/utils";
 import type {
   AgentMessage,
@@ -123,6 +131,7 @@ export type AgentWidgetMessages = {
   send: string;
   stop: string;
   title: string;
+  toolActivity: string;
   toolDenied: string;
   toolFailed: string;
   toolRunning: string;
@@ -162,9 +171,10 @@ const messages = {
     send: "Send message",
     stop: "Stop response",
     title: "AI Assistant",
+    toolActivity: "Tool activity",
     toolDenied: "Cancelled",
     toolFailed: "Failed",
-    toolRunning: "Checking the API",
+    toolRunning: "Working",
     toolWorked: (seconds) =>
       `Worked for ${seconds} ${seconds === 1 ? "second" : "seconds"}`,
     viewLess: "View less",
@@ -201,9 +211,10 @@ const messages = {
     send: "Envoyer le message",
     stop: "Arrêter la réponse",
     title: "Assistant IA",
+    toolActivity: "Activité des outils",
     toolDenied: "Annulé",
     toolFailed: "Échec",
-    toolRunning: "Consultation de l'API",
+    toolRunning: "En cours",
     toolWorked: (seconds) =>
       `A travaillé pendant ${seconds} ${seconds === 1 ? "seconde" : "secondes"}`,
     viewLess: "Voir moins",
@@ -323,26 +334,33 @@ const completesSelectedReference = (
   return references.some(({ label }) => searchText.startsWith(`${label} `));
 };
 
-const ToolLabel = ({
-  description,
-  label,
+const ToolInput = ({
+  labels,
+  locale,
+  tool,
 }: {
-  readonly description?: string;
-  readonly label: string;
-}) => {
-  if (!description) return label;
+  readonly labels: AgentWidgetMessages;
+  readonly locale: string;
+  readonly tool: AgentToolActivity;
+}) => (
+  <div className="min-w-0 space-y-2">
+    {tool.metadata.description ? <p>{tool.metadata.description}</p> : null}
+    <CodeBlock
+      code={inputCode(tool.input)}
+      language="json"
+      locale={locale}
+      messages={{
+        [locale]: {
+          codeDescription: labels.codeDescription,
+          copied: labels.copied,
+          copy: labels.copy,
+        },
+      }}
+    />
+  </div>
+);
 
-  return (
-    <Tooltip>
-      <TooltipTrigger render={<span className="cursor-help" tabIndex={0} />}>
-        {label}
-      </TooltipTrigger>
-      <TooltipContent className="max-w-sm">{description}</TooltipContent>
-    </Tooltip>
-  );
-};
-
-function ToolActivityCard({
+const ToolApproval = ({
   disabled,
   labels,
   locale,
@@ -354,107 +372,109 @@ function ToolActivityCard({
   readonly locale: string;
   readonly onApproval: (tool: AgentToolActivity, approved: boolean) => void;
   readonly tool: AgentToolActivity;
-}) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const requiresApproval = tool.status === "approval-required";
-  const label = tool.metadata.title ?? tool.name;
-
-  if (!requiresApproval) {
-    return (
-      <Marker>
-        <MarkerContent>
-          <span
-            className={cn(
-              "block w-fit max-w-full",
-              tool.status === "running" && "shimmer",
-            )}
-          >
-            <ToolLabel description={tool.metadata.description} label={label} />
-          </span>
-        </MarkerContent>
-        {tool.status === "failed" || tool.status === "denied" ? (
-          <Badge variant="destructive">
-            {tool.status === "failed" ? labels.toolFailed : labels.toolDenied}
-          </Badge>
+}) => (
+  <Item
+    variant="outline"
+    size="sm"
+    role="group"
+    aria-label={tool.metadata.title ?? tool.name}
+  >
+    <ItemMedia variant="icon">
+      <WrenchIcon />
+    </ItemMedia>
+    <ItemContent className="min-w-0">
+      <ItemTitle className="line-clamp-none">
+        {tool.metadata.title ?? tool.name}
+        {tool.metadata.destructive ? (
+          <Badge variant="destructive">{labels.approvalDestructiveLabel}</Badge>
         ) : null}
-      </Marker>
-    );
-  }
+      </ItemTitle>
+      <ItemDescription className="line-clamp-none">
+        {tool.metadata.destructive
+          ? labels.approvalDestructive
+          : labels.approvalRequired}
+      </ItemDescription>
+    </ItemContent>
+    <ItemActions>
+      <Button
+        size="sm"
+        variant={tool.metadata.destructive ? "destructive" : "default"}
+        disabled={disabled}
+        onClick={() => onApproval(tool, true)}
+      >
+        {labels.approve}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={disabled}
+        onClick={() => onApproval(tool, false)}
+      >
+        {labels.cancel}
+      </Button>
+    </ItemActions>
+    <ItemFooter className="block min-w-0">
+      <Trace>
+        <TraceCollapsible>
+          <TraceCollapsibleTrigger>
+            <TraceLine>
+              <TraceTitle>{labels.viewMore}</TraceTitle>
+            </TraceLine>
+          </TraceCollapsibleTrigger>
+          <TraceCollapsibleContent>
+            <ToolInput labels={labels} locale={locale} tool={tool} />
+          </TraceCollapsibleContent>
+        </TraceCollapsible>
+      </Trace>
+    </ItemFooter>
+  </Item>
+);
+
+const ToolActivity = ({
+  labels,
+  locale,
+  pending,
+  tool,
+}: {
+  readonly labels: AgentWidgetMessages;
+  readonly locale: string;
+  readonly pending: boolean;
+  readonly tool: AgentToolActivity;
+}) => {
+  const running =
+    pending && (tool.status === "running" || tool.status === "approved");
+  const statusLabel =
+    tool.status === "failed"
+      ? labels.toolFailed
+      : tool.status === "denied"
+        ? labels.toolDenied
+        : running
+          ? labels.toolRunning
+          : undefined;
+  const line = (
+    <TraceLine
+      status={
+        tool.status === "failed" ? "error" : running ? "running" : undefined
+      }
+    >
+      <TraceIcon>
+        <WrenchIcon />
+      </TraceIcon>
+      <TraceTitle>{tool.metadata.title ?? tool.name}</TraceTitle>
+      {statusLabel ? <TraceDescription>{statusLabel}</TraceDescription> : null}
+    </TraceLine>
+  );
+  if (running) return line;
 
   return (
-    <Collapsible
-      className="mx-1"
-      open={detailsOpen}
-      onOpenChange={setDetailsOpen}
-    >
-      <Card size="sm" className="w-full border shadow-none ring-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ToolLabel description={tool.metadata.description} label={label} />
-            {tool.metadata.destructive ? (
-              <Badge variant="destructive">
-                {labels.approvalDestructiveLabel}
-              </Badge>
-            ) : null}
-          </CardTitle>
-          <CardDescription>
-            {tool.metadata.destructive
-              ? labels.approvalDestructive
-              : labels.approvalRequired}
-          </CardDescription>
-        </CardHeader>
-        <CollapsibleContent>
-          <CardContent className="min-w-0 overflow-hidden border-y py-3">
-            <CodeBlock
-              code={inputCode(tool.input)}
-              language="json"
-              locale={locale}
-              messages={{
-                [locale]: {
-                  codeDescription: labels.codeDescription,
-                  copied: labels.copied,
-                  copy: labels.copy,
-                },
-              }}
-            />
-          </CardContent>
-        </CollapsibleContent>
-        <CardFooter className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant={tool.metadata.destructive ? "destructive" : "default"}
-            disabled={disabled}
-            onClick={() => onApproval(tool, true)}
-          >
-            {labels.approve}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={disabled}
-            onClick={() => onApproval(tool, false)}
-          >
-            {labels.cancel}
-          </Button>
-          <CollapsibleTrigger
-            render={
-              <Button variant="ghost" size="sm" className="ml-auto">
-                {detailsOpen ? labels.viewLess : labels.viewMore}
-                <ChevronDownIcon
-                  data-icon="inline-end"
-                  className={cn(
-                    "transition-transform",
-                    detailsOpen && "rotate-180",
-                  )}
-                />
-              </Button>
-            }
-          />
-        </CardFooter>
-      </Card>
-    </Collapsible>
+    <TraceCollapsible>
+      <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
+      <TraceCollapsibleContent>
+        <ToolInput labels={labels} locale={locale} tool={tool} />
+      </TraceCollapsibleContent>
+    </TraceCollapsible>
   );
-}
+};
 
 function ToolActivityLog({
   disabled,
@@ -473,116 +493,79 @@ function ToolActivityLog({
   readonly tools: ReadonlyArray<AgentToolActivity>;
   readonly workedSeconds?: number;
 }) {
-  const [logOpen, setLogOpen] = useState(false);
-  const currentTool = tools.at(-1);
+  const [open, setOpen] = useState<boolean>();
+  const approvals = tools.filter((tool) => tool.status === "approval-required");
+  const activity = tools.filter((tool) => tool.status !== "approval-required");
+  const currentTool = activity.at(-1);
+  const running = pending && approvals.length === 0;
+  const failed = activity.some((tool) => tool.status === "failed");
 
-  if (!currentTool) {
+  if (tools.length === 0) {
     return (
-      <Marker>
-        <MarkerContent>
-          <span className="shimmer block w-fit max-w-full">
-            {labels.toolRunning}
-          </span>
-        </MarkerContent>
-      </Marker>
-    );
-  }
-
-  const label = currentTool.metadata.title ?? currentTool.name;
-  const showWorkedSummary =
-    workedSeconds !== undefined && currentTool.status !== "approval-required";
-  const isWorking =
-    pending &&
-    workedSeconds === undefined &&
-    currentTool.status !== "approval-required";
-  const loggedTools = showWorkedSummary ? tools : tools.slice(0, -1);
-
-  if (currentTool.status === "approval-required") {
-    return (
-      <div className="flex flex-col gap-2">
-        {loggedTools.length > 0 ? (
-          <Collapsible open={logOpen} onOpenChange={setLogOpen}>
-            <CollapsibleTrigger
-              render={<Button variant="ghost" size="sm" className="ml-auto" />}
-            >
-              {logOpen ? labels.viewLess : labels.viewMore}
-              <ChevronDownIcon
-                data-icon="inline-end"
-                className={cn("transition-transform", logOpen && "rotate-180")}
-              />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2 ml-2 flex flex-col gap-2 border-l pl-3">
-              {loggedTools.map((tool) => (
-                <ToolActivityCard
-                  key={tool.toolCallId}
-                  disabled={disabled}
-                  labels={labels}
-                  locale={locale}
-                  onApproval={onApproval}
-                  tool={tool}
-                />
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        ) : null}
-        <ToolActivityCard
-          disabled={disabled}
-          labels={labels}
-          locale={locale}
-          onApproval={onApproval}
-          tool={currentTool}
-        />
-      </div>
+      <Trace>
+        <TraceLine status={pending ? "running" : undefined}>
+          <TraceIcon>
+            <WrenchIcon />
+          </TraceIcon>
+          <TraceTitle>{labels.toolRunning}</TraceTitle>
+        </TraceLine>
+      </Trace>
     );
   }
 
   return (
-    <Collapsible open={logOpen} onOpenChange={setLogOpen}>
-      <CollapsibleTrigger
-        render={
-          <Marker
-            className="focus-visible:ring-ring/50 cursor-pointer rounded-sm outline-none focus-visible:ring-3"
-            render={<button type="button" />}
-          />
-        }
-      >
-        <MarkerContent className="flex-1">
-          <span
-            className={cn("block w-fit max-w-full", isWorking && "shimmer")}
-          >
-            {showWorkedSummary ? labels.toolWorked(workedSeconds) : label}
-          </span>
-        </MarkerContent>
-        {currentTool.status === "failed" || currentTool.status === "denied" ? (
-          <Badge variant="destructive">
-            {currentTool.status === "failed"
-              ? labels.toolFailed
-              : labels.toolDenied}
-          </Badge>
-        ) : null}
-        <ChevronDownIcon
-          className={cn("transition-transform", logOpen && "rotate-180")}
+    <div className="flex flex-col gap-2">
+      {currentTool ? (
+        <Trace>
+          <TraceCollapsible open={open ?? running} onOpenChange={setOpen}>
+            <TraceCollapsibleTrigger>
+              <TraceLine
+                status={failed ? "error" : running ? "running" : undefined}
+              >
+                <TraceIcon>
+                  <WrenchIcon />
+                </TraceIcon>
+                <TraceTitle>
+                  {approvals.length > 0 || running
+                    ? labels.toolActivity
+                    : workedSeconds !== undefined
+                      ? labels.toolWorked(workedSeconds)
+                      : (currentTool.metadata.title ?? currentTool.name)}
+                </TraceTitle>
+                {failed || running ? (
+                  <TraceDescription>
+                    {failed ? labels.toolFailed : labels.toolRunning}
+                  </TraceDescription>
+                ) : null}
+              </TraceLine>
+            </TraceCollapsibleTrigger>
+            <TraceCollapsibleContent>
+              <Trace>
+                {activity.map((tool) => (
+                  <ToolActivity
+                    key={tool.toolCallId}
+                    labels={labels}
+                    locale={locale}
+                    pending={pending}
+                    tool={tool}
+                  />
+                ))}
+              </Trace>
+            </TraceCollapsibleContent>
+          </TraceCollapsible>
+        </Trace>
+      ) : null}
+      {approvals.map((tool) => (
+        <ToolApproval
+          key={tool.toolCallId}
+          disabled={disabled}
+          labels={labels}
+          locale={locale}
+          onApproval={onApproval}
+          tool={tool}
         />
-        <span className="sr-only">
-          {logOpen ? labels.viewLess : labels.viewMore}
-        </span>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="mt-2 ml-2 flex flex-col gap-2 border-l pl-3">
-        <Marker>
-          <MarkerContent>{labels.toolRunning}</MarkerContent>
-        </Marker>
-        {loggedTools.map((tool) => (
-          <ToolActivityCard
-            key={tool.toolCallId}
-            disabled={disabled}
-            labels={labels}
-            locale={locale}
-            onApproval={onApproval}
-            tool={tool}
-          />
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
+      ))}
+    </div>
   );
 }
 
@@ -666,22 +649,28 @@ function AgentMessageRow({
                 {message.text}
               </BubbleContent>
             </Bubble>
-          ) : message.markdown ? (
-            <MarkdownContent
-              className="w-full"
-              codeBlocks={message.markdown.codeBlocks}
-              html={message.markdown.html}
-              messages={{
-                [locale]: {
-                  codeDescription: labels.codeDescription,
-                  copied: labels.copied,
-                  copy: labels.copy,
-                },
-              }}
-              locale={locale}
-            />
           ) : (
-            <div className="w-full whitespace-pre-wrap">{message.text}</div>
+            <Bubble variant="ghost" className="w-full">
+              <BubbleContent className="w-full">
+                {message.markdown ? (
+                  <MarkdownContent
+                    className="w-full"
+                    codeBlocks={message.markdown.codeBlocks}
+                    html={message.markdown.html}
+                    messages={{
+                      [locale]: {
+                        codeDescription: labels.codeDescription,
+                        copied: labels.copied,
+                        copy: labels.copy,
+                      },
+                    }}
+                    locale={locale}
+                  />
+                ) : (
+                  <div className="whitespace-pre-wrap">{message.text}</div>
+                )}
+              </BubbleContent>
+            </Bubble>
           )
         ) : null}
       </MessageContent>
@@ -906,10 +895,7 @@ export function AgentWidget<Resource = never>({
             ) : (
               <MessageScrollerProvider autoScroll>
                 <MessageScroller>
-                  <MessageScrollerViewport
-                    aria-label={labels.title}
-                    className="[scrollbar-width:thin] [scrollbar-color:var(--border)_transparent]"
-                  >
+                  <MessageScrollerViewport aria-label={labels.title}>
                     <MessageScrollerContent
                       aria-busy={state.pending}
                       className="p-4"
@@ -963,23 +949,26 @@ export function AgentWidget<Resource = never>({
           >
             <InputGroup>
               {activeContext ? (
-                <InputGroupAddon
-                  align="block-start"
-                  className="bg-background rounded-t-[calc(var(--radius-md)-1px)] border-b"
-                >
-                  {activeContext.icon}
-                  <span className="min-w-0 flex-1 truncate text-left">
-                    {activeContext.label}
-                  </span>
-                  {onRemoveContext ? (
-                    <InputGroupButton
-                      size="icon-xs"
-                      aria-label={`${labels.removeContext}: ${activeContext.label}`}
-                      onClick={onRemoveContext}
-                    >
-                      <XIcon />
-                    </InputGroupButton>
-                  ) : null}
+                <InputGroupAddon align="block-start">
+                  <Attachment size="xs" className="min-w-0">
+                    {activeContext.icon ? (
+                      <AttachmentMedia>{activeContext.icon}</AttachmentMedia>
+                    ) : null}
+                    <AttachmentContent>
+                      <AttachmentTitle>{activeContext.label}</AttachmentTitle>
+                    </AttachmentContent>
+                    {onRemoveContext ? (
+                      <AttachmentActions>
+                        <AttachmentAction
+                          type="button"
+                          aria-label={`${labels.removeContext}: ${activeContext.label}`}
+                          onClick={onRemoveContext}
+                        >
+                          <XIcon />
+                        </AttachmentAction>
+                      </AttachmentActions>
+                    ) : null}
+                  </Attachment>
                 </InputGroupAddon>
               ) : null}
               <div className="relative w-full min-w-0 self-stretch text-left">
@@ -996,6 +985,7 @@ export function AgentWidget<Resource = never>({
                 >
                   <PopoverTrigger
                     id={referenceInputId}
+                    nativeButton={false}
                     render={
                       <InputGroupTextarea
                         ref={inputRef}

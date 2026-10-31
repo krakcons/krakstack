@@ -2,6 +2,30 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Agent_Preview_Demo_DescriptionInputs */
+/** @typedef {{ scenario: NonNullable<unknown> }} Agent_Preview_Demo_PromptInputs */
+/** @typedef {{}} Agent_Preview_ChatInputs */
+/** @typedef {{}} Agent_Preview_ToolsInputs */
+/** @typedef {{}} Agent_Preview_ApprovalInputs */
+/** @typedef {{}} Agent_Preview_DestructiveInputs */
+/** @typedef {{}} Agent_Preview_FailureInputs */
+/** @typedef {{}} Agent_Preview_ErrorInputs */
+/** @typedef {{}} Agent_Preview_MarkdownInputs */
+/** @typedef {{}} Agent_Preview_Tool_DescriptionInputs */
+/** @typedef {{}} Agent_Preview_Search_ToolInputs */
+/** @typedef {{}} Agent_Preview_Read_ToolInputs */
+/** @typedef {{}} Agent_Preview_Update_ToolInputs */
+/** @typedef {{}} Agent_Preview_Delete_ToolInputs */
+/** @typedef {{}} Agent_Preview_Tools_ResponseInputs */
+/** @typedef {{}} Agent_Preview_Tool_Failure_ResponseInputs */
+/** @typedef {{}} Agent_Preview_Approved_ResponseInputs */
+/** @typedef {{}} Agent_Preview_Denied_ResponseInputs */
+/** @typedef {{}} Agent_Preview_Markdown_ResponseInputs */
+/** @typedef {{}} Agent_Preview_Markdown_ItemInputs */
+/** @typedef {{}} Agent_Preview_Response_IntroInputs */
+/** @typedef {{}} Agent_Preview_Response_PlanInputs */
+/** @typedef {{}} Agent_Preview_Response_FollowupInputs */
+/** @typedef {{ references: NonNullable<unknown> }} Agent_Preview_Response_ReferencesInputs */
 /** @typedef {{}} Effect_Form_Preview_Image_LabelInputs */
 /** @typedef {{}} Data_Table_Preview_TrueInputs */
 /** @typedef {{}} Data_Table_Preview_FalseInputs */
@@ -142,6 +166,342 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Choose a scenario, then open the assistant. All tool calls and responses are simulated; no data is read or changed. Try @ references, removing context, stopp..." |
+*
+* @param {Agent_Preview_Demo_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_demo_description = /** @type {((inputs?: Agent_Preview_Demo_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Demo_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_demo_description(inputs)
+	return __fr.agent_preview_demo_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Show me the {scenario} demo." |
+*
+* @param {Agent_Preview_Demo_PromptInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_demo_prompt = /** @type {((inputs: Agent_Preview_Demo_PromptInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Demo_PromptInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_demo_prompt(inputs)
+	return __fr.agent_preview_demo_prompt(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Conversation" |
+*
+* @param {Agent_Preview_ChatInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_chat = /** @type {((inputs?: Agent_Preview_ChatInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_ChatInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_chat(inputs)
+	return __fr.agent_preview_chat(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Tool chain" |
+*
+* @param {Agent_Preview_ToolsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_tools = /** @type {((inputs?: Agent_Preview_ToolsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_ToolsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_tools(inputs)
+	return __fr.agent_preview_tools(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Approval" |
+*
+* @param {Agent_Preview_ApprovalInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_approval = /** @type {((inputs?: Agent_Preview_ApprovalInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_ApprovalInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_approval(inputs)
+	return __fr.agent_preview_approval(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Destructive action" |
+*
+* @param {Agent_Preview_DestructiveInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_destructive = /** @type {((inputs?: Agent_Preview_DestructiveInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_DestructiveInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_destructive(inputs)
+	return __fr.agent_preview_destructive(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Failed tool" |
+*
+* @param {Agent_Preview_FailureInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_failure = /** @type {((inputs?: Agent_Preview_FailureInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_FailureInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_failure(inputs)
+	return __fr.agent_preview_failure(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Service error" |
+*
+* @param {Agent_Preview_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_error = /** @type {((inputs?: Agent_Preview_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_error(inputs)
+	return __fr.agent_preview_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Formatted response" |
+*
+* @param {Agent_Preview_MarkdownInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_markdown = /** @type {((inputs?: Agent_Preview_MarkdownInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_MarkdownInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_markdown(inputs)
+	return __fr.agent_preview_markdown(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Simulated tool call using sample data only. No external service is contacted." |
+*
+* @param {Agent_Preview_Tool_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_tool_description = /** @type {((inputs?: Agent_Preview_Tool_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Tool_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_tool_description(inputs)
+	return __fr.agent_preview_tool_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Search resources" |
+*
+* @param {Agent_Preview_Search_ToolInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_search_tool = /** @type {((inputs?: Agent_Preview_Search_ToolInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Search_ToolInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_search_tool(inputs)
+	return __fr.agent_preview_search_tool(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Read onboarding guide" |
+*
+* @param {Agent_Preview_Read_ToolInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_read_tool = /** @type {((inputs?: Agent_Preview_Read_ToolInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Read_ToolInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_read_tool(inputs)
+	return __fr.agent_preview_read_tool(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Update onboarding draft" |
+*
+* @param {Agent_Preview_Update_ToolInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_update_tool = /** @type {((inputs?: Agent_Preview_Update_ToolInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Update_ToolInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_update_tool(inputs)
+	return __fr.agent_preview_update_tool(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Delete onboarding draft" |
+*
+* @param {Agent_Preview_Delete_ToolInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_delete_tool = /** @type {((inputs?: Agent_Preview_Delete_ToolInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Delete_ToolInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_delete_tool(inputs)
+	return __fr.agent_preview_delete_tool(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "I found 3 matching resources and read the onboarding guide. It contains 4 sections: introduction, setup, first task, and next steps. I'd recommend adding a s..." |
+*
+* @param {Agent_Preview_Tools_ResponseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_tools_response = /** @type {((inputs?: Agent_Preview_Tools_ResponseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Tools_ResponseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_tools_response(inputs)
+	return __fr.agent_preview_tools_response(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "The search succeeded, but reading the guide failed in this simulation. You can try the tool chain demo again, or provide another resource with @. No data was..." |
+*
+* @param {Agent_Preview_Tool_Failure_ResponseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_tool_failure_response = /** @type {((inputs?: Agent_Preview_Tool_Failure_ResponseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Tool_Failure_ResponseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_tool_failure_response(inputs)
+	return __fr.agent_preview_tool_failure_response(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Approved! The simulated action completed successfully. In a connected application, the tool result would now be available to the assistant. No real data was ..." |
+*
+* @param {Agent_Preview_Approved_ResponseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_approved_response = /** @type {((inputs?: Agent_Preview_Approved_ResponseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Approved_ResponseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_approved_response(inputs)
+	return __fr.agent_preview_approved_response(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Cancelled. I won't carry out that action. You can send a different request or choose another demo. No data was changed." |
+*
+* @param {Agent_Preview_Denied_ResponseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_denied_response = /** @type {((inputs?: Agent_Preview_Denied_ResponseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Denied_ResponseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_denied_response(inputs)
+	return __fr.agent_preview_denied_response(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Here's a formatted response with a code example you can copy." |
+*
+* @param {Agent_Preview_Markdown_ResponseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_markdown_response = /** @type {((inputs?: Agent_Preview_Markdown_ResponseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Markdown_ResponseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_markdown_response(inputs)
+	return __fr.agent_preview_markdown_response(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Use references to give the assistant relevant context. This example is illustrative and does not execute any code." |
+*
+* @param {Agent_Preview_Markdown_ItemInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_markdown_item = /** @type {((inputs?: Agent_Preview_Markdown_ItemInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Markdown_ItemInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_markdown_item(inputs)
+	return __fr.agent_preview_markdown_item(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Hello! This is a simulated assistant response—no AI service is connected. I can help you explore the widget, draft a plan, or work with a reference. Try typi..." |
+*
+* @param {Agent_Preview_Response_IntroInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_response_intro = /** @type {((inputs?: Agent_Preview_Response_IntroInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Response_IntroInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_response_intro(inputs)
+	return __fr.agent_preview_response_intro(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Here's a sample plan: 1. Define the goal and gather the relevant resources. 2. Break the work into small, reviewable steps. 3. Review the result before makin..." |
+*
+* @param {Agent_Preview_Response_PlanInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_response_plan = /** @type {((inputs?: Agent_Preview_Response_PlanInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Response_PlanInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_response_plan(inputs)
+	return __fr.agent_preview_response_plan(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Ready for the next step? Add more detail to your request, or mention a resource with @. This preview only simulates replies; it doesn't read or change any data." |
+*
+* @param {Agent_Preview_Response_FollowupInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_response_followup = /** @type {((inputs?: Agent_Preview_Response_FollowupInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Response_FollowupInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_response_followup(inputs)
+	return __fr.agent_preview_response_followup(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "You've attached these references: {references}. In a connected application, I could use them to tailor my answer. For this demo, imagine a summary of the key..." |
+*
+* @param {Agent_Preview_Response_ReferencesInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const agent_preview_response_references = /** @type {((inputs: Agent_Preview_Response_ReferencesInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Agent_Preview_Response_ReferencesInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.agent_preview_response_references(inputs)
+	return __fr.agent_preview_response_references(inputs)
+});
 /**
 * | output |
 * | --- |
