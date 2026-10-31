@@ -11,6 +11,9 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/services/webhooks/http-client.ts",
+    "../../src/services/webhooks/index.ts",
+    "../../src/services/webhooks/migrations.ts",
     "../../src/services/speech/index.ts",
     "../../src/services/speech/schema.ts",
     "../../src/services/speech/api.ts",

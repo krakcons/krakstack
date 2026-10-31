@@ -43,6 +43,11 @@ export const EventAttributesSchema = Schema.Record(
   EventAttributeValue,
 ).annotate({ identifier: "EventAttributes" });
 
+export const EventPropertiesSchema = Schema.Record(
+  Schema.String,
+  Schema.Json,
+).annotate({ identifier: "EventProperties" });
+
 export const EventOptionsSchema = Schema.Struct({
   userId: Schema.optional(Schema.NonEmptyString),
   anonymousId: Schema.optional(Schema.NonEmptyString),
@@ -54,9 +59,10 @@ export const EventOptionsSchema = Schema.Struct({
 
 export const TelemetryEvent = Schema.Struct({
   name: Schema.NonEmptyString,
-  properties: Schema.optional(EventAttributesSchema),
+  properties: Schema.optional(EventPropertiesSchema),
   options: Schema.optional(EventOptionsSchema),
 }).annotate({ identifier: "TelemetryEvent" });
 
 export type EventAttributes = typeof EventAttributesSchema.Type;
+export type EventProperties = typeof EventPropertiesSchema.Type;
 export type EventOptions = typeof EventOptionsSchema.Type;

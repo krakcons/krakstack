@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.59",
+  "version": "0.1.60",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -17,6 +17,26 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./webhooks/http-client": {
+      "types": "./dist/services/webhooks/http-client.d.ts",
+      "import": "./dist/services/webhooks/http-client.js"
+    },
+    "./webhooks/url": {
+      "types": "./dist/services/webhooks/url.d.ts",
+      "import": "./dist/services/webhooks/url.js"
+    },
+    "./webhooks": {
+      "types": "./dist/services/webhooks/index.d.ts",
+      "import": "./dist/services/webhooks/index.js"
+    },
+    "./webhooks/schema": {
+      "types": "./dist/services/webhooks/schema.d.ts",
+      "import": "./dist/services/webhooks/schema.js"
+    },
+    "./webhooks/migrations": {
+      "types": "./dist/services/webhooks/migrations.d.ts",
+      "import": "./dist/services/webhooks/migrations.js"
+    },
     "./speech": {
       "types": "./dist/services/speech/index.d.ts",
       "import": "./dist/services/speech/index.js"
@@ -285,6 +305,7 @@
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
     "@effect/platform-browser": "^4.1.0",
+    "@effect/sql-pg": "^4.1.0",
     "@iconify/react": "^6.0.2",
     "@inlang/paraglide-js": "^2.19.0",
     "@lucas-barake/effect-form": "1.1.0",
@@ -304,6 +325,9 @@
     "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
+    "@effect/sql-pg": {
+      "optional": true
+    },
     "@aws-sdk/client-sesv2": {
       "optional": true
     },

@@ -1,0 +1,98 @@
+---
+slug: events
+path: /docs/events
+title: Événements
+description: Abonnez des traitements serveur à des workflows Effect durables, sans second bus ni tables d'abonnement.
+order: 20
+locale: fr
+section: services
+type: how-to
+createdAt: 2026-10-31
+updatedAt: 2026-10-31
+---
+
+# Événements
+
+`@krak-stack/registry/events` regroupe les événements d'audit serveur, l'analytique et les abonnements nommés aux événements serveur. Les abonnés utilisent le `WorkflowEngine` Effect partagé de l'application. Aucun second bus, couche de workers, table d'abonnement ou registre de livraison n'est ajouté.
+
+Les abonnements sont actuellement disponibles dans l'archive de développement du registre. Tant qu'une version publiée ne les inclut pas, installez cette archive :
+
+```bash
+bun add /chemin/vers/krak-stack-registry-dev.tgz
+```
+
+## Enregistrer un abonné
+
+`Events.subscribe(...)` retourne une couche. Enregistrez les abonnements au démarrage, avant d'accepter des requêtes, puis fournissez cette même instance d'Events aux services qui publient des événements.
+
+```ts
+import { Effect, Layer } from "effect";
+import { Events } from "@krak-stack/registry/events";
+
+const completionSubscriber = Events.subscribe({
+  name: "completion-handler-v1",
+  events: ["learner.completed"],
+  handle: (event) =>
+    Effect.logInfo("Achèvement reçu", {
+      eventId: event.eventId,
+      learnerId: event.properties?.learnerId,
+    }),
+});
+
+const applicationEvents = completionSubscriber.pipe(
+  Layer.provideMerge(Events.layer),
+  Layer.provide(sharedWorkflowEngineLayer),
+  Layer.provide(sharedTelemetryLayer),
+  Layer.provide(sharedDatabaseLayer),
+);
+```
+
+Les valeurs `shared*Layer` représentent les couches existantes de votre application. La couche de télémétrie fournit les dépendances de télémétrie et de cryptographie d'Events. La persistance d'Events et le moteur de workflows SQL doivent utiliser **la même instance de `SqlClient` et le même pool**. Le moteur en mémoire convient aux tests, pas à la livraison durable en production.
+
+Les dépendances du gestionnaire sont fournies lors de la construction de la couche d'abonnement. Un gestionnaire n'hérite pas de la requête HTTP ni de la session de publication : transmettez les identifiants validés du locataire et de l'acteur dans l'événement.
+
+## Publier avec le format existant
+
+Utilisez `track` pour enregistrer les événements et déclencher les abonnés correspondants. `properties` contient les données de l'événement ; aucun champ `data` supplémentaire n'est nécessaire.
+
+```ts
+const recordCompletion = Effect.gen(function* () {
+  const events = yield* Events;
+  yield* events.track({
+    eventId: "stable-completion-event-id",
+    name: "learner.completed",
+    category: "audit",
+    target: { id: "attempt-123", name: "attempt-123", type: "attempt" },
+    properties: { learnerId: "learner-123", courseId: "course-123" },
+  });
+});
+```
+
+Les événements d'audit exigent toujours les annotations d'acteur vérifiées par l'authentification ou par le traitement système. Les annotations d'identité de la requête remplacent l'identité explicite. Les règles de consentement analytique existantes s'appliquent toujours à `track` : les abonnements ne les contournent pas.
+
+Les propriétés serveur acceptent des instantanés applicatifs, normalisés en JSON dans `track` : les Dates deviennent des chaînes ISO et les champs d'objet undefined sont omis. Les valeurs non sérialisables, comme BigInt ou les références circulaires, produisent une erreur de schéma. Les abonnés reçoivent le JSON normalisé. L'exportateur Effect existant gère la représentation OTLP, notamment le formatage des objets en chaînes ; aucun mapping personnalisé ni second contenu n'est ajouté. Les propriétés sont persistées et exportées : n'y placez pas de secrets. La validation analytique du navigateur reste limitée aux primitives.
+
+Le gestionnaire reçoit `name`, `properties`, `category`, `identity`, la cible d'audit facultative `target`, l'horodatage et un `eventId` stable. Les noms d'événements doivent correspondre exactement. L'ingestion OTLP du navigateur ne déclenche **pas** les abonnés ayant des effets de bord.
+
+## Transactions et reprise
+
+Appelez `track` dans la transaction SQL du domaine lorsque l'événement fait partie du même changement. Les workflows des abonnés correspondants sont soumis dans cette transaction. Avec le client SQL partagé, l'événement et les messages du moteur sont validés ensemble ; une annulation supprime les deux.
+
+Le moteur possède le travail en attente, les résultats, la reprise et les horloges durables. Events ne crée aucune table d'abonnement supplémentaire. Seuls les abonnés enregistrés lors de la publication sont soumis ; un nouvel abonnement ne rejoue pas l'historique.
+
+## Nouvelles tentatives et idempotence
+
+- L'identité du workflow combine le nom du service applicatif, celui de l'abonné et l'identifiant de l'événement.
+- Répéter un identifiant ne réexécute pas un abonné ayant réussi. Utilisez un nouvel identifiant pour un contenu différent : les abonnés conservent le premier contenu soumis. Les contrôles existants de conflit s'appliquent aux métadonnées persistées.
+- Les abonnés sont indépendants : l'échec d'une notification ne bloque pas un gestionnaire de webhook.
+- Les erreurs typées déclenchent jusqu'à huit tentatives au total, avec un délai exponentiel Effect et des horloges durables. Les défauts restent des échecs de workflow, sans être transformés silencieusement en erreurs ordinaires.
+- Les effets externes restent exécutés **au moins une fois**. Utilisez `event.eventId` dans la clé d'idempotence du service consommateur.
+- Les noms d'abonnés en double sont refusés dans une même instance d'Events, même lors d'enregistrements concurrents.
+
+Conservez les noms d'abonnés entre les redémarrages. Versionnez le nom lors d'un remplacement volontaire du contrat persistant, par exemple `completion-handler-v2`. Retirer un abonnement du démarrage n'efface pas l'historique du moteur et n'annule pas le travail déjà soumis.
+
+## Composer les abonnés métier
+
+Chaque fonctionnalité peut exporter sa couche `Events.subscribe(...)`. L'application combine ces couches et fournit leurs dépendances une seule fois. La configuration des endpoints et les modèles de notification restent dans leurs services respectifs ; Events se limite à déclencher les gestionnaires.
+
+Consultez [Webhooks](/docs/webhooks) et [Notifications](/docs/notifications).

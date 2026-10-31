@@ -1,0 +1,144 @@
+---
+slug: webhooks
+path: /docs/webhooks
+title: Webhooks
+description: Publiez des webhooks signés avec des migrations SQL et des workflows Effect durables gérés par le service.
+order: 21
+locale: fr
+section: services
+type: how-to
+createdAt: 2026-10-31
+updatedAt: 2026-10-31
+---
+
+# Webhooks
+
+`@krak-stack/registry/webhooks` gère les endpoints, les signatures, les filtres et la livraison durable. Il ne contient aucune logique propre aux apprenants, aux cours, à l'authentification ou aux notifications.
+
+Utilisez l'archive de développement tant que ces exports ne sont pas publiés :
+
+```bash
+bun add /chemin/vers/krak-stack-registry-dev.tgz @effect/sql-pg @effect/platform-bun effect@^4.1.0
+```
+
+## Fournir une seule couche
+
+```ts
+import { Layer } from "effect";
+import { Webhooks } from "@krak-stack/registry/webhooks";
+import { BunDns } from "@effect/platform-bun";
+
+const webhooks = Webhooks.layer.pipe(
+  Layer.provide(BunDns.layer),
+  Layer.provide(sharedWorkflowEngineLayer),
+  Layer.provide(sharedDatabaseLayer),
+);
+```
+
+Fournissez le moteur de workflows SQL et le pool PostgreSQL existants de votre application. `Webhooks.layer` exécute ses migrations, enregistre son workflow et récupère automatiquement les livraisons en attente. Aucun service d'exécution, couche de workers ou indicateur de démarrage supplémentaire n'est nécessaire.
+
+`Webhooks.layer` inclut un client Effect basé sur fetch qui vérifie toutes les réponses DNS avant chaque requête, refuse les destinations privées, bloque les requêtes en cas d'erreur DNS et désactive les redirections. Aucun câblage de client HTTP n'est nécessaire. Fournissez le service Effect `Dns` de la plateforme : `BunDns.layer` sur Bun, comme ci-dessus, ou `NodeDns.layer` de `@effect/platform-node` sur Node. Le registre utilise `effect/net/Dns` plutôt que des imports Node directs. Le point d'entrée `webhooks/http-client` exporte `isPublicWebhookDestination` pour la gestion des endpoints, qui requiert aussi `Dns`. Les vérifications d'URL utilisables dans le navigateur sont exportées depuis `webhooks/url`.
+
+La vérification DNS préalable ne fixe pas l'adresse utilisée par la connexion fetch. Utilisez des restrictions réseau sortantes contre le rebinding DNS ; cette vérification seule ne constitue pas une protection SSRF complète. Les requêtes expirent après 30 secondes.
+
+## Créer un endpoint
+
+```ts
+import { Effect } from "effect";
+
+const createEndpoint = Effect.gen(function* () {
+  const webhooks = yield* Webhooks;
+  return yield* webhooks.create({
+    organizationId: "organization-123",
+    payload: {
+      name: "Intégration de facturation",
+      url: "https://receiver.example.com/hooks",
+      description: "Événements de facturation",
+      enabled: true,
+      events: ["invoice.paid"],
+      customHeaders: null,
+    },
+  });
+});
+```
+
+`create` retourne `{ id }`. `get`, `list`, `update` et `delete` sont limités par `organizationId`. Les noms sont non vides, sans espaces en début ou en fin, et limités à 200 caractères. Les endpoints existants prennent leur URL comme nom initial. Les anciens clients peuvent omettre `name` : la création utilise l'URL et les mises à jour conservent le nom actuel. Un filtre nul accepte tous les événements publiés. `get` inclut les 100 dernières livraisons et le secret de signature ; gardez ce secret côté serveur et protégez la gestion des endpoints avec les autorisations de l'application.
+
+## Publier
+
+```ts
+const publishInvoice = Effect.gen(function* () {
+  const webhooks = yield* Webhooks;
+  yield* webhooks.publish({
+    organizationId: "organization-123",
+    eventId: "invoice-paid-123",
+    event: "invoice.paid",
+    data: { invoiceId: "invoice-123" },
+  });
+});
+```
+
+L'identifiant doit rester stable. Rejouer le même locataire, identifiant et contenu ne crée pas de nouvelles livraisons. Un contenu différent sous le même identifiant produit une `WebhookError`. Les nouveaux endpoints ne reçoivent pas les publications historiques.
+
+Appelez `publish` dans la transaction SQL du domaine lorsque les changements sont liés. Les livraisons en attente validées constituent la boîte d'envoi du service. La reprise automatique les soumet au moteur partagé ; les identifiants stables de workflow rendent ces soumissions répétées sûres.
+
+## S'abonner à Events
+
+Les [abonnements intégrés d'Events](/docs/events) permettent de convertir les événements serveur en publications de webhooks. Il s'agit de la composition applicative, pas d'un second bus :
+
+```ts
+import { Events } from "@krak-stack/registry/events";
+
+const webhookSubscription = Events.subscribe({
+  name: "invoice-webhooks-v1",
+  events: ["invoice.paid"],
+  handle: (event) => Effect.gen(function* () {
+    const organizationId = event.identity?.organizationId;
+    if (!organizationId) return;
+    const webhooks = yield* Webhooks;
+    yield* webhooks.publish({
+      organizationId,
+      eventId: event.eventId,
+      event: event.name,
+      data: event.properties ?? {},
+    });
+  }),
+});
+```
+
+Fournissez `Webhooks` lors de la construction de la couche d'abonnement, et la même instance d'Events aux services de publication. Enregistrez uniquement les événements appartenant au contrat public de vos webhooks. L'exemple ignore volontairement les événements sans identité d'organisation.
+
+## Statistiques de livraison
+
+Appelez `webhooks.statistics({ organizationId, id, interval: "day" })` pour obtenir
+les totaux conservés (`total`, `success`, `failed`) et des périodes UTC `buckets`
+complétées par des zéros. Choisissez `hour` pour aujourd'hui depuis minuit UTC ou
+`day` pour ce mois-ci depuis son premier jour UTC, jusqu'à la période actuelle. Les
+chiffres utilisent la date de création et le statut actuel, pas le nombre de
+tentatives HTTP. Le total inclut les livraisons en cours. La méthode est limitée
+au locataire et retourne `undefined` si l'endpoint est introuvable. Contrairement
+à `get`, les totaux ne sont pas limités à 100 livraisons ; l'historique supprimé
+est exclu, il ne s'agit donc pas de compteurs historiques permanents. Cette
+requête ne nécessite aucune migration ni table de statistiques supplémentaire.
+
+## Protocole et nouvelles tentatives
+
+Les destinataires reçoivent une requête HTTP `POST` contenant `{ "event": string, "data": ... }` et les en-têtes suivants :
+
+| En-tête | Rôle |
+| --- | --- |
+| `webhook-id` | Identifiant stable permettant la déduplication |
+| `webhook-timestamp` | Horodatage ISO de la tentative |
+| `webhook-signature` | HMAC-SHA256 hexadécimal de `timestamp + "." + rawBody`, avec le secret de l'endpoint |
+
+Ces en-têtes et `Content-Type` ne peuvent pas être remplacés par des en-têtes personnalisés. Vérifiez les octets exacts du corps et refusez les horodatages trop anciens.
+
+Une réponse `2xx` termine la livraison. Les autres réponses et les erreurs réseau déclenchent jusqu'à huit tentatives au total. Le délai exponentiel Effect commence à cinq secondes, est multiplié par quatre et plafonne à dix heures ; les horloges durables conservent les attentes après un redémarrage. Désactiver un endpoint arrête les nouvelles publications et fait échouer les livraisons en attente lors de leur prochaine exécution.
+
+La livraison externe est effectuée **au moins une fois**. Un arrêt après acceptation par le destinataire peut entraîner un nouvel envoi ; dédupliquez avec `webhook-id`.
+
+## Tables et adoption
+
+Le service possède `webhooks`, `webhook_deliveries`, `webhook_publications` et le registre `krakstack_webhook_migrations`. Les tables Kokobi compatibles sont adoptées sur place, en préservant les identifiants, secrets et livraisons en attente. Arrêtez l'ancien expéditeur avant d'activer le service du registre.
+
+`cleanup` supprime les livraisons terminées depuis plus de sept jours. Les traces de publication restent pour la déduplication et contiennent actuellement les données d'origine ; tenez-en compte dans votre politique de conservation. Le stockage du moteur de workflows possède son propre cycle de vie.

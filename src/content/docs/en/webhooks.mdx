@@ -1,0 +1,142 @@
+---
+slug: webhooks
+path: /docs/webhooks
+title: Webhooks
+description: Publish signed outbound webhooks with service-owned SQL migrations and durable Effect workflows.
+order: 21
+locale: en
+section: services
+type: how-to
+createdAt: 2026-10-31
+updatedAt: 2026-10-31
+---
+
+# Webhooks
+
+`@krak-stack/registry/webhooks` owns endpoint persistence, signing, filtering, and durable delivery. It contains no learner, course, authentication, or notification-specific logic.
+
+Use the development registry tarball until these exports are published:
+
+```bash
+bun add /path/to/krak-stack-registry-dev.tgz @effect/sql-pg @effect/platform-bun effect@^4.1.0
+```
+
+## Provide one layer
+
+```ts
+import { Layer } from "effect";
+import { Webhooks } from "@krak-stack/registry/webhooks";
+import { BunDns } from "@effect/platform-bun";
+
+const webhooks = Webhooks.layer.pipe(
+  Layer.provide(BunDns.layer),
+  Layer.provide(sharedWorkflowEngineLayer),
+  Layer.provide(sharedDatabaseLayer),
+);
+```
+
+Supply your application's existing SQL-backed workflow engine and PostgreSQL pool. `Webhooks.layer` runs its migrations, registers its workflow, and recovers pending deliveries automatically. There is no separate runtime service, worker layer, or startup flag.
+
+`Webhooks.layer` includes a fetch-based Effect client that checks all DNS answers before each request, rejects private destinations, fails closed on DNS errors, and disables redirects. No HTTP-client wiring is required. Supply the platform's Effect `Dns` service: `BunDns.layer` on Bun, as above, or `NodeDns.layer` from `@effect/platform-node` on Node. The registry uses `effect/net/Dns` rather than direct Node imports. The `webhooks/http-client` entry point exports `isPublicWebhookDestination` for endpoint management, which also requires `Dns`. Browser-safe URL checks are exported from `webhooks/url`.
+
+DNS preflight does not pin the checked address to the fetch connection. Use network-level egress restrictions against DNS rebinding; preflight alone is not complete SSRF protection. Requests time out after 30 seconds.
+
+## Create an endpoint
+
+```ts
+import { Effect } from "effect";
+
+const createEndpoint = Effect.gen(function* () {
+  const webhooks = yield* Webhooks;
+  return yield* webhooks.create({
+    organizationId: "organization-123",
+    payload: {
+      name: "Billing integration",
+      url: "https://receiver.example.com/hooks",
+      description: "Invoice events",
+      enabled: true,
+      events: ["invoice.paid"],
+      customHeaders: null,
+    },
+  });
+});
+```
+
+`create` returns `{ id }`. `get`, `list`, `update`, and `delete` are scoped by `organizationId`. Names are trimmed, non-empty, and limited to 200 characters. Existing endpoints start with their URL as the name. Older clients may omit `name`: creation falls back to the URL, and updates preserve the current name. A null event filter matches every published event. `get` includes the latest 100 deliveries and the signing secret; keep that secret server-side and restrict endpoint management through application authorization.
+
+## Publish
+
+```ts
+const publishInvoice = Effect.gen(function* () {
+  const webhooks = yield* Webhooks;
+  yield* webhooks.publish({
+    organizationId: "organization-123",
+    eventId: "invoice-paid-123",
+    event: "invoice.paid",
+    data: { invoiceId: "invoice-123" },
+  });
+});
+```
+
+The event ID must be stable. Replaying the same tenant, event ID, and content does not create more deliveries. Changed content under the same ID fails with `WebhookError`. New endpoints do not receive historical publications.
+
+Call `publish` within your domain SQL transaction when the changes belong together. Committed pending deliveries act as the service's outbox. Automatic recovery submits them to the shared engine; stable workflow IDs make repeated submission safe.
+
+## Subscribe to Events
+
+Use the built-in [Events subscriptions](/docs/events) to map server events into webhook publications. The following is application composition, not a second event bus:
+
+```ts
+import { Events } from "@krak-stack/registry/events";
+
+const webhookSubscription = Events.subscribe({
+  name: "invoice-webhooks-v1",
+  events: ["invoice.paid"],
+  handle: (event) => Effect.gen(function* () {
+    const organizationId = event.identity?.organizationId;
+    if (!organizationId) return;
+    const webhooks = yield* Webhooks;
+    yield* webhooks.publish({
+      organizationId,
+      eventId: event.eventId,
+      event: event.name,
+      data: event.properties ?? {},
+    });
+  }),
+});
+```
+
+Provide `Webhooks` when building the subscription layer, and provide the same Events instance to your publishers. Register only the event names that are part of your public webhook contract. The example intentionally ignores events without an organization identity.
+
+## Delivery statistics
+
+Call `webhooks.statistics({ organizationId, id, interval: "day" })` for all stored
+delivery totals (`total`, `success`, `failed`) and zero-filled UTC `buckets`.
+Choose `hour` for today from midnight UTC or `day` for this month from its first
+day UTC, through the current period. Buckets use creation time and current status, not
+HTTP attempt counts. Total includes in-progress deliveries. The method is
+tenant-scoped and returns `undefined` for a missing endpoint. Unlike `get`, totals
+are not limited to 100 deliveries; deleted history is excluded, so these are not
+lifetime counters. This query requires no new migration or statistics table.
+
+## Protocol and retries
+
+Receivers get an HTTP `POST` with `{ "event": string, "data": ... }` and these headers:
+
+| Header | Meaning |
+| --- | --- |
+| `webhook-id` | Stable delivery ID for receiver deduplication |
+| `webhook-timestamp` | ISO timestamp for this attempt |
+| `webhook-signature` | Hex HMAC-SHA256 of `timestamp + "." + rawBody`, using the endpoint secret |
+
+These headers and `Content-Type` cannot be overridden by custom headers. Verify the exact raw body and reject stale timestamps.
+
+A `2xx` response completes delivery. Other responses and network failures retry up to eight total attempts. Effect exponential backoff starts at five seconds, multiplies by four, and is capped at ten hours; durable clocks preserve waits across restarts. Disabling an endpoint stops new publications and fails pending deliveries when their workflows next run.
+
+External delivery is **at least once**. A crash after receiver acceptance can resend a request; deduplicate by `webhook-id`.
+
+## Database ownership and adoption
+
+The service owns `webhooks`, `webhook_deliveries`, `webhook_publications`, and the `krakstack_webhook_migrations` ledger. Compatible Kokobi tables are adopted in place, preserving endpoint IDs, secrets, and pending work. Stop the old sender before enabling the registry service.
+
+`cleanup` removes deliveries completed more than seven days ago. Publication tombstones remain for deduplication and currently contain the original event data; account for that in your retention policy. Workflow-engine storage has its own lifecycle.

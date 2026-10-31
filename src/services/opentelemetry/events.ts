@@ -16,7 +16,7 @@ import {
 
 import {
   TelemetryEvent,
-  type EventAttributes,
+  type EventProperties,
   type EventOptions,
 } from "./schema";
 
@@ -93,7 +93,7 @@ interface EventRecord {
 /** Emits an INFO event without creating a tracing span or persisting identity. */
 export const event = Effect.fnUntraced(function* (
   name: string,
-  properties?: EventAttributes,
+  properties?: EventProperties,
   options?: EventOptions,
 ) {
   const decoded = yield* Schema.decodeUnknownEffect(TelemetryEvent)({

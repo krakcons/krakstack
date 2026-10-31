@@ -1,5 +1,8 @@
 import { Effect, Option, Schema } from "effect";
-import { EventAttributesSchema } from "../opentelemetry/schema";
+import {
+  EventAttributesSchema,
+  EventPropertiesSchema,
+} from "../opentelemetry/schema";
 import { ColumnFilter, ColumnFilters, Query } from "@/lib/query";
 
 export const EventUuid = Schema.String.check(Schema.isUUID());
@@ -76,7 +79,7 @@ export type AuditTarget = typeof AuditTarget.Type;
 const trackEventFields = {
   eventId: Schema.optional(EventId),
   name: Schema.NonEmptyString.check(Schema.isMaxLength(128)),
-  properties: Schema.optional(EventAttributesSchema),
+  properties: Schema.optional(EventPropertiesSchema),
   identity: Schema.optional(EventIdentity),
   timestamp: Schema.optional(Schema.DateTimeUtc),
 };
@@ -92,6 +95,41 @@ export const TrackEvent = Schema.Union([
   }),
 ]).annotate({ identifier: "TrackEvent" });
 export type TrackEvent = typeof TrackEvent.Type;
+
+/** Application snapshots are normalized to JSON before storage or dispatch. */
+export const EventInputProperties = Schema.Record(
+  Schema.String,
+  Schema.Unknown,
+).annotate({ identifier: "EventInputProperties" });
+export const TrackEventInput = Schema.Union([
+  Schema.Struct({
+    ...TrackEvent.members[0].fields,
+    properties: Schema.optional(EventInputProperties),
+  }),
+  Schema.Struct({
+    ...TrackEvent.members[1].fields,
+    properties: Schema.optional(EventInputProperties),
+  }),
+]).annotate({ identifier: "TrackEventInput" });
+export type TrackEventInput = typeof TrackEventInput.Type;
+
+export const EventSubscription = Schema.Struct({
+  name: Schema.NonEmptyString.check(Schema.isMaxLength(128)),
+  events: Schema.NonEmptyArray(trackEventFields.name),
+}).annotate({ identifier: "EventSubscription" });
+
+export interface EventSubscriber<E = never, R = never> {
+  readonly name: string;
+  readonly events: readonly [string, ...string[]];
+  readonly handle: (
+    event: TrackEvent & { readonly eventId: string },
+  ) => Effect.Effect<unknown, E, R>;
+}
+
+export class EventSubscriberError extends Schema.TaggedError<EventSubscriberError>()(
+  "EventSubscriberError",
+  { subscription: Schema.String },
+) {}
 
 export const EventActionFilter = Schema.Struct({
   id: Schema.Literal("eventName"),
@@ -221,7 +259,10 @@ const AttributeValue = Schema.Union([
 ]);
 export const EventAttribute = Schema.Struct({
   key: Schema.NonEmptyString.check(Schema.isMaxLength(128)),
-  value: AttributeValue,
+  value: Schema.StructWithRest(
+    Schema.Struct({ stringValue: Schema.optional(Schema.String) }),
+    [Schema.Record(Schema.String, Schema.Json)],
+  ),
 }).annotate({ identifier: "EventAttribute" });
 
 export const EventLogRecord = Schema.Struct({
@@ -249,6 +290,24 @@ export const EventLogRecord = Schema.Struct({
     ),
   ),
 }).annotate({ identifier: "EventLogRecord" });
+
+/** Browser ingestion retains the existing primitive-only limits. */
+export const BrowserEventLogRecord = Schema.Struct({
+  ...EventLogRecord.fields,
+  attributes: Schema.Array(
+    Schema.Struct({
+      key: EventAttribute.fields.key,
+      value: AttributeValue,
+    }),
+  ).check(
+    Schema.isMaxLength(64),
+    Schema.makeFilter(
+      (values) =>
+        new Set(values.map(({ key }) => key)).size === values.length ||
+        "Duplicate attribute keys",
+    ),
+  ),
+}).annotate({ identifier: "BrowserEventLogRecord" });
 
 /** OTLP/HTTP JSON envelope; unrelated scopes and extension fields are preserved. */
 const extensions = Schema.Record(Schema.String, Schema.Unknown);

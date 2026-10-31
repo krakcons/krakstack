@@ -1,0 +1,98 @@
+---
+slug: events
+path: /docs/events
+title: Events
+description: Subscribe to server events with durable Effect workflows, without a second event bus or subscriber tables.
+order: 20
+locale: en
+section: services
+type: how-to
+createdAt: 2026-10-31
+updatedAt: 2026-10-31
+---
+
+# Events
+
+`@krak-stack/registry/events` combines server audit events, analytics, and named server-event subscribers. Subscribers run through the application's shared Effect `WorkflowEngine`. There is no separate event bus, worker layer, subscription table, or delivery ledger.
+
+Subscription support is currently available in the development registry tarball. Until a release includes it, install that tarball rather than assuming the published npm version has these APIs:
+
+```bash
+bun add /path/to/krak-stack-registry-dev.tgz
+```
+
+## Register a subscriber
+
+`Events.subscribe(...)` returns a layer. Register subscriptions at application startup, before accepting requests, and provide the resulting `Events` instance to the services that publish events.
+
+```ts
+import { Effect, Layer } from "effect";
+import { Events } from "@krak-stack/registry/events";
+
+const completionSubscriber = Events.subscribe({
+  name: "completion-handler-v1",
+  events: ["learner.completed"],
+  handle: (event) =>
+    Effect.logInfo("Completion received", {
+      eventId: event.eventId,
+      learnerId: event.properties?.learnerId,
+    }),
+});
+
+const applicationEvents = completionSubscriber.pipe(
+  Layer.provideMerge(Events.layer),
+  Layer.provide(sharedWorkflowEngineLayer),
+  Layer.provide(sharedTelemetryLayer),
+  Layer.provide(sharedDatabaseLayer),
+);
+```
+
+The `shared*Layer` values above are your existing application layers. The telemetry layer supplies the existing Events telemetry/crypto dependencies. Both Events persistence and the SQL-backed workflow engine must use **the same `SqlClient` instance and pool**. An in-memory engine is useful for tests, not durable production delivery.
+
+Handler dependencies are supplied when the subscription layer is built. Handlers do not inherit a publishing HTTP request or session; pass validated tenant and actor identifiers in the event instead.
+
+## Publish the existing event shape
+
+Use `track` to record events and trigger matching subscribers. `properties` is the event payload; there is no additional `data` field.
+
+```ts
+const recordCompletion = Effect.gen(function* () {
+  const events = yield* Events;
+  yield* events.track({
+    eventId: "stable-completion-event-id",
+    name: "learner.completed",
+    category: "audit",
+    target: { id: "attempt-123", name: "attempt-123", type: "attempt" },
+    properties: { learnerId: "learner-123", courseId: "course-123" },
+  });
+});
+```
+
+Audit events still require the verified actor annotations established at your authentication or system-job boundary. Request identity annotations override explicit event identity. Existing analytics consent rules still apply to `track`; subscriptions do not bypass them.
+
+Server properties accept application snapshots and normalize them to JSON inside `track`: Dates become ISO strings and undefined object fields are omitted. Values that cannot be serialized, such as BigInt or circular references, fail with a schema error. Subscribers receive the normalized JSON. The existing Effect exporter handles the OTLP representation, including formatting objects as strings; there is no custom mapping or second payload. Properties are persisted and exported, so do not include secrets. Browser analytics retain their existing primitive-only validation.
+
+The handler receives the event's `name`, `properties`, `category`, `identity`, optional audit `target`, timestamp, and a resolved, stable `eventId`. Event-name matching is exact. Browser OTLP ingestion does **not** dispatch side-effect subscribers.
+
+## Transactions and recovery
+
+Call `track` inside the domain's SQL transaction when they belong to the same change. Matching subscriber workflows are submitted inside that transaction. With the shared SQL client, the existing event row and the workflow engine's mailbox rows commit together; rollback removes both.
+
+The workflow engine owns pending work, results, recovery, and durable clocks. Events creates no extra subscription tables. Only subscribers registered when the event is recorded are submitted; registering a new subscriber does not replay historical events.
+
+## Retries and idempotency
+
+- A workflow identity combines the application service name, subscriber name, and event ID.
+- Repeating the same event ID does not execute a successful subscriber again. Use a new ID for a changed payload; subscribers retain the first submitted workflow payload. Existing conflict checks apply to persisted event metadata.
+- Subscribers are independent: a failing notification handler does not block a webhook handler.
+- Typed handler failures retry up to eight total attempts, using Effect exponential backoff and durable clocks. Defects remain workflow failures rather than being silently treated as ordinary retries.
+- External side effects remain **at least once**. Use `event.eventId` in the consuming service's idempotency key.
+- Duplicate subscriber names in one Events instance are rejected, including concurrent registration.
+
+Keep subscriber names stable across restarts. Version the name when deliberately replacing a handler's persisted contract, such as `completion-handler-v2`. Removing a subscription from startup code does not erase workflow-engine history or cancel already queued work.
+
+## Compose feature subscribers
+
+A feature can export its `Events.subscribe(...)` layer. The application combines those layers and supplies their dependencies once. Webhook endpoint management and notification templates remain owned by their respective services; Events only dispatches their handlers.
+
+See [Webhooks](/docs/webhooks) and [Notifications](/docs/notifications).

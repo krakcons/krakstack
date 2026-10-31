@@ -1,9 +1,12 @@
 # @krak-stack/registry
 
-## Unreleased
+## 0.1.60
 
 ### Patch Changes
 
+- Add durable server-event subscriptions and JSON snapshot normalization to Events.
+- Export reusable Webhooks with protected delivery, durable retries, endpoint names, sanitized errors, tenant-scoped statistics, and paginated delivery history.
+- Support icons and icon styling in data-table reference cells.
 - Merge the error component's homepage link classes with `cn` so its outline border is visible instead of being overridden by the base transparent border.
 
 ## 0.1.59

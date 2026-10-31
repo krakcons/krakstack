@@ -1,4 +1,5 @@
 import {
+  Cause,
   Config,
   Context,
   DateTime,
@@ -8,12 +9,21 @@ import {
   Predicate,
   Redacted,
   References,
+  Result,
+  Schedule,
   Schema,
+  Semaphore,
 } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { HttpServerRequest } from "effect/http";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { Hex } from "effect/encoding";
+import {
+  Activity,
+  DurableClock,
+  Workflow,
+  WorkflowEngine,
+} from "effect/workflow";
 
 import {
   OtlpLogsProcessor,
@@ -22,6 +32,7 @@ import {
 import { OtlpResource } from "effect/observability";
 import { Otlp } from "../opentelemetry";
 import { OtlpEvents } from "../opentelemetry/events";
+import { EventPropertiesSchema } from "../opentelemetry/schema";
 import {
   cloudflareGeolocation,
   geolocationAttributes,
@@ -35,6 +46,7 @@ import {
   AuditAttribution,
   RequestActorAttribution,
   EventLogRecord,
+  BrowserEventLogRecord,
   EventId,
   BrowserEventPath,
   OtlpLogs,
@@ -48,17 +60,22 @@ import {
   StoredEventId,
   EventsPersistenceError,
   TrackEvent,
+  TrackEventInput,
+  EventInputProperties,
   ListEvents,
   EventColumnFilter,
   AuditSortId,
   AuditCount,
+  EventSubscription,
+  EventSubscriberError,
+  type EventSubscriber,
 } from "./schema";
 import { migrateEvents } from "./migrations";
 import { hasAnalyticsConsent } from "../opentelemetry/consent";
 
 export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
-export type { EventGeolocation } from "./schema";
+export type { EventGeolocation, EventSubscriber } from "./schema";
 export { AuditTarget, TrackEvent, EventLogRecord, ListEvents } from "./schema";
 export type EventGeolocationResolver = (
   request: HttpServerRequest.HttpServerRequest,
@@ -412,8 +429,136 @@ export class Events extends Context.Service<Events>()(
             ...identity,
           };
         });
-        const track = Effect.fn("Events.track")(function* (input: TrackEvent) {
-          const event = yield* Schema.decodeUnknownEffect(TrackEvent)(input);
+        const subscribers = new Map<
+          string,
+          {
+            readonly events: ReadonlySet<string>;
+            readonly dispatch: (
+              event: TrackEvent & { readonly eventId: string },
+            ) => Effect.Effect<void, EventsPersistenceError>;
+          }
+        >();
+        const registration = yield* Semaphore.make(1);
+
+        const subscribe = Effect.fn("Events.subscribe")(function* <E, R>(
+          definition: EventSubscriber<E, R>,
+        ) {
+          const subscription =
+            yield* Schema.decodeUnknownEffect(EventSubscription)(definition);
+          if (
+            Option.isSome(
+              yield* Effect.serviceOption(HttpServerRequest.HttpServerRequest),
+            )
+          )
+            return yield* new EventsConfigurationError({
+              message:
+                "Register event subscribers at application startup, not inside an HTTP request",
+            });
+          if (subscribers.has(subscription.name))
+            return yield* new EventsConfigurationError({
+              message: `Duplicate event subscriber: ${subscription.name}`,
+            });
+          const engine = yield* WorkflowEngine.WorkflowEngine;
+          const subscriberContext = yield* Effect.context<R>();
+          const workflow = Workflow.make(
+            `EventsSubscriberV1/${configuration.serviceName.length}:${configuration.serviceName}/${subscription.name}`,
+            {
+              payload: { event: TrackEvent, eventId: EventId },
+              success: Schema.Void,
+              error: EventSubscriberError,
+              idempotencyKey: ({ eventId }) => eventId,
+            },
+          );
+          yield* engine.register(workflow, ({ event, eventId }) =>
+            Effect.gen(function* () {
+              const step = yield* Schedule.toStep(
+                Schedule.min([
+                  Schedule.exponential("5 seconds", 4),
+                  Schedule.spaced("10 hours"),
+                ]),
+              );
+              for (let attempt = 0; ; attempt++) {
+                const result = yield* Activity.make({
+                  name: `HandleEventV1-${attempt}`,
+                  success: Schema.Void,
+                  error: EventSubscriberError,
+                  execute: definition.handle({ ...event, eventId }).pipe(
+                    Effect.scoped,
+                    Effect.updateContext(
+                      (_: Context.Context<never>) => subscriberContext,
+                    ),
+                    Effect.asVoid,
+                    Effect.mapError(
+                      () =>
+                        new EventSubscriberError({
+                          subscription: subscription.name,
+                        }),
+                    ),
+                  ),
+                }).pipe(Effect.result);
+                if (Result.isSuccess(result)) return;
+                if (attempt >= 7) return yield* Effect.fail(result.failure);
+                const now = yield* DateTime.now;
+                const [, delay] = yield* step(
+                  DateTime.toEpochMillis(now),
+                  result.failure,
+                ).pipe(Effect.orDie);
+                yield* DurableClock.sleep({
+                  name: `SubscriberRetryV1-${attempt}`,
+                  duration: delay,
+                  inMemoryThreshold: 0,
+                });
+              }
+            }),
+          );
+          const registered = {
+            events: new Set(subscription.events),
+            dispatch: (event: TrackEvent & { readonly eventId: string }) =>
+              workflow
+                .execute({ event, eventId: event.eventId }, { discard: true })
+                .pipe(
+                  Effect.provideService(WorkflowEngine.WorkflowEngine, engine),
+                  Effect.catchCause((cause) =>
+                    Cause.hasInterruptsOnly(cause)
+                      ? Effect.interrupt
+                      : Effect.fail(
+                          new EventsPersistenceError({
+                            operation: "subscriber.dispatch",
+                          }),
+                        ),
+                  ),
+                  Effect.asVoid,
+                ),
+          };
+          subscribers.set(subscription.name, registered);
+          yield* Effect.addFinalizer(() =>
+            Effect.sync(() => {
+              if (subscribers.get(subscription.name) === registered)
+                subscribers.delete(subscription.name);
+            }),
+          );
+        }, registration.withPermit);
+        const track = Effect.fn("Events.track")(function* (
+          input: TrackEventInput,
+        ) {
+          const decoded =
+            yield* Schema.decodeUnknownEffect(TrackEventInput)(input);
+          const properties =
+            decoded.properties === undefined
+              ? undefined
+              : yield* Schema.encodeEffect(
+                  Schema.fromJsonString(EventInputProperties),
+                )(decoded.properties).pipe(
+                  Effect.flatMap(
+                    Schema.decodeUnknownEffect(
+                      Schema.fromJsonString(EventPropertiesSchema),
+                    ),
+                  ),
+                );
+          const event = yield* Schema.decodeUnknownEffect(TrackEvent)({
+            ...decoded,
+            properties,
+          });
           const eventId = event.eventId ?? (yield* random.uuidV7());
           const category = event.category ?? "analytics";
           const receivedAt = yield* DateTime.now;
@@ -449,15 +594,7 @@ export class Events extends Context.Service<Events>()(
           if (category === "audit") {
             yield* Schema.decodeUnknownEffect(AuditAttribution)(annotations);
           }
-          const attributes: Record<
-            string,
-            | string
-            | number
-            | boolean
-            | ReadonlyArray<string>
-            | ReadonlyArray<number>
-            | ReadonlyArray<boolean>
-          > = {};
+          const attributes: Record<string, typeof Schema.Json.Type> = {};
           for (const [key, value] of Object.entries(event.properties ?? {})) {
             const name = key.startsWith("app.") ? key : `app.${key}`;
             if (!reservedBrowserAttribute(name)) attributes[name] = value;
@@ -559,6 +696,18 @@ export class Events extends Context.Service<Events>()(
                   },
                 })
               : { eventId, inserted: false };
+            // Queue matching server subscribers inside the same SQL transaction.
+            // A SQL-backed WorkflowEngine sharing this SqlClient persists its
+            // mailbox message atomically with the event, without another outbox.
+            for (const subscriber of subscribers.values()) {
+              if (!subscriber.events.has(event.name)) continue;
+              yield* subscriber.dispatch({
+                ...event,
+                eventId,
+                identity,
+                timestamp: event.timestamp ?? receivedAt,
+              });
+            }
             return {
               ...result,
               attributes: { ...requestContext, ...attributes },
@@ -795,7 +944,7 @@ export class Events extends Context.Service<Events>()(
             (scope) => scope.logRecords,
           );
           const records = yield* Schema.decodeUnknownEffect(
-            Schema.Array(EventLogRecord).check(
+            Schema.Array(BrowserEventLogRecord).check(
               Schema.isMinLength(1),
               Schema.isMaxLength(100),
             ),
@@ -990,7 +1139,7 @@ export class Events extends Context.Service<Events>()(
             ),
           );
         });
-        return { process, track, list };
+        return { process, track, list, subscribe };
       }),
   },
 ) {
@@ -1041,4 +1190,9 @@ export class Events extends Context.Service<Events>()(
   static readonly layer = this.layerWith();
 
   static readonly ingestionLayer = Layer.effect(OtlpLogsProcessor, Events);
+
+  static readonly subscribe = <E, R>(definition: EventSubscriber<E, R>) =>
+    Layer.effectDiscard(
+      Effect.flatMap(Events, (events) => events.subscribe(definition)),
+    );
 }

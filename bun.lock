@@ -116,7 +116,7 @@
     },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.1.59",
+      "version": "0.1.60",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
         "bowser": "^2.14.1",
@@ -128,6 +128,7 @@
         "@effect/atom-react": "^4.1.0",
         "@effect/platform-browser": "^4.1.0",
         "@iconify/react": "^6.0.2",
+        "@effect/sql-pg": "^4.1.0",
         "@inlang/paraglide-js": "^2.19.0",
         "@lucas-barake/effect-form": "1.1.0",
         "@lucas-barake/effect-form-react": "1.1.0",
@@ -150,6 +151,7 @@
         "@effect/atom-react",
         "@effect/platform-browser",
         "@iconify/react",
+        "@effect/sql-pg",
         "@lucas-barake/effect-form",
         "@lucas-barake/effect-form-react",
         "@tanstack/highlight",

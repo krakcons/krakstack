@@ -175,6 +175,8 @@ export interface DataTableListItem {
 
 export interface DataTableReferenceItem {
   label: string;
+  icon?: ReactNode;
+  iconClassName?: string;
   /** Secondary text, such as a user's email or a record identifier. */
   description?: string | null;
   imageSrc?: string | null;
@@ -210,9 +212,12 @@ export const DataTableReferenceCell = ({
         className={cn(
           "bg-muted flex size-8 shrink-0 items-center justify-center overflow-hidden text-xs font-medium",
           imageVariant === "circle" ? "rounded-full" : "rounded-md",
+          item.iconClassName,
         )}
       >
-        {item.imageSrc && item.imageSrc !== failedImage ? (
+        {item.icon ? (
+          <span aria-hidden="true" className="[&_svg]:size-4">{item.icon}</span>
+        ) : item.imageSrc && item.imageSrc !== failedImage ? (
           <img
             src={item.imageSrc}
             alt={item.label}
