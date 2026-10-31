@@ -1,0 +1,129 @@
+---
+slug: speech
+path: /docs/speech
+title: Parole
+description: Transcrivez des enregistrements et générez de l'audio avec un service Effect utilisant Cloudflare AI Gateway.
+order: 19
+locale: fr
+section: services
+type: how-to
+createdAt: 2026-10-31
+updatedAt: 2026-10-31
+---
+
+# Parole
+
+`@krak-stack/registry/speech` fournit la transcription avec `@cf/openai/whisper-large-v3-turbo` et la synthèse vocale avec `@cf/myshell-ai/melotts`. Il ne dépend ni d'une application, ni d'une base de données, ni de l'authentification, des sessions ou de React.
+
+## Installation
+
+```bash
+bun add @krak-stack/registry effect@^4.1.0
+```
+
+Les exports vocaux nécessitent la version **0.1.59 ou ultérieure** du registre. Il s'agit d'imports de package, pas d'un élément du registre shadcn.
+
+| Import | Rôle |
+| --- | --- |
+| `@krak-stack/registry/speech` | Service `Speech` et type `SpeechOptions` |
+| `@krak-stack/registry/speech/schema` | Schémas d'entrée et de sortie, limites et `SpeechUnavailable` |
+| `@krak-stack/registry/speech/api` | Contrat HTTP facultatif `SpeechApiGroup` |
+
+## Configurer le service
+
+Fournissez l'URL du compte Cloudflare, un secret réservé au serveur autorisant l'accès à Workers AI et l'identifiant AI Gateway. Le service accepte les URL de compte se terminant par `/ai/v1` ou `/ai/run` et déduit l'URL de chaque modèle. Aucune clé OpenAI ni aucun SDK fournisseur n'est nécessaire.
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Redacted } from "effect";
+
+// Fournissez le secret depuis la configuration sécurisée du serveur.
+const makeSpeechLayer = (apiKey: Redacted.Redacted<string>) =>
+  Speech.layer({
+    baseUrl: "https://api.cloudflare.com/client/v4/accounts/ACCOUNT_ID/ai/v1",
+    apiKey,
+    gatewayId: "my-gateway",
+  });
+```
+
+`Speech.layer(...)` inclut le client HTTP Fetch. La configuration est explicite ; le service ne lit pas les variables d'environnement.
+
+## Transcrire un enregistrement
+
+Fournissez les octets audio et leur type MIME. Omettez `language` pour la détection automatique ou indiquez un code de deux ou trois lettres minuscules, comme `en`, `fr` ou `de`.
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Effect } from "effect";
+
+const transcribe = (audio: Uint8Array) =>
+  Effect.gen(function* () {
+    const speech = yield* Speech;
+    return yield* speech.transcribe({
+      audio,
+      mimeType: "audio/webm",
+      language: "fr",
+    });
+  });
+
+// À la frontière serveur, fournissez makeSpeechLayer(serverApiKey) :
+// Effect.runPromise(transcribe(recordedBytes).pipe(Effect.provide(speechLayer)))
+// Résultat : { text: "Bonjour." }
+```
+
+L'audio doit être non vide et ne pas dépasser **2 Mio**. Les types MIME acceptés sont `audio/webm`, `audio/ogg`, `audio/mp4` et `audio/wav`. Le contrat HTTP valide ces limites ; les appels directs au service doivent valider les entrées non fiables avec le schéma exporté `TranscribeAudio`. Un texte retourné vide signifie qu'aucune parole n'a été détectée. L'application décide d'ajouter la transcription à un brouillon ou de l'envoyer.
+
+## Générer de l'audio
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Effect } from "effect";
+
+const synthesize = Effect.gen(function* () {
+  const speech = yield* Speech;
+  return yield* speech.synthesize({ text: "Bonjour !", language: "fr" });
+});
+// Fournissez la même couche. Résultat : Uint8Array contenant l'audio MP3.
+```
+
+Le texte doit contenir au moins un caractère autre qu'un espace et compter **1 à 4 000 caractères**. La synthèse exige l'une des langues `en`, `fr`, `es`, `zh`, `ja` ou `ko`. MeloTTS ne propose pas de sélection de voix. Les textes longs ne sont ni tronqués ni découpés automatiquement.
+
+## API HTTP facultative
+
+Ajoutez `SpeechApiGroup` au HttpApi Effect de votre application. Appliquez vos middlewares d'authentification et d'autorisation au groupe **avant d'exposer les routes** ; le contrat exporté n'est pas sécurisé par défaut. L'application gère aussi tout préfixe d'URL, comme `/api`.
+
+Une fois le groupe sécurisé ajouté à votre `Api`, reliez les gestionnaires au service :
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Effect } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
+
+// Api est le HttpApi de l'application contenant le SpeechApiGroup sécurisé.
+const SpeechHandlers = HttpApiBuilder.group(Api, "speech", (handlers) =>
+  handlers
+    .handle("transcribe", ({ payload }) =>
+      Effect.flatMap(Speech, (speech) => speech.transcribe(payload)),
+    )
+    .handle("synthesize", ({ payload }) =>
+      Effect.flatMap(Speech, (speech) => speech.synthesize(payload)),
+    ),
+);
+```
+
+Fournissez la couche vocale configurée à ces gestionnaires dans la composition des couches de votre application.
+
+| Route | Requête JSON | Succès |
+| --- | --- | --- |
+| `POST /speech/transcriptions` | `{ "audio": "BASE64_AUDIO", "mimeType": "audio/webm", "language": "fr" }` | `{ "text": "Bonjour." }` |
+| `POST /speech/synthesis` | `{ "text": "Bonjour !", "language": "fr" }` | Octets MP3 bruts, `Content-Type: audio/mpeg` |
+
+Le client HTTP Effect typé accepte un `Uint8Array` pour la transcription et gère l'encodage base64. Le champ `language` de la transcription est facultatif. Les schémas du contrat rejettent les entrées HTTP invalides.
+
+## Erreurs, confidentialité et responsabilités
+
+Les deux opérations expirent après **60 secondes**, sans nouvelle tentative automatique. Les échecs du fournisseur, de configuration, de délai et de validation des réponses deviennent l'erreur typée `SpeechUnavailable` ; le contrat HTTP la traduit en **503**. La synthèse utilise aussi cette erreur pour les entrées de service invalides, l'audio vide et les réponses fournisseur mal formées.
+
+Le service ne conserve ni les enregistrements ni l'audio généré. Les requêtes désactivent le cache AI Gateway et demandent la désactivation de la journalisation des entrées et sorties ; les politiques de rétention de Cloudflare restent applicables.
+
+Gardez les secrets sur le serveur. L'application doit gérer l'authentification, les autorisations, les quotas et le suivi d'usage par locataire avant tout appel payant. Elle gère aussi les permissions du microphone, la durée d'enregistrement, l'annulation, la révision des transcriptions et la lecture audio. Le délai fournisseur de 60 secondes n'est pas une limite de durée d'enregistrement.

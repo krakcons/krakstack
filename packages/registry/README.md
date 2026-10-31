@@ -18,7 +18,10 @@ Import from the specific package subpaths you need:
 import { DataTable } from "@krak-stack/registry/data-table";
 import { Otlp } from "@krak-stack/registry/opentelemetry";
 import { BrowserOtlp } from "@krak-stack/registry/opentelemetry/browser";
+import { Speech } from "@krak-stack/registry/speech";
 ```
+
+Speech-to-text and text-to-speech use Cloudflare AI Gateway. See the [speech setup and API contract](https://krakstack.net/docs/speech); authentication and quotas stay application-owned. Schemas and the optional HTTP API contract are available from `@krak-stack/registry/speech/schema` and `@krak-stack/registry/speech/api`.
 
 For packaged UI components, include the Tailwind source in your application stylesheet:
 

@@ -11,6 +11,9 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/services/speech/index.ts",
+    "../../src/services/speech/schema.ts",
+    "../../src/services/speech/api.ts",
     "../../src/services/events/client/tracking-notice.tsx",
     "../../src/services/events/record.ts",
     "../../src/services/events/client/audit-log-table.tsx",

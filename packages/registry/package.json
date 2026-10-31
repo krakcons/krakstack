@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.1.58",
+  "version": "0.1.59",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -17,6 +17,18 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./speech": {
+      "types": "./dist/services/speech/index.d.ts",
+      "import": "./dist/services/speech/index.js"
+    },
+    "./speech/schema": {
+      "types": "./dist/services/speech/schema.d.ts",
+      "import": "./dist/services/speech/schema.js"
+    },
+    "./speech/api": {
+      "types": "./dist/services/speech/api.d.ts",
+      "import": "./dist/services/speech/api.js"
+    },
     "./events/tracking-notice": {
       "types": "./dist/services/events/client/tracking-notice.d.ts",
       "import": "./dist/services/events/client/tracking-notice.js"

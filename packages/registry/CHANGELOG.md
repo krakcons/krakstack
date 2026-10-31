@@ -6,6 +6,12 @@
 
 - Merge the error component's homepage link classes with `cn` so its outline border is visible instead of being overridden by the base transparent border.
 
+## 0.1.59
+
+### Patch Changes
+
+- Export reusable Cloudflare AI Gateway speech-to-text and text-to-speech services from `@krak-stack/registry/speech`, with schemas and an optional host-authenticated HTTP API contract.
+
 ## 0.1.58
 
 ### Patch Changes

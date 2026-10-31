@@ -1,0 +1,129 @@
+---
+slug: speech
+path: /docs/speech
+title: Speech
+description: Transcribe recordings and generate spoken audio with an Effect service backed by Cloudflare AI Gateway.
+order: 19
+locale: en
+section: services
+type: how-to
+createdAt: 2026-10-31
+updatedAt: 2026-10-31
+---
+
+# Speech
+
+`@krak-stack/registry/speech` provides speech-to-text with `@cf/openai/whisper-large-v3-turbo` and text-to-speech with `@cf/myshell-ai/melotts`. It has no application, database, authentication, session, or React dependencies.
+
+## Install
+
+```bash
+bun add @krak-stack/registry effect@^4.1.0
+```
+
+The speech exports require registry **0.1.59 or later**. This is a package import, not a shadcn registry item.
+
+| Import | Purpose |
+| --- | --- |
+| `@krak-stack/registry/speech` | `Speech` service and `SpeechOptions` type |
+| `@krak-stack/registry/speech/schema` | Input/output schemas, limits, and `SpeechUnavailable` |
+| `@krak-stack/registry/speech/api` | Optional `SpeechApiGroup` HTTP contract |
+
+## Configure the service
+
+Supply the Cloudflare account URL, a server-only credential with Workers AI access, and the AI Gateway ID. The service accepts account URLs ending in `/ai/v1` or `/ai/run` and derives each model's endpoint. No OpenAI API key or provider SDK is required.
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Redacted } from "effect";
+
+// Supply the credential from your server's secret configuration.
+const makeSpeechLayer = (apiKey: Redacted.Redacted<string>) =>
+  Speech.layer({
+    baseUrl: "https://api.cloudflare.com/client/v4/accounts/ACCOUNT_ID/ai/v1",
+    apiKey,
+    gatewayId: "my-gateway",
+  });
+```
+
+`Speech.layer(...)` includes the Fetch HTTP client. Configuration is passed explicitly; the service does not read environment variables.
+
+## Transcribe a recording
+
+Provide audio bytes and their MIME type. Omit `language` for automatic detection, or supply a two- or three-letter lowercase code such as `en`, `fr`, or `de`.
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Effect } from "effect";
+
+const transcribe = (audio: Uint8Array) =>
+  Effect.gen(function* () {
+    const speech = yield* Speech;
+    return yield* speech.transcribe({
+      audio,
+      mimeType: "audio/webm",
+      language: "fr",
+    });
+  });
+
+// At the server boundary, provide makeSpeechLayer(serverApiKey):
+// Effect.runPromise(transcribe(recordedBytes).pipe(Effect.provide(speechLayer)))
+// Result: { text: "Bonjour." }
+```
+
+Audio must be nonempty and at most **2 MiB**. Supported MIME types are `audio/webm`, `audio/ogg`, `audio/mp4`, and `audio/wav`. The HTTP contract validates these limits; callers using the service directly should validate untrusted input with the exported `TranscribeAudio` schema. Empty returned text means no speech was detected. The application decides whether to append the transcript to a draft or submit it.
+
+## Generate spoken audio
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Effect } from "effect";
+
+const synthesize = Effect.gen(function* () {
+  const speech = yield* Speech;
+  return yield* speech.synthesize({ text: "Bonjour !", language: "fr" });
+});
+// Provide the same speech layer. Result: Uint8Array containing MP3 audio.
+```
+
+Text must contain non-whitespace content and be **1–4,000 characters** long. Synthesis requires one of `en`, `fr`, `es`, `zh`, `ja`, or `ko`. MeloTTS does not expose voice selection. Long text is not truncated or split automatically.
+
+## Optional HTTP API
+
+Add `SpeechApiGroup` to your application's Effect HttpApi. Apply your authentication and authorization middleware to the group **before exposing routes**; the exported contract is not secured by default. The application also owns any URL prefix, such as `/api`.
+
+Once the secured group is part of your `Api`, wire handlers to the service:
+
+```ts
+import { Speech } from "@krak-stack/registry/speech";
+import { Effect } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
+
+// Api is your application-owned HttpApi containing the secured SpeechApiGroup.
+const SpeechHandlers = HttpApiBuilder.group(Api, "speech", (handlers) =>
+  handlers
+    .handle("transcribe", ({ payload }) =>
+      Effect.flatMap(Speech, (speech) => speech.transcribe(payload)),
+    )
+    .handle("synthesize", ({ payload }) =>
+      Effect.flatMap(Speech, (speech) => speech.synthesize(payload)),
+    ),
+);
+```
+
+Provide the configured speech layer to these handlers in your application's layer composition.
+
+| Endpoint | JSON request | Success |
+| --- | --- | --- |
+| `POST /speech/transcriptions` | `{ "audio": "BASE64_AUDIO", "mimeType": "audio/webm", "language": "fr" }` | `{ "text": "Bonjour." }` |
+| `POST /speech/synthesis` | `{ "text": "Bonjour !", "language": "fr" }` | Raw MP3 bytes, `Content-Type: audio/mpeg` |
+
+The typed Effect HTTP client accepts `Uint8Array` for transcription and handles base64 encoding. The transcription `language` field is optional. Invalid HTTP inputs are rejected by the contract schemas.
+
+## Errors, privacy, and application responsibilities
+
+Both operations time out after **60 seconds** and do not retry automatically. Provider, configuration, timeout, and response-validation failures become the typed `SpeechUnavailable` error; the HTTP contract maps it to **503**. Synthesis also rejects invalid service inputs, empty audio, and malformed provider responses through that error.
+
+The service does not persist recordings or generated audio. Requests skip AI Gateway caching and request disabled input/output logging; Cloudflare's retention policies still apply.
+
+Keep credentials on the server. The application must enforce authentication, authorization, quotas, and any tenant-level usage accounting before making paid provider calls. It also owns microphone permissions, recording duration, cancellation, transcript review, and playback. The 60-second provider timeout is not a recording-duration limit.
