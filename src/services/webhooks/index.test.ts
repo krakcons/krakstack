@@ -14,6 +14,8 @@ import { Dns, NetAddress } from "effect/net";
 import { vi } from "vitest";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
+import { Mac, SecureRandom } from "effect/crypto";
+import { Hex } from "effect/encoding";
 import { WorkflowEngine } from "effect/workflow";
 import { DeliverWebhookV1, Webhooks } from "./index";
 import { migrateWebhooks, webhookMigrationsLayer } from "./migrations";
@@ -77,13 +79,32 @@ const awaitDelivery = Effect.fnUntraced(function* (input: {
 
 describe("Webhook validation", () => {
   it("decodes HTTP pagination/filter queries and rejects unsupported columns", () => {
-    const decode = Schema.decodeUnknownSync(Schema.toCodecStringTree(WebhookDeliveriesQuery));
-    expect(decode({
-      page: "1", pageSize: "20", sort: "-createdAt",
-      filters: JSON.stringify([{ id: "status", kind: "values", values: ["failed"] }]),
-    })).toMatchObject({ page: 1, pageSize: 20, sort: [{ id: "createdAt", direction: "desc" }], filters: [{ id: "status", kind: "values", values: ["failed"] }] });
+    const decode = Schema.decodeUnknownSync(
+      Schema.toCodecStringTree(WebhookDeliveriesQuery),
+    );
+    expect(
+      decode({
+        page: "1",
+        pageSize: "20",
+        sort: "-createdAt",
+        filters: JSON.stringify([
+          { id: "status", kind: "values", values: ["failed"] },
+        ]),
+      }),
+    ).toMatchObject({
+      page: 1,
+      pageSize: 20,
+      sort: [{ id: "createdAt", direction: "desc" }],
+      filters: [{ id: "status", kind: "values", values: ["failed"] }],
+    });
     expect(() => decode({ sort: "unknown" })).toThrow();
-    expect(() => decode({ filters: JSON.stringify([{ id: "status", kind: "values", values: ["invalid"] }]) })).toThrow();
+    expect(() =>
+      decode({
+        filters: JSON.stringify([
+          { id: "status", kind: "values", values: ["invalid"] },
+        ]),
+      }),
+    ).toThrow();
   });
   it("trims names and rejects blank or oversized names", () => {
     const decode = Schema.decodeUnknownSync(WebhookPayload);
@@ -112,26 +133,63 @@ describe("Webhook validation", () => {
 });
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)("Webhooks persistence", () => {
-  it.effect("creates and durably delivers loopback endpoints only with the composition-root override", () => TestClock.withLive(Effect.gen(function* () {
-    const requests: string[] = [];
-    const client = HttpClient.make((request) => Effect.sync(() => {
-      requests.push(request.url);
-      return HttpClientResponse.fromWeb(request, new Response(null, { status: 204 }));
-    }));
-    yield* Effect.gen(function* () {
-      const service = yield* Webhooks;
-      const organizationId = crypto.randomUUID();
-      const url = "http://localhost:3000/api/webhooks/auth";
-      const endpoint = yield* service.create({ organizationId, payload: { ...payload, url } });
-      yield* service.update({ organizationId, id: endpoint.id, payload: { ...payload, url } });
-      yield* service.publish({ organizationId, eventId: crypto.randomUUID(), event: "invoice.paid", data: {} });
-      const delivery = (yield* service.get({ organizationId, id: endpoint.id }))?.deliveries[0];
-      if (!delivery) return yield* Effect.die("Expected loopback delivery");
-      yield* awaitDelivery({ organizationId, id: delivery.id });
-      expect(requests).toEqual([url]);
-      expect((yield* service.get({ organizationId, id: endpoint.id }))?.deliveries[0]?.status).toBe("success");
-    }).pipe(Effect.provide(makeLayer(client).pipe(Layer.provide(Layer.succeed(WebhookAllowLoopback, true)))));
-  })), { timeout: 15_000 });
+  it.effect(
+    "creates and durably delivers loopback endpoints only with the composition-root override",
+    () =>
+      TestClock.withLive(
+        Effect.gen(function* () {
+          const requests: string[] = [];
+          const client = HttpClient.make((request) =>
+            Effect.sync(() => {
+              requests.push(request.url);
+              return HttpClientResponse.fromWeb(
+                request,
+                new Response(null, { status: 204 }),
+              );
+            }),
+          );
+          yield* Effect.gen(function* () {
+            const service = yield* Webhooks;
+            const organizationId = crypto.randomUUID();
+            const url = "http://localhost:3000/api/webhooks/auth";
+            const endpoint = yield* service.create({
+              organizationId,
+              payload: { ...payload, url },
+            });
+            yield* service.update({
+              organizationId,
+              id: endpoint.id,
+              payload: { ...payload, url },
+            });
+            yield* service.publish({
+              organizationId,
+              eventId: crypto.randomUUID(),
+              event: "invoice.paid",
+              data: {},
+            });
+            const delivery = (yield* service.get({
+              organizationId,
+              id: endpoint.id,
+            }))?.deliveries[0];
+            if (!delivery)
+              return yield* Effect.die("Expected loopback delivery");
+            yield* awaitDelivery({ organizationId, id: delivery.id });
+            expect(requests).toEqual([url]);
+            expect(
+              (yield* service.get({ organizationId, id: endpoint.id }))
+                ?.deliveries[0]?.status,
+            ).toBe("success");
+          }).pipe(
+            Effect.provide(
+              makeLayer(client).pipe(
+                Layer.provide(Layer.succeed(WebhookAllowLoopback, true)),
+              ),
+            ),
+          );
+        }),
+      ),
+    { timeout: 15_000 },
+  );
   it.effect(
     "paginates all history and filters failed attempts before pagination with tenant isolation",
     () =>
@@ -506,6 +564,39 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("Webhooks persistence", () => {
           );
           if (request?.body._tag !== "Uint8Array")
             return yield* Effect.die("Expected encoded body");
+          const mac = yield* Mac.Mac.pipe(
+            Effect.provide(
+              Mac.layerWebCrypto.pipe(
+                Layer.provide(SecureRandom.layerWebCrypto),
+              ),
+            ),
+          );
+          const key = yield* Mac.key(
+            Mac.hmacSha256,
+            new TextEncoder().encode((yield* service.list({ organizationId }))[0]!.secret),
+          );
+          const signature = yield* Effect.fromResult(
+            Hex.decode(request.headers["webhook-signature"]!),
+          );
+          const body = new TextDecoder().decode(request.body.body);
+          expect(
+            yield* mac.verify(
+              key,
+              signature,
+              new TextEncoder().encode(
+                `${delivery.id}.${request.headers["webhook-timestamp"]}.${body}`,
+              ),
+            ),
+          ).toBe(true);
+          expect(
+            yield* mac.verify(
+              key,
+              signature,
+              new TextEncoder().encode(
+                `tampered.${request.headers["webhook-timestamp"]}.${body}`,
+              ),
+            ),
+          ).toBe(false);
           expect(new TextDecoder().decode(request.body.body)).toBe(
             '{"event":"invoice.paid","data":{"id":"invoice"}}',
           );
@@ -529,9 +620,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("Webhooks persistence", () => {
         yield* sql`INSERT INTO webhooks (id, organization_id, url, enabled, secret) VALUES (${endpointId}, ${organizationId}, 'https://example.com/webhook', true, 'secret')`;
         yield* sql`INSERT INTO webhook_deliveries (id, webhook_id, event, status, retry_at) VALUES (${deliveryId}, ${endpointId}, 'invoice.paid', 'pending', now())`;
         let calls = 0;
+        const ids: Array<string | undefined> = [];
         const client = HttpClient.make((request) =>
           Effect.sync(() => {
             calls++;
+            ids.push(request.headers["webhook-id"]);
             return HttpClientResponse.fromWeb(
               request,
               new Response(null, { status: calls === 1 ? 500 : 204 }),
@@ -542,6 +635,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)("Webhooks persistence", () => {
           const service = yield* Webhooks;
           yield* awaitDelivery({ organizationId, id: deliveryId });
           expect(calls).toBe(2);
+          expect(ids).toEqual([deliveryId, deliveryId]);
           expect(
             (yield* service.get({ organizationId, id: endpointId }))
               ?.deliveries[0],

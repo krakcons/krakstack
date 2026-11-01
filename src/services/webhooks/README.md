@@ -49,11 +49,9 @@ yield *
     schema: Schema.Struct({
       event: Schema.Literal("invoice.paid"),
       data: Schema.Struct({
-        eventId: Schema.NonEmptyString,
         invoiceId: Schema.NonEmptyString,
       }),
     }),
-    eventId: ({ data }) => data.eventId,
     handle: ({ data }) => markInvoicePaid(data.invoiceId),
   });
 ```
@@ -63,8 +61,9 @@ Provide `WebhooksReceiver.layer` with the application's SQL pool. It migrates on
 does not create outbound tables, start a worker, or require a workflow engine.
 `Webhooks.layer` remains outbound-only. Provide both layers when an app needs both.
 
-The caller supplies a trusted receiver namespace and extracts an event ID from
-the **signed payload**. Receipts store that key, a SHA-256 body hash, and a
+The caller supplies a trusted receiver namespace. The receiver uses the
+**signed `webhook-id` header** automatically; no payload ID or extraction callback is required.
+Receipts store that key, a SHA-256 body hash, and a
 completion timestamp, never the payload. Concurrent duplicate deliveries wait
 for the first transaction and return `{ duplicate: true }` without rerunning
 the handler. Reusing a key with different raw content fails with
@@ -74,8 +73,9 @@ must not perform external side effects inside this transaction. Use an outbox
 for external work. `cleanup()` removes receipts older than 30 days; schedule it
 explicitly. After expiry, handlers must still tolerate an old event being replayed.
 
-Do not trust `webhook-id` for security: the current sender does
-not include it in the signature. Enforce a request-body limit at the HTTP
+The signature covers `${webhookId}.${timestamp}.${body}`, including `webhook-id`.
+Legacy signatures over only timestamp and body are rejected; upgrade senders and receivers together.
+Enforce a request-body limit at the HTTP
 boundary, keep secrets server-only, use HTTPS, and return 2xx only after work
 commits. Queueing work requires a separate completion protocol.
 
@@ -85,7 +85,9 @@ commits. Queueing work requires a separate completion protocol.
 horodatages décalés de plus de cinq minutes. Le schéma Effect valide ensuite
 l’enveloppe avant le traitement. Sa couche crée uniquement les reçus de
 déduplication, sans tables d’envoi ni tâche d’arrière-plan. L’identifiant de
-l’événement doit provenir du corps signé. Les reçus et les modifications SQL
+déduplication provient automatiquement de l’en-tête `webhook-id` signé avec l’horodatage et le corps brut
+(`${webhookId}.${timestamp}.${body}`). Aucun identifiant dans les données ni fonction d’extraction n’est nécessaire.
+Les anciennes signatures sont refusées : mettre à jour les émetteurs et récepteurs ensemble. Les reçus et les modifications SQL
 sont validés dans la même transaction ; un échec autorise une nouvelle tentative.
 Le nettoyage explicite supprime les reçus après 30 jours : les traitements
 doivent rester idempotents. Retournez un succès HTTP
@@ -192,7 +194,7 @@ Missing or foreign-tenant endpoints return `undefined`, as with `get`.
 - Body: `{ "event": "invoice.paid", "data": { ... } }`.
 - `webhook-id`: stable delivery ID, usable for receiver deduplication.
 - `webhook-timestamp`: ISO timestamp for the attempt.
-- `webhook-signature`: hex HMAC-SHA256 of `${timestamp}.${body}`, using the endpoint secret.
+- `webhook-signature`: hex HMAC-SHA256 of `${webhookId}.${timestamp}.${body}`, using the endpoint secret.
 - Any 2xx response completes the delivery. Other outcomes retry, up to eight attempts.
 - Deliveries retain a sanitized `error` reason for HTTP failures, timeouts, policy blocks, and network failures. Success clears it. Older failures have `error: null`; response bodies, credentials, and raw exception details are not stored.
 - Backoff uses Effect's exponential schedule: five seconds initially, multiplied by four per retry, capped at ten hours. Durable clocks preserve waits across restarts.

@@ -11,6 +11,7 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/services/webhooks/client/delivery-table.tsx",
     "../../src/services/webhooks/http-client.ts",
     "../../src/services/webhooks/index.ts",
     "../../src/services/webhooks/migrations.ts",

@@ -8,7 +8,7 @@ import { WebhooksReceiver } from "./receiver";
 
 const secret = Redacted.make("test-webhook-secret");
 const body = '{"event":"example.created","data":{"id":"example"}}';
-const signed = (text = body, offset = 0) =>
+const signed = (text = body, offset = 0, id = "test-message") =>
   Effect.gen(function* () {
     const now = yield* DateTime.now;
     const timestamp = new Date(
@@ -20,9 +20,16 @@ const signed = (text = body, offset = 0) =>
       new TextEncoder().encode(Redacted.value(secret)),
     );
     const signature = Hex.encode(
-      yield* mac.sign(key, new TextEncoder().encode(`${timestamp}.${text}`)),
+      yield* mac.sign(
+        key,
+        new TextEncoder().encode(`${id}.${timestamp}.${text}`),
+      ),
     );
-    return { "webhook-timestamp": timestamp, "webhook-signature": signature };
+    return {
+      "webhook-id": id,
+      "webhook-timestamp": timestamp,
+      "webhook-signature": signature,
+    };
   }).pipe(
     Effect.provide(
       Mac.layerWebCrypto.pipe(Layer.provide(SecureRandom.layerWebCrypto)),
@@ -69,7 +76,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
               event: Schema.Literal("example.created"),
               data: Schema.Struct({ id: Schema.String }),
             }),
-            eventId: () => "test-event",
             handle: () =>
               Effect.sync(() => {
                 calls++;
@@ -77,6 +83,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
           };
           for (const invalid of [
             {},
+            { ...headers, "webhook-id": undefined },
+            { ...headers, "webhook-id": "" },
+            { ...headers, "webhook-id": "tampered-message" },
             { ...headers, "webhook-signature": "not-hex" },
             { ...headers, "webhook-timestamp": "invalid" },
             yield* signed(body, -301_000),
@@ -105,7 +114,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
         }).pipe(Effect.provide(receiverLayer)),
     );
     it.effect(
-      "migrates only receipts and deduplicates concurrent retries by signed event ID",
+      "migrates only receipts and deduplicates concurrent retries by signed webhook ID",
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
@@ -127,7 +136,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
               event: Schema.String,
               data: Schema.Struct({ id: Schema.String }),
             }),
-            eventId: ({ data }: { data: { id: string } }) => data.id,
             handle: ({ data }: { data: { id: string } }) =>
               sql`INSERT INTO processed VALUES (${data.id})`.pipe(
                 Effect.asVoid,
@@ -148,6 +156,43 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
             })
             .pipe(Effect.flip);
           expect(error._tag).toBe("WebhookReceiptConflict");
+          const refreshed = yield* receiver.receive({
+            ...input,
+            headers: yield* signed(body, 1_000),
+          });
+          expect(refreshed.duplicate).toBe(true);
+        }).pipe(Effect.provide(receiverLayer)),
+    );
+
+    it.effect(
+      "scopes receipts by receiver and accepts distinct signed IDs without payload IDs",
+      () =>
+        Effect.gen(function* () {
+          const receiver = yield* WebhooksReceiver;
+          let calls = 0;
+          const input = {
+            receiver: "first",
+            secret,
+            body,
+            headers: yield* signed(),
+            schema: Schema.Json,
+            handle: () =>
+              Effect.sync(() => {
+                calls++;
+              }),
+          };
+          expect((yield* receiver.receive(input)).duplicate).toBe(false);
+          expect(
+            (yield* receiver.receive({
+              ...input,
+              headers: yield* signed(body, 0, "another-message"),
+            })).duplicate,
+          ).toBe(false);
+          expect(
+            (yield* receiver.receive({ ...input, receiver: "second" }))
+              .duplicate,
+          ).toBe(false);
+          expect(calls).toBe(3);
         }).pipe(Effect.provide(receiverLayer)),
     );
 
@@ -165,7 +210,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
             body,
             headers: yield* signed(),
             schema: Schema.Json,
-            eventId: () => "deletion-1",
           };
           yield* receiver
             .receive({

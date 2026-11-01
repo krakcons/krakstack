@@ -944,6 +944,28 @@
       ]
     },
     {
+      "name": "webhook-delivery-table",
+      "title": "Webhook Delivery Table",
+      "description": "A shared webhook activity table with delivery status, retry details, server pagination, application-owned links, and a JSON payload dialog.",
+      "type": "registry:component",
+      "meta": { "createdAt": "2026-11-01", "updatedAt": "2026-11-01" },
+      "registryDependencies": [
+        "@krak-stack/data-table",
+        "@krak-stack/code-block",
+        "@krak-stack/krakstack-provider",
+        "button",
+        "dialog"
+      ],
+      "dependencies": ["effect@latest", "react", "lucide-react"],
+      "files": [
+        {
+          "path": "src/services/webhooks/client/delivery-table.tsx",
+          "type": "registry:file",
+          "target": "services/webhooks/client/delivery-table.tsx"
+        }
+      ]
+    },
+    {
       "name": "service-events",
       "title": "Events",
       "description": "Cookieless analytics, transactional server audit events, and built-in workflow subscribers, with inherited actor context and event-derived visits.",

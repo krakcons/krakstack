@@ -20,6 +20,7 @@ export class WebhookVerificationError extends Schema.TaggedError<WebhookVerifica
 ) {}
 
 const ProtocolHeaders = Schema.Struct({
+  "webhook-id": Schema.NonEmptyString,
   "webhook-timestamp": Schema.String,
   "webhook-signature": Schema.String.check(
     Schema.isPattern(/^[a-fA-F0-9]{64}$/),
@@ -63,7 +64,6 @@ export class WebhooksReceiver extends Context.Service<WebhooksReceiver>()(
         readonly headers: Readonly<Record<string, string | undefined>>;
         readonly body: string;
         readonly schema: S;
-        readonly eventId: (payload: S["Type"]) => string;
         readonly handle: (payload: S["Type"]) => Effect.Effect<void, E, R>;
       }) {
         const headers = yield* Schema.decodeUnknownEffect(ProtocolHeaders)(
@@ -98,7 +98,9 @@ export class WebhooksReceiver extends Context.Service<WebhooksReceiver>()(
         const valid = yield* mac.verify(
           key,
           signature,
-          new TextEncoder().encode(`${timestamp}.${input.body}`),
+          new TextEncoder().encode(
+            `${headers["webhook-id"]}.${timestamp}.${input.body}`,
+          ),
         );
         if (!valid)
           return yield* new WebhookVerificationError({ reason: "signature" });
@@ -111,7 +113,7 @@ export class WebhooksReceiver extends Context.Service<WebhooksReceiver>()(
         );
         const request = yield* Schema.decodeUnknownEffect(ReceiptRequest)({
           receiver: input.receiver,
-          eventId: input.eventId(payload),
+          eventId: headers["webhook-id"],
           bodyHash: yield* digest.digestHex(
             Digest.sha256,
             new TextEncoder().encode(input.body),

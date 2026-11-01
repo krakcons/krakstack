@@ -98,7 +98,10 @@ const processDelivery = Effect.fn("Webhooks.processDelivery")(function* (
     new TextEncoder().encode(endpoint.secret),
   );
   const signature = Hex.encode(
-    yield* mac.sign(key, new TextEncoder().encode(`${timestamp}.${body}`)),
+    yield* mac.sign(
+      key,
+      new TextEncoder().encode(`${delivery.id}.${timestamp}.${body}`),
+    ),
   );
   const allowLoopback = yield* WebhookAllowLoopback;
   const error = isAllowedWebhookUrlString(endpoint.url, allowLoopback)

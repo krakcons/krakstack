@@ -17,6 +17,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./webhooks/client": {
+      "types": "./dist/services/webhooks/client/delivery-table.d.ts",
+      "import": "./dist/services/webhooks/client/delivery-table.js"
+    },
     "./webhooks/http-client": {
       "types": "./dist/services/webhooks/http-client.d.ts",
       "import": "./dist/services/webhooks/http-client.js"
