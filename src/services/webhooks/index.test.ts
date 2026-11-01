@@ -18,6 +18,7 @@ import { WorkflowEngine } from "effect/workflow";
 import { DeliverWebhookV1, Webhooks } from "./index";
 import { migrateWebhooks, webhookMigrationsLayer } from "./migrations";
 import { WebhookDeliveriesQuery, WebhookPayload } from "./schema";
+import { WebhookAllowLoopback } from "./url";
 
 const database = PgClient.layerConfig({
   url: Config.Redacted("TEST_DATABASE_URL"),
@@ -111,6 +112,26 @@ describe("Webhook validation", () => {
 });
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)("Webhooks persistence", () => {
+  it.effect("creates and durably delivers loopback endpoints only with the composition-root override", () => TestClock.withLive(Effect.gen(function* () {
+    const requests: string[] = [];
+    const client = HttpClient.make((request) => Effect.sync(() => {
+      requests.push(request.url);
+      return HttpClientResponse.fromWeb(request, new Response(null, { status: 204 }));
+    }));
+    yield* Effect.gen(function* () {
+      const service = yield* Webhooks;
+      const organizationId = crypto.randomUUID();
+      const url = "http://localhost:3000/api/webhooks/auth";
+      const endpoint = yield* service.create({ organizationId, payload: { ...payload, url } });
+      yield* service.update({ organizationId, id: endpoint.id, payload: { ...payload, url } });
+      yield* service.publish({ organizationId, eventId: crypto.randomUUID(), event: "invoice.paid", data: {} });
+      const delivery = (yield* service.get({ organizationId, id: endpoint.id }))?.deliveries[0];
+      if (!delivery) return yield* Effect.die("Expected loopback delivery");
+      yield* awaitDelivery({ organizationId, id: delivery.id });
+      expect(requests).toEqual([url]);
+      expect((yield* service.get({ organizationId, id: endpoint.id }))?.deliveries[0]?.status).toBe("success");
+    }).pipe(Effect.provide(makeLayer(client).pipe(Layer.provide(Layer.succeed(WebhookAllowLoopback, true)))));
+  })), { timeout: 15_000 });
   it.effect(
     "paginates all history and filters failed attempts before pagination with tenant isolation",
     () =>

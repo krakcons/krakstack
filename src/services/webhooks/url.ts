@@ -62,3 +62,32 @@ export const isPublicWebhookUrlString = (value: string) => {
     return false;
   }
 };
+
+export const isAllowedWebhookUrlString = (
+  value: string,
+  allowLoopback: boolean,
+) => {
+  try {
+    const url = new URL(value);
+    return (
+      isPublicWebhookUrl(url) || (allowLoopback && isLoopbackWebhookUrl(url))
+    );
+  } catch {
+    return false;
+  }
+};
+import { Context } from "effect";
+
+/** Opt in only in a local development composition root, never from a request. */
+export const WebhookAllowLoopback = Context.Reference<boolean>(
+  "Webhooks/AllowLoopback",
+  {
+    defaultValue: () => false,
+  },
+);
+
+export const isLoopbackWebhookUrl = (url: URL) =>
+  ["http:", "https:"].includes(url.protocol) &&
+  !url.username &&
+  !url.password &&
+  ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);

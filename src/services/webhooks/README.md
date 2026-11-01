@@ -6,6 +6,93 @@ publication deduplication, signing, and delivery retries. Authentication,
 authorization, HTTP endpoints, event catalogs, and audit recording belong to
 the application.
 
+## Local development delivery
+
+Outbound loopback URLs are blocked by default. A **local development composition
+root only** can provide `Layer.succeed(WebhookAllowLoopback, true)` around the
+entire `Webhooks.layer` (exported from `@krak-stack/registry/webhooks`). This allows
+HTTP(S) on exactly `localhost`, `127.0.0.1`, and `[::1]` for service create/update,
+durable execution, and the built-in HTTP client. Other private destinations remain
+blocked; redirects remain disabled. Gate the override on development mode in the
+application, never on request input. Public API contracts using `WebhookPayload`
+remain strict; use `webhookPayloadSchema(true)` only for development contracts.
+
+**Français :** les URL locales sont bloquées par défaut. Seule la composition de
+développement doit fournir `Layer.succeed(WebhookAllowLoopback, true)` autour de
+`Webhooks.layer`. L’exception autorise HTTP(S) sur `localhost`, `127.0.0.1` et
+`[::1]`, sans autoriser les autres adresses privées ni les redirections. Ne jamais
+activer cette option depuis une requête ou en production. Le contrat public
+`WebhookPayload` reste strict ; `webhookPayloadSchema(true)` est réservé au
+développement.
+
+## Receive
+
+`WebhooksReceiver` is exported from `@krak-stack/registry/webhooks`, alongside
+the outbound `Webhooks` service. Pass a `Redacted` secret, lowercase protocol headers, the exact
+raw request body, an Effect schema for the complete `{ event, data }` envelope,
+and an Effect handler. Verification uses constant-time Web Crypto HMAC-SHA256
+and rejects timestamps more than five minutes in either direction. Parsing and
+handling happen only after verification. Handler failures propagate so the HTTP
+endpoint can return a non-2xx response and the sender can retry.
+
+```ts
+import { WebhooksReceiver } from "@krak-stack/registry/webhooks";
+import { Redacted, Schema } from "effect";
+
+const receiver = yield * WebhooksReceiver;
+yield *
+  receiver.receive({
+    receiver: "billing-endpoint",
+    secret: Redacted.make(endpointSecret),
+    headers: request.headers,
+    body: yield * request.text,
+    schema: Schema.Struct({
+      event: Schema.Literal("invoice.paid"),
+      data: Schema.Struct({
+        eventId: Schema.NonEmptyString,
+        invoiceId: Schema.NonEmptyString,
+      }),
+    }),
+    eventId: ({ data }) => data.eventId,
+    handle: ({ data }) => markInvoicePaid(data.invoiceId),
+  });
+```
+
+Provide `WebhooksReceiver.layer` with the application's SQL pool. It migrates only
+`webhook_receipts`, using the `krakstack_webhook_receiver_migrations` ledger. It
+does not create outbound tables, start a worker, or require a workflow engine.
+`Webhooks.layer` remains outbound-only. Provide both layers when an app needs both.
+
+The caller supplies a trusted receiver namespace and extracts an event ID from
+the **signed payload**. Receipts store that key, a SHA-256 body hash, and a
+completion timestamp, never the payload. Concurrent duplicate deliveries wait
+for the first transaction and return `{ duplicate: true }` without rerunning
+the handler. Reusing a key with different raw content fails with
+`WebhookReceiptConflict`. Handler changes and the receipt commit in one SQL
+transaction; failures roll both back. Handlers must use the same SQL pool and
+must not perform external side effects inside this transaction. Use an outbox
+for external work. `cleanup()` removes receipts older than 30 days; schedule it
+explicitly. After expiry, handlers must still tolerate an old event being replayed.
+
+Do not trust `webhook-id` for security: the current sender does
+not include it in the signature. Enforce a request-body limit at the HTTP
+boundary, keep secrets server-only, use HTTPS, and return 2xx only after work
+commits. Queueing work requires a separate completion protocol.
+
+### Réception
+
+`WebhooksReceiver` vérifie la signature HMAC du corps brut et refuse les
+horodatages décalés de plus de cinq minutes. Le schéma Effect valide ensuite
+l’enveloppe avant le traitement. Sa couche crée uniquement les reçus de
+déduplication, sans tables d’envoi ni tâche d’arrière-plan. L’identifiant de
+l’événement doit provenir du corps signé. Les reçus et les modifications SQL
+sont validés dans la même transaction ; un échec autorise une nouvelle tentative.
+Le nettoyage explicite supprime les reçus après 30 jours : les traitements
+doivent rester idempotents. Retournez un succès HTTP
+uniquement après validation de la transaction. Limitez la taille du corps HTTP,
+gardez le secret côté serveur et utilisez HTTPS. Une mise en file d’attente
+n’est pas une confirmation de suppression terminée.
+
 ## Publish
 
 ```ts

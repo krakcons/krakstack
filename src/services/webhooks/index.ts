@@ -16,7 +16,8 @@ import { SqlClient, SqlSchema } from "effect/sql";
 import { Mac, SecureRandom } from "effect/crypto";
 import { Hex } from "effect/encoding";
 import { webhookMigrationsLayer } from "./migrations";
-import { isPublicWebhookUrlString } from "./url";
+import { isAllowedWebhookUrlString, WebhookAllowLoopback } from "./url";
+export { WebhookAllowLoopback } from "./url";
 import { layer as webhookHttpClientLayer } from "./http-client";
 import {
   PublishWebhook,
@@ -24,6 +25,7 @@ import {
   WebhookDelivery,
   WebhookError,
   WebhookPayload,
+  webhookPayloadSchema,
   WebhookRequest,
   WebhookScope,
   WebhookStatisticsRequest,
@@ -35,6 +37,11 @@ import {
   deliveryColumns,
 } from "./schema";
 export * from "./schema";
+export {
+  WebhooksReceiver,
+  WebhookVerificationError,
+  WebhookReceiptConflict,
+} from "./receiver";
 
 const maxDeliveryAttempts = 8;
 const retrySchedule = Schedule.min([
@@ -93,7 +100,8 @@ const processDelivery = Effect.fn("Webhooks.processDelivery")(function* (
   const signature = Hex.encode(
     yield* mac.sign(key, new TextEncoder().encode(`${timestamp}.${body}`)),
   );
-  const error = isPublicWebhookUrlString(endpoint.url)
+  const allowLoopback = yield* WebhookAllowLoopback;
+  const error = isAllowedWebhookUrlString(endpoint.url, allowLoopback)
     ? yield* client
         .execute(
           HttpClientRequest.post(endpoint.url).pipe(
@@ -230,6 +238,9 @@ export class Webhooks extends Context.Service<Webhooks>()(
     make: Effect.gen(function* () {
       const sql = (yield* SqlClient.SqlClient).withoutTransforms();
       const pg = yield* PgClient.PgClient;
+      const configuredPayload = webhookPayloadSchema(
+        yield* WebhookAllowLoopback,
+      );
       const random = yield* SecureRandom.SecureRandom.pipe(
         Effect.provide(SecureRandom.layerWebCrypto),
       );
@@ -397,7 +408,7 @@ export class Webhooks extends Context.Service<Webhooks>()(
       }) {
         const { organizationId } =
           yield* Schema.decodeUnknownEffect(WebhookScope)(input);
-        const payload = yield* Schema.decodeUnknownEffect(WebhookPayload)(
+        const payload = yield* Schema.decodeUnknownEffect(configuredPayload)(
           input.payload,
         );
         const id = yield* random.uuidV7();
@@ -412,7 +423,7 @@ export class Webhooks extends Context.Service<Webhooks>()(
       ) {
         const { organizationId, id } =
           yield* Schema.decodeUnknownEffect(WebhookRequest)(input);
-        const payload = yield* Schema.decodeUnknownEffect(WebhookPayload)(
+        const payload = yield* Schema.decodeUnknownEffect(configuredPayload)(
           input.payload,
         );
         return yield* SqlSchema.findOneOption({

@@ -3,7 +3,12 @@ import { Effect, Layer } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/http";
 import { Dns, NetAddress } from "effect/net";
 import { vi } from "vitest";
-import { isPublicWebhookDestination, layer } from "./http-client";
+import {
+  isAllowedWebhookDestination,
+  isPublicWebhookDestination,
+  layer,
+} from "./http-client";
+import { WebhookAllowLoopback } from "./url";
 
 const dnsLayer = (addresses: readonly string[]) =>
   Layer.succeed(
@@ -15,6 +20,37 @@ const dnsLayer = (addresses: readonly string[]) =>
   );
 
 describe("Webhook destination checks", () => {
+  it.effect(
+    "allows only explicit loopback hosts when opted in and leaves default checks strict",
+    () =>
+      Effect.gen(function* () {
+        for (const url of [
+          "http://localhost:3000/hook",
+          "http://127.0.0.1:3000/hook",
+          "http://[::1]:3000/hook",
+        ]) {
+          expect(yield* isAllowedWebhookDestination(new URL(url))).toBe(false);
+          expect(
+            yield* isAllowedWebhookDestination(new URL(url)).pipe(
+              Effect.provideService(WebhookAllowLoopback, true),
+            ),
+          ).toBe(true);
+        }
+        for (const url of [
+          "http://10.0.0.1/hook",
+          "http://169.254.169.254/hook",
+          "http://localhost.example/hook",
+          "http://user:pass@localhost/hook",
+          "file:///etc/passwd",
+        ]) {
+          expect(
+            yield* isAllowedWebhookDestination(new URL(url)).pipe(
+              Effect.provideService(WebhookAllowLoopback, true),
+            ),
+          ).toBe(false);
+        }
+      }).pipe(Effect.provide(dnsLayer([]))),
+  );
   it.effect("rejects private literals without DNS", () =>
     Effect.gen(function* () {
       expect(
@@ -89,6 +125,60 @@ describe("Webhook destination checks", () => {
 });
 
 describe("Webhook HTTP client", () => {
+  it.effect(
+    "delivers to a real local HTTP listener with the explicit loopback override",
+    () =>
+      Effect.gen(function* () {
+        let calls = 0;
+        const server = yield* Effect.acquireRelease(
+          Effect.sync(() =>
+            Bun.serve({
+              hostname: "127.0.0.1",
+              port: 0,
+              fetch: () => {
+                calls++;
+                return new Response(null, { status: 204 });
+              },
+            }),
+          ),
+          (server) => Effect.sync(() => server.stop(true)),
+        );
+        const client = yield* HttpClient.HttpClient;
+        const response = yield* client.post(
+          `http://localhost:${server.port}/api/webhooks/auth`,
+        );
+        expect(response.status).toBe(204);
+        expect(calls).toBe(1);
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(
+          layer.pipe(Layer.provide(Layer.succeed(WebhookAllowLoopback, true))),
+        ),
+        Effect.provide(dnsLayer([])),
+      ),
+  );
+  it.effect("sends opted-in loopback requests without allowing redirects", () =>
+    Effect.gen(function* () {
+      const fetch = vi
+        .fn<typeof globalThis.fetch>()
+        .mockResolvedValue(new Response(null, { status: 204 }));
+      const client = yield* HttpClient.HttpClient;
+      const response = yield* client
+        .post("http://localhost:3000/api/webhooks/auth")
+        .pipe(Effect.provideService(FetchHttpClient.Fetch, fetch));
+      expect(response.status).toBe(204);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(URL),
+        expect.objectContaining({ redirect: "error" }),
+      );
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(
+        layer.pipe(Layer.provide(Layer.succeed(WebhookAllowLoopback, true))),
+      ),
+      Effect.provide(dnsLayer([])),
+    ),
+  );
   it.effect("blocks private DNS destinations before sending", () =>
     Effect.gen(function* () {
       const fetch = vi.fn<typeof globalThis.fetch>();
@@ -107,14 +197,12 @@ describe("Webhook HTTP client", () => {
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue(new Response(null, { status: 204 }));
       const client = yield* HttpClient.HttpClient;
-      const response = yield* client
-        .post("https://receiver.example/hook")
-        .pipe(
-          Effect.provideService(FetchHttpClient.Fetch, fetch),
-          Effect.provideService(FetchHttpClient.RequestInit, {
-            redirect: "follow",
-          }),
-        );
+      const response = yield* client.post("https://receiver.example/hook").pipe(
+        Effect.provideService(FetchHttpClient.Fetch, fetch),
+        Effect.provideService(FetchHttpClient.RequestInit, {
+          redirect: "follow",
+        }),
+      );
       expect(response.status).toBe(204);
       expect(fetch).toHaveBeenCalledWith(
         expect.any(URL),

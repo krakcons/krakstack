@@ -1,7 +1,12 @@
 import { Effect, Layer, Result } from "effect";
 import { Dns, NetAddress } from "effect/net";
 import { FetchHttpClient, HttpClient, HttpClientError } from "effect/http";
-import { isPublicIpAddress, isPublicWebhookUrl } from "./url";
+import {
+  isLoopbackWebhookUrl,
+  isPublicIpAddress,
+  isPublicWebhookUrl,
+  WebhookAllowLoopback,
+} from "./url";
 
 /** DNS preflight. Network egress rules must also prevent DNS rebinding. */
 export const isPublicWebhookDestination = Effect.fn(
@@ -21,18 +26,27 @@ export const isPublicWebhookDestination = Effect.fn(
   );
 });
 
+export const isAllowedWebhookDestination = Effect.fn(
+  "Webhooks.isAllowedDestination",
+)(function* (url: URL) {
+  if ((yield* WebhookAllowLoopback) && isLoopbackWebhookUrl(url)) return true;
+  return yield* isPublicWebhookDestination(url);
+});
+
 /** Built-in fetch client with public-destination checks and no redirects. */
 export const layer = Layer.effect(
   HttpClient.HttpClient,
   Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient;
     const dns = yield* Dns.Dns;
+    const allowLoopback = yield* WebhookAllowLoopback;
     return client.pipe(
       HttpClient.transform((response, request) =>
         Effect.gen(function* () {
           if (
-            !(yield* isPublicWebhookDestination(new URL(request.url)).pipe(
+            !(yield* isAllowedWebhookDestination(new URL(request.url)).pipe(
               Effect.provideService(Dns.Dns, dns),
+              Effect.provideService(WebhookAllowLoopback, allowLoopback),
             ))
           ) {
             return yield* new HttpClientError.HttpClientError({

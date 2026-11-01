@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { isPublicWebhookUrlString } from "./url";
+import { isAllowedWebhookUrlString, isPublicWebhookUrlString } from "./url";
 import {
   ColumnFilter,
   ColumnFilters,
@@ -79,6 +79,19 @@ export const WebhookPayload = Schema.Struct({
     ),
   ),
 }).annotate({ identifier: "WebhookPayload" });
+export const webhookPayloadSchema = (allowLoopback: boolean) =>
+  Schema.Struct({
+    ...WebhookPayload.fields,
+    url: Schema.String.check(
+      Schema.makeFilter(
+        (value) => isAllowedWebhookUrlString(value, allowLoopback),
+        {
+          expected:
+            "a public HTTP(S) URL, or an explicitly enabled development loopback URL",
+        },
+      ),
+    ),
+  }).annotate({ identifier: "ConfiguredWebhookPayload" });
 export const Webhook = Schema.Struct({
   id: Schema.String,
   name: Schema.String,

@@ -38,3 +38,23 @@ export const migrateWebhooks = Migrator.make({})({
   table: "krakstack_webhook_migrations",
 });
 export const webhookMigrationsLayer = Layer.effectDiscard(migrateWebhooks);
+
+// Receiver-only applications do not need endpoint, publication, or delivery tables.
+export const webhookReceiverMigrations = Migrator.fromRecord({
+  "1_webhook_receipts": Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    yield* sql`CREATE TABLE webhook_receipts (
+      receiver text NOT NULL, event_id text NOT NULL, body_hash text NOT NULL,
+      completed_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (receiver, event_id)
+    )`;
+    yield* sql`CREATE INDEX webhook_receipts_completed ON webhook_receipts (completed_at)`;
+  }),
+});
+export const migrateWebhookReceiver = Migrator.make({})({
+  loader: webhookReceiverMigrations,
+  table: "krakstack_webhook_receiver_migrations",
+});
+export const webhookReceiverMigrationsLayer = Layer.effectDiscard(
+  migrateWebhookReceiver,
+);
