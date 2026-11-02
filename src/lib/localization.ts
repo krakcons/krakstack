@@ -29,7 +29,7 @@ export const LocalizedInputSchema = Schema.Struct({
 export type LocalizedInputType = typeof LocalizedInputSchema.Type;
 
 const decodeLocale = Schema.decodeUnknownOption(LocaleSchema);
-const AcceptLanguageQuality = Schema.NumberFromString.check(
+const AcceptLanguageQuality = Schema.FiniteFromString.check(
   Schema.makeFilter((quality) => quality >= 0 && quality <= 1),
 ).annotate({ identifier: "AcceptLanguageQuality" });
 const decodeAcceptLanguageQuality = Schema.decodeUnknownOption(

@@ -233,7 +233,7 @@ export const ColumnFilters = Schema.declare(Schema.is(ColumnFiltersArray), {
 
 export const Query = Schema.Struct({
   page: Schema.optional(
-    Schema.Union([Schema.Number, Schema.NumberFromString]).check(
+    Schema.Union([Schema.Finite, Schema.FiniteFromString]).check(
       Schema.isInt(),
       Schema.isGreaterThanOrEqualTo(0),
     ),
@@ -246,7 +246,7 @@ export const Query = Schema.Struct({
     }),
   ),
   pageSize: Schema.optional(
-    Schema.Union([Schema.Number, Schema.NumberFromString]).check(
+    Schema.Union([Schema.Finite, Schema.FiniteFromString]).check(
       Schema.isInt(),
       Schema.isBetween({ minimum: 1, maximum: 100 }),
     ),

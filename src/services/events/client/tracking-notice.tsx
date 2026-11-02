@@ -87,10 +87,10 @@ const translations = {
   },
 } satisfies Record<string, TrackingNoticeMessages>;
 
-class ConsentStorageError extends Schema.TaggedError<ConsentStorageError>()(
-  "ConsentStorageError",
-  {},
-) {}
+class ConsentStorageError extends Schema.TaggedError<
+  ConsentStorageError,
+  { readonly brand: unique symbol }
+>()("ConsentStorageError", {}) {}
 
 /** Mount once in a persistent footer. English/French defaults follow KrakstackProvider. */
 export const TrackingNotice = ({
@@ -121,7 +121,7 @@ export const TrackingNotice = ({
       Effect.try({
         try: () => saveAnalyticsPreference(choice),
         catch: () => new ConsentStorageError(),
-      }).pipe(Effect.catch(() => Effect.succeed(false))),
+      }).pipe(Effect.orElseSucceed(() => false)),
     );
     setFailed(!result);
     if (result) setOpen(false);

@@ -62,7 +62,7 @@ const emit = Effect.fnUntraced(function* (
 ) {
   const client = yield* BrowserEventsClient;
   if (!client.allowed()) return;
-  const decoded = yield* Schema.decodeUnknownEffect(BrowserEventOptions)(
+  const decoded = yield* Schema.decodeEffect(BrowserEventOptions)(
     options ?? {},
   );
   yield* event(
@@ -75,7 +75,7 @@ const emit = Effect.fnUntraced(function* (
 const page = Effect.fnUntraced(function* (input: BrowserPageOptions = {}) {
   const client = yield* BrowserEventsClient;
   if (!client.allowed()) return;
-  const decoded = yield* Schema.decodeUnknownEffect(BrowserPage)(input);
+  const decoded = yield* Schema.decodeEffect(BrowserPage)(input);
   const properties = eventProperties(decoded.properties);
   if (decoded.name) properties["analytics.page.name"] = decoded.name;
   if (decoded.category)
@@ -118,17 +118,25 @@ let stopPageViewTracking: (() => void) | undefined;
 
 const subscribePageViews = (listener: () => void) => {
   if (pageViewListeners.size === 0) {
-    const pushState = history.pushState;
-    const replaceState = history.replaceState;
+    const pushDescriptor = Object.getOwnPropertyDescriptor(
+      history,
+      "pushState",
+    );
+    const replaceDescriptor = Object.getOwnPropertyDescriptor(
+      history,
+      "replaceState",
+    );
+    const pushState = history.pushState.bind(history);
+    const replaceState = history.replaceState.bind(history);
     const notify = () => {
       for (const onPage of pageViewListeners) onPage();
     };
     const trackedPushState: History["pushState"] = (...args) => {
-      pushState.apply(history, args);
+      pushState(...args);
       notify();
     };
     const trackedReplaceState: History["replaceState"] = (...args) => {
-      replaceState.apply(history, args);
+      replaceState(...args);
       notify();
     };
     history.pushState = trackedPushState;
@@ -136,9 +144,16 @@ const subscribePageViews = (listener: () => void) => {
     globalThis.addEventListener("popstate", notify);
     stopPageViewTracking = () => {
       globalThis.removeEventListener("popstate", notify);
-      if (history.pushState === trackedPushState) history.pushState = pushState;
-      if (history.replaceState === trackedReplaceState)
-        history.replaceState = replaceState;
+      if (history.pushState === trackedPushState) {
+        if (pushDescriptor)
+          Object.defineProperty(history, "pushState", pushDescriptor);
+        else Reflect.deleteProperty(history, "pushState");
+      }
+      if (history.replaceState === trackedReplaceState) {
+        if (replaceDescriptor)
+          Object.defineProperty(history, "replaceState", replaceDescriptor);
+        else Reflect.deleteProperty(history, "replaceState");
+      }
     };
   }
   pageViewListeners.add(listener);

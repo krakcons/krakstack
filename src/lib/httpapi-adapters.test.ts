@@ -39,12 +39,12 @@ const api = HttpApi.make("test").add(
   ),
 );
 
-class TestTransportError extends Schema.TaggedError<TestTransportError>()(
-  "TestTransportError",
-  {
-    cause: Schema.Defect(),
-  },
-) {}
+class TestTransportError extends Schema.TaggedError<
+  TestTransportError,
+  { readonly brand: unique symbol }
+>()("TestTransportError", {
+  cause: Schema.Defect(),
+}) {}
 
 const RpcResult = Schema.Struct({ result: Schema.JsonObject }).annotate({
   identifier: "AdapterRpcResult",
@@ -204,7 +204,7 @@ describe("shared HTTP API adapter inputs", () => {
                 try: () => response.text(),
                 catch: (cause) => new TestTransportError({ cause }),
               });
-              const decoded = yield* Schema.decodeUnknownEffect(
+              const decoded = yield* Schema.decodeEffect(
                 Schema.fromJsonString(RpcResult),
               )(text);
               expect(decoded.result.isError).toBe(invalid);

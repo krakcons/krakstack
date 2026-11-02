@@ -1,3 +1,4 @@
+import * as Data from "effect/Data";
 import { Console, Effect, JsonSchema, Option, Schema, Stream } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
@@ -10,6 +11,11 @@ import {
   type HttpApiOperationDefinition,
 } from "@/lib/httpapi-adapter";
 import type { Json } from "effect/Schema";
+
+class HttpApiCliError extends Data.TaggedError("HttpApiCliError")<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
 
 type CliOperation = HttpApiOperationDefinition & {
   groupName: string;
@@ -136,9 +142,9 @@ const httpApiCliOperationGroups = (
 
     if (group) {
       if (group.operations.some((entry) => entry.name === operation.name)) {
-        throw new Error(
-          `Duplicate CLI command ${operation.groupName} ${operation.name}`,
-        );
+        throw new HttpApiCliError({
+          message: `Duplicate CLI command ${operation.groupName} ${operation.name}`,
+        });
       }
       group.operations.push(operation);
     } else {
@@ -205,7 +211,7 @@ const schemaEnum = (schema: CliJsonSchema): ReadonlyArray<string> =>
 const jsonFlag = (name: string) =>
   Flag.String(name).pipe(
     Flag.mapTryCatch(
-      (value) => Schema.decodeUnknownSync(JsonFromString)(value),
+      (value) => Schema.decodeSync(JsonFromString)(value),
       () => `--${name} must be valid JSON`,
     ),
   );
@@ -349,9 +355,9 @@ const operationInputs = (operation: CliOperation): ReadonlyArray<CliInput> => {
         ? draft.preferredName
         : `${draft.location.replace(/s$/, "")}-${draft.preferredName}`;
     if (draft.location !== "params" && optionNames.has(optionName)) {
-      throw new Error(
-        `Duplicate CLI option --${optionName} for ${operation.groupName} ${operation.name}`,
-      );
+      throw new HttpApiCliError({
+        message: `Duplicate CLI option --${optionName} for ${operation.groupName} ${operation.name}`,
+      });
     }
     optionNames.add(optionName);
 
@@ -382,6 +388,16 @@ const printHttpApiCliResult = Effect.fn("HttpApiCli.printResult")(function* (
   const stream = Schema.decodeUnknownOption(HttpApiCliResultStream)(response);
   if (stream._tag === "Some") {
     return yield* stream.value.pipe(
+      Stream.mapError(
+        (cause) =>
+          new HttpApiCliError({
+            message:
+              cause instanceof Error
+                ? cause.message
+                : "HTTP API result stream failed",
+            cause,
+          }),
+      ),
       Stream.mapEffect((event) => client.encodeResult(event, operation)),
       Stream.runForEach((event) => print(JSON.stringify(event))),
     );
@@ -434,14 +450,14 @@ const callOperation = Effect.fn("HttpApiCli.callOperation")(function* (
   }
   if (bodyInput !== undefined) rawInput.body = bodyInput;
 
-  const input = yield* Schema.decodeUnknownEffect(operation.inputSchema)(
+  const input = yield* Schema.decodeEffect(operation.inputSchema)(
     rawInput,
   ).pipe(
     Effect.mapError(
       (error) =>
-        new Error(
-          `Invalid input for ${operation.groupName} ${operation.name}: ${error.message}`,
-        ),
+        new HttpApiCliError({
+          message: `Invalid input for ${operation.groupName} ${operation.name}: ${error.message}`,
+        }),
     ),
   );
   const response = yield* client.execute({ operation, input });
@@ -503,8 +519,8 @@ const groupCommand = (
   group: CliOperationGroup,
   client: HttpApiAdapterService,
 ) =>
-  Effect.all(
-    group.operations.map((operation) => operationCommand(operation, client)),
+  Effect.forEach(group.operations, (operation) =>
+    operationCommand(operation, client),
   ).pipe(
     Effect.map((operationCommands) =>
       Command.make(group.name).pipe(
@@ -524,10 +540,13 @@ const makeHttpApiCliCommand = Effect.fn("HttpApiCli.makeCommand")(function* () {
   const groups = yield* Effect.try({
     try: () => httpApiCliOperationGroups(spec.operations.map(toCliOperation)),
     catch: (error) =>
-      error instanceof Error ? error : new Error(String(error)),
+      new HttpApiCliError({
+        message: error instanceof Error ? error.message : String(error),
+        cause: error,
+      }),
   });
-  const groupCommands = yield* Effect.all(
-    groups.map((group) => groupCommand(group, client)),
+  const groupCommands = yield* Effect.forEach(groups, (group) =>
+    groupCommand(group, client),
   );
 
   return Command.make(name).pipe(

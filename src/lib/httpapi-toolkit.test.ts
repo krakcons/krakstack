@@ -74,10 +74,10 @@ describe("HttpApi toolkit", () => {
         HttpApiGroup.make("workouts").add(
           HttpApiEndpoint.get("summary", "/summary", {
             query: Schema.Struct({
-              days: Schema.optional(Schema.Number),
-              limit: Schema.optional(Schema.Number),
+              days: Schema.optional(Schema.Finite),
+              limit: Schema.optional(Schema.Finite),
             }),
-            success: Schema.Struct({ days: Schema.Number }),
+            success: Schema.Struct({ days: Schema.Finite }),
           }),
         ),
       );
@@ -191,7 +191,7 @@ describe("HttpApi toolkit", () => {
           ],
         },
       };
-      const decoded = yield* Schema.decodeUnknownEffect(codec)(providerInput);
+      const decoded = yield* Schema.decodeEffect(codec)(providerInput);
       expect(decoded).toEqual({
         params: { itemId: "item-1" },
         body: {
@@ -236,7 +236,7 @@ describe("HttpApi toolkit", () => {
         tool.parametersSchema,
       );
 
-      const error = yield* Schema.decodeUnknownEffect(codec)({
+      const error = yield* Schema.decodeEffect(codec)({
         params: { itemId: "item-1" },
         query: null,
         body: {

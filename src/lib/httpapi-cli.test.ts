@@ -1,3 +1,4 @@
+import * as Layer from "effect/Layer";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema, Stream } from "effect";
 import { TestConsole } from "effect/testing";
@@ -27,7 +28,10 @@ const client: Pick<HttpApiAdapterService, "execute" | "encodeResult"> = {
   execute: () => Effect.die("Not used"),
 };
 
-class CreateItem extends Schema.Class<CreateItem>("CreateItem")({
+class CreateItem extends Schema.Class<
+  CreateItem,
+  { readonly brand: unique symbol }
+>("CreateItem")({
   displayName: Schema.NonEmptyString,
   count: Schema.Int,
   metadata: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
@@ -55,6 +59,29 @@ const TestApi = HttpApi.make("TestApi")
   );
 
 describe("CLI result output", () => {
+  it.effect("retains the cause when a result stream fails", () =>
+    Effect.gen(function* () {
+      const { run } = yield* makeHttpApiCli();
+      const args = ["events", "stream"];
+      const error = yield* run(args).pipe(
+        Effect.provide(httpApiCliEnvironmentLayer(args)),
+        Effect.flip,
+      );
+      expect(error).toMatchObject({
+        _tag: "HttpApiCliError",
+        message: "HTTP API result stream failed",
+        cause: "stream disconnected",
+      });
+    }).pipe(
+      Effect.provide(
+        httpApiAdapterTestLayer(OutputApi, {
+          ...client,
+          execute: () => Effect.succeed(Stream.fail("stream disconnected")),
+        }).pipe(Layer.provideMerge(TestConsole.layer)),
+      ),
+    ),
+  );
+
   it.effect("pretty prints ordinary responses", () =>
     Effect.gen(function* () {
       const { run } = yield* makeHttpApiCli();
@@ -69,9 +96,8 @@ describe("CLI result output", () => {
         httpApiAdapterTestLayer(OutputApi, {
           ...client,
           execute: () => Effect.succeed({ status: "ready" }),
-        }),
+        }).pipe(Layer.provideMerge(TestConsole.layer)),
       ),
-      Effect.provide(TestConsole.layer),
     ),
   );
 
@@ -96,9 +122,8 @@ describe("CLI result output", () => {
                 { _tag: "progress", current: 2 },
               ),
             ),
-        }),
+        }).pipe(Layer.provideMerge(TestConsole.layer)),
       ),
-      Effect.provide(TestConsole.layer),
     ),
   );
 });
@@ -119,9 +144,8 @@ describe("generated HttpApi commands", () => {
         httpApiAdapterTestLayer(OutputApi, {
           ...client,
           execute: () => Effect.fail(error),
-        }),
+        }).pipe(Layer.provideMerge(TestConsole.layer)),
       ),
-      Effect.provide(TestConsole.layer),
     );
   });
 
@@ -132,8 +156,11 @@ describe("generated HttpApi commands", () => {
       yield* run(args).pipe(Effect.provide(httpApiCliEnvironmentLayer(args)));
       expect(yield* TestConsole.logLines).toEqual(["test-service-api v1.2.3"]);
     }).pipe(
-      Effect.provide(httpApiAdapterTestLayer(TestApi, client)),
-      Effect.provide(TestConsole.layer),
+      Effect.provide(
+        httpApiAdapterTestLayer(TestApi, client).pipe(
+          Layer.provideMerge(TestConsole.layer),
+        ),
+      ),
     ),
   );
 
@@ -206,7 +233,9 @@ describe("generated HttpApi commands", () => {
           query: { includeArchived: true, page: 2 },
         });
         expect(yield* TestConsole.logLines).toEqual(['"created"']);
-      }).pipe(Effect.provide(clientLayer), Effect.provide(TestConsole.layer));
+      }).pipe(
+        Effect.provide(clientLayer.pipe(Layer.provideMerge(TestConsole.layer))),
+      );
     },
   );
 });

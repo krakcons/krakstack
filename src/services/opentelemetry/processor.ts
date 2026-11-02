@@ -7,10 +7,12 @@ export interface OtlpLogsResult {
   readonly persisted: boolean;
 }
 
-export class OtlpProcessingError extends Schema.TaggedError<OtlpProcessingError>()(
-  "OtlpProcessingError",
-  { status: Schema.Literals([400, 403, 409, 413, 503]) },
-) {}
+export class OtlpProcessingError extends Schema.TaggedError<
+  OtlpProcessingError,
+  { readonly brand: unique symbol }
+>()("OtlpProcessingError", {
+  status: Schema.Literals([400, 403, 409, 413, 503]),
+}) {}
 
 /** Optional processing at the existing OTLP/HTTP logs boundary. */
 export class OtlpLogsProcessor extends Context.Service<

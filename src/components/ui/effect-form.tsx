@@ -160,8 +160,8 @@ const useEffectFormMessages = (
 
 const SubmitErrorDetails = Schema.Struct({
   _tag: Schema.optional(Schema.String),
-  status: Schema.optional(Schema.Number),
-  statusCode: Schema.optional(Schema.Number),
+  status: Schema.optional(Schema.Finite),
+  statusCode: Schema.optional(Schema.Finite),
 }).annotate({ identifier: "SubmitErrorDetails" });
 
 const submitErrorStatuses = new Map([

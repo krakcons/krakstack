@@ -241,7 +241,7 @@ describe("OTLP analytics enrichment", () => {
           const result = yield* events.process(
             encode(envelope([event(timestamp)])),
           );
-          const payload = yield* Schema.decodeUnknownEffect(
+          const payload = yield* Schema.decodeEffect(
             Schema.fromJsonString(OtlpLogs),
           )(new TextDecoder().decode(result.body));
           const scopes = payload.resourceLogs.flatMap(
@@ -348,7 +348,7 @@ describe("OTLP analytics enrichment", () => {
         const output = yield* service.process(
           encode(envelope([event(DateTime.toEpochMillis(now))])),
         );
-        const payload = yield* Schema.decodeUnknownEffect(
+        const payload = yield* Schema.decodeEffect(
           Schema.fromJsonString(OtlpLogs),
         )(new TextDecoder().decode(output.body));
         const record = yield* Schema.decodeUnknownEffect(EventLogRecord)(
@@ -375,14 +375,17 @@ describe("OTLP analytics enrichment", () => {
         }
       }).pipe(
         Effect.provideService(HttpServerRequest.HttpServerRequest, request()),
-        Effect.provide(scenario.layer),
-        Effect.provide(telemetry),
         Effect.provide(
-          ConfigProvider.layer(
-            ConfigProvider.fromUnknown({
-              ...scenario.config,
-              OTEL_SERVICE_NAME: "config-test",
-            }),
+          scenario.layer.pipe(
+            Layer.provideMerge(telemetry),
+            Layer.provideMerge(
+              ConfigProvider.layer(
+                ConfigProvider.fromUnknown({
+                  ...scenario.config,
+                  OTEL_SERVICE_NAME: "config-test",
+                }),
+              ),
+            ),
           ),
         ),
       );
@@ -400,17 +403,18 @@ describe("OTLP analytics enrichment", () => {
       `rejects missing or invalid default configuration: ${Object.keys(config).join(", ") || "empty"}`,
       () =>
         Effect.gen(function* () {
-          const result = yield* Effect.gen(function* () {
-            yield* Events;
-          }).pipe(
-            Effect.provide(Events.layer),
-            Effect.provide(telemetry),
+          const result = yield* Effect.asVoid(Events).pipe(
             Effect.provide(
-              ConfigProvider.layer(
-                ConfigProvider.fromUnknown({
-                  ...config,
-                  OTEL_SERVICE_NAME: "config-test",
-                }),
+              Events.layer.pipe(
+                Layer.provideMerge(telemetry),
+                Layer.provideMerge(
+                  ConfigProvider.layer(
+                    ConfigProvider.fromUnknown({
+                      ...config,
+                      OTEL_SERVICE_NAME: "config-test",
+                    }),
+                  ),
+                ),
               ),
             ),
             Effect.result,
@@ -449,7 +453,7 @@ describe("OTLP analytics enrichment", () => {
           const output = yield* service.process(
             encode(envelope([record, record])),
           );
-          const payload = yield* Schema.decodeUnknownEffect(
+          const payload = yield* Schema.decodeEffect(
             Schema.fromJsonString(OtlpLogs),
           )(new TextDecoder().decode(output.body));
           const records = yield* Schema.decodeUnknownEffect(
@@ -635,7 +639,7 @@ describe("OTLP analytics enrichment", () => {
               ]),
             ),
           );
-          const payload = yield* Schema.decodeUnknownEffect(
+          const payload = yield* Schema.decodeEffect(
             Schema.fromJsonString(OtlpLogs),
           )(new TextDecoder().decode(output.body));
           const records = yield* Schema.decodeUnknownEffect(
@@ -734,7 +738,7 @@ describe("OTLP analytics enrichment", () => {
           ]),
         ),
       );
-      const payload = yield* Schema.decodeUnknownEffect(
+      const payload = yield* Schema.decodeEffect(
         Schema.fromJsonString(OtlpLogs),
       )(new TextDecoder().decode(output.body));
       const enriched = yield* Schema.decodeUnknownEffect(EventLogRecord)(
@@ -790,7 +794,7 @@ describe("OTLP analytics enrichment", () => {
           const now = yield* DateTime.now;
           const body = envelope([event(DateTime.toEpochMillis(now))]);
           const output = yield* analytics.process(encode(body));
-          const decoded = yield* Schema.decodeUnknownEffect(
+          const decoded = yield* Schema.decodeEffect(
             Schema.fromJsonString(OtlpLogs),
           )(new TextDecoder().decode(output.body));
           // Keep producer metadata, but do not trust it for visitor or storage scoping.
@@ -823,10 +827,13 @@ describe("OTLP analytics enrichment", () => {
               secret,
               geolocation: "cloudflare",
               serviceName: scenario.serviceName,
-            }),
-          ),
-          Effect.provide(
-            ConfigProvider.layer(ConfigProvider.fromUnknown(scenario.config)),
+            }).pipe(
+              Layer.provideMerge(
+                ConfigProvider.layer(
+                  ConfigProvider.fromUnknown(scenario.config),
+                ),
+              ),
+            ),
           ),
         );
       },
@@ -844,7 +851,7 @@ describe("OTLP analytics enrichment", () => {
           ),
         );
         expect(output.persisted).toBe(false);
-        const payload = yield* Schema.decodeUnknownEffect(
+        const payload = yield* Schema.decodeEffect(
           Schema.fromJsonString(OtlpLogs),
         )(new TextDecoder().decode(output.body));
         const record = yield* Schema.decodeUnknownEffect(EventLogRecord)(
@@ -911,7 +918,7 @@ describe("OTLP analytics enrichment", () => {
           const output = yield* service.process(
             encode(envelope([identified, identified])),
           );
-          const decoded = yield* Schema.decodeUnknownEffect(
+          const decoded = yield* Schema.decodeEffect(
             Schema.fromJsonString(OtlpLogs),
           )(new TextDecoder().decode(output.body));
           const records = yield* Schema.decodeUnknownEffect(
@@ -997,7 +1004,7 @@ describe("OTLP analytics enrichment", () => {
         const now = DateTime.toEpochMillis(yield* DateTime.now);
         const input = envelope([event(now)]);
         const output = yield* service.process(encode(input));
-        const decoded = yield* Schema.decodeUnknownEffect(
+        const decoded = yield* Schema.decodeEffect(
           Schema.fromJsonString(OtlpLogs),
         )(new TextDecoder().decode(output.body));
         const resource = decoded.resourceLogs[0]!;

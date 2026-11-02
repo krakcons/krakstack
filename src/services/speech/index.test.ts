@@ -23,68 +23,94 @@ const input: TranscribeAudio = {
 const speechLayer = Speech.layer(options);
 
 describe("speech synthesis", () => {
-  it.effect("routes French synthesis through the Gateway and returns MP3 bytes", () => {
-    const requests: Request[] = [];
-    const bytes = new Uint8Array([73, 68, 51, 1]);
-    return Effect.gen(function* () {
-      const speech = yield* Speech;
-      expect(yield* speech.synthesize({ text: "Bonjour Alex.", language: "fr" })).toEqual(bytes);
-      const request = requests[0]!;
-      expect(request.url).toBe(
-        "https://api.example.test/client/v4/accounts/test-account/ai/run/@cf/myshell-ai/melotts",
-      );
-      expect(request.headers.get("authorization")).toBe("Bearer gateway-key");
-      expect(request.headers.get("cf-aig-gateway-id")).toBe("example");
-      expect(request.headers.get("cf-aig-skip-cache")).toBe("true");
-      expect(request.headers.get("cf-aig-collect-log")).toBe("false");
-      expect(
-        yield* Schema.decodeUnknownEffect(Schema.fromJsonString(MeloRequest))(
-          yield* Effect.promise(() => request.text()),
+  it.effect(
+    "routes French synthesis through the Gateway and returns MP3 bytes",
+    () => {
+      const requests: Request[] = [];
+      const bytes = new Uint8Array([73, 68, 51, 1]);
+      return Effect.gen(function* () {
+        const speech = yield* Speech;
+        expect(
+          yield* speech.synthesize({ text: "Bonjour Alex.", language: "fr" }),
+        ).toEqual(bytes);
+        const request = requests[0]!;
+        expect(request.url).toBe(
+          "https://api.example.test/client/v4/accounts/test-account/ai/run/@cf/myshell-ai/melotts",
+        );
+        expect(request.headers.get("authorization")).toBe("Bearer gateway-key");
+        expect(request.headers.get("cf-aig-gateway-id")).toBe("example");
+        expect(request.headers.get("cf-aig-skip-cache")).toBe("true");
+        expect(request.headers.get("cf-aig-collect-log")).toBe("false");
+        expect(
+          yield* Schema.decodeEffect(Schema.fromJsonString(MeloRequest))(
+            yield* Effect.promise(() => request.text()),
+          ),
+        ).toEqual({ prompt: "Bonjour Alex.", lang: "fr" });
+      }).pipe(
+        Effect.provide(speechLayer),
+        Effect.provideService(
+          FetchHttpClient.Fetch,
+          Object.assign(
+            async (input: string | URL | Request, init?: RequestInit) => {
+              requests.push(new Request(input, init));
+              return new Response(bytes, {
+                headers: { "content-type": "audio/mpeg" },
+              });
+            },
+            { preconnect: () => {} },
+          ),
         ),
-      ).toEqual({ prompt: "Bonjour Alex.", lang: "fr" });
-    }).pipe(
-      Effect.provide(speechLayer),
-      Effect.provideService(FetchHttpClient.Fetch, Object.assign(
-        async (input: string | URL | Request, init?: RequestInit) => {
-          requests.push(new Request(input, init));
-          return new Response(bytes, { headers: { "content-type": "audio/mpeg" } });
-        },
-        { preconnect: () => {} },
-      )),
-    );
-  });
+      );
+    },
+  );
   it.effect("decodes the Gateway JSON audio response", () =>
     Effect.gen(function* () {
       const speech = yield* Speech;
-      expect(yield* speech.synthesize({ text: "Hello.", language: "en" })).toEqual(
-        new Uint8Array([73, 68, 51]),
-      );
+      expect(
+        yield* speech.synthesize({ text: "Hello.", language: "en" }),
+      ).toEqual(new Uint8Array([73, 68, 51]));
     }).pipe(
       Effect.provide(speechLayer),
-      Effect.provideService(FetchHttpClient.Fetch, Object.assign(async () =>
-        Response.json({ success: true, result: { audio: "SUQz" } }),
-        { preconnect: () => {} },
-      )),
+      Effect.provideService(
+        FetchHttpClient.Fetch,
+        Object.assign(
+          async () =>
+            Response.json({ success: true, result: { audio: "SUQz" } }),
+          { preconnect: () => {} },
+        ),
+      ),
     ),
   );
-  it.effect("maps provider, malformed, empty, and unexpected responses to a typed error", () =>
-    Effect.gen(function* () {
-      for (const response of [
-        new Response("unavailable", { status: 503 }),
-        Response.json({ success: true, result: { audio: "invalid%%%" } }),
-        new Response(new Uint8Array(), { headers: { "content-type": "audio/mpeg" } }),
-        new Response("<html>error</html>", { headers: { "content-type": "text/html" } }),
-      ]) {
-        const error = yield* Effect.gen(function* () {
-          return yield* (yield* Speech).synthesize({ text: "Hello.", language: "en" });
-        }).pipe(
-          Effect.provide(speechLayer),
-          Effect.provideService(FetchHttpClient.Fetch, Object.assign(async () => response, { preconnect: () => {} })),
-          Effect.flip,
-        );
-        expect(error._tag).toBe("SpeechUnavailable");
-      }
-    }),
+  it.effect(
+    "maps provider, malformed, empty, and unexpected responses to a typed error",
+    () =>
+      Effect.gen(function* () {
+        for (const response of [
+          new Response("unavailable", { status: 503 }),
+          Response.json({ success: true, result: { audio: "invalid%%%" } }),
+          new Response(new Uint8Array(), {
+            headers: { "content-type": "audio/mpeg" },
+          }),
+          new Response("<html>error</html>", {
+            headers: { "content-type": "text/html" },
+          }),
+        ]) {
+          const error = yield* Effect.gen(function* () {
+            return yield* (yield* Speech).synthesize({
+              text: "Hello.",
+              language: "en",
+            });
+          }).pipe(
+            Effect.provide(speechLayer),
+            Effect.provideService(
+              FetchHttpClient.Fetch,
+              Object.assign(async () => response, { preconnect: () => {} }),
+            ),
+            Effect.flip,
+          );
+          expect(error._tag).toBe("SpeechUnavailable");
+        }
+      }),
   );
   it("rejects empty, oversized, and unsupported-language synthesis input", () => {
     const valid = Schema.is(SynthesizeSpeech);
@@ -103,7 +129,9 @@ describe("speech transcription", () => {
       const requests: Request[] = [];
       return Effect.gen(function* () {
         const speech = yield* Speech;
-        expect(yield* speech.transcribe(input)).toEqual({ text: "Bonjour Alex." });
+        expect(yield* speech.transcribe(input)).toEqual({
+          text: "Bonjour Alex.",
+        });
         const request = requests[0]!;
         expect(request.url).toBe(
           "https://api.example.test/client/v4/accounts/test-account/ai/run/@cf/openai/whisper-large-v3-turbo",
@@ -112,9 +140,9 @@ describe("speech transcription", () => {
         expect(request.headers.get("cf-aig-gateway-id")).toBe("example");
         expect(request.headers.get("cf-aig-skip-cache")).toBe("true");
         expect(request.headers.get("cf-aig-collect-log")).toBe("false");
-        const payload = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(WhisperRequest))(
-          yield* Effect.promise(() => request.text()),
-        );
+        const payload = yield* Schema.decodeEffect(
+          Schema.fromJsonString(WhisperRequest),
+        )(yield* Effect.promise(() => request.text()));
         expect(payload).toEqual({
           audio: input.audio,
           language: "fr",
@@ -128,7 +156,10 @@ describe("speech transcription", () => {
           Object.assign(
             async (url: string | URL | Request, options?: RequestInit) => {
               requests.push(new Request(url, options));
-              return Response.json({ success: true, result: { text: "  Bonjour Alex.  " } });
+              return Response.json({
+                success: true,
+                result: { text: "  Bonjour Alex.  " },
+              });
             },
             { preconnect: () => {} },
           ),
@@ -142,14 +173,20 @@ describe("speech transcription", () => {
       Effect.forEach(
         [
           new Response("provider secret", { status: 503 }),
-          Response.json({ success: false, errors: [{ message: "provider secret" }] }),
+          Response.json({
+            success: false,
+            errors: [{ message: "provider secret" }],
+          }),
           Response.json({ success: true, result: { text: 42 } }),
         ],
         (response) =>
           Effect.gen(function* () {
-            const result = yield* Effect.result((yield* Speech).transcribe(input));
+            const result = yield* Effect.result(
+              (yield* Speech).transcribe(input),
+            );
             expect(result._tag).toBe("Failure");
-            if (result._tag === "Failure") expect(result.failure._tag).toBe("SpeechUnavailable");
+            if (result._tag === "Failure")
+              expect(result.failure._tag).toBe("SpeechUnavailable");
           }).pipe(
             Effect.provide(speechLayer),
             Effect.provideService(
@@ -159,31 +196,38 @@ describe("speech transcription", () => {
           ),
       ),
   );
-  it.effect("rejects an invalid gateway configuration before an outbound request", () => {
-    let calls = 0;
-    return Effect.gen(function* () {
-      const speech = yield* Speech;
-      expect((yield* Effect.result(speech.transcribe(input)))._tag).toBe("Failure");
-      expect(calls).toBe(0);
-    }).pipe(
-      Effect.provide(Speech.layer({ ...options, baseUrl: "not-a-url" })),
-      Effect.provideService(
-        FetchHttpClient.Fetch,
-        Object.assign(
-          async () => {
-            calls++;
-            return Response.json({});
-          },
-          { preconnect: () => {} },
+  it.effect(
+    "rejects an invalid gateway configuration before an outbound request",
+    () => {
+      let calls = 0;
+      return Effect.gen(function* () {
+        const speech = yield* Speech;
+        expect((yield* Effect.result(speech.transcribe(input)))._tag).toBe(
+          "Failure",
+        );
+        expect(calls).toBe(0);
+      }).pipe(
+        Effect.provide(Speech.layer({ ...options, baseUrl: "not-a-url" })),
+        Effect.provideService(
+          FetchHttpClient.Fetch,
+          Object.assign(
+            async () => {
+              calls++;
+              return Response.json({});
+            },
+            { preconnect: () => {} },
+          ),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
   it("validates binary/base64 size, recording format, and language at the boundary", () => {
     const valid = Schema.is(TranscribeAudio);
     expect(valid(input)).toBe(true);
     expect(valid({ ...input, audio: new Uint8Array() })).toBe(false);
-    expect(valid({ ...input, audio: new Uint8Array(MAX_AUDIO_BYTES + 1) })).toBe(false);
+    expect(
+      valid({ ...input, audio: new Uint8Array(MAX_AUDIO_BYTES + 1) }),
+    ).toBe(false);
     expect(valid({ ...input, mimeType: "text/plain" })).toBe(false);
     expect(valid({ ...input, language: "not-a-language" })).toBe(false);
     expect(valid({ ...input, language: "de" })).toBe(true);

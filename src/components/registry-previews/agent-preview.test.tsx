@@ -41,26 +41,26 @@ afterEach(() => {
 });
 
 describe("AgentPreview", () => {
-  it("shows tool traces inside the widget for an ordinary message", () => {
+  it("shows tool traces inside the widget for an ordinary message", async () => {
     render(<AgentPreview />);
     fireEvent.click(screen.getByRole("button", { name: "Open AI Assistant" }));
     fireEvent.change(screen.getByRole("combobox"), {
       target: { value: "Hello" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-    act(() => vi.advanceTimersByTime(40));
+    await act(() => vi.advanceTimersByTime(40));
     const widget = within(screen.getByRole("dialog"));
     expect(widget.getByText(m.agent_preview_search_tool())).toBeTruthy();
     const trace = widget.getByRole("button", { name: /Tool activity/ });
     expect(trace.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(trace);
     expect(trace.getAttribute("aria-expanded")).toBe("false");
-    act(() => vi.advanceTimersByTime(800));
+    await act(() => vi.advanceTimersByTime(800));
     expect(trace.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(trace);
     expect(trace.getAttribute("aria-expanded")).toBe("true");
     expect(widget.getByText(m.agent_preview_read_tool())).toBeTruthy();
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(widget.getByText(m.agent_preview_response_intro())).toBeTruthy();
   });
 
@@ -70,13 +70,13 @@ describe("AgentPreview", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open AI Assistant" }));
   };
 
-  it("runs multiple tools before streaming their simulated results", () => {
+  it("runs multiple tools before streaming their simulated results", async () => {
     openDemo(m.agent_preview_tools());
-    act(() => vi.advanceTimersByTime(40));
+    await act(() => vi.advanceTimersByTime(40));
     expect(screen.getByText(m.agent_preview_search_tool())).toBeTruthy();
-    act(() => vi.advanceTimersByTime(800));
+    await act(() => vi.advanceTimersByTime(800));
     expect(screen.getByText(m.agent_preview_read_tool())).toBeTruthy();
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.getByText(m.agent_preview_tools_response())).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Worked for/ }));
     expect(screen.getByText(m.agent_preview_search_tool())).toBeTruthy();
@@ -89,9 +89,9 @@ describe("AgentPreview", () => {
 
   it.each([true, false])(
     "resumes after an approval decision: %s",
-    (approved) => {
+    async (approved) => {
       openDemo(m.agent_preview_destructive());
-      act(() => vi.advanceTimersByTime(600));
+      await act(() => vi.advanceTimersByTime(600));
       expect(screen.getByText("Destructive")).toBeTruthy();
       expect(screen.getByRole("combobox")).toHaveProperty("disabled", true);
       fireEvent.click(screen.getByRole("button", { name: "View more" }));
@@ -99,7 +99,7 @@ describe("AgentPreview", () => {
       fireEvent.click(
         screen.getByRole("button", { name: approved ? "Approve" : "Cancel" }),
       );
-      act(() => vi.advanceTimersByTime(10_000));
+      await act(() => vi.advanceTimersByTime(10_000));
       expect(
         screen.getByText(
           approved
@@ -111,9 +111,9 @@ describe("AgentPreview", () => {
     },
   );
 
-  it("shows tool failures and lets another scenario recover from a service error", () => {
+  it("shows tool failures and lets another scenario recover from a service error", async () => {
     openDemo(m.agent_preview_failure());
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.getByText("Failed")).toBeTruthy();
     expect(
       screen.getByText(m.agent_preview_tool_failure_response()),
@@ -121,21 +121,21 @@ describe("AgentPreview", () => {
     fireEvent.click(
       screen.getByRole("button", { name: m.agent_preview_error() }),
     );
-    act(() => vi.advanceTimersByTime(600));
+    await act(() => vi.advanceTimersByTime(600));
     expect(screen.getByRole("alert").textContent).toContain(
       "The assistant is currently unavailable.",
     );
     fireEvent.click(
       screen.getByRole("button", { name: m.agent_preview_tools() }),
     );
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByText(m.agent_preview_tools_response())).toBeTruthy();
   });
 
-  it("renders formatted content and a copyable code example", () => {
+  it("renders formatted content and a copyable code example", async () => {
     openDemo(m.agent_preview_markdown());
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.getByText(m.agent_preview_markdown_item())).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy ts code" })).toBeTruthy();
     expect(
@@ -143,7 +143,7 @@ describe("AgentPreview", () => {
     ).toContain("const result = await agent.submit");
   });
 
-  it("uses selected references and allows context removal", () => {
+  it("uses selected references and allows context removal", async () => {
     render(<AgentPreview />);
     fireEvent.click(screen.getByRole("button", { name: "Open AI Assistant" }));
     fireEvent.click(
@@ -157,7 +157,7 @@ describe("AgentPreview", () => {
     });
     fireEvent.click(screen.getByText(m.home_nav_docs()));
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(
       screen.getByText(
         m.agent_preview_response_references({ references: m.home_nav_docs() }),
@@ -165,19 +165,19 @@ describe("AgentPreview", () => {
     ).toBeTruthy();
   });
 
-  it("cancels a running scenario when another demo is selected", () => {
+  it("cancels a running scenario when another demo is selected", async () => {
     openDemo(m.agent_preview_tools());
-    act(() => vi.advanceTimersByTime(40));
+    await act(() => vi.advanceTimersByTime(40));
     fireEvent.click(
       screen.getByRole("button", { name: m.agent_preview_destructive() }),
     );
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.getByRole("button", { name: "Approve" })).toBeTruthy();
     expect(screen.queryByText(m.agent_preview_search_tool())).toBeNull();
     expect(screen.queryByText(m.agent_preview_tools_response())).toBeNull();
   });
 
-  it("streams fake replies and cancels them when stopped or reset", () => {
+  it("streams fake replies and cancels them when stopped or reset", async () => {
     render(<AgentPreview />);
     fireEvent.click(screen.getByRole("button", { name: "Open AI Assistant" }));
 
@@ -189,27 +189,27 @@ describe("AgentPreview", () => {
     };
 
     send();
-    act(() => vi.advanceTimersByTime(1720));
+    await act(() => vi.advanceTimersByTime(1720));
     const partial = m.agent_preview_response_intro().slice(0, 16);
     expect(screen.getByText(partial)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Stop response" }));
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.getByText(partial)).toBeTruthy();
     expect(screen.queryByText(m.agent_preview_response_intro())).toBeNull();
 
     send();
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(
       screen.getByText(m.agent_preview_response_plan().replace(/\s+/g, " ")),
     ).toBeTruthy();
 
     send();
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     fireEvent.click(screen.getByRole("button", { name: "Open AI Assistant" }));
     expect(screen.queryByText(partial)).toBeNull();
     send();
-    act(() => vi.advanceTimersByTime(10_000));
+    await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.getByText(m.agent_preview_response_intro())).toBeTruthy();
   });
 });

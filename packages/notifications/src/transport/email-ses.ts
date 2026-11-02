@@ -163,14 +163,12 @@ const makeSesEmailTransport = Effect.gen(function* () {
     ),
   );
 
-  const accessKeyId = yield* Schema.decodeUnknownEffect(Schema.NonEmptyString)(
+  const accessKeyId = yield* Schema.decodeEffect(Schema.NonEmptyString)(
     Redacted.value(environment.accessKeyId),
   ).pipe(Effect.mapError(() => unavailable("SES access key is unavailable")));
-  const secretAccessKey = yield* Schema.decodeUnknownEffect(
-    Schema.NonEmptyString,
-  )(Redacted.value(environment.secretAccessKey)).pipe(
-    Effect.mapError(() => unavailable("SES secret key is unavailable")),
-  );
+  const secretAccessKey = yield* Schema.decodeEffect(Schema.NonEmptyString)(
+    Redacted.value(environment.secretAccessKey),
+  ).pipe(Effect.mapError(() => unavailable("SES secret key is unavailable")));
   const defaultFrom =
     environment.defaultFromValue.length === 0
       ? undefined
@@ -191,74 +189,72 @@ const makeSesEmailTransport = Effect.gen(function* () {
     (client) => Effect.sync(() => client.destroy()),
   );
 
-  const send = Effect.fn("SesEmailTransport.send")(
-    function* (
-      input,
-    ): Effect.fn.Return<
-      NotificationTransportResult,
-      NotificationTransportFailure
-    > {
-      if (input.payloadVersion !== 1) {
-        return yield* new NotificationTransportPermanent({
-          channel: "email",
-          message: `Unsupported email payload version: ${input.payloadVersion}`,
-        });
-      }
-      const email = yield* decodeEmailPayloadV1(input.payload).pipe(
-        Effect.mapError(
-          (cause) =>
-            new NotificationTransportPermanent({
-              channel: "email",
-              message: "Malformed email payload",
-              cause,
-            }),
-        ),
-      );
-      const recipient = yield* decodeEmailRecipient({
-        address: input.recipientAddress,
-        name: input.recipientName,
-      }).pipe(
-        Effect.mapError(
-          (cause) =>
-            new NotificationTransportPermanent({
-              channel: "email",
-              message: "Invalid email recipient",
-              cause,
-            }),
-        ),
-      );
-      const from = email.from ?? defaultFrom;
-      if (from === undefined) {
-        return yield* unavailable(
-          "SES email requires payload.from or NOTIFICATION_EMAIL_FROM",
-        );
-      }
-
-      const result = yield* Effect.tryPromise({
-        try: () =>
-          client.send(
-            new SendEmailCommand({
-              FromEmailAddress: from,
-              Destination: {
-                ToAddresses: [formatEmailRecipient(recipient)],
-              } satisfies Destination,
-              Content: { Simple: message(email) },
-              ReplyToAddresses:
-                email.replyTo === undefined ? undefined : [email.replyTo],
-            }),
-          ),
-        catch: classifyFailure,
+  const send = Effect.fn("SesEmailTransport.send")(function* (
+    input: Parameters<NotificationTransport["send"]>[0],
+  ): Effect.fn.Return<
+    NotificationTransportResult,
+    NotificationTransportFailure
+  > {
+    if (input.payloadVersion !== 1) {
+      return yield* new NotificationTransportPermanent({
+        channel: "email",
+        message: `Unsupported email payload version: ${input.payloadVersion}`,
       });
+    }
+    const email = yield* decodeEmailPayloadV1(input.payload).pipe(
+      Effect.mapError(
+        (cause) =>
+          new NotificationTransportPermanent({
+            channel: "email",
+            message: "Malformed email payload",
+            cause,
+          }),
+      ),
+    );
+    const recipient = yield* decodeEmailRecipient({
+      address: input.recipientAddress,
+      name: input.recipientName,
+    }).pipe(
+      Effect.mapError(
+        (cause) =>
+          new NotificationTransportPermanent({
+            channel: "email",
+            message: "Invalid email recipient",
+            cause,
+          }),
+      ),
+    );
+    const from = email.from ?? defaultFrom;
+    if (from === undefined) {
+      return yield* unavailable(
+        "SES email requires payload.from or NOTIFICATION_EMAIL_FROM",
+      );
+    }
 
-      return {
-        provider: "ses",
-        providerMessageId:
-          result.MessageId === undefined || result.MessageId.length === 0
-            ? null
-            : result.MessageId,
-      };
-    },
-  );
+    const result = yield* Effect.tryPromise({
+      try: () =>
+        client.send(
+          new SendEmailCommand({
+            FromEmailAddress: from,
+            Destination: {
+              ToAddresses: [formatEmailRecipient(recipient)],
+            } satisfies Destination,
+            Content: { Simple: message(email) },
+            ReplyToAddresses:
+              email.replyTo === undefined ? undefined : [email.replyTo],
+          }),
+        ),
+      catch: classifyFailure,
+    });
+
+    return {
+      provider: "ses",
+      providerMessageId:
+        result.MessageId === undefined || result.MessageId.length === 0
+          ? null
+          : result.MessageId,
+    };
+  });
 
   return { channel: "email", send } satisfies NotificationTransport;
 });

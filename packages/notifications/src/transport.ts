@@ -32,9 +32,9 @@ export class NotificationTransportRegistry extends Context.Service<
       Effect.gen(function* () {
         const byChannel = new Map<string, NotificationTransport>();
         for (const transport of transports) {
-          const channel = yield* Schema.decodeUnknownEffect(
-            Schema.NonEmptyString,
-          )(transport.channel).pipe(
+          const channel = yield* Schema.decodeEffect(Schema.NonEmptyString)(
+            transport.channel,
+          ).pipe(
             Effect.mapError(
               () =>
                 new NotificationTransportConfigurationError({

@@ -168,12 +168,12 @@ export const PublishWebhook = Schema.Struct({
   event: Schema.NonEmptyString,
   data: Schema.Json,
 }).annotate({ identifier: "PublishWebhook" });
-export class WebhookError extends Schema.TaggedError<WebhookError>()(
-  "WebhookError",
-  {
-    message: Schema.String,
-  },
-) {}
+export class WebhookError extends Schema.TaggedError<
+  WebhookError,
+  { readonly brand: unique symbol }
+>()("WebhookError", {
+  message: Schema.String,
+}) {}
 export type Webhook = typeof Webhook.Type;
 export type WebhookDelivery = typeof WebhookDelivery.Type;
 export type WebhookPayload = typeof WebhookPayload.Type;

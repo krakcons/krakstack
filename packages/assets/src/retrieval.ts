@@ -52,7 +52,7 @@ export const makeRetrieval = <E, R>({
     const overview = Effect.fn("Assets.getOverview")(
       (input: typeof AssetOverviewRequestSchema.Type) =>
         Effect.gen(function* () {
-          const request = yield* Schema.decodeUnknownEffect(
+          const request = yield* Schema.decodeEffect(
             AssetOverviewRequestSchema,
           )(input);
           const { outlineOffset = 0 } = request;
@@ -121,7 +121,7 @@ export const makeRetrieval = <E, R>({
       (input: typeof AssetScopedSearchRequestSchema.Type) =>
         sql.withTransaction(
           Effect.gen(function* () {
-            const request = yield* Schema.decodeUnknownEffect(
+            const request = yield* Schema.decodeEffect(
               AssetScopedSearchRequestSchema,
             )(input);
             yield* requireCurrent(request);
@@ -167,7 +167,7 @@ export const makeRetrieval = <E, R>({
       (input: typeof AssetScopedReadChunksRequestSchema.Type) =>
         sql.withTransaction(
           Effect.gen(function* () {
-            const request = yield* Schema.decodeUnknownEffect(
+            const request = yield* Schema.decodeEffect(
               AssetScopedReadChunksRequestSchema,
             )(input);
             const overview = yield* requireCurrent(request);

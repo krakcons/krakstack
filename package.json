@@ -31,7 +31,7 @@
     "changeset": "changeset",
     "version:packages": "changeset version",
     "lint": "oxlint",
-    "prepare": "bun run registry:package:build && effect-tsgo patch",
+    "prepare": "bun run registry:package:build && effect-tsgo patch --oxlint",
     "shadcn:update": "for file in src/components/ui/*.tsx; do bunx shadcn@latest add -y -o $(basename \"$file\" .tsx); done"
   },
   "dependencies": {
@@ -74,7 +74,7 @@
     "@better-auth/api-key": "^1.6.18",
     "@changesets/cli": "3.0.3",
     "@effect/sql-sqlite-node": "4.1.0",
-    "@effect/tsgo": "0.14.6",
+    "@effect/tsgo": "0.63.0",
     "@effect/vitest": "4.1.0",
     "@inlang/paraglide-js": "^2.19.0",
     "@krak-stack/auth": "0.2.32",
@@ -91,8 +91,9 @@
     "better-auth": "^1.6.18",
     "drizzle-kit": "^1.0.0-rc.4-ca0f029",
     "jsdom": "^28.1.0",
-    "oxlint": "1.78.0",
-    "typescript": "7.0.1-rc",
+    "oxlint": "1.90.0",
+    "oxlint-tsgolint": "7.0.2005",
+    "typescript": "7.0.2",
     "vite": "^8.1.6",
     "vitest": "^5.0.3"
   }

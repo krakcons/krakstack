@@ -135,9 +135,7 @@ describe("notification retry policy", () => {
 
   it.effect("rejects non-positive scheduler durations", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decodeUnknownEffect(
-        NotificationRuntimeOptions,
-      )({
+      const result = yield* Schema.decodeEffect(NotificationRuntimeOptions)({
         schedulerIntervalMillis: 0,
       }).pipe(Effect.exit);
 

@@ -1,6 +1,14 @@
+import * as Data from "effect/Data";
 import { SecureRandom } from "effect/crypto";
 import { Effect, Option, Schema } from "effect";
 import { BrowserAnalyticsPreference, BrowserPrivacySignals } from "./schema";
+
+class AnalyticsPreferenceStorageError extends Data.TaggedError(
+  "AnalyticsPreferenceStorageError",
+)<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
 
 export const ANALYTICS_CONSENT_COOKIE = "krakstack_analytics_consent";
 export const ANALYTICS_NOTICE_VERSION = "1";
@@ -22,7 +30,7 @@ export const analyticsPreference = (cookie: string, now = Date.now()) => {
   const value = readCookie(cookie);
   if (!value) return undefined;
   // Cookie values are URI encoded at the browser boundary. Invalid values fail closed.
-  const decoded = Schema.decodeUnknownOption(codec)(value);
+  const decoded = Schema.decodeOption(codec)(value);
   if (Option.isNone(decoded)) return undefined;
   const preference = decoded.value;
   return preference.version === ANALYTICS_NOTICE_VERSION &&
@@ -58,8 +66,11 @@ const browserPreference = () => {
   const cookie = Effect.runSync(
     Effect.try({
       try: () => document.cookie,
-      catch: () => new Error("Analytics preference storage unavailable"),
-    }).pipe(Effect.catch(() => Effect.succeed(""))),
+      catch: () =>
+        new AnalyticsPreferenceStorageError({
+          message: "Analytics preference storage unavailable",
+        }),
+    }).pipe(Effect.orElseSucceed(() => "")),
   );
   return analyticsPreference(cookie);
 };

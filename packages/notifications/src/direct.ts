@@ -35,9 +35,9 @@ export class DirectNotificationDispatcher extends Context.Service<
       const registry = yield* NotificationTransportRegistry;
       const dispatch = Effect.fn("DirectNotificationDispatcher.dispatch")(
         function* (rawInput: DirectNotificationInput) {
-          const input = yield* Schema.decodeUnknownEffect(
-            DirectNotificationInput,
-          )(rawInput).pipe(
+          const input = yield* Schema.decodeEffect(DirectNotificationInput)(
+            rawInput,
+          ).pipe(
             Effect.mapError(
               (cause) =>
                 new DirectNotificationValidationError({
@@ -47,7 +47,7 @@ export class DirectNotificationDispatcher extends Context.Service<
             ),
           );
           const transport = yield* registry.get(input.channel);
-          const transportInput = yield* Schema.decodeUnknownEffect(
+          const transportInput = yield* Schema.decodeEffect(
             NotificationTransportInput,
           )({
             ...input,

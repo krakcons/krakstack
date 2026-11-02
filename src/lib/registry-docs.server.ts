@@ -60,7 +60,7 @@ const registryPages = (
         ),
       );
 
-      return Schema.decodeUnknownSync(DocsPageSchema)({
+      return Schema.decodeSync(DocsPageSchema)({
         slug: item.name,
         path: `/docs/${item.name}`,
         title: guide?.title ?? title,

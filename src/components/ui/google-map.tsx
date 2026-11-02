@@ -1,5 +1,11 @@
 import { LocateFixed, Minus, Plus } from "lucide-react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Schema } from "effect";
 
 import { cn } from "@/lib/utils";
@@ -109,9 +115,7 @@ type GoogleMapsEventListener = {
 };
 
 type GoogleMapsEventTarget =
-  | GoogleMapInstance
-  | GoogleMarkerInstance
-  | GoogleCircleInstance;
+  GoogleMapInstance | GoogleMarkerInstance | GoogleCircleInstance;
 
 export type GoogleMapsApi = {
   maps: {
@@ -265,6 +269,33 @@ const mapOptions = (
   zoomControl: false,
 });
 
+// Google Maps owns this state; React reads a cached snapshot and subscribes to changes.
+const createMapState = (loadState: LoadState, currentZoom: number) => {
+  let snapshot = { loadState, currentZoom };
+  const listeners = new Set<() => void>();
+  const update = (next: typeof snapshot) => {
+    if (
+      next.loadState === snapshot.loadState &&
+      next.currentZoom === snapshot.currentZoom
+    )
+      return;
+    snapshot = next;
+    for (const listener of listeners) listener();
+  };
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    setLoadState: (loadState: LoadState) => update({ ...snapshot, loadState }),
+    setCurrentZoom: (currentZoom: number) =>
+      update({ ...snapshot, currentZoom }),
+  };
+};
+
 export function GoogleMap({
   apiKey,
   center,
@@ -292,10 +323,15 @@ export function GoogleMap({
   const normalizedMinZoom = Math.min(minZoom, maxZoom);
   const normalizedMaxZoom = Math.max(minZoom, maxZoom);
   const initialZoom = clampZoom(zoom, normalizedMinZoom, normalizedMaxZoom);
-  const [loadState, setLoadState] = useState<LoadState>(
-    normalizedApiKey ? "loading" : "missing-key",
+  const [mapState] = useState(() =>
+    createMapState(normalizedApiKey ? "loading" : "missing-key", initialZoom),
   );
-  const [currentZoom, setCurrentZoom] = useState(initialZoom);
+  const { loadState, currentZoom } = useSyncExternalStore(
+    mapState.subscribe,
+    mapState.getSnapshot,
+    mapState.getSnapshot,
+  );
+  const { setLoadState, setCurrentZoom } = mapState;
   const labels = googleMapMessages(locale, messageOverrides);
   const markerOptions = Schema.is(
     Schema.Struct({ icon: Schema.optional(Schema.String) }),
@@ -390,7 +426,7 @@ export function GoogleMap({
       apiRef.current = null;
       element.replaceChildren();
     };
-  }, [normalizedApiKey]);
+  }, [normalizedApiKey, setLoadState]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -422,6 +458,8 @@ export function GoogleMap({
     normalizedMinZoom,
     normalizedMaxZoom,
     loadState,
+    setLoadState,
+    setCurrentZoom,
   ]);
 
   useEffect(() => {
@@ -490,6 +528,7 @@ export function GoogleMap({
     radiusStrokeColor,
     radiusStrokeOpacity,
     radiusStrokeWeight,
+    setLoadState,
   ]);
 
   useEffect(() => {

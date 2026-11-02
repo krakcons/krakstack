@@ -176,7 +176,7 @@ const workflowLayer = DeliverWebhookV1.toLayer((input) =>
     for (let step = 0; ; step++) {
       const wait = yield* Activity.make({
         name: `DeliverWebhookAttemptV1-${step}`,
-        success: Schema.NullOr(Schema.Number),
+        success: Schema.NullOr(Schema.Finite),
         error: WebhookError,
         execute: processDelivery(input).pipe(
           Effect.mapError(
@@ -276,9 +276,9 @@ export class Webhooks extends Context.Service<Webhooks>()(
       const listDeliveries = Effect.fn("Webhooks.listDeliveries")(function* (
         input: typeof ListWebhookDeliveries.Encoded,
       ) {
-        const request = yield* Schema.decodeUnknownEffect(
-          ListWebhookDeliveries,
-        )(input);
+        const request = yield* Schema.decodeEffect(ListWebhookDeliveries)(
+          input,
+        );
         if (Option.isNone(yield* find(request))) return undefined;
         const columns = {
           id: sql`d.id`,
@@ -360,9 +360,9 @@ export class Webhooks extends Context.Service<Webhooks>()(
       const statistics = Effect.fn("Webhooks.statistics")(function* (
         input: typeof WebhookStatisticsRequest.Type,
       ) {
-        const request = yield* Schema.decodeUnknownEffect(
-          WebhookStatisticsRequest,
-        )(input);
+        const request = yield* Schema.decodeEffect(WebhookStatisticsRequest)(
+          input,
+        );
         if (Option.isNone(yield* find(request))) return undefined;
         const totals = yield* SqlSchema.findOne({
           Request: WebhookRequest,
@@ -410,8 +410,8 @@ export class Webhooks extends Context.Service<Webhooks>()(
         payload: WebhookPayload;
       }) {
         const { organizationId } =
-          yield* Schema.decodeUnknownEffect(WebhookScope)(input);
-        const payload = yield* Schema.decodeUnknownEffect(configuredPayload)(
+          yield* Schema.decodeEffect(WebhookScope)(input);
+        const payload = yield* Schema.decodeEffect(configuredPayload)(
           input.payload,
         );
         const id = yield* random.uuidV7();
@@ -425,8 +425,8 @@ export class Webhooks extends Context.Service<Webhooks>()(
         input: typeof WebhookRequest.Type & { payload: WebhookPayload },
       ) {
         const { organizationId, id } =
-          yield* Schema.decodeUnknownEffect(WebhookRequest)(input);
-        const payload = yield* Schema.decodeUnknownEffect(configuredPayload)(
+          yield* Schema.decodeEffect(WebhookRequest)(input);
+        const payload = yield* Schema.decodeEffect(configuredPayload)(
           input.payload,
         );
         return yield* SqlSchema.findOneOption({
@@ -442,7 +442,7 @@ export class Webhooks extends Context.Service<Webhooks>()(
         input: typeof WebhookRequest.Type,
       ) {
         const { organizationId, id } =
-          yield* Schema.decodeUnknownEffect(WebhookRequest)(input);
+          yield* Schema.decodeEffect(WebhookRequest)(input);
         const rows =
           yield* sql`DELETE FROM webhooks WHERE organization_id = ${organizationId} AND id = ${id} RETURNING id`;
         return rows.length ? { success: true } : null;
@@ -451,7 +451,7 @@ export class Webhooks extends Context.Service<Webhooks>()(
         input: typeof PublishWebhook.Type,
       ) {
         const { organizationId, eventId, event, data } =
-          yield* Schema.decodeUnknownEffect(PublishWebhook)(input);
+          yield* Schema.decodeEffect(PublishWebhook)(input);
         // Lock the publication row so concurrent replays cannot fan out twice.
         const inserted =
           yield* sql`INSERT INTO webhook_publications (organization_id, event_id, event, data)

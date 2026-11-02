@@ -146,8 +146,8 @@ const decodeEmailPayloadV1 = Schema.decodeUnknownOption(EmailPayloadV1);
 const replayPayload = (
   channel: string,
   payloadVersion: number,
-  payload: typeof Schema.Json.Type,
-): typeof Schema.Json.Type => {
+  payload: Schema.Json,
+): Schema.Json => {
   if (channel !== "email" || payloadVersion !== 1) return payload;
   const decoded = decodeEmailPayloadV1(payload);
   return Option.isSome(decoded) ? decoded.value : payload;

@@ -69,9 +69,9 @@ export class Otlp extends Context.Service<
 
   static readonly layer = Layer.mergeAll(
     Layer.succeed(this, { resource: OtlpResource.fromConfig() }),
-    EffectOtlp.layerFromConfig(),
     ServerEventsLive,
   ).pipe(
+    Layer.provideMerge(EffectOtlp.layerFromConfig()),
     Layer.provideMerge(OtlpExporter.layerFlusher),
     Layer.provide(OtlpSerialization.layerJson),
     Layer.provide(FetchHttpClient.layer),

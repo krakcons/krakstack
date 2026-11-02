@@ -10,7 +10,7 @@ export type HealthStatus = typeof HealthStatus.Type;
 
 export const HealthCheckData = Schema.Record(
   Schema.String,
-  Schema.Union([Schema.String, Schema.Boolean, Schema.Number]),
+  Schema.Union([Schema.String, Schema.Boolean, Schema.Finite]),
 ).annotate({
   identifier: "HealthCheckData",
   title: "Health Check Data",

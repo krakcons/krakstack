@@ -62,7 +62,7 @@ const WebVitalsLive = (requireConsent: boolean, respectDoNotTrack: boolean) =>
         Effect.sync(() => {
           const report = (input: Metric) => {
             if (!canExport()) return;
-            const parsed = Schema.decodeUnknownOption(BrowserWebVital)(input);
+            const parsed = Schema.decodeOption(BrowserWebVital)(input);
             if (parsed._tag === "None") return;
             const metric = parsed.value;
             const key = `${metric.name}:${metric.id}`;

@@ -96,7 +96,7 @@ const make = (options: AssetProcessingOptions) =>
     const random = yield* SecureRandom.SecureRandom.pipe(
       Effect.provide(SecureRandom.layerWebCrypto),
     );
-    yield* Schema.decodeUnknownEffect(AssetProcessingLimitsSchema)(options);
+    yield* Schema.decodeEffect(AssetProcessingLimitsSchema)(options);
     const sql = yield* SqlClient.SqlClient;
     const s3 = yield* S3Service;
     const semaphore = yield* Semaphore.make(options.concurrency);
@@ -437,7 +437,7 @@ const make = (options: AssetProcessingOptions) =>
               "Extracted document exceeds the output size limit; no partial text was stored",
           });
         const chunks = contextualizeChunks(document.chunks ?? []);
-        return yield* Schema.decodeUnknownEffect(AssetIndexedTextSchema)({
+        return yield* Schema.decodeEffect(AssetIndexedTextSchema)({
           ...extracted,
           chunks,
         }).pipe(
@@ -497,9 +497,9 @@ const make = (options: AssetProcessingOptions) =>
           const [current] =
             yield* sql`SELECT id FROM asset_processings WHERE id = ${processingId} AND status = 'running' FOR UPDATE`;
           if (!current) return;
-          const validated = yield* Schema.decodeUnknownEffect(
-            AssetIndexedTextSchema,
-          )(extracted);
+          const validated = yield* Schema.decodeEffect(AssetIndexedTextSchema)(
+            extracted,
+          );
           yield* sql`DELETE FROM asset_chunks WHERE processing_id = ${processingId}`;
           for (
             let offset = 0;

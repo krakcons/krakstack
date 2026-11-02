@@ -156,7 +156,7 @@ export const DocsFrontmatter = Schema.Struct({
   title: Schema.String,
   description: Schema.String,
   icon: Schema.optional(Schema.String),
-  order: Schema.Number,
+  order: Schema.Finite,
   locale: Schema.String,
   section: DocsSection,
   type: DocsPageType,

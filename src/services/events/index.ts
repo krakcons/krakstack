@@ -146,10 +146,10 @@ const Configuration = Schema.Struct({
   ),
   secret: Schema.String.check(Schema.isMinLength(32)),
 }).annotate({ identifier: "EventsConfiguration" });
-export class EventsConfigurationError extends Schema.TaggedError<EventsConfigurationError>()(
-  "EventsConfigurationError",
-  { message: Schema.String },
-) {}
+export class EventsConfigurationError extends Schema.TaggedError<
+  EventsConfigurationError,
+  { readonly brand: unique symbol }
+>()("EventsConfigurationError", { message: Schema.String }) {}
 const codec = Schema.fromJsonString(OtlpLogs);
 const textAttribute = (record: EventLogRecord, key: string) => {
   const value = record.attributes.find(
@@ -254,7 +254,7 @@ export class Events extends Context.Service<Events>()(
         const resource = options.serviceName
           ? yield* OtlpResource.fromConfig({ serviceName: options.serviceName })
           : yield* telemetry.resource;
-        const configuration = yield* Schema.decodeUnknownEffect(Configuration)({
+        const configuration = yield* Schema.decodeEffect(Configuration)({
           ...options,
           serviceName: OtlpResource.serviceNameUnsafe(resource),
           secret: Redacted.value(options.secret),
@@ -384,9 +384,9 @@ export class Events extends Context.Service<Events>()(
                 : configuration.geolocation
                   ? yield* configuration.geolocation(request)
                   : null;
-            return yield* Schema.decodeUnknownEffect(
-              Schema.NullOr(EventGeolocation),
-            )(location);
+            return yield* Schema.decodeEffect(Schema.NullOr(EventGeolocation))(
+              location,
+            );
           },
           Effect.mapError(() => new EventGeolocationError({})),
         );
@@ -484,9 +484,7 @@ export class Events extends Context.Service<Events>()(
                   error: EventSubscriberError,
                   execute: definition.handle({ ...event, eventId }).pipe(
                     Effect.scoped,
-                    Effect.updateContext(
-                      (_: Context.Context<never>) => subscriberContext,
-                    ),
+                    Effect.updateContext<never, R>(() => subscriberContext),
                     Effect.asVoid,
                     Effect.mapError(
                       () =>
@@ -497,7 +495,7 @@ export class Events extends Context.Service<Events>()(
                   ),
                 }).pipe(Effect.result);
                 if (Result.isSuccess(result)) return;
-                if (attempt >= 7) return yield* Effect.fail(result.failure);
+                if (attempt >= 7) return yield* result.failure;
                 const now = yield* DateTime.now;
                 const [, delay] = yield* step(
                   DateTime.toEpochMillis(now),
@@ -537,12 +535,11 @@ export class Events extends Context.Service<Events>()(
                 subscribers.delete(subscription.name);
             }),
           );
-        }, registration.withPermit);
+        }, registration.withPermit.bind(registration));
         const track = Effect.fn("Events.track")(function* (
           input: TrackEventInput,
         ) {
-          const decoded =
-            yield* Schema.decodeUnknownEffect(TrackEventInput)(input);
+          const decoded = yield* Schema.decodeEffect(TrackEventInput)(input);
           const properties =
             decoded.properties === undefined
               ? undefined
@@ -555,7 +552,7 @@ export class Events extends Context.Service<Events>()(
                     ),
                   ),
                 );
-          const event = yield* Schema.decodeUnknownEffect(TrackEvent)({
+          const event = yield* Schema.decodeEffect(TrackEvent)({
             ...decoded,
             properties,
           });
@@ -594,7 +591,7 @@ export class Events extends Context.Service<Events>()(
           if (category === "audit") {
             yield* Schema.decodeUnknownEffect(AuditAttribution)(annotations);
           }
-          const attributes: Record<string, typeof Schema.Json.Type> = {};
+          const attributes: Record<string, Schema.Json> = {};
           for (const [key, value] of Object.entries(event.properties ?? {})) {
             const name = key.startsWith("app.") ? key : `app.${key}`;
             if (!reservedBrowserAttribute(name)) attributes[name] = value;
@@ -746,8 +743,8 @@ export class Events extends Context.Service<Events>()(
         const list = Effect.fn("Events.list")(function* (
           input: typeof ListEvents.Encoded,
         ) {
-          const request = yield* Schema.decodeUnknownEffect(ListEvents)(input);
-          const columnFilters = yield* Schema.decodeUnknownEffect(
+          const request = yield* Schema.decodeEffect(ListEvents)(input);
+          const columnFilters = yield* Schema.decodeEffect(
             Schema.Array(EventColumnFilter),
           )(request.filters ?? []);
           if (!storage)
@@ -883,7 +880,7 @@ export class Events extends Context.Service<Events>()(
         });
         const process = Effect.fnUntraced(function* (body: Uint8Array) {
           const request = yield* HttpServerRequest.HttpServerRequest;
-          let payload = yield* Schema.decodeUnknownEffect(codec)(
+          let payload = yield* Schema.decodeEffect(codec)(
             new TextDecoder().decode(body),
           ).pipe(
             Effect.mapError(() => new OtlpProcessingError({ status: 400 })),

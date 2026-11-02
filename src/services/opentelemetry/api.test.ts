@@ -118,7 +118,7 @@ describe("HttpApiOtlp", () => {
         );
         expect(response.status).toBe(200);
         expect(requests).toHaveLength(1);
-        const payload = yield* Schema.decodeUnknownEffect(
+        const payload = yield* Schema.decodeEffect(
           Schema.fromJsonString(OtlpLogs),
         )(requests[0]);
         const scopes = payload.resourceLogs.flatMap(

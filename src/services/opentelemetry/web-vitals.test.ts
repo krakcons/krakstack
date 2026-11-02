@@ -168,7 +168,7 @@ describe("browser Web Vitals", () => {
           ),
         );
         const payloads = yield* Effect.forEach(requests, (body) =>
-          Schema.decodeUnknownEffect(Schema.fromJsonString(OtlpLogs))(body),
+          Schema.decodeEffect(Schema.fromJsonString(OtlpLogs))(body),
         );
         const scopes = payloads.flatMap((payload) =>
           payload.resourceLogs.flatMap((resource) => resource.scopeLogs),
@@ -339,7 +339,7 @@ describe("browser Web Vitals", () => {
             expect(observers.size).toBe(0);
             expect(requests).toHaveLength(1);
             const payloads = yield* Effect.forEach(requests, (body) =>
-              Schema.decodeUnknownEffect(Schema.fromJsonString(OtlpLogs))(body),
+              Schema.decodeEffect(Schema.fromJsonString(OtlpLogs))(body),
             );
             const scopes = payloads.flatMap((payload) =>
               payload.resourceLogs.flatMap((resource) => resource.scopeLogs),

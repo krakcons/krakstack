@@ -8,9 +8,9 @@ import type {
   HealthUpResponse,
 } from "./schema";
 
-export type HealthCheck<Requirements = never> = {
+export type HealthCheck<Requirements = never, E = unknown> = {
   readonly name: string;
-  readonly check: Effect.Effect<HealthCheckOutcome, unknown, Requirements>;
+  readonly check: Effect.Effect<HealthCheckOutcome, E, Requirements>;
 };
 
 export type HealthServiceChecks<Requirements = never> = {
@@ -23,10 +23,15 @@ export type HealthServiceOptions<Requirements = never> = {
   readonly checks?: HealthServiceChecks<Requirements>;
 };
 
+type RegisteredHealthCheck = {
+  readonly name: string;
+  readonly check: Effect.Effect<Exit.Exit<HealthCheckOutcome, unknown>>;
+};
+
 type RegisteredHealthChecks = {
-  readonly live: ReadonlyArray<HealthCheck>;
-  readonly ready: ReadonlyArray<HealthCheck>;
-  readonly started: ReadonlyArray<HealthCheck>;
+  readonly live: ReadonlyArray<RegisteredHealthCheck>;
+  readonly ready: ReadonlyArray<RegisteredHealthCheck>;
+  readonly started: ReadonlyArray<RegisteredHealthCheck>;
 };
 
 class HealthServiceConfig extends Context.Service<
@@ -40,12 +45,12 @@ class HealthServiceConfig extends Context.Service<
       this,
       Effect.gen(function* () {
         const services = yield* Effect.context<Requirements>();
-        const resolve = (
-          registered: ReadonlyArray<HealthCheck<Requirements>> | undefined,
-        ): ReadonlyArray<HealthCheck> =>
+        const resolve = <E>(
+          registered: ReadonlyArray<HealthCheck<Requirements, E>> | undefined,
+        ): ReadonlyArray<RegisteredHealthCheck> =>
           (registered ?? []).map(({ name, check }) => ({
             name,
-            check: Effect.provide(check, services),
+            check: Effect.exit(check).pipe(Effect.provide(services)),
           }));
 
         return {
@@ -66,9 +71,9 @@ export class HealthService extends Context.Service<HealthService>()(
         new Set([...checks.live, ...checks.ready, ...checks.started]),
       );
       const execute = Effect.fn("HealthService.execute")(function* (
-        healthCheck: HealthCheck,
+        healthCheck: RegisteredHealthCheck,
       ) {
-        const exit = yield* Effect.exit(healthCheck.check);
+        const exit = yield* healthCheck.check;
 
         if (!Exit.isSuccess(exit)) {
           return {
@@ -89,7 +94,7 @@ export class HealthService extends Context.Service<HealthService>()(
             };
       });
       const run = Effect.fn("HealthService.run")(function* (
-        registered: ReadonlyArray<HealthCheck>,
+        registered: ReadonlyArray<RegisteredHealthCheck>,
       ) {
         const results = yield* Effect.forEach(registered, execute, {
           concurrency: "unbounded",

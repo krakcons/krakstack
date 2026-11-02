@@ -14,7 +14,7 @@ const configLayer = ConfigProvider.layer(
   }),
 );
 
-const requestWith = (layer: Layer.Layer<OpenAiClient.OpenAiClient, unknown>) =>
+const requestWith = <E>(layer: Layer.Layer<OpenAiClient.OpenAiClient, E>) =>
   Effect.gen(function* () {
     const client = yield* OpenAiClient.OpenAiClient;
     return yield* client.client.preprocess(

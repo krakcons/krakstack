@@ -5,7 +5,7 @@ import { Effect, Option, Schema } from "effect";
 
 import type { PublishInput, ScheduleReminderInput } from "../schema.js";
 
-type Json = typeof Schema.Json.Type;
+type Json = Schema.Json;
 
 const decodeJsonArray = Schema.decodeUnknownOption(Schema.Array(Schema.Json));
 const decodeJsonObject = Schema.decodeUnknownOption(

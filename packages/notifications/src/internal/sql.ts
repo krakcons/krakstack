@@ -234,7 +234,7 @@ export const decodeRows = <S extends Schema.Constraint>(
   schema: S,
   rows: ReadonlyArray<unknown>,
 ) =>
-  Schema.decodeUnknownEffect(Schema.Array(schema))(rows).pipe(
+  Schema.decodeEffect(Schema.Array(schema))(rows).pipe(
     Effect.mapError(
       (cause) =>
         new NotificationDataError({

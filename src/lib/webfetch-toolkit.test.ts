@@ -14,13 +14,16 @@ describe("web fetch toolkit", () => {
   it.effect("rejects invalid options during handler layer acquisition", () =>
     Effect.gen(function* () {
       const error = yield* WebFetchToolkit.pipe(
-        Effect.provide(WebFetchToolkitLayer({ maxResponseBytes: 0 })),
-        Effect.provide(FileExtractionService.layer),
         Effect.provide(
-          Layer.succeed(
-            HttpClient.HttpClient,
-            HttpClient.make(() =>
-              Effect.die("HTTP must not run for invalid options"),
+          WebFetchToolkitLayer({ maxResponseBytes: 0 }).pipe(
+            Layer.provideMerge(FileExtractionService.layer),
+            Layer.provideMerge(
+              Layer.succeed(
+                HttpClient.HttpClient,
+                HttpClient.make(() =>
+                  Effect.die("HTTP must not run for invalid options"),
+                ),
+              ),
             ),
           ),
         ),
@@ -57,9 +60,12 @@ describe("web fetch toolkit", () => {
       });
       expect(JSON.stringify(results[0]?.result)).toContain("Effect");
     }).pipe(
-      Effect.provide(WebFetchToolkitLayer()),
-      Effect.provide(FileExtractionService.layer),
-      Effect.provide(Layer.succeed(HttpClient.HttpClient, client)),
+      Effect.provide(
+        WebFetchToolkitLayer().pipe(
+          Layer.provideMerge(FileExtractionService.layer),
+        ),
+      ),
+      Effect.provideService(HttpClient.HttpClient, client),
     );
   });
 
@@ -100,9 +106,12 @@ describe("web fetch toolkit", () => {
       expect(results[0]?.isFailure).toBe(true);
       expect(results[0]?.result).toMatchObject({ code: "too-large" });
     }).pipe(
-      Effect.provide(WebFetchToolkitLayer()),
-      Effect.provide(FileExtractionService.layer),
-      Effect.provide(Layer.succeed(HttpClient.HttpClient, client)),
+      Effect.provide(
+        WebFetchToolkitLayer().pipe(
+          Layer.provideMerge(FileExtractionService.layer),
+        ),
+      ),
+      Effect.provideService(HttpClient.HttpClient, client),
     );
   });
 
@@ -130,9 +139,12 @@ describe("web fetch toolkit", () => {
         truncated: true,
       });
     }).pipe(
-      Effect.provide(WebFetchToolkitLayer({ maxContentCharacters: 5 })),
-      Effect.provide(FileExtractionService.layer),
-      Effect.provide(Layer.succeed(HttpClient.HttpClient, client)),
+      Effect.provide(
+        WebFetchToolkitLayer({ maxContentCharacters: 5 }).pipe(
+          Layer.provideMerge(FileExtractionService.layer),
+        ),
+      ),
+      Effect.provideService(HttpClient.HttpClient, client),
     );
   });
 });

@@ -9,9 +9,10 @@ import type { HealthResponse } from "./schema";
 const respond = (check: Effect.Effect<HealthResponse>) =>
   check.pipe(
     Effect.flatMap((response) =>
-      response.status === "UP"
-        ? Effect.succeed(response)
-        : Effect.fail(response),
+      Effect.gen(function* () {
+        if (response.status === "DOWN") return yield* Effect.fail(response);
+        return response;
+      }),
     ),
   );
 

@@ -99,9 +99,9 @@ const VisitRow = Schema.Struct({
 }).annotate({ identifier: "StoredVisitTestRow" });
 
 const forwardedSession = Effect.fnUntraced(function* (body: Uint8Array) {
-  const payload = yield* Schema.decodeUnknownEffect(
-    Schema.fromJsonString(OtlpLogs),
-  )(new TextDecoder().decode(body));
+  const payload = yield* Schema.decodeEffect(Schema.fromJsonString(OtlpLogs))(
+    new TextDecoder().decode(body),
+  );
   const record = yield* Schema.decodeUnknownEffect(EventLogRecord)(
     payload.resourceLogs[0]?.scopeLogs[0]?.logRecords[0],
   );
@@ -117,9 +117,9 @@ for (const database of databases) {
     const analytics = yield* Events;
     const sql = yield* SqlClient.SqlClient;
     yield* Effect.addFinalizer(() =>
-      Effect.gen(function* () {
-        yield* sql`DELETE FROM events WHERE service_name IN (${options.serviceName}, ${options.serviceName + "-other"})`;
-      }).pipe(Effect.orDie),
+      Effect.asVoid(
+        sql`DELETE FROM events WHERE service_name IN (${options.serviceName}, ${options.serviceName + "-other"})`,
+      ).pipe(Effect.orDie),
     );
     const visits = SqlSchema.findAll({
       Request: Schema.Void,
@@ -1712,11 +1712,11 @@ it.effect(
       const sql = yield* SqlClient.SqlClient;
       yield* sql`CREATE TRIGGER reject_events BEFORE INSERT ON events WHEN (SELECT COUNT(*) FROM events) > 0 BEGIN SELECT RAISE(ABORT, 'test failure'); END`;
       const now = DateTime.toEpochMillis(yield* DateTime.now);
-      const payload = yield* Schema.decodeUnknownEffect(
+      const payload = yield* Schema.decodeEffect(
         Schema.fromJsonString(OtlpLogs),
       )(new TextDecoder().decode(batch(now)));
       const scope = payload.resourceLogs[0]!.scopeLogs[0]!;
-      const second = yield* Schema.decodeUnknownEffect(
+      const second = yield* Schema.decodeEffect(
         Schema.fromJsonString(OtlpLogs),
       )(new TextDecoder().decode(batch(now)));
       const body = yield* Schema.encodeEffect(Schema.fromJsonString(OtlpLogs))({

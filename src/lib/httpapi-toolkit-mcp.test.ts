@@ -65,12 +65,12 @@ describe("HTTP API MCP toolkit registration", () => {
               methods: ["get"],
             }),
           ),
-        ),
-      ),
-      Effect.provide(
-        Layer.mergeAll(
-          HttpRouter.layer,
-          Layer.succeed(HttpClient.HttpClient, http),
+          Layer.provideMerge(
+            Layer.mergeAll(
+              HttpRouter.layer,
+              Layer.succeed(HttpClient.HttpClient, http),
+            ),
+          ),
         ),
       ),
     );
@@ -85,7 +85,7 @@ describe("HTTP API MCP toolkit registration", () => {
             query: Schema.Struct({
               days: Schema.optional(Schema.Number.check(Schema.isFinite())),
             }),
-            success: Schema.Struct({ count: Schema.Number }),
+            success: Schema.Struct({ count: Schema.Finite }),
           }),
         ),
       );

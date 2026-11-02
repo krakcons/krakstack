@@ -34,7 +34,7 @@ class AgentHistoryError extends Data.TaggedError("AgentHistoryError") {}
 const AgentStreamErrorDetails = Schema.Struct({
   message: Schema.optional(Schema.String),
   reason: Schema.optional(Schema.String),
-  status: Schema.optional(Schema.Number),
+  status: Schema.optional(Schema.Finite),
   _tag: Schema.optional(Schema.String),
 }).annotate({ identifier: "AgentStreamErrorDetails" });
 

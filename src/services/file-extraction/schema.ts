@@ -8,7 +8,7 @@ export const FileExtractedTextSchema = Schema.Struct({
 
 export type FileExtractedText = typeof FileExtractedTextSchema.Type;
 
-export class FileExtractionFailed extends Schema.TaggedError<FileExtractionFailed>()(
-  "FileExtractionFailed",
-  { message: Schema.String },
-) {}
+export class FileExtractionFailed extends Schema.TaggedError<
+  FileExtractionFailed,
+  { readonly brand: unique symbol }
+>()("FileExtractionFailed", { message: Schema.String }) {}

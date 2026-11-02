@@ -64,7 +64,7 @@ describe("ErrorComponent", () => {
     42,
     { name: "PrivateError", message: "private thrown value" },
   ]) {
-    it(`handles a non-Error router failure without exposing its contents (${String(error)})`, async () => {
+    it(`handles a non-Error router failure without exposing its contents (${JSON.stringify(error)})`, async () => {
       let copied = "";
       setClipboard({
         writeText: async (value) => {

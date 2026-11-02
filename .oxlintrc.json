@@ -1,5 +1,6 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "$schema": "./node_modules/@effect/tsgo/oxlint-schema.json",
+  "extends": ["./node_modules/@effect/tsgo/oxlint-presets/recommended.json"],
   "plugins": ["typescript", "unicorn", "oxc", "eslint", "react"],
   "ignorePatterns": [
     ".agent/**",
@@ -30,6 +31,7 @@
     "node": true
   },
   "rules": {
+    "effecttsgo/unstable-api-usage": "off",
     "eslint/require-yield": "off",
     "anti-slop/no-chained-type-assertions": "error",
     "anti-slop/no-conditional-empty-object-spread": "error",

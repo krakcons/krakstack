@@ -13,14 +13,14 @@ import { OtlpEvents, event, type EventExportOptions } from "./events";
 
 export type { EventAttributes, EventOptions } from "./schema";
 
-class BrowserReportedError extends Schema.TaggedError<BrowserReportedError>()(
-  "BrowserReportedError",
-  {
-    type: Schema.Literals(["window.error", "unhandledrejection"]),
-    message: Schema.String,
-    stack: Schema.optional(Schema.String),
-  },
-) {}
+class BrowserReportedError extends Schema.TaggedError<
+  BrowserReportedError,
+  { readonly brand: unique symbol }
+>()("BrowserReportedError", {
+  type: Schema.Literals(["window.error", "unhandledrejection"]),
+  message: Schema.String,
+  stack: Schema.optional(Schema.String),
+}) {}
 
 const reportBrowserException = (exception: BrowserReportedError) => {
   const sanitized = sanitizeBrowserException(exception);
@@ -140,11 +140,9 @@ export interface BrowserOtlpOptions {
   readonly baseUrl?: string;
   readonly headers?: OtlpOptions["headers"];
   readonly traces?:
-    | false
-    | SignalOptions<Parameters<typeof OtlpTracer.layer>[0]>;
+    false | SignalOptions<Parameters<typeof OtlpTracer.layer>[0]>;
   readonly metrics?:
-    | false
-    | SignalOptions<Parameters<typeof OtlpMetrics.layer>[0]>;
+    false | SignalOptions<Parameters<typeof OtlpMetrics.layer>[0]>;
   readonly logs?: false | SignalOptions<Parameters<typeof OtlpLogger.layer>[0]>;
   /** Named OTLP log events; no automatic page tracking or analytics enrichment. */
   readonly events?: false | EventExportOptions;
@@ -170,7 +168,6 @@ export class BrowserOtlp {
     const signalUrl = (signal: "logs" | "metrics" | "traces") =>
       HttpClientRequest.appendUrl(request, `/v1/${signal}`).url;
     const exporters = Layer.mergeAll(
-      OtlpExporter.layerFlusher,
       events !== false
         ? OtlpEvents.layer({
             exportInterval: "30 seconds",

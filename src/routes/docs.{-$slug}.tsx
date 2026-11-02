@@ -32,7 +32,9 @@ import {
   type LazyExoticComponent,
 } from "react";
 
-const registryPreviews = new Map<string, LazyExoticComponent<ComponentType>>([
+const registryPreviews: Readonly<
+  Record<string, LazyExoticComponent<ComponentType> | undefined>
+> = Object.fromEntries([
   [
     "error-component",
     lazy(() =>
@@ -283,7 +285,7 @@ function RegistryPreview({
   agentsMarkdown?: Awaited<ReturnType<typeof getAgentsPreviewMarkdown>>;
   slug: string;
 }) {
-  const Preview = registryPreviews.get(slug);
+  const Preview = registryPreviews[slug];
   if (!Preview && !(slug === "agents" && agentsMarkdown)) return null;
 
   return (

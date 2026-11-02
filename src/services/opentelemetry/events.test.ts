@@ -89,7 +89,7 @@ describe("OTLP server events", () => {
             "Bearer secret",
           );
           expect(requests[0]!.request.headers.has("traceparent")).toBe(false);
-          const payload = yield* Schema.decodeUnknownEffect(LogsPayload)(
+          const payload = yield* Schema.decodeEffect(LogsPayload)(
             requests[0]!.body,
           );
           expect(payload.resourceLogs[0]!.resource.attributes).toContainEqual({
@@ -136,7 +136,7 @@ describe("OTLP server events", () => {
         );
         yield* Otlp.event("background");
         yield* (yield* OtlpExporter.Flusher).flush;
-        const payload = yield* Schema.decodeUnknownEffect(LogsPayload)(
+        const payload = yield* Schema.decodeEffect(LogsPayload)(
           requests[0]!.body,
         );
         const records = payload.resourceLogs[0]!.scopeLogs[0]!.logRecords;
@@ -183,7 +183,7 @@ describe("OTLP server events", () => {
       );
       yield* Otlp.event("next");
       yield* (yield* OtlpExporter.Flusher).flush;
-      const payload = yield* Schema.decodeUnknownEffect(LogsPayload)(
+      const payload = yield* Schema.decodeEffect(LogsPayload)(
         requests[0]!.body,
       );
       const records = payload.resourceLogs[0]!.scopeLogs[0]!.logRecords;

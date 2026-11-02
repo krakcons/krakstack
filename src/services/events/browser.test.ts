@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from "@effect/vitest";
-import { Deferred, Effect, Layer, Schema } from "effect";
+import { Context, Deferred, Effect, Layer, Schema } from "effect";
 import { createBrowserHistory } from "@tanstack/react-router";
 import { FetchHttpClient } from "effect/http";
 import { OtlpExporter } from "effect/observability";
@@ -47,11 +47,13 @@ describe("BrowserEvents", () => {
       };
       return Effect.gen(function* () {
         document.cookie = `${ANALYTICS_CONSENT_COOKIE}=; Max-Age=0; Path=/`;
-        const push = history.pushState;
+        const push = Object.getOwnPropertyDescriptor(history, "pushState");
         yield* Effect.addFinalizer(() =>
           Effect.sync(() => {
             document.cookie = `${ANALYTICS_CONSENT_COOKIE}=; Max-Age=0; Path=/`;
-            expect(history.pushState).toBe(push);
+            expect(
+              Object.getOwnPropertyDescriptor(history, "pushState"),
+            ).toEqual(push);
           }),
         );
         yield* Effect.gen(function* () {
@@ -76,7 +78,7 @@ describe("BrowserEvents", () => {
           Effect.provideService(FetchHttpClient.Fetch, fetch),
         );
         const payloads = yield* Effect.forEach(requests, (body) =>
-          Schema.decodeUnknownEffect(Schema.fromJsonString(OtlpLogs))(body),
+          Schema.decodeEffect(Schema.fromJsonString(OtlpLogs))(body),
         );
         const names = payloads.flatMap((payload) =>
           payload.resourceLogs.flatMap((resource) =>
@@ -114,7 +116,7 @@ describe("BrowserEvents", () => {
         yield* (yield* OtlpExporter.Flusher).flush;
         expect(requests).toHaveLength(1);
         const payloads = yield* Effect.forEach(requests, (body) =>
-          Schema.decodeUnknownEffect(Schema.fromJsonString(OtlpLogs))(body),
+          Schema.decodeEffect(Schema.fromJsonString(OtlpLogs))(body),
         );
         const scopes = payloads.flatMap((payload) =>
           payload.resourceLogs.flatMap((resource) => resource.scopeLogs),
@@ -171,8 +173,11 @@ describe("BrowserEvents", () => {
       const original = location.href;
       return Effect.gen(function* () {
         const router = createBrowserHistory();
-        const push = history.pushState;
-        const replace = history.replaceState;
+        const push = Object.getOwnPropertyDescriptor(history, "pushState");
+        const replace = Object.getOwnPropertyDescriptor(
+          history,
+          "replaceState",
+        );
         yield* Effect.addFinalizer(() =>
           Effect.sync(() => {
             router.destroy();
@@ -199,9 +204,13 @@ describe("BrowserEvents", () => {
             Object.assign(fetch, { preconnect: globalThis.fetch.preconnect }),
           ),
         );
-        expect(history.pushState).toBe(push);
-        expect(history.replaceState).toBe(replace);
-        const payload = yield* Schema.decodeUnknownEffect(
+        expect(Object.getOwnPropertyDescriptor(history, "pushState")).toEqual(
+          push,
+        );
+        expect(
+          Object.getOwnPropertyDescriptor(history, "replaceState"),
+        ).toEqual(replace);
+        const payload = yield* Schema.decodeEffect(
           Schema.fromJsonString(OtlpLogs),
         )(requests[0]);
         const records = yield* Schema.decodeUnknownEffect(
@@ -227,6 +236,7 @@ describe("BrowserEvents", () => {
   it.effect(
     "binds calls from other runtimes only while a browser layer is active",
     () => {
+      const runOutsideBrowserContext = Effect.runPromiseWith(Context.empty());
       const requests: string[] = [];
       const fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
         requests.push(
@@ -240,10 +250,10 @@ describe("BrowserEvents", () => {
         yield* BrowserEvents.track("before-startup");
         yield* Effect.gen(function* () {
           yield* Effect.promise(() =>
-            Effect.runPromise(BrowserEvents.track("active")),
+            runOutsideBrowserContext(BrowserEvents.track("active")),
           );
           yield* Effect.promise(() =>
-            Effect.runPromise(
+            runOutsideBrowserContext(
               BrowserEvents.page({
                 path: "/docs",
                 name: "Docs",
@@ -275,7 +285,7 @@ describe("BrowserEvents", () => {
         );
         yield* BrowserEvents.track("after-disposal");
         expect(requests).toHaveLength(1);
-        const payload = yield* Schema.decodeUnknownEffect(
+        const payload = yield* Schema.decodeEffect(
           Schema.fromJsonString(OtlpLogs),
         )(requests[0]);
         const records = yield* Schema.decodeUnknownEffect(
@@ -420,7 +430,7 @@ describe("BrowserEvents", () => {
           ),
         );
         expect(requests).toHaveLength(1);
-        const payload = yield* Schema.decodeUnknownEffect(
+        const payload = yield* Schema.decodeEffect(
           Schema.fromJsonString(OtlpLogs),
         )(requests[0]);
         const scope = payload.resourceLogs[0]!.scopeLogs[0]!;

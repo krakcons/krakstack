@@ -218,12 +218,17 @@ describe("HttpApiAdapter", () => {
         ).toEqual(["items.list"]);
         const selected = adapter.operations[0];
         if (!selected) return yield* Effect.die("Missing list operation");
-        const error = yield* adapter
+        const result = yield* adapter
           .execute({ operation: { ...selected, path: "/private" }, input: {} })
-          .pipe(Effect.flip);
-        expect(error.message).toContain(
-          "not in this HTTP API adapter catalogue",
-        );
+          .pipe(Effect.result);
+        expect(result).toMatchObject({
+          _tag: "Failure",
+          failure: expect.objectContaining({
+            message: expect.stringContaining(
+              "not in this HTTP API adapter catalogue",
+            ),
+          }),
+        });
       }).pipe(
         Effect.provide(
           HttpApiAdapter.layer({

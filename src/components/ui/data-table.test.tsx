@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from "@effect/vitest";
+import { Schema } from "effect";
 import {
   act,
   cleanup,
@@ -72,6 +73,42 @@ const state: DataTablePublicState = {
   page: 0,
   pageSize: 2,
 };
+
+describe("structured cell values", () => {
+  it("searches and sorts record contents without default object stringification", () => {
+    const structuredColumns = normalizeDataTableColumns<{
+      details: { label: string };
+    }>([{ field: "details", headerName: "Details" }]);
+    const rows = buildDataTableRows(
+      [{ details: { label: "Zulu" } }, { details: { label: "Alpha" } }],
+      structuredColumns,
+    );
+    expect(filterDataTableRows(rows, structuredColumns, "alpha")).toEqual([
+      rows[1],
+    ]);
+    expect(
+      filterDataTableRows(rows, structuredColumns, "[object Object]"),
+    ).toEqual([]);
+    expect(
+      sortDataTableRows(rows, structuredColumns, [
+        { id: "details", direction: "asc" },
+      ]),
+    ).toEqual([rows[1], rows[0]]);
+  });
+
+  it("handles circular records without throwing during search", () => {
+    type Details = { label: string; self?: Details };
+    const details: Details = { label: "Circular record" };
+    details.self = details;
+    const structuredColumns = normalizeDataTableColumns<{ details: Details }>([
+      { field: "details", headerName: "Details" },
+    ]);
+    const rows = buildDataTableRows([{ details }], structuredColumns);
+    expect(
+      filterDataTableRows(rows, structuredColumns, "Circular record"),
+    ).toEqual(rows);
+  });
+});
 
 describe("logical column fields", () => {
   type Person = { name: string | null; email: string; score: number };
@@ -318,7 +355,8 @@ describe("logical column fields", () => {
       const blob = createObjectURL.mock.calls[0]![0];
       const content = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
+        reader.onload = () =>
+          resolve(Schema.decodeUnknownSync(Schema.String)(reader.result));
         reader.onerror = reject;
         reader.readAsText(blob);
       });
@@ -871,7 +909,8 @@ describe("CSV downloads", () => {
       expect(blob.type).toBe("text/csv;charset=utf-8");
       const content = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
+        reader.onload = () =>
+          resolve(Schema.decodeUnknownSync(Schema.String)(reader.result));
         reader.onerror = reject;
         reader.readAsText(blob);
       });
@@ -2125,7 +2164,8 @@ describe("DataTable model", () => {
       expect(blob).toBeInstanceOf(Blob);
       const content = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
+        reader.onload = () =>
+          resolve(Schema.decodeUnknownSync(Schema.String)(reader.result));
         reader.onerror = reject;
         reader.readAsText(blob);
       });

@@ -226,35 +226,34 @@ export const NotificationDelivery = Schema.Struct({
   updatedAt: NotificationDate,
 }).annotate({ identifier: "NotificationDelivery" });
 
-export const DeliveryAttemptSent = Schema.Struct({
-  _tag: Schema.Literal("Sent"),
+export const DeliveryAttemptSent = Schema.TaggedStruct("Sent", {
   provider: Schema.NonEmptyString,
   providerMessageId: Schema.NullOr(Schema.NonEmptyString),
 }).annotate({ identifier: "NotificationDeliveryAttemptSent" });
 
-export const DeliveryAttemptRetryableFailure = Schema.Struct({
-  _tag: Schema.Literal("RetryableFailure"),
-  message: Schema.NonEmptyString,
-  retryAfter: Schema.NullOr(NotificationDate),
-}).annotate({
+export const DeliveryAttemptRetryableFailure = Schema.TaggedStruct(
+  "RetryableFailure",
+  {
+    message: Schema.NonEmptyString,
+    retryAfter: Schema.NullOr(NotificationDate),
+  },
+).annotate({
   identifier: "NotificationDeliveryAttemptRetryableFailure",
 });
 
-export const DeliveryAttemptPermanentFailure = Schema.Struct({
-  _tag: Schema.Literal("PermanentFailure"),
-  message: Schema.NonEmptyString,
-}).annotate({
+export const DeliveryAttemptPermanentFailure = Schema.TaggedStruct(
+  "PermanentFailure",
+  { message: Schema.NonEmptyString },
+).annotate({
   identifier: "NotificationDeliveryAttemptPermanentFailure",
 });
 
-export const DeliveryAttemptUnavailable = Schema.Struct({
-  _tag: Schema.Literal("Unavailable"),
+export const DeliveryAttemptUnavailable = Schema.TaggedStruct("Unavailable", {
   message: Schema.NonEmptyString,
   retryAfter: Schema.NullOr(NotificationDate),
 }).annotate({ identifier: "NotificationDeliveryAttemptUnavailable" });
 
-export const DeliveryAttemptSkipped = Schema.Struct({
-  _tag: Schema.Literal("Skipped"),
+export const DeliveryAttemptSkipped = Schema.TaggedStruct("Skipped", {
   reason: Schema.Literals([
     "cancelled",
     "expired",
@@ -343,15 +342,13 @@ export const NotificationReminder = Schema.Struct({
   updatedAt: NotificationDate,
 }).annotate({ identifier: "NotificationReminder" });
 
-export const DeliveryQueueJob = Schema.Struct({
-  _tag: Schema.Literal("Delivery"),
+export const DeliveryQueueJob = Schema.TaggedStruct("Delivery", {
   deliveryId: NotificationDeliveryId,
   generation: PositiveInt,
   attempt: PositiveInt,
 }).annotate({ identifier: "NotificationDeliveryQueueJob" });
 
-export const ReminderQueueJob = Schema.Struct({
-  _tag: Schema.Literal("Reminder"),
+export const ReminderQueueJob = Schema.TaggedStruct("Reminder", {
   reminderId: NotificationReminderId,
   generation: PositiveInt,
   attempt: PositiveInt,
@@ -597,153 +594,153 @@ export const ResetSuppressionInput = Schema.Struct({
   recipientAddress: NotificationRecipientAddress,
 }).annotate({ identifier: "ResetNotificationSuppressionInput" });
 
-export class NotificationValidationError extends Schema.TaggedError<NotificationValidationError>()(
-  "NotificationValidationError",
-  {
-    operation: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationValidationError extends Schema.TaggedError<
+  NotificationValidationError,
+  { readonly brand: unique symbol }
+>()("NotificationValidationError", {
+  operation: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class NotificationStorageError extends Schema.TaggedError<NotificationStorageError>()(
-  "NotificationStorageError",
-  {
-    operation: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationStorageError extends Schema.TaggedError<
+  NotificationStorageError,
+  { readonly brand: unique symbol }
+>()("NotificationStorageError", {
+  operation: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class NotificationQueueError extends Schema.TaggedError<NotificationQueueError>()(
-  "NotificationQueueError",
-  {
-    operation: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationQueueError extends Schema.TaggedError<
+  NotificationQueueError,
+  { readonly brand: unique symbol }
+>()("NotificationQueueError", {
+  operation: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class NotificationDataError extends Schema.TaggedError<NotificationDataError>()(
-  "NotificationDataError",
-  {
-    entity: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationDataError extends Schema.TaggedError<
+  NotificationDataError,
+  { readonly brand: unique symbol }
+>()("NotificationDataError", {
+  entity: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class NotificationNotFoundError extends Schema.TaggedError<NotificationNotFoundError>()(
-  "NotificationNotFoundError",
-  {
-    entity: Schema.Literals(["inbox", "delivery", "reminder"]),
-    id: Uuid,
-  },
-) {}
+export class NotificationNotFoundError extends Schema.TaggedError<
+  NotificationNotFoundError,
+  { readonly brand: unique symbol }
+>()("NotificationNotFoundError", {
+  entity: Schema.Literals(["inbox", "delivery", "reminder"]),
+  id: Uuid,
+}) {}
 
-export class NotificationTransitionError extends Schema.TaggedError<NotificationTransitionError>()(
-  "NotificationTransitionError",
-  {
-    entity: Schema.Literals(["delivery", "reminder"]),
-    id: Uuid,
-    status: Schema.NonEmptyString,
-    operation: Schema.NonEmptyString,
-  },
-) {}
+export class NotificationTransitionError extends Schema.TaggedError<
+  NotificationTransitionError,
+  { readonly brand: unique symbol }
+>()("NotificationTransitionError", {
+  entity: Schema.Literals(["delivery", "reminder"]),
+  id: Uuid,
+  status: Schema.NonEmptyString,
+  operation: Schema.NonEmptyString,
+}) {}
 
-export class NotificationIdempotencyConflictError extends Schema.TaggedError<NotificationIdempotencyConflictError>()(
-  "NotificationIdempotencyConflictError",
-  {
-    idempotencyKey: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-  },
-) {}
+export class NotificationIdempotencyConflictError extends Schema.TaggedError<
+  NotificationIdempotencyConflictError,
+  { readonly brand: unique symbol }
+>()("NotificationIdempotencyConflictError", {
+  idempotencyKey: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+}) {}
 
-export class NotificationTransportRetryable extends Schema.TaggedError<NotificationTransportRetryable>()(
-  "NotificationTransportRetryable",
-  {
-    channel: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-    retryAfter: Schema.optional(NotificationDate),
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationTransportRetryable extends Schema.TaggedError<
+  NotificationTransportRetryable,
+  { readonly brand: unique symbol }
+>()("NotificationTransportRetryable", {
+  channel: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+  retryAfter: Schema.optional(NotificationDate),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class NotificationTransportPermanent extends Schema.TaggedError<NotificationTransportPermanent>()(
-  "NotificationTransportPermanent",
-  {
-    channel: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationTransportPermanent extends Schema.TaggedError<
+  NotificationTransportPermanent,
+  { readonly brand: unique symbol }
+>()("NotificationTransportPermanent", {
+  channel: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class NotificationTransportUnavailable extends Schema.TaggedError<NotificationTransportUnavailable>()(
-  "NotificationTransportUnavailable",
-  {
-    channel: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-    retryAfter: Schema.optional(NotificationDate),
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationTransportUnavailable extends Schema.TaggedError<
+  NotificationTransportUnavailable,
+  { readonly brand: unique symbol }
+>()("NotificationTransportUnavailable", {
+  channel: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+  retryAfter: Schema.optional(NotificationDate),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class NotificationTransportConfigurationError extends Schema.TaggedError<NotificationTransportConfigurationError>()(
-  "NotificationTransportConfigurationError",
-  {
-    channel: Schema.NonEmptyString,
-    message: Schema.NonEmptyString,
-  },
-) {}
+export class NotificationTransportConfigurationError extends Schema.TaggedError<
+  NotificationTransportConfigurationError,
+  { readonly brand: unique symbol }
+>()("NotificationTransportConfigurationError", {
+  channel: Schema.NonEmptyString,
+  message: Schema.NonEmptyString,
+}) {}
 
-export class DirectNotificationValidationError extends Schema.TaggedError<DirectNotificationValidationError>()(
-  "DirectNotificationValidationError",
-  {
-    message: Schema.NonEmptyString,
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class DirectNotificationValidationError extends Schema.TaggedError<
+  DirectNotificationValidationError,
+  { readonly brand: unique symbol }
+>()("DirectNotificationValidationError", {
+  message: Schema.NonEmptyString,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class ReminderHandlerRetryable extends Schema.TaggedError<ReminderHandlerRetryable>()(
-  "ReminderHandlerRetryable",
-  {
-    handlerKey: Schema.NonEmptyString,
-    handlerVersion: PositiveInt,
-    message: Schema.NonEmptyString,
-    retryAfter: Schema.optional(NotificationDate),
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class ReminderHandlerRetryable extends Schema.TaggedError<
+  ReminderHandlerRetryable,
+  { readonly brand: unique symbol }
+>()("ReminderHandlerRetryable", {
+  handlerKey: Schema.NonEmptyString,
+  handlerVersion: PositiveInt,
+  message: Schema.NonEmptyString,
+  retryAfter: Schema.optional(NotificationDate),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class ReminderHandlerPermanent extends Schema.TaggedError<ReminderHandlerPermanent>()(
-  "ReminderHandlerPermanent",
-  {
-    handlerKey: Schema.NonEmptyString,
-    handlerVersion: PositiveInt,
-    message: Schema.NonEmptyString,
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class ReminderHandlerPermanent extends Schema.TaggedError<
+  ReminderHandlerPermanent,
+  { readonly brand: unique symbol }
+>()("ReminderHandlerPermanent", {
+  handlerKey: Schema.NonEmptyString,
+  handlerVersion: PositiveInt,
+  message: Schema.NonEmptyString,
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class ReminderHandlerUnavailable extends Schema.TaggedError<ReminderHandlerUnavailable>()(
-  "ReminderHandlerUnavailable",
-  {
-    handlerKey: Schema.NonEmptyString,
-    handlerVersion: PositiveInt,
-    message: Schema.NonEmptyString,
-    retryAfter: Schema.optional(NotificationDate),
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class ReminderHandlerUnavailable extends Schema.TaggedError<
+  ReminderHandlerUnavailable,
+  { readonly brand: unique symbol }
+>()("ReminderHandlerUnavailable", {
+  handlerKey: Schema.NonEmptyString,
+  handlerVersion: PositiveInt,
+  message: Schema.NonEmptyString,
+  retryAfter: Schema.optional(NotificationDate),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
-export class ReminderHandlerConfigurationError extends Schema.TaggedError<ReminderHandlerConfigurationError>()(
-  "ReminderHandlerConfigurationError",
-  {
-    handlerKey: Schema.NonEmptyString,
-    handlerVersion: Schema.Int,
-    message: Schema.NonEmptyString,
-  },
-) {}
+export class ReminderHandlerConfigurationError extends Schema.TaggedError<
+  ReminderHandlerConfigurationError,
+  { readonly brand: unique symbol }
+>()("ReminderHandlerConfigurationError", {
+  handlerKey: Schema.NonEmptyString,
+  handlerVersion: Schema.Int,
+  message: Schema.NonEmptyString,
+}) {}
 
 export type NotificationDate = typeof NotificationDate.Type;
 export type NotificationId = typeof NotificationId.Type;

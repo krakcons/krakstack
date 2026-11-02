@@ -26,7 +26,7 @@ const scope = {
 describe("notification schemas", () => {
   it.effect("decodes a channel-neutral publish snapshot", () =>
     Effect.gen(function* () {
-      const decoded = yield* Schema.decodeUnknownEffect(PublishInput)({
+      const decoded = yield* Schema.decodeEffect(PublishInput)({
         idempotencyKey: "event-1",
         scope,
         eventKey: "application.approved",
@@ -61,7 +61,7 @@ describe("notification schemas", () => {
 
   it.effect("rejects whitespace-only recipient addresses", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decodeUnknownEffect(SetSuppressionInput)({
+      const result = yield* Schema.decodeEffect(SetSuppressionInput)({
         scope,
         channel: "email",
         purpose: null,
@@ -110,7 +110,7 @@ describe("notification schemas", () => {
     "decodes delivery-only publication for a non-account recipient with references",
     () =>
       Effect.gen(function* () {
-        const decoded = yield* Schema.decodeUnknownEffect(PublishInput)({
+        const decoded = yield* Schema.decodeEffect(PublishInput)({
           idempotencyKey: "external-delivery-1",
           scope: {
             recipientUserId: null,
@@ -137,7 +137,7 @@ describe("notification schemas", () => {
             },
           ],
         });
-        const result = yield* Schema.decodeUnknownEffect(PublishResult)({
+        const result = yield* Schema.decodeEffect(PublishResult)({
           notificationId: null,
           deliveryIds: ["00000000-0000-4000-8000-000000000001"],
           idempotentReplay: false,
@@ -152,7 +152,7 @@ describe("notification schemas", () => {
 
   it.effect("rejects inbox publication without a recipient user", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decodeUnknownEffect(PublishInput)({
+      const result = yield* Schema.decodeEffect(PublishInput)({
         idempotencyKey: "invalid-inbox",
         scope: {
           recipientUserId: null,
@@ -194,7 +194,7 @@ describe("notification schemas", () => {
 
   it.effect("rejects an empty publication", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decodeUnknownEffect(PublishInput)({
+      const result = yield* Schema.decodeEffect(PublishInput)({
         idempotencyKey: "empty-publication",
         scope: {
           recipientUserId: null,
@@ -241,9 +241,7 @@ describe("notification schemas", () => {
 
   it.effect("decodes nullable-recipient suppression inputs", () =>
     Effect.gen(function* () {
-      const suppression = yield* Schema.decodeUnknownEffect(
-        SetSuppressionInput,
-      )({
+      const suppression = yield* Schema.decodeEffect(SetSuppressionInput)({
         scope: {
           recipientUserId: null,
           organizationId: "org-1",
@@ -255,16 +253,16 @@ describe("notification schemas", () => {
         reason: "bounce",
         expiresAt: null,
       });
-      const transportResult = yield* Schema.decodeUnknownEffect(
+      const transportResult = yield* Schema.decodeEffect(
         NotificationTransportResult,
       )({ provider: "smtp", providerMessageId: null });
-      const list = yield* Schema.decodeUnknownEffect(ListSuppressionsInput)({
+      const list = yield* Schema.decodeEffect(ListSuppressionsInput)({
         scope: suppression.scope,
         channel: null,
         purposes: ["notification", null],
         includeExpired: false,
       });
-      const reset = yield* Schema.decodeUnknownEffect(ResetSuppressionInput)({
+      const reset = yield* Schema.decodeEffect(ResetSuppressionInput)({
         scope: suppression.scope,
         channel: suppression.channel,
         purpose: suppression.purpose,
@@ -280,7 +278,7 @@ describe("notification schemas", () => {
 
   it.effect("rejects package-owned delivery reference namespaces", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decodeUnknownEffect(PublishInput)({
+      const result = yield* Schema.decodeEffect(PublishInput)({
         idempotencyKey: "reserved-reference",
         scope,
         eventKey: "application.received",
@@ -308,13 +306,13 @@ describe("notification schemas", () => {
 
   it.effect("decodes stable delivery and reminder queue payloads", () =>
     Effect.gen(function* () {
-      const delivery = yield* Schema.decodeUnknownEffect(DeliveryQueueJob)({
+      const delivery = yield* Schema.decodeEffect(DeliveryQueueJob)({
         _tag: "Delivery",
         deliveryId: "00000000-0000-4000-8000-000000000001",
         generation: 2,
         attempt: 3,
       });
-      const reminder = yield* Schema.decodeUnknownEffect(ReminderQueueJob)({
+      const reminder = yield* Schema.decodeEffect(ReminderQueueJob)({
         _tag: "Reminder",
         reminderId: "00000000-0000-4000-8000-000000000002",
         generation: 4,
@@ -335,20 +333,18 @@ describe("notification schemas", () => {
     Effect.gen(function* () {
       const notificationId = "00000000-0000-4000-8000-000000000001";
       const reminderId = "00000000-0000-4000-8000-000000000002";
-      const bulk = yield* Schema.decodeUnknownEffect(BulkInboxMutationInput)({
+      const bulk = yield* Schema.decodeEffect(BulkInboxMutationInput)({
         scope,
         notificationIds: [notificationId],
       });
-      const unread = yield* Schema.decodeUnknownEffect(UnreadCountInput)({
+      const unread = yield* Schema.decodeEffect(UnreadCountInput)({
         scope,
       });
-      const reminder = yield* Schema.decodeUnknownEffect(ReminderMutationInput)(
-        {
-          scope,
-          reminderId,
-        },
-      );
-      const list = yield* Schema.decodeUnknownEffect(ListRemindersInput)({
+      const reminder = yield* Schema.decodeEffect(ReminderMutationInput)({
+        scope,
+        reminderId,
+      });
+      const list = yield* Schema.decodeEffect(ListRemindersInput)({
         scope,
         pagination: { limit: 20, cursor: null },
         statuses: ["scheduled", "retrying"],
@@ -364,7 +360,7 @@ describe("notification schemas", () => {
   it.effect("rejects duplicate ids in bulk inbox operations", () =>
     Effect.gen(function* () {
       const notificationId = "00000000-0000-4000-8000-000000000001";
-      const result = yield* Schema.decodeUnknownEffect(BulkInboxMutationInput)({
+      const result = yield* Schema.decodeEffect(BulkInboxMutationInput)({
         scope,
         notificationIds: [notificationId, notificationId],
       }).pipe(Effect.exit);

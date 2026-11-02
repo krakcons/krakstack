@@ -96,7 +96,7 @@ export const event = Effect.fnUntraced(function* (
   properties?: EventProperties,
   options?: EventOptions,
 ) {
-  const decoded = yield* Schema.decodeUnknownEffect(TelemetryEvent)({
+  const decoded = yield* Schema.decodeEffect(TelemetryEvent)({
     name,
     properties,
     options,

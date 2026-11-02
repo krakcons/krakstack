@@ -1,3 +1,4 @@
+import * as Data from "effect/Data";
 // @vitest-environment jsdom
 
 import { describe, expect, it } from "@effect/vitest";
@@ -14,6 +15,11 @@ import { afterEach, vi } from "vitest";
 import { BrowserOtlp } from "./browser";
 import { Otlp } from "./index";
 
+class BrowserFailureFixture extends Data.TaggedError("BrowserFailureFixture")<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
 const EventPayload = Schema.fromJsonString(
   Schema.Struct({
     resourceLogs: Schema.Array(
@@ -24,7 +30,7 @@ const EventPayload = Schema.fromJsonString(
             logRecords: Schema.Array(
               Schema.Struct({
                 eventName: Schema.String,
-                severityNumber: Schema.Number,
+                severityNumber: Schema.Finite,
                 attributes: Schema.Array(
                   Schema.Struct({ key: Schema.String, value: Schema.Unknown }),
                 ),
@@ -53,7 +59,7 @@ describe("BrowserOtlp", () => {
         requests.push({ url: request.url, body: await request.text() });
         return new Response("{}");
       };
-      const push = history.pushState;
+      const push = Object.getOwnPropertyDescriptor(history, "pushState");
       return Effect.gen(function* () {
         expect(BrowserOtlp.event).toBe(Otlp.event);
         yield* BrowserOtlp.event(
@@ -62,11 +68,13 @@ describe("BrowserOtlp", () => {
           { messageId: "event-1" },
         );
         yield* BrowserOtlp.event("checkout.next");
-        expect(history.pushState).toBe(push);
+        expect(Object.getOwnPropertyDescriptor(history, "pushState")).toEqual(
+          push,
+        );
         yield* (yield* OtlpExporter.Flusher).flush;
         expect(requests).toHaveLength(1);
         expect(requests[0]!.url).toBe("http://localhost:3000/api/otel/v1/logs");
-        const payload = yield* Schema.decodeUnknownEffect(EventPayload)(
+        const payload = yield* Schema.decodeEffect(EventPayload)(
           requests[0]!.body,
         );
         const scope = payload.resourceLogs[0]!.scopeLogs[0]!;
@@ -129,16 +137,20 @@ describe("BrowserOtlp", () => {
   it.effect(
     "does not install analytics page tracking or export page events",
     () => {
-      const push = history.pushState;
-      const replace = history.replaceState;
+      const push = Object.getOwnPropertyDescriptor(history, "pushState");
+      const replace = Object.getOwnPropertyDescriptor(history, "replaceState");
       let sent = 0;
       const fetch = async () => {
         sent++;
         return new Response("{}");
       };
       return Effect.gen(function* () {
-        expect(history.pushState).toBe(push);
-        expect(history.replaceState).toBe(replace);
+        expect(Object.getOwnPropertyDescriptor(history, "pushState")).toEqual(
+          push,
+        );
+        expect(
+          Object.getOwnPropertyDescriptor(history, "replaceState"),
+        ).toEqual(replace);
         yield* (yield* OtlpExporter.Flusher).flush;
         expect(sent).toBe(0);
       }).pipe(
@@ -275,7 +287,9 @@ describe("BrowserOtlp", () => {
       };
 
       return Effect.gen(function* () {
-        yield* Effect.fail(new Error("Browser failure")).pipe(
+        yield* Effect.fail(
+          new BrowserFailureFixture({ message: "Browser failure" }),
+        ).pipe(
           Effect.withSpan("browser.exception", { root: true, sampled: true }),
           Effect.ignoreCause,
         );

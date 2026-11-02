@@ -1,3 +1,4 @@
+import * as Data from "effect/Data";
 /* oxlint-disable anti-slop/no-unknown-parameters, anti-slop/no-unsafe-dictionary-type -- Runtime endpoint codecs validate heterogeneous values at this dynamic adapter boundary. */
 import {
   Context,
@@ -11,6 +12,11 @@ import {
 import type { Json } from "effect/Schema";
 import { HttpClient } from "effect/http";
 import { HttpApi, HttpApiClient, HttpApiGroup, OpenApi } from "effect/http-api";
+
+class HttpApiAdapterError extends Data.TaggedError("HttpApiAdapterError")<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
 
 export type HttpApiMethod = "get" | "post" | "put" | "patch" | "delete";
 const HttpApiMethods: ReadonlyArray<HttpApiMethod> = [
@@ -134,7 +140,7 @@ const HttpApiOperationResultValue: Schema.Codec<
     Schema.Null,
     UndefinedFromNull,
     Schema.String,
-    Schema.Number,
+    Schema.Finite,
     Schema.Boolean,
     Schema.DateFromString,
     Schema.Uint8ArrayFromBase64,
@@ -153,7 +159,11 @@ export const encodeHttpApiOperationResult = Effect.fn(
   Schema.encodeUnknownEffect(HttpApiOperationResult)(result).pipe(
     Effect.map((encoded) => encoded ?? null),
     Effect.mapError(
-      (cause) => new Error("HTTP API result is not serializable", { cause }),
+      (cause) =>
+        new HttpApiAdapterError({
+          message: "HTTP API result is not serializable",
+          cause: { cause }.cause,
+        }),
     ),
   ),
 );
@@ -165,8 +175,11 @@ const encodeOperationResult = Effect.fn("HttpApiAdapter.encodeResult")(
           Effect.flatMap(encodeHttpApiOperationResult),
           Effect.mapError(
             (cause) =>
-              new Error("HTTP API result does not match its success schema", {
-                cause,
+              new HttpApiAdapterError({
+                message: "HTTP API result does not match its success schema",
+                cause: {
+                  cause,
+                }.cause,
               }),
           ),
         )
@@ -206,7 +219,9 @@ const makeCatalogue = (
   Effect.try({
     try: () => {
       if (!HttpApi.isHttpApi(api))
-        throw new Error("HttpApiAdapter requires a valid HttpApi");
+        throw new HttpApiAdapterError({
+          message: "HttpApiAdapter requires a valid HttpApi",
+        });
       const spec = OpenApi.fromApi(api);
       const reflected = new Map<string, ReflectedOperation>();
       HttpApi.reflect(api, {
@@ -221,7 +236,9 @@ const makeCatalogue = (
                 : `${group.identifier}.${endpoint.identifier}`,
           );
           if (reflected.has(operationId))
-            throw new Error(`Duplicate HTTP API operation ID: ${operationId}`);
+            throw new HttpApiAdapterError({
+              message: `Duplicate HTTP API operation ID: ${operationId}`,
+            });
           const fields: Record<string, Schema.Codec<unknown, unknown>> = {};
           if (endpoint.params)
             fields.params = Schema.toType(reflectedSchema(endpoint.params));
@@ -278,12 +295,14 @@ const makeCatalogue = (
             ? reflected.get(entry.operation.operationId)
             : undefined;
           if (!metadata)
-            throw new Error(
-              `Missing endpoint schema for ${entry.operation.operationId}`,
-            );
+            throw new HttpApiAdapterError({
+              message: `Missing endpoint schema for ${entry.operation.operationId}`,
+            });
           const name = httpApiToolName(entry);
           if (!name || names.has(name))
-            throw new Error(`Duplicate or empty HTTP API tool name: ${name}`);
+            throw new HttpApiAdapterError({
+              message: `Duplicate or empty HTTP API tool name: ${name}`,
+            });
           names.add(name);
           const document = Schema.toJsonSchemaDocument(
             metadata.inputSchema.annotate({ identifier: undefined }),
@@ -306,7 +325,10 @@ const makeCatalogue = (
       return { info: spec.info, operations };
     },
     catch: (cause) =>
-      new Error("Failed to build HTTP API adapter catalogue", { cause }),
+      new HttpApiAdapterError({
+        message: "Failed to build HTTP API adapter catalogue",
+        cause: { cause }.cause,
+      }),
   });
 
 type GeneratedOperation = (input: {
@@ -338,12 +360,10 @@ const executeGeneratedOperation = Effect.fn(
   )?.[1];
   const endpoint = Schema.decodeUnknownOption(GeneratedOperation)(candidate);
   if (Option.isNone(endpoint))
-    return yield* Effect.fail(
-      new Error(
-        `No generated API client operation for ${operation.operation.operationId}`,
-      ),
-    );
-  const result = Schema.decodeUnknownOption(GeneratedOperationEffect)(
+    return yield* new HttpApiAdapterError({
+      message: `No generated API client operation for ${operation.operation.operationId}`,
+    });
+  const result = Schema.decodeOption(GeneratedOperationEffect)(
     endpoint.value({
       headers: input.headers ?? {},
       params: input.params ?? {},
@@ -352,11 +372,9 @@ const executeGeneratedOperation = Effect.fn(
     }),
   );
   if (Option.isNone(result))
-    return yield* Effect.fail(
-      new Error(
-        `Generated API client operation ${operation.operation.operationId} is invalid`,
-      ),
-    );
+    return yield* new HttpApiAdapterError({
+      message: `Generated API client operation ${operation.operation.operationId} is invalid`,
+    });
   return yield* result.value;
 });
 
@@ -392,9 +410,9 @@ export class HttpApiAdapter extends Context.Service<
               options.operation.operation.operationId,
         );
         if (!operation) {
-          return yield* Effect.fail(
-            new Error("Operation is not in this HTTP API adapter catalogue"),
-          );
+          return yield* new HttpApiAdapterError({
+            message: "Operation is not in this HTTP API adapter catalogue",
+          });
         }
         return yield* executeGeneratedOperation(client, {
           operation,

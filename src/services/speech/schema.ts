@@ -13,7 +13,9 @@ export const TranscribeAudio = Schema.Struct({
     Schema.isMaxLength(MAX_AUDIO_BYTES),
   ),
   mimeType: AudioMimeType,
-  language: Schema.optionalKey(Schema.String.check(Schema.isPattern(/^[a-z]{2,3}$/))),
+  language: Schema.optionalKey(
+    Schema.String.check(Schema.isPattern(/^[a-z]{2,3}$/)),
+  ),
 }).annotate({ identifier: "TranscribeAudio" });
 export const Transcription = Schema.Struct({
   text: Schema.String.check(Schema.isMaxLength(12000)),
@@ -28,11 +30,10 @@ export const WhisperResponse = Schema.Struct({
   success: Schema.Literal(true),
   result: Transcription,
 }).annotate({ identifier: "GatewayWhisperResponse" });
-export class SpeechUnavailable extends Schema.TaggedError<SpeechUnavailable>()(
-  "SpeechUnavailable",
-  {},
-  { httpApiStatus: 503 },
-) {}
+export class SpeechUnavailable extends Schema.TaggedError<
+  SpeechUnavailable,
+  { readonly brand: unique symbol }
+>()("SpeechUnavailable", {}, { httpApiStatus: 503 }) {}
 export type TranscribeAudio = typeof TranscribeAudio.Type;
 
 export const SynthesizeSpeech = Schema.Struct({
@@ -50,5 +51,7 @@ export const MeloRequest = Schema.Struct({
 }).annotate({ identifier: "GatewayMeloRequest" });
 export const MeloResponse = Schema.Struct({
   success: Schema.Literal(true),
-  result: Schema.Struct({ audio: Schema.Uint8ArrayFromBase64.check(Schema.isMinLength(1)) }),
+  result: Schema.Struct({
+    audio: Schema.Uint8ArrayFromBase64.check(Schema.isMinLength(1)),
+  }),
 }).annotate({ identifier: "GatewayMeloResponse" });

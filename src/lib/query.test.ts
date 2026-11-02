@@ -19,7 +19,7 @@ import {
 
 describe("Query", () => {
   it("round-trips typed filters through router, JSON, and HTTP codecs", async () => {
-    const filters = Schema.decodeUnknownSync(Schema.Array(ColumnFilter))([
+    const filters = Schema.decodeSync(Schema.Array(ColumnFilter))([
       {
         id: "learner.email",
         kind: "text",
@@ -41,7 +41,7 @@ describe("Query", () => {
       Schema.toCodecStringTree(Query),
     ]) {
       const encoded = Schema.encodeSync(codec)(query);
-      expect(Schema.decodeUnknownSync(codec)(encoded)).toEqual(query);
+      expect(Schema.decodeSync(codec)(encoded)).toEqual(query);
     }
     expect(Schema.encodeSync(Schema.toCodecStringTree(Query))(query)).toEqual({
       filters: JSON.stringify(filters),
@@ -50,7 +50,7 @@ describe("Query", () => {
       filters,
     });
     expect(
-      Schema.decodeUnknownSync(Schema.toCodecStringTree(Query))({
+      Schema.decodeSync(Schema.toCodecStringTree(Query))({
         filters: "[]",
       }),
     ).toEqual({ page: 0, pageSize: 20, filters: [] });
@@ -72,7 +72,7 @@ describe("Query", () => {
         Schema.decodeUnknownSync(Query)({ filters: [filter] }),
       ).toThrow();
     expect(() =>
-      Schema.decodeUnknownSync(Schema.toCodecStringTree(Query))({
+      Schema.decodeSync(Schema.toCodecStringTree(Query))({
         filters: "not-json",
       }),
     ).toThrow();
@@ -85,7 +85,7 @@ describe("Query", () => {
       value: decoded,
     });
     for (const codec of [Query, Schema.toCodecJson(Query)]) {
-      expect(Schema.decodeUnknownSync(codec)(input)).toEqual(decoded);
+      expect(Schema.decodeSync(codec)(input)).toEqual(decoded);
       expect(Schema.encodeSync(codec)(decoded)).toEqual({
         pageSize: 10,
         globalFilter: "collection-1",
@@ -106,7 +106,7 @@ describe("Query", () => {
       { pageSize: "101" },
       { pageSize: "1.5" },
     ]) {
-      expect(() => Schema.decodeUnknownSync(Query)(invalid)).toThrow();
+      expect(() => Schema.decodeSync(Query)(invalid)).toThrow();
     }
   });
 
@@ -120,7 +120,7 @@ describe("Query", () => {
   it("rejects malformed HTTP sorting", () => {
     const codec = Schema.toCodecStringTree(Query);
     for (const sort of ["-", "name,-", "name:desc"]) {
-      expect(() => Schema.decodeUnknownSync(codec)({ sort })).toThrow();
+      expect(() => Schema.decodeSync(codec)({ sort })).toThrow();
     }
   });
 
@@ -132,7 +132,7 @@ describe("Query", () => {
       data: [{ createdAt: "2026-09-18T00:00:00.000Z" }],
       meta: { page: 0, pageSize: 10, total: 1, pageCount: 1 },
     };
-    const decoded = Schema.decodeUnknownSync(codec)(encoded);
+    const decoded = Schema.decodeSync(codec)(encoded);
     expect(decoded.data[0]?.createdAt).toEqual(
       new Date(encoded.data[0]!.createdAt),
     );
@@ -155,7 +155,7 @@ describe("Query", () => {
       pageSize: "25",
       sort: "-name,createdAt",
     });
-    expect(Schema.decodeUnknownSync(codec)(encoded)).toEqual(query);
+    expect(Schema.decodeSync(codec)(encoded)).toEqual(query);
   });
 
   it("round-trips cleared and omitted sorting over HTTP", () => {
@@ -164,9 +164,9 @@ describe("Query", () => {
       { page: 0, pageSize: 20 },
       { page: 0, pageSize: 20, sort: [] },
     ]) {
-      expect(
-        Schema.decodeUnknownSync(codec)(Schema.encodeSync(codec)(query)),
-      ).toEqual(query);
+      expect(Schema.decodeSync(codec)(Schema.encodeSync(codec)(query))).toEqual(
+        query,
+      );
     }
   });
 
@@ -189,7 +189,7 @@ describe("Query", () => {
     ]) {
       const query = { page: 0, pageSize: 20 };
       expect(Schema.encodeSync(codec)(query)).toEqual({});
-      expect(Schema.decodeUnknownSync(codec)({})).toEqual(query);
+      expect(Schema.decodeSync(codec)({})).toEqual(query);
     }
   });
 
@@ -201,17 +201,17 @@ describe("Query", () => {
       [{ page: 0, pageSize: 25 }, { pageSize: "25" }],
     ] as const) {
       expect(Schema.encodeSync(codec)(query)).toEqual(encoded);
-      expect(Schema.decodeUnknownSync(codec)(encoded)).toEqual(query);
+      expect(Schema.decodeSync(codec)(encoded)).toEqual(query);
     }
   });
 
   it("defaults omitted and undefined pagination for data consumers", () => {
-    expect(Schema.decodeUnknownSync(Query)({})).toEqual({
+    expect(Schema.decodeSync(Query)({})).toEqual({
       page: 0,
       pageSize: 20,
     });
     expect(
-      Schema.decodeUnknownSync(Query)({ page: undefined, pageSize: undefined }),
+      Schema.decodeSync(Query)({ page: undefined, pageSize: undefined }),
     ).toEqual({ page: 0, pageSize: 20 });
   });
 
@@ -295,7 +295,7 @@ describe("Query", () => {
 
   it("validates structured sorting", () => {
     expect(
-      Schema.decodeUnknownSync(Query)({
+      Schema.decodeSync(Query)({
         page: 2,
         pageSize: 25,
         globalFilter: "active",
@@ -336,11 +336,11 @@ describe("Query", () => {
   });
 
   it("reports invalid encoded sorting", () => {
-    expect(() => Schema.decodeUnknownSync(SortParamFromString)("-")).toThrow(
+    expect(() => Schema.decodeSync(SortParamFromString)("-")).toThrow(
       'Expected sort in the format "field" or "-field"',
     );
-    expect(() =>
-      Schema.decodeUnknownSync(SortParamsFromString)("name,-"),
-    ).toThrow('Expected sort in the format "field,-otherField"');
+    expect(() => Schema.decodeSync(SortParamsFromString)("name,-")).toThrow(
+      'Expected sort in the format "field,-otherField"',
+    );
   });
 });

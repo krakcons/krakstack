@@ -37,7 +37,7 @@ describe("native asset chunks", () => {
         expect(last?.content).toContain("| Product | Fee |");
         expect(last?.headingPath).toBe("Fees");
         expect(last?.firstPage).toBeNull();
-        yield* Schema.decodeUnknownEffect(AssetIndexedTextSchema)({
+        yield* Schema.decodeEffect(AssetIndexedTextSchema)({
           content,
           contentByteSize: new TextEncoder().encode(content).byteLength,
           truncated: false,

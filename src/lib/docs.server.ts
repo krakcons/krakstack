@@ -60,7 +60,7 @@ export const compileMdxDocsPage = (
   }
   const body = bodySource.replace(/^\s*#\s+.+?\r?\n+/, "");
 
-  return Schema.decodeUnknownSync(DocsPageSchema)({
+  return Schema.decodeSync(DocsPageSchema)({
     ...frontmatter,
     ...compileDocsMarkdown(body),
     sourceFile,

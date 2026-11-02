@@ -147,7 +147,7 @@ export class ReminderHandlerRegistry extends Context.Service<
       Effect.gen(function* () {
         const registry = new Map<string, ReminderHandler>();
         for (const handler of handlers) {
-          const descriptor = yield* Schema.decodeUnknownEffect(
+          const descriptor = yield* Schema.decodeEffect(
             Schema.Struct({
               key: Schema.NonEmptyString,
               version: Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0))),
@@ -199,9 +199,7 @@ export class ReminderHandlerRegistry extends Context.Service<
 }
 
 export type NotificationRuntimeError =
-  | NotificationStorageError
-  | NotificationQueueError
-  | NotificationDataErrorType;
+  NotificationStorageError | NotificationQueueError | NotificationDataErrorType;
 
 export interface NotificationRuntimeContract {
   readonly enqueueDue: (
@@ -216,7 +214,7 @@ export interface NotificationRuntimeContract {
 
 const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
   Effect.gen(function* () {
-    const runtimeOptions = yield* Schema.decodeUnknownEffect(
+    const runtimeOptions = yield* Schema.decodeEffect(
       NotificationRuntimeOptions,
     )(options).pipe(
       Effect.mapError(
@@ -245,11 +243,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
       readonly deliveryId: string;
       readonly jobId: string;
       readonly reason:
-        | "cancelled"
-        | "expired"
-        | "stale"
-        | "terminal"
-        | "suppressed";
+        "cancelled" | "expired" | "stale" | "terminal" | "suppressed";
       readonly now: Date;
     }) {
       yield* sql`
@@ -522,7 +516,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
           return;
         }
 
-        const transportInput = yield* Schema.decodeUnknownEffect(
+        const transportInput = yield* Schema.decodeEffect(
           NotificationTransportInput,
         )({
           dispatchId: metadata.id,
@@ -715,9 +709,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
         `;
         if (claimed.length === 0) return;
 
-        const handlerInput = yield* Schema.decodeUnknownEffect(
-          ReminderHandlerInput,
-        )({
+        const handlerInput = yield* Schema.decodeEffect(ReminderHandlerInput)({
           reminderId: reminder.id,
           jobId: metadata.id,
           attempt: job.attempt,
@@ -776,7 +768,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
 
     const enqueueDue = Effect.fn("NotificationRuntime.enqueueDue")(
       function* (rawInput: EnqueueDueInput = { limit: dueBatchSize }) {
-        const input = yield* Schema.decodeUnknownEffect(EnqueueDueInput)(
+        const input = yield* Schema.decodeEffect(EnqueueDueInput)(
           rawInput,
         ).pipe(
           Effect.mapError(

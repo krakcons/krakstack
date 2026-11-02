@@ -146,32 +146,20 @@ export const ErrorComponent = ({
   const reference =
     diagnostics?.reference ??
     (standardError ? getErrorTraceId(standardError) : undefined);
-  const report = useMemo(
-    () =>
-      [
-        `${labels.errorLabel}: ${errorName}`,
-        `${labels.messageLabel}: ${errorMessage}`,
-        "",
-        `${labels.pageLabel}: ${pathname}`,
-        `${labels.timeLabel}: ${new Date().toISOString()}`,
-        `${labels.languageLabel}: ${locale}`,
-        ...(diagnostics?.app ? [`${labels.appLabel}: ${diagnostics.app}`] : []),
-        ...(diagnostics?.version
-          ? [`${labels.versionLabel}: ${diagnostics.version}`]
-          : []),
-        ...(reference ? [`${labels.referenceLabel}: ${reference}`] : []),
-      ].join("\n"),
-    [
-      errorName,
-      errorMessage,
-      pathname,
-      locale,
-      labels,
-      diagnostics?.app,
-      diagnostics?.version,
-      reference,
-    ],
-  );
+  const [reportedAt] = useState(() => new Date().toISOString());
+  const report = [
+    `${labels.errorLabel}: ${errorName}`,
+    `${labels.messageLabel}: ${errorMessage}`,
+    "",
+    `${labels.pageLabel}: ${pathname}`,
+    `${labels.timeLabel}: ${reportedAt}`,
+    `${labels.languageLabel}: ${locale}`,
+    ...(diagnostics?.app ? [`${labels.appLabel}: ${diagnostics.app}`] : []),
+    ...(diagnostics?.version
+      ? [`${labels.versionLabel}: ${diagnostics.version}`]
+      : []),
+    ...(reference ? [`${labels.referenceLabel}: ${reference}`] : []),
+  ].join("\n");
   const [copyResult, setCopyResult] = useState<{
     report: string;
     status: "copied" | "failed";

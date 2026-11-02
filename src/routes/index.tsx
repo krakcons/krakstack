@@ -172,7 +172,7 @@ function Home() {
             <LocaleSwitcher
               onLocaleChange={(nextLocale) => {
                 if (nextLocale === "en" || nextLocale === "fr") {
-                  setLocale(nextLocale);
+                  void setLocale(nextLocale);
                 }
               }}
             />

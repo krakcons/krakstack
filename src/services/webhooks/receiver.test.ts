@@ -121,7 +121,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
           const receiver = yield* WebhooksReceiver;
           const tables =
             yield* sql`SELECT tablename FROM pg_tables WHERE schemaname = current_schema()`;
-          expect(tables.map((row) => row.tablename).sort()).toEqual([
+          expect(
+            tables
+              .map((row) =>
+                Schema.decodeUnknownSync(Schema.String)(row.tablename),
+              )
+              .sort((a, b) => a.localeCompare(b)),
+          ).toEqual([
             "krakstack_webhook_receiver_migrations",
             "webhook_receipts",
           ]);

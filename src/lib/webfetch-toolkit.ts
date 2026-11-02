@@ -70,7 +70,7 @@ const SupportedMediaType = Schema.Literals([
 
 const decodeMediaType = Schema.decodeUnknownOption(SupportedMediaType);
 const decodeContentLength = Schema.decodeUnknownOption(
-  Schema.NumberFromString.check(Schema.isGreaterThanOrEqualTo(0)),
+  Schema.FiniteFromString.check(Schema.isGreaterThanOrEqualTo(0)),
 );
 
 export const WebFetchRequest = Schema.Struct({

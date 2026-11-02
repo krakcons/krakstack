@@ -141,7 +141,7 @@ describe("Webhook HTTP client", () => {
               },
             }),
           ),
-          (server) => Effect.sync(() => server.stop(true)),
+          (server) => Effect.promise(() => server.stop(true)),
         );
         const client = yield* HttpClient.HttpClient;
         const response = yield* client.post(
@@ -152,9 +152,11 @@ describe("Webhook HTTP client", () => {
       }).pipe(
         Effect.scoped,
         Effect.provide(
-          layer.pipe(Layer.provide(Layer.succeed(WebhookAllowLoopback, true))),
+          layer.pipe(
+            Layer.provide(Layer.succeed(WebhookAllowLoopback, true)),
+            Layer.provideMerge(dnsLayer([])),
+          ),
         ),
-        Effect.provide(dnsLayer([])),
       ),
   );
   it.effect("sends opted-in loopback requests without allowing redirects", () =>
@@ -174,9 +176,11 @@ describe("Webhook HTTP client", () => {
     }).pipe(
       Effect.scoped,
       Effect.provide(
-        layer.pipe(Layer.provide(Layer.succeed(WebhookAllowLoopback, true))),
+        layer.pipe(
+          Layer.provide(Layer.succeed(WebhookAllowLoopback, true)),
+          Layer.provideMerge(dnsLayer([])),
+        ),
       ),
-      Effect.provide(dnsLayer([])),
     ),
   );
   it.effect("blocks private DNS destinations before sending", () =>
@@ -188,7 +192,9 @@ describe("Webhook HTTP client", () => {
         .pipe(Effect.provideService(FetchHttpClient.Fetch, fetch), Effect.flip);
       expect(error.reason._tag).toBe("TransportError");
       expect(fetch).not.toHaveBeenCalled();
-    }).pipe(Effect.provide(layer), Effect.provide(dnsLayer(["10.0.0.1"]))),
+    }).pipe(
+      Effect.provide(layer.pipe(Layer.provideMerge(dnsLayer(["10.0.0.1"])))),
+    ),
   );
 
   it.effect("disables redirects even when the caller enables them", () =>
@@ -210,8 +216,7 @@ describe("Webhook HTTP client", () => {
       );
     }).pipe(
       Effect.scoped,
-      Effect.provide(layer),
-      Effect.provide(dnsLayer(["8.8.8.8"])),
+      Effect.provide(layer.pipe(Layer.provideMerge(dnsLayer(["8.8.8.8"])))),
     ),
   );
 });

@@ -1,3 +1,4 @@
+import * as Data from "effect/Data";
 import { PgClient } from "@effect/sql-pg";
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Effect, Layer, Redacted } from "effect";
@@ -16,6 +17,13 @@ import type {
 } from "../src/schema.js";
 import { makeFakeReminderHandler, makeFakeTransport } from "../src/testing.js";
 import { NotificationTransportUnavailable } from "../src/transport.js";
+
+class NotificationFixtureTimeout extends Data.TaggedError(
+  "NotificationFixtureTimeout",
+)<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
 
 let unavailableFailures = 0;
 let providerCompletedAt: Date | null = null;
@@ -105,7 +113,11 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
     () => {
       const testDatabaseUrl = process.env.TEST_DATABASE_URL;
       if (testDatabaseUrl === undefined) {
-        return Effect.die(new Error("TEST_DATABASE_URL is required"));
+        return Effect.die(
+          new NotificationFixtureTimeout({
+            message: "TEST_DATABASE_URL is required",
+          }),
+        );
       }
 
       const testId = globalThis.crypto.randomUUID();
@@ -233,9 +245,9 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
             if (detail.delivery.status === status) return detail;
             yield* runtime.runDeliveryWorkerOnce;
           }
-          return yield* Effect.fail(
-            new Error(`Delivery ${deliveryId} did not reach ${status}`),
-          );
+          return yield* new NotificationFixtureTimeout({
+            message: `Delivery ${deliveryId} did not reach ${status}`,
+          });
         });
 
         yield* service.setPreference({
@@ -256,9 +268,9 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
             if (reminder.status === status) return reminder;
             yield* runtime.runReminderWorkerOnce;
           }
-          return yield* Effect.fail(
-            new Error(`Reminder ${reminderId} did not reach ${status}`),
-          );
+          return yield* new NotificationFixtureTimeout({
+            message: `Reminder ${reminderId} did not reach ${status}`,
+          });
         });
         const preferenceDetail = yield* service.getDelivery({
           scope,
@@ -305,7 +317,9 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         const jobId = transactionalDetail.delivery.currentJobId;
         if (jobId === null) {
           return yield* Effect.die(
-            new Error("Immediate delivery did not persist a queue job id"),
+            new NotificationFixtureTimeout({
+              message: "Immediate delivery did not persist a queue job id",
+            }),
           );
         }
         const queueRows = yield* sql`
@@ -571,7 +585,9 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         const currentNotificationId = transactional.notificationId;
         if (currentNotificationId === null) {
           return yield* Effect.die(
-            new Error("Transactional publication did not create an inbox row"),
+            new NotificationFixtureTimeout({
+              message: "Transactional publication did not create an inbox row",
+            }),
           );
         }
         const foreignScope: RecipientNotificationScope = {
@@ -596,7 +612,9 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         const foreignNotificationId = foreignPublication.notificationId;
         if (foreignNotificationId === null) {
           return yield* Effect.die(
-            new Error("Foreign publication did not create an inbox row"),
+            new NotificationFixtureTimeout({
+              message: "Foreign publication did not create an inbox row",
+            }),
           );
         }
         const unreadBefore = yield* service.unreadCount({ scope });
@@ -786,7 +804,11 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         });
         const freshLockJobId = freshLockDetail.delivery.currentJobId;
         if (freshLockJobId === null) {
-          return yield* Effect.die(new Error("Fresh-lock job was not queued"));
+          return yield* Effect.die(
+            new NotificationFixtureTimeout({
+              message: "Fresh-lock job was not queued",
+            }),
+          );
         }
         yield* sql`
           UPDATE krakstack_notification_jobs
@@ -985,7 +1007,9 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
           const capturedProviderCompletion = readProviderCompletedAt();
           if (capturedProviderCompletion === null) {
             return yield* Effect.die(
-              new Error("Provider completion timestamp was not captured"),
+              new NotificationFixtureTimeout({
+                message: "Provider completion timestamp was not captured",
+              }),
             );
           }
           expect(completed.delivery.sentAt?.getTime()).toBeGreaterThanOrEqual(
@@ -1011,7 +1035,9 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         const capturedHandlerCompletion = readHandlerCompletedAt();
         if (capturedHandlerCompletion === null) {
           return yield* Effect.die(
-            new Error("Handler completion timestamp was not captured"),
+            new NotificationFixtureTimeout({
+              message: "Handler completion timestamp was not captured",
+            }),
           );
         }
         expect(completedReminderState.status).toBe("completed");
@@ -1168,7 +1194,11 @@ describe.skipIf(!hasTestDatabase)("legacy notification table adoption", () => {
     () => {
       const testDatabaseUrl = process.env.TEST_DATABASE_URL;
       if (testDatabaseUrl === undefined) {
-        return Effect.die(new Error("TEST_DATABASE_URL is required"));
+        return Effect.die(
+          new NotificationFixtureTimeout({
+            message: "TEST_DATABASE_URL is required",
+          }),
+        );
       }
 
       const testId = globalThis.crypto.randomUUID();

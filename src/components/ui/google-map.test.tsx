@@ -252,6 +252,14 @@ describe("GoogleMap", () => {
       (callsBeforeStyleChange ?? 0) + 1,
     );
     expect(circles[0]?.setRadius).toHaveBeenLastCalledWith(4000);
+    rerender(<GoogleMap apiKey="" center={{ lat: 3, lng: 4 }} zoom={10} />);
+    expect(screen.getByRole("alert").textContent).toContain("Map unavailable");
+    rerender(
+      <GoogleMap apiKey="test-key" center={{ lat: 3, lng: 4 }} zoom={12} />,
+    );
+    await waitFor(() => expect(maps).toHaveLength(2));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(maps[1]?.zoom).toBe(12);
     cleanup();
     expect(observers[0]?.disconnect).toHaveBeenCalled();
   });

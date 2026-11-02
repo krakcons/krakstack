@@ -12,12 +12,12 @@ import { Hex } from "effect/encoding";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { webhookReceiverMigrationsLayer } from "./migrations";
 
-export class WebhookVerificationError extends Schema.TaggedError<WebhookVerificationError>()(
-  "WebhookVerificationError",
-  {
-    reason: Schema.Literals(["headers", "timestamp", "signature", "payload"]),
-  },
-) {}
+export class WebhookVerificationError extends Schema.TaggedError<
+  WebhookVerificationError,
+  { readonly brand: unique symbol }
+>()("WebhookVerificationError", {
+  reason: Schema.Literals(["headers", "timestamp", "signature", "payload"]),
+}) {}
 
 const ProtocolHeaders = Schema.Struct({
   "webhook-id": Schema.NonEmptyString,
@@ -27,10 +27,10 @@ const ProtocolHeaders = Schema.Struct({
   ),
 }).annotate({ identifier: "WebhookProtocolHeaders" });
 
-export class WebhookReceiptConflict extends Schema.TaggedError<WebhookReceiptConflict>()(
-  "WebhookReceiptConflict",
-  {},
-) {}
+export class WebhookReceiptConflict extends Schema.TaggedError<
+  WebhookReceiptConflict,
+  { readonly brand: unique symbol }
+>()("WebhookReceiptConflict", {}) {}
 
 const ReceiptRequest = Schema.Struct({
   receiver: Schema.NonEmptyString,
@@ -104,14 +104,14 @@ export class WebhooksReceiver extends Context.Service<WebhooksReceiver>()(
         );
         if (!valid)
           return yield* new WebhookVerificationError({ reason: "signature" });
-        const payload = yield* Schema.decodeUnknownEffect(
+        const payload = yield* Schema.decodeEffect(
           Schema.fromJsonString(input.schema),
         )(input.body).pipe(
           Effect.mapError(
             () => new WebhookVerificationError({ reason: "payload" }),
           ),
         );
-        const request = yield* Schema.decodeUnknownEffect(ReceiptRequest)({
+        const request = yield* Schema.decodeEffect(ReceiptRequest)({
           receiver: input.receiver,
           eventId: headers["webhook-id"],
           bodyHash: yield* digest.digestHex(

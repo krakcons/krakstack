@@ -22,9 +22,8 @@ export type EventIdentity = typeof EventIdentity.Type;
 export const EventIpAddress = Schema.String.check(
   Schema.makeFilter(
     (value) =>
-      Option.isSome(
-        Schema.decodeUnknownOption(Schema.IpAddressFromString)(value),
-      ) || "Invalid IP address",
+      Option.isSome(Schema.decodeOption(Schema.IpAddressFromString)(value)) ||
+      "Invalid IP address",
   ),
 ).annotate({ identifier: "EventIpAddress" });
 export const EventCountry = Schema.String.check(
@@ -47,10 +46,10 @@ export const EventGeolocation = Schema.Struct({
 }).annotate({ identifier: "EventGeolocation" });
 export type EventGeolocation = typeof EventGeolocation.Type;
 
-export class EventGeolocationError extends Schema.TaggedError<EventGeolocationError>()(
-  "EventGeolocationError",
-  {},
-) {}
+export class EventGeolocationError extends Schema.TaggedError<
+  EventGeolocationError,
+  { readonly brand: unique symbol }
+>()("EventGeolocationError", {}) {}
 
 export const BrowserEventOptions = Schema.Struct({
   messageId: Schema.optional(EventId),
@@ -126,10 +125,10 @@ export interface EventSubscriber<E = never, R = never> {
   ) => Effect.Effect<unknown, E, R>;
 }
 
-export class EventSubscriberError extends Schema.TaggedError<EventSubscriberError>()(
-  "EventSubscriberError",
-  { subscription: Schema.String },
-) {}
+export class EventSubscriberError extends Schema.TaggedError<
+  EventSubscriberError,
+  { readonly brand: unique symbol }
+>()("EventSubscriberError", { subscription: Schema.String }) {}
 
 export const EventActionFilter = Schema.Struct({
   id: Schema.Literal("eventName"),
@@ -202,15 +201,15 @@ export const RequestActorAttribution = Schema.Struct({
   "user.roles": Schema.optional(Schema.Array(Schema.String)),
 }).annotate({ identifier: "RequestActorAttribution" });
 
-export class EventsPersistenceError extends Schema.TaggedError<EventsPersistenceError>()(
-  "EventsPersistenceError",
-  { operation: Schema.String },
-) {}
+export class EventsPersistenceError extends Schema.TaggedError<
+  EventsPersistenceError,
+  { readonly brand: unique symbol }
+>()("EventsPersistenceError", { operation: Schema.String }) {}
 
-export class EventConflictError extends Schema.TaggedError<EventConflictError>()(
-  "EventConflictError",
-  { eventId: EventId },
-) {}
+export class EventConflictError extends Schema.TaggedError<
+  EventConflictError,
+  { readonly brand: unique symbol }
+>()("EventConflictError", { eventId: EventId }) {}
 
 export const EventSource = Schema.Literals(["browser", "server"]).annotate({
   identifier: "EventSource",

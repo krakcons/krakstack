@@ -125,10 +125,10 @@ const makeSmtpEmailTransport = Effect.gen(function* () {
     ),
   );
 
-  const user = yield* Schema.decodeUnknownEffect(Schema.NonEmptyString)(
+  const user = yield* Schema.decodeEffect(Schema.NonEmptyString)(
     Redacted.value(environment.user),
   ).pipe(Effect.mapError(() => unavailable("SMTP user is unavailable")));
-  const password = yield* Schema.decodeUnknownEffect(Schema.NonEmptyString)(
+  const password = yield* Schema.decodeEffect(Schema.NonEmptyString)(
     Redacted.value(environment.password),
   ).pipe(Effect.mapError(() => unavailable("SMTP password is unavailable")));
 
@@ -163,66 +163,64 @@ const makeSmtpEmailTransport = Effect.gen(function* () {
     catch: classifyFailure,
   });
 
-  const send = Effect.fn("SmtpEmailTransport.send")(
-    function* (
-      input,
-    ): Effect.fn.Return<
-      NotificationTransportResult,
-      NotificationTransportFailure
-    > {
-      if (input.payloadVersion !== 1) {
-        return yield* new NotificationTransportPermanent({
-          channel: "email",
-          message: `Unsupported email payload version: ${input.payloadVersion}`,
-        });
-      }
-      const email = yield* decodeEmailPayloadV1(input.payload).pipe(
-        Effect.mapError(
-          (cause) =>
-            new NotificationTransportPermanent({
-              channel: "email",
-              message: "Malformed email payload",
-              cause,
-            }),
-        ),
-      );
-      const recipient = yield* decodeEmailRecipient({
-        address: input.recipientAddress,
-        name: input.recipientName,
-      }).pipe(
-        Effect.mapError(
-          (cause) =>
-            new NotificationTransportPermanent({
-              channel: "email",
-              message: "Invalid email recipient",
-              cause,
-            }),
-        ),
-      );
-      const from = email.from ?? environment.sender;
-      const result = yield* Effect.tryPromise({
-        try: () =>
-          transporter.sendMail({
-            from,
-            to: {
-              address: recipient.address,
-              name: recipient.name ?? undefined,
-            },
-            replyTo: email.replyTo,
-            subject: email.subject,
-            text: email.text,
-            html: email.html,
-            disableFileAccess: true,
-            disableUrlAccess: true,
-          }),
-        catch: classifyFailure,
+  const send = Effect.fn("SmtpEmailTransport.send")(function* (
+    input: Parameters<NotificationTransport["send"]>[0],
+  ): Effect.fn.Return<
+    NotificationTransportResult,
+    NotificationTransportFailure
+  > {
+    if (input.payloadVersion !== 1) {
+      return yield* new NotificationTransportPermanent({
+        channel: "email",
+        message: `Unsupported email payload version: ${input.payloadVersion}`,
       });
-      const providerMessageId = Option.getOrNull(
-        Schema.decodeUnknownOption(Schema.NonEmptyString)(result.messageId),
-      );
-      return { provider: "smtp", providerMessageId };
-    },
-  );
+    }
+    const email = yield* decodeEmailPayloadV1(input.payload).pipe(
+      Effect.mapError(
+        (cause) =>
+          new NotificationTransportPermanent({
+            channel: "email",
+            message: "Malformed email payload",
+            cause,
+          }),
+      ),
+    );
+    const recipient = yield* decodeEmailRecipient({
+      address: input.recipientAddress,
+      name: input.recipientName,
+    }).pipe(
+      Effect.mapError(
+        (cause) =>
+          new NotificationTransportPermanent({
+            channel: "email",
+            message: "Invalid email recipient",
+            cause,
+          }),
+      ),
+    );
+    const from = email.from ?? environment.sender;
+    const result = yield* Effect.tryPromise({
+      try: () =>
+        transporter.sendMail({
+          from,
+          to: {
+            address: recipient.address,
+            name: recipient.name ?? undefined,
+          },
+          replyTo: email.replyTo,
+          subject: email.subject,
+          text: email.text,
+          html: email.html,
+          disableFileAccess: true,
+          disableUrlAccess: true,
+        }),
+      catch: classifyFailure,
+    });
+    const providerMessageId = Option.getOrNull(
+      Schema.decodeOption(Schema.NonEmptyString)(result.messageId),
+    );
+    return { provider: "smtp", providerMessageId };
+  });
 
   return { channel: "email", send } satisfies NotificationTransport;
 });

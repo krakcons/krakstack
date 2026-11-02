@@ -35,8 +35,8 @@ const messages = {
 };
 
 export function ExampleDialog({ example, open, onOpenChange, trigger }: Props) {
-  const createExample = useAtomSet(createExampleAtom);
-  const updateExample = useAtomSet(updateExampleAtom);
+  const createExample = useAtomSet(createExampleAtom, { mode: "promise" });
+  const updateExample = useAtomSet(updateExampleAtom, { mode: "promise" });
   const [error, setError] = useState("");
   const isEditing = Boolean(example);
   const defaultValues: CreateExamplePayload = example?.description

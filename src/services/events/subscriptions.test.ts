@@ -187,7 +187,9 @@ describe("Events subscriptions", () => {
         });
         yield* Effect.gen(function* () {
           const events = yield* Events;
-          const body = Schema.encodeSync(Schema.fromJsonString(OtlpLogs))({
+          const body = yield* Schema.encodeEffect(
+            Schema.fromJsonString(OtlpLogs),
+          )({
             resourceLogs: [
               {
                 resource: { attributes: [] },
@@ -222,7 +224,7 @@ describe("Events subscriptions", () => {
                 ],
               },
             ],
-          });
+          }).pipe(Effect.orDie);
           yield* events.process(new TextEncoder().encode(body)).pipe(
             Effect.provideService(
               HttpServerRequest.HttpServerRequest,
@@ -421,14 +423,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
           expect((yield* sql`SELECT event_id FROM events`).length).toBe(1);
         }).pipe(
           Effect.scoped,
-          Effect.provide(eventsLayer),
           Effect.provide(
-            ClusterWorkflowEngine.layer.pipe(
-              Layer.provide(SingleRunner.layer({ runnerStorage: "memory" })),
+            eventsLayer.pipe(
+              Layer.provideMerge(
+                ClusterWorkflowEngine.layer.pipe(
+                  Layer.provide(
+                    SingleRunner.layer({ runnerStorage: "memory" }),
+                  ),
+                ),
+              ),
+              Layer.provideMerge(telemetry),
+              Layer.provideMerge(isolatedDatabase),
             ),
           ),
-          Effect.provide(telemetry),
-          Effect.provide(isolatedDatabase),
           TestClock.withLive,
         ),
     );

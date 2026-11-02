@@ -170,7 +170,7 @@ export const AssetSearchHitSchema = Schema.Struct({
   firstPage: AssetChunkSchema.fields.firstPage,
   lastPage: AssetChunkSchema.fields.lastPage,
   snippet: Schema.String,
-  score: Schema.Number,
+  score: Schema.Finite,
 }).annotate({ identifier: "AssetSearchHit" });
 
 export const AssetSearchResponseSchema = Schema.Struct({
@@ -200,45 +200,48 @@ export const AssetReadChunksResponseSchema = Schema.Struct({
   chunks: Schema.Array(AssetChunkSchema),
 }).annotate({ identifier: "AssetReadChunksResponse" });
 
-export class AssetTextChunkInvalid extends Schema.TaggedError<AssetTextChunkInvalid>()(
+export class AssetTextChunkInvalid extends Schema.TaggedError<
+  AssetTextChunkInvalid,
+  { readonly brand: unique symbol }
+>()(
   "AssetTextChunkInvalid",
   { message: Schema.String },
   { httpApiStatus: 400 },
 ) {}
 
-export class AssetTextVersionChanged extends Schema.TaggedError<AssetTextVersionChanged>()(
+export class AssetTextVersionChanged extends Schema.TaggedError<
+  AssetTextVersionChanged,
+  { readonly brand: unique symbol }
+>()(
   "AssetTextVersionChanged",
   { assetId: Schema.String },
   { httpApiStatus: 409 },
 ) {}
 
-export class AssetExtractionFailed extends Schema.TaggedError<AssetExtractionFailed>()(
-  "AssetExtractionFailed",
-  { message: Schema.String },
-) {}
+export class AssetExtractionFailed extends Schema.TaggedError<
+  AssetExtractionFailed,
+  { readonly brand: unique symbol }
+>()("AssetExtractionFailed", { message: Schema.String }) {}
 
 export const AssetStatsSchema = Schema.Struct({
   assetCount: Schema.Int,
   storageUsedBytes: Schema.Int,
 }).annotate({ identifier: "AssetStats" });
 
-export class AssetNotFound extends Schema.TaggedError<AssetNotFound>()(
-  "AssetNotFound",
-  { assetId: Schema.String },
-  { httpApiStatus: 404 },
-) {}
+export class AssetNotFound extends Schema.TaggedError<
+  AssetNotFound,
+  { readonly brand: unique symbol }
+>()("AssetNotFound", { assetId: Schema.String }, { httpApiStatus: 404 }) {}
 
-export class AssetUploadInvalid extends Schema.TaggedError<AssetUploadInvalid>()(
-  "AssetUploadInvalid",
-  { message: Schema.String },
-  { httpApiStatus: 400 },
-) {}
+export class AssetUploadInvalid extends Schema.TaggedError<
+  AssetUploadInvalid,
+  { readonly brand: unique symbol }
+>()("AssetUploadInvalid", { message: Schema.String }, { httpApiStatus: 400 }) {}
 
-export class AssetInUse extends Schema.TaggedError<AssetInUse>()(
-  "AssetInUse",
-  { assetId: Schema.String },
-  { httpApiStatus: 409 },
-) {}
+export class AssetInUse extends Schema.TaggedError<
+  AssetInUse,
+  { readonly brand: unique symbol }
+>()("AssetInUse", { assetId: Schema.String }, { httpApiStatus: 409 }) {}
 
 export type AssetUploadPayload = typeof AssetUploadPayloadSchema.Type;
 export type AssetUploadCompletionPayload =

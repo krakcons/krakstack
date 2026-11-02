@@ -22,13 +22,13 @@ export const NotificationMessageSchema = Schema.Record(
   ],
 });
 
-export class NotificationSendError extends Schema.TaggedError<NotificationSendError>()(
-  "NotificationSendError",
-  {
-    message: Schema.String,
-    channel: Schema.optional(Schema.String),
-    error: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class NotificationSendError extends Schema.TaggedError<
+  NotificationSendError,
+  { readonly brand: unique symbol }
+>()("NotificationSendError", {
+  message: Schema.String,
+  channel: Schema.optional(Schema.String),
+  error: Schema.optional(Schema.Defect()),
+}) {}
 
 export type { NotificationMessage, NotificationSendInput } from "./channels";

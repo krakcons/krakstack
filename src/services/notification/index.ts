@@ -116,7 +116,7 @@ export class NotificationService extends Context.Service<
     );
 
   static readonly noopLayer = Layer.succeed(this, {
-    send: () => Effect.succeed(undefined),
+    send: () => Effect.undefined,
   });
 
   static readonly localLayer = this.makeLayer([

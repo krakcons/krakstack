@@ -22,7 +22,7 @@ export const isPublicWebhookDestination = Effect.fn(
         isPublicIpAddress(NetAddress.formatIp(address)),
       ),
     ),
-    Effect.catch(() => Effect.succeed(false)),
+    Effect.orElseSucceed(() => false),
   );
 });
 

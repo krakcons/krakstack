@@ -1,6 +1,6 @@
 import { useAtom, useAtomSet } from "@effect/atom-react";
 import { BrowserKeyValueStore } from "@effect/platform-browser";
-import { DateTime, Effect, Option, Schema, Stream } from "effect";
+import { DateTime, Effect, Formatter, Option, Schema, Stream } from "effect";
 import { Csv } from "effect/encoding";
 import { AsyncResult, Atom } from "effect/reactivity";
 import {
@@ -144,7 +144,7 @@ type DataTableTransientUiState = Omit<
 
 const DataTablePersistedUiStateSchema = Schema.Struct({
   columnVisibility: Schema.Record(Schema.String, Schema.Boolean),
-  columnSizing: Schema.Record(Schema.String, Schema.Number),
+  columnSizing: Schema.Record(Schema.String, Schema.Finite),
   grouping: Schema.optionalKey(Schema.Array(Schema.String)),
   view: Schema.Literals(["table", "gallery"]),
 }).annotate({ identifier: "DataTablePersistedUiState" });
@@ -216,7 +216,9 @@ export const DataTableReferenceCell = ({
         )}
       >
         {item.icon ? (
-          <span aria-hidden="true" className="[&_svg]:size-4">{item.icon}</span>
+          <span aria-hidden="true" className="[&_svg]:size-4">
+            {item.icon}
+          </span>
         ) : item.imageSrc && item.imageSrc !== failedImage ? (
           <img
             src={item.imageSrc}
@@ -1000,6 +1002,24 @@ const formatNumberValue = (
   return new Intl.NumberFormat(locale ?? defaultLocale, format).format(value);
 };
 
+const scalarText = Schema.is(
+  Schema.Union([
+    Schema.String,
+    Schema.Finite,
+    Schema.Boolean,
+    Schema.BigInt,
+    Schema.Symbol,
+  ]),
+);
+
+// Keep scalar/custom formatting, but give records and circular values meaningful text.
+const dataTableValueText = <Value,>(value: Value): string =>
+  value == null
+    ? ""
+    : scalarText(value)
+      ? String(value)
+      : Formatter.format(value);
+
 const booleanLabel = <TData,>(
   value: boolean,
   options?: DataTableBooleanOptions<TData>,
@@ -1056,7 +1076,7 @@ export const filterDataTableRows = <TData extends RowData>(
     searchable.some((column) => {
       const value = row.values.get(column.id);
       const colDef = column.colDef;
-      let text = String(value ?? "");
+      let text = dataTableValueText(value);
       if (colDef.type === "date" || colDef.type === "dateTime") {
         const date = resolveDate(value, colDef.type);
         text = date
@@ -1149,7 +1169,7 @@ export const filterDataTableColumnRows = <TData extends RowData>(
         : row.values.get(column.id);
       switch (filter.kind) {
         case "text": {
-          const text = String(value ?? "").toLocaleLowerCase();
+          const text = dataTableValueText(value).toLocaleLowerCase();
           const query = filter.value.toLocaleLowerCase();
           switch (filter.operator) {
             case "contains":
@@ -1192,7 +1212,7 @@ export const filterDataTableColumnRows = <TData extends RowData>(
               ? column.colDef.typeOptions
                   .getItems(row.data)
                   .map((item) => item.value ?? item.label)
-              : [String(value ?? "")];
+              : [dataTableValueText(value)];
           return filter.values.some((selected) => values.includes(selected));
         }
       }
@@ -1277,11 +1297,11 @@ export const sortDataTableRows = <TData extends RowData>(
               ? 1
               : rightValue === null || rightValue === undefined
                 ? -1
-                : Schema.is(Schema.Number)(leftValue) &&
-                    Schema.is(Schema.Number)(rightValue)
+                : Schema.is(Schema.Finite)(leftValue) &&
+                    Schema.is(Schema.Finite)(rightValue)
                   ? leftValue - rightValue
-                  : String(leftValue).localeCompare(
-                      String(rightValue),
+                  : dataTableValueText(leftValue).localeCompare(
+                      dataTableValueText(rightValue),
                       undefined,
                       { numeric: true, sensitivity: "base" },
                     );
@@ -1367,9 +1387,7 @@ type TableAtom<TData extends RowData> = Atom.Writable<DataTableStore<TData>>;
 const RowIdContext = createContext<string | null>(null);
 const ColumnIdContext = createContext<string | null>(null);
 
-const useRequiredId = (
-  context: typeof RowIdContext | typeof ColumnIdContext,
-) => {
+const useRequiredId = (context: typeof RowIdContext) => {
   const id = useContext(context);
   if (!id) throw new Error("DataTable internal ID context is missing");
   return id;
@@ -1794,12 +1812,12 @@ const renderCell = <TData extends RowData>(
   }
   return (
     column.colDef.valueFormatter?.(params) ??
-    (value === null || value === undefined ? null : String(value))
+    (value === null || value === undefined ? null : dataTableValueText(value))
   );
 };
 
 const nodeText = (node: ReactNode): string => {
-  if (Schema.is(Schema.String)(node) || Schema.is(Schema.Number)(node))
+  if (Schema.is(Schema.String)(node) || Schema.is(Schema.Finite)(node))
     return String(node);
   if (!isValidElement<{ children?: ReactNode; title?: ReactNode }>(node))
     return "";
@@ -2167,7 +2185,7 @@ const DataTableToolbar = <TData extends RowData>({
                             exportColumns.map(columnLabel),
                             exportRows.map((row) =>
                               exportColumns.map((column) =>
-                                String(
+                                dataTableValueText(
                                   getDataTableExportValue(
                                     row,
                                     column,
@@ -2417,10 +2435,10 @@ const FilterEditor = <TData extends RowData>({
           });
         else {
           const min = primary
-            ? Schema.decodeUnknownOption(Schema.FiniteFromString)(primary)
+            ? Schema.decodeOption(Schema.FiniteFromString)(primary)
             : Option.some(undefined);
           const max = secondary
-            ? Schema.decodeUnknownOption(Schema.FiniteFromString)(secondary)
+            ? Schema.decodeOption(Schema.FiniteFromString)(secondary)
             : Option.some(undefined);
           if (Option.isNone(min) || Option.isNone(max)) {
             setInvalid(true);
@@ -4126,7 +4144,11 @@ const EditableDataTableListCell = ({
   messages,
 }: EditableDataTableListCellProps & DataTableListCellActionsProps) => {
   const [selected, setSelected] = useState([...items]);
-  useLayoutEffect(() => setSelected([...items]), [items]);
+  const [previousItems, setPreviousItems] = useState(items);
+  if (previousItems !== items) {
+    setPreviousItems(items);
+    setSelected([...items]);
+  }
   const selectedValues = new Set(selected.map((item) => item.value));
   const available = options.filter((item) => !selectedValues.has(item.value));
   const canAdd = !!onAdd && available.length > 0;
