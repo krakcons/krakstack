@@ -9,6 +9,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 const config = defineConfig({
   resolve: {
+    dedupe: ["effect"],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },

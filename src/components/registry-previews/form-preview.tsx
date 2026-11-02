@@ -58,7 +58,7 @@ export function FormPreview() {
   const [submitted, setSubmitted] = useState<SubmittedValues | null>(null);
   const form = useAppForm({
     defaultValues,
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({ value }: { value: FormValues }) => {
       setSubmitted({
         ...value,
         attachment:

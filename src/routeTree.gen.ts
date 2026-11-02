@@ -9,18 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DocsIndexRouteImport } from './routes/docs/index'
-import { Route as DocsChar123SlugChar125RouteImport } from './routes/docs.{-$slug}'
-import { Route as DocsDeveloperSetupRouteImport } from './routes/docs/developer-setup'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsDeveloperSetupRouteImport } from './routes/docs/developer-setup'
+import { Route as DocsChar123SlugChar125RouteImport } from './routes/docs.{-$slug}'
 import { Route as DocsSitesTemplateRouteImport } from './routes/docs/sites/template'
 
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
@@ -28,9 +28,14 @@ const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
   path: '/llms.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
@@ -38,19 +43,14 @@ const DocsIndexRoute = DocsIndexRouteImport.update({
   path: '/docs/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsChar123SlugChar125Route = DocsChar123SlugChar125RouteImport.update({
-  id: '/docs/{-$slug}',
-  path: '/docs/{-$slug}',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DocsDeveloperSetupRoute = DocsDeveloperSetupRouteImport.update({
   id: '/docs/developer-setup',
   path: '/docs/developer-setup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSplatRoute = ApiSplatRouteImport.update({
-  id: '/api/$',
-  path: '/api/$',
+const DocsChar123SlugChar125Route = DocsChar123SlugChar125RouteImport.update({
+  id: '/docs/{-$slug}',
+  path: '/docs/{-$slug}',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsSitesTemplateRoute = DocsSitesTemplateRouteImport.update({
@@ -136,11 +136,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/llms.txt': {
@@ -150,11 +150,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LlmsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/': {
@@ -164,13 +171,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs/{-$slug}': {
-      id: '/docs/{-$slug}'
-      path: '/docs/{-$slug}'
-      fullPath: '/docs/{-$slug}'
-      preLoaderRoute: typeof DocsChar123SlugChar125RouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/docs/developer-setup': {
       id: '/docs/developer-setup'
       path: '/docs/developer-setup'
@@ -178,11 +178,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsDeveloperSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/$': {
-      id: '/api/$'
-      path: '/api/$'
-      fullPath: '/api/$'
-      preLoaderRoute: typeof ApiSplatRouteImport
+    '/docs/{-$slug}': {
+      id: '/docs/{-$slug}'
+      path: '/docs/{-$slug}'
+      fullPath: '/docs/{-$slug}'
+      preLoaderRoute: typeof DocsChar123SlugChar125RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/sites/template': {

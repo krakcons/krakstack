@@ -23,6 +23,7 @@ import {
   registryDocsShell,
 } from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
+import { TrackingNotice } from "@/services/events/client/tracking-notice";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import {
   lazy,
@@ -181,6 +182,9 @@ function RegistryDocs() {
           </div>
         ) : null}
         <DocsFooter docs={docs} resolution={resolution} />
+        {item?.name === "service-events" ? (
+          <TrackingNotice locale={getLocale()} />
+        ) : null}
       </DocsPage>
     </RegistryDocsLayout>
   );
