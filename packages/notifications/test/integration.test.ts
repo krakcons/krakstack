@@ -223,6 +223,7 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
       const program = Effect.gen(function* () {
         const sql = (yield* SqlClient.SqlClient).withoutTransforms();
         const service = yield* NotificationService;
+        const pg = yield* PgClient.PgClient;
         const runtime = yield* NotificationRuntime;
         const processUntilDeliveryStatus = Effect.fn(
           "notificationIntegration.processUntilDeliveryStatus",
@@ -348,13 +349,13 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
           SET
             idempotency_key = ${`${futureInput.idempotencyKey}:delivery:email:${futureInput.eventKey}:${futureInput.deliveries[0]?.recipientAddress.trim().toLowerCase()}:0`},
             recipient_address = ${futureInput.deliveries[0]?.recipientAddress.trim().toLowerCase()},
-            payload = ${{
+            payload = ${pg.json({
               subject: "Rendered future",
               text: "Rendered body",
               to: futureInput.deliveries[0]?.recipientAddress
                 .trim()
                 .toLowerCase(),
-            }}
+            })}
           WHERE id = ${future.deliveryIds[0]}
         `;
         const legacyReplay = yield* service.publish(futureInput);
@@ -790,7 +791,7 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         yield* sql`
           UPDATE krakstack_notification_jobs
           SET
-            completed = TRUE,
+            state = 'completed',
             acquired_at = now(),
             acquired_by = ${globalThis.crypto.randomUUID()}
           WHERE id = ${freshLockJobId}
@@ -805,7 +806,7 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         ).toBe(freshLockJobId);
         yield* sql`
           UPDATE krakstack_notification_jobs
-          SET completed = FALSE, acquired_at = NULL, acquired_by = NULL
+          SET state = 'pending', acquired_at = NULL, acquired_by = NULL
           WHERE id = ${freshLockJobId}
             AND queue_name = 'krakstack.notifications.delivery'
         `;
@@ -1181,6 +1182,7 @@ describe.skipIf(!hasTestDatabase)("legacy notification table adoption", () => {
 
       const program = Effect.gen(function* () {
         const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+        const pg = yield* PgClient.PgClient;
         yield* sql`
         CREATE TABLE notifications (
           id UUID PRIMARY KEY,
@@ -1287,11 +1289,11 @@ describe.skipIf(!hasTestDatabase)("legacy notification table adoption", () => {
           'email',
           'notification',
           ${`  ${legacyEmail.toUpperCase()}  `},
-          ${{
+          ${pg.json({
             to: legacyEmail,
             subject: "Legacy notification",
             text: "Legacy body",
-          }},
+          })},
           'processing',
           1,
           2,

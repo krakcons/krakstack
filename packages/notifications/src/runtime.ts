@@ -801,7 +801,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                 CASE
                   WHEN q.sequence IS NULL THEN NULL
                   ELSE jsonb_build_object(
-                    'completed', q.completed,
+                    'completed', q.state IN ('completed', 'failed'),
                     'attempts', q.attempts,
                     'acquiredAt', q.acquired_at
                   )
@@ -815,7 +815,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                 AND (
                   q.sequence IS NULL
                   OR (
-                    (q.completed = TRUE OR q.attempts >= ${queueMaxAttempts})
+                    (q.state IN ('completed', 'failed') OR q.attempts >= ${queueMaxAttempts})
                     AND (
                       q.acquired_at IS NULL
                       OR q.acquired_at < ${queueLockCutoff}
@@ -887,7 +887,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                 CASE
                   WHEN q.sequence IS NULL THEN NULL
                   ELSE jsonb_build_object(
-                    'completed', q.completed,
+                    'completed', q.state IN ('completed', 'failed'),
                     'attempts', q.attempts,
                     'acquiredAt', q.acquired_at
                   )
@@ -901,7 +901,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                 AND (
                   q.sequence IS NULL
                   OR (
-                    (q.completed = TRUE OR q.attempts >= ${queueMaxAttempts})
+                    (q.state IN ('completed', 'failed') OR q.attempts >= ${queueMaxAttempts})
                     AND (
                       q.acquired_at IS NULL
                       OR q.acquired_at < ${queueLockCutoff}

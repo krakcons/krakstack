@@ -19,7 +19,9 @@ HTTP API, UI, provider credentials, or rendered product copy.
 
 ## Database Ownership
 
-Consumers provide one `SqlClient` from `effect/sql`.
+Consumers provide one `PgClient` layer from `@effect/sql-pg`, exposing both
+`PgClient` and `SqlClient` from the same pool. The domain uses `PgClient.json`
+for JSON SQL parameters; canonical JSON remains reserved for idempotency checks.
 `NotificationService.layer` runs domain migrations before exposing the service.
 Domain migrations use `krakstack_notification_migrations` and own these tables:
 
@@ -62,8 +64,9 @@ import {
   type NotificationTransport,
 } from "@krak-stack/notifications/transport";
 import type { SqlClient } from "effect/sql";
+import type { PgClient } from "@effect/sql-pg";
 
-declare const sqlLayer: Layer.Layer<SqlClient.SqlClient>;
+declare const sqlLayer: Layer.Layer<SqlClient.SqlClient | PgClient.PgClient>;
 declare const emailTransport: NotificationTransport;
 declare const reminderHandler: ReminderHandler;
 

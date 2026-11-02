@@ -106,6 +106,7 @@
       },
       "peerDependencies": {
         "@aws-sdk/client-sesv2": "^3.1068.0",
+        "@effect/sql-pg": "^4.1.0",
         "effect": "^4.1.0",
         "nodemailer": "^9.0.6",
       },

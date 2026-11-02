@@ -1,4 +1,5 @@
 import { SecureRandom } from "effect/crypto";
+import { PgClient } from "@effect/sql-pg";
 import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -250,6 +251,7 @@ const makeNotificationService = Effect.gen(function* () {
     Effect.provide(SecureRandom.layerWebCrypto),
   );
   const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+  const pg = yield* PgClient.PgClient;
   const queues = yield* NotificationQueueService;
 
   const requireInbox = Effect.fn("NotificationService.requireInbox")(
@@ -710,7 +712,7 @@ const makeNotificationService = Effect.gen(function* () {
                 ${inbox.title},
                 ${inbox.description},
                 ${inbox.href},
-                ${inbox.metadata},
+                ${pg.json(inbox.metadata)},
                 ${now}
               )
             `;
@@ -813,7 +815,7 @@ const makeNotificationService = Effect.gen(function* () {
                 ${recipientAddress},
                 ${intent.recipientName},
                 ${intent.payloadVersion},
-                ${intent.payload},
+                ${pg.json(intent.payload)},
                 ${status},
                 0,
                 ${maxAttempts},
@@ -1724,7 +1726,7 @@ const makeNotificationService = Effect.gen(function* () {
               ${input.scope.workspaceId},
               ${input.handlerKey},
               ${input.handlerVersion},
-              ${input.payload},
+              ${pg.json(input.payload)},
               ${requestFingerprint},
               ${expired ? "cancelled" : "scheduled"},
               ${input.scheduledFor},
