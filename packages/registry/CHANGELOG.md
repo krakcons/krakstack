@@ -1,5 +1,14 @@
 # @krak-stack/registry
 
+## 0.1.61
+
+### Patch Changes
+
+- 9ea9e42: Sign the stable webhook-id header with the timestamp and raw body, and use it automatically for transactional receiver deduplication. Remove the receiver eventId extraction callback. This changes the signature protocol; senders and receivers must upgrade together. Legacy timestamp/body signatures are rejected.
+
+- 7fcaf6f: Add WebhooksReceiver with HMAC verification, timestamp checks, schema validation, and transactional receipt deduplication. Receiver-only applications migrate only receipt storage and do not start outbound workers.
+- 9ea9e42: Add `@krak-stack/registry/webhooks/client` with a shared delivery activity table, failed-attempt status, retry details, JSON inspection, localized labels, and application-owned links.
+
 ## 0.1.60
 
 ### Patch Changes
