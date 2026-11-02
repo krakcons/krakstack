@@ -44,10 +44,13 @@ describe("speech synthesis", () => {
       ).toEqual({ prompt: "Bonjour Alex.", lang: "fr" });
     }).pipe(
       Effect.provide(speechLayer),
-      Effect.provideService(FetchHttpClient.Fetch, async (input, init) => {
-        requests.push(new Request(input, init));
-        return new Response(bytes, { headers: { "content-type": "audio/mpeg" } });
-      }),
+      Effect.provideService(FetchHttpClient.Fetch, Object.assign(
+        async (input: string | URL | Request, init?: RequestInit) => {
+          requests.push(new Request(input, init));
+          return new Response(bytes, { headers: { "content-type": "audio/mpeg" } });
+        },
+        { preconnect: () => {} },
+      )),
     );
   });
   it.effect("decodes the Gateway JSON audio response", () =>
@@ -58,9 +61,10 @@ describe("speech synthesis", () => {
       );
     }).pipe(
       Effect.provide(speechLayer),
-      Effect.provideService(FetchHttpClient.Fetch, async () =>
+      Effect.provideService(FetchHttpClient.Fetch, Object.assign(async () =>
         Response.json({ success: true, result: { audio: "SUQz" } }),
-      ),
+        { preconnect: () => {} },
+      )),
     ),
   );
   it.effect("maps provider, malformed, empty, and unexpected responses to a typed error", () =>
@@ -75,7 +79,7 @@ describe("speech synthesis", () => {
           return yield* (yield* Speech).synthesize({ text: "Hello.", language: "en" });
         }).pipe(
           Effect.provide(speechLayer),
-          Effect.provideService(FetchHttpClient.Fetch, async () => response),
+          Effect.provideService(FetchHttpClient.Fetch, Object.assign(async () => response, { preconnect: () => {} })),
           Effect.flip,
         );
         expect(error._tag).toBe("SpeechUnavailable");

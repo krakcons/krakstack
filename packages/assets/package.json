@@ -55,7 +55,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@krak-stack/registry": "0.1.56",
+    "@krak-stack/registry": "0.1.61",
     "@xberg-io/xberg": "1.0.14"
   },
   "devDependencies": {
