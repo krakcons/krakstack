@@ -93,21 +93,122 @@ const notificationLayerFor = (url: string) => {
     queueMaxAttempts: 3,
     retryPolicy: { baseDelayMillis: 1, maxDelayMillis: 10 },
   }).pipe(
+    Layer.provideMerge(notificationServicesLayer),
     Layer.provide(fakeTransport.layer),
     Layer.provide(fakeReminderHandler.layer),
     Layer.provide(postgresLayer),
   );
 
-  return Layer.mergeAll(
-    notificationServicesLayer,
-    notificationRuntimeLayer,
-    postgresLayer,
-  );
+  return Layer.mergeAll(notificationRuntimeLayer, postgresLayer);
 };
 
 const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
 
 describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
+  it.effect(
+    "upgrades RC queue rows without losing pending work or completed jobs",
+    () => {
+      const url = process.env.TEST_DATABASE_URL;
+      if (url === undefined)
+        return Effect.die(new Error("TEST_DATABASE_URL is required"));
+      const schemaName = `notification_upgrade_${crypto.randomUUID().replaceAll("-", "")}`;
+      const scopedUrl = databaseUrlForSchema(url, schemaName);
+      const seedLegacy = Effect.gen(function* () {
+        const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+        yield* sql`CREATE TABLE krakstack_notification_jobs (
+        sequence SERIAL PRIMARY KEY, id VARCHAR(36) NOT NULL,
+        queue_name VARCHAR(100) NOT NULL, element TEXT NOT NULL,
+        completed BOOLEAN NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+        last_failure TEXT, acquired_at TIMESTAMP, acquired_by UUID,
+        created_at TIMESTAMP NOT NULL, updated_at TIMESTAMP NOT NULL
+      )`;
+        yield* sql`INSERT INTO krakstack_notification_jobs
+        (id, queue_name, element, completed, attempts, created_at, updated_at)
+        VALUES
+        (${crypto.randomUUID()}, 'krakstack.notifications.delivery', '{}', FALSE, 2, ${new Date(0)}, ${new Date(0)}),
+        (${crypto.randomUUID()}, 'krakstack.notifications.delivery', '{}', TRUE, 1, ${new Date(0)}, ${new Date(0)})`;
+      }).pipe(Effect.provide(postgresLayerFor(scopedUrl)));
+      const verify = Effect.gen(function* () {
+        yield* NotificationService;
+        const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+        const rows =
+          yield* sql`SELECT state, attempts, element FROM krakstack_notification_jobs ORDER BY sequence`;
+        expect(rows).toMatchObject([
+          { state: "pending", attempts: 2, element: "{}" },
+          { state: "completed", attempts: 1, element: "{}" },
+        ]);
+      }).pipe(Effect.provide(notificationLayerFor(scopedUrl)));
+      return Effect.acquireUseRelease(
+        createTestSchema(url, schemaName),
+        () => seedLegacy.pipe(Effect.andThen(verify)),
+        () => dropTestSchema(url, schemaName).pipe(Effect.orDie),
+      );
+    },
+  );
+
+  it.live(
+    "batch runners share durable claims and leave future retries scheduled",
+    () => {
+      const url = process.env.TEST_DATABASE_URL;
+      if (url === undefined)
+        return Effect.die(new Error("TEST_DATABASE_URL is required"));
+      const schemaName = `notification_batch_${crypto.randomUUID().replaceAll("-", "")}`;
+      const scopedUrl = databaseUrlForSchema(url, schemaName);
+      const program = Effect.gen(function* () {
+        const service = yield* NotificationService;
+        const runtime = yield* NotificationRuntime;
+        const scope = {
+          recipientUserId: null,
+          organizationId: null,
+          workspaceId: null,
+        };
+        const publish = (eventKey: string) =>
+          service.publish({
+            idempotencyKey: crypto.randomUUID(),
+            scope,
+            eventKey,
+            eventVersion: 1,
+            deliveries: [
+              {
+                key: "email",
+                channel: "email",
+                purpose: "transactional",
+                template: null,
+                recipientAddress: "batch@notifications.invalid",
+                recipientName: null,
+                payloadVersion: 1,
+                payload: { subject: "Batch", text: "Batch test" },
+              },
+            ],
+          });
+        yield* publish("integration.batch");
+        const results = yield* Effect.all(
+          [
+            runtime.runBatch({ passes: 1, idleMillis: 10 }),
+            runtime.runBatch({ passes: 1, idleMillis: 10 }),
+          ],
+          { concurrency: "unbounded" },
+        );
+        expect(
+          results.reduce((sum, result) => sum + result.deliveries.sent, 0),
+        ).toBe(1);
+        unavailableFailures = 0;
+        yield* publish("integration.unavailable");
+        const retry = yield* runtime.runBatch({ passes: 1, idleMillis: 1_500 });
+        expect(retry.deliveries.retrying).toBe(1);
+        const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+        const rows =
+          yield* sql`SELECT status, attempts FROM notification_deliveries WHERE event_key = 'integration.unavailable'`;
+        expect(rows).toMatchObject([{ status: "retrying", attempts: 1 }]);
+      }).pipe(Effect.provide(notificationLayerFor(scopedUrl)));
+      return Effect.acquireUseRelease(
+        createTestSchema(url, schemaName),
+        () => program,
+        () => dropTestSchema(url, schemaName).pipe(Effect.orDie),
+      );
+    },
+  );
+
   it.effect(
     "migrates and atomically persists ledger attempts with queue offers",
     () => {

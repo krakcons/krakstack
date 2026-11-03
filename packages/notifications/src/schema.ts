@@ -2,11 +2,15 @@ import { Schema } from "effect";
 
 const PositiveInt = Schema.Int.pipe(
   Schema.check(Schema.isGreaterThan(0)),
-).annotate({ identifier: "NotificationPositiveInt" });
+).annotate({
+  identifier: "NotificationPositiveInt",
+});
 
 const NonNegativeInt = Schema.Int.pipe(
   Schema.check(Schema.isGreaterThanOrEqualTo(0)),
-).annotate({ identifier: "NotificationNonNegativeInt" });
+).annotate({
+  identifier: "NotificationNonNegativeInt",
+});
 
 const Uuid = Schema.String.pipe(Schema.check(Schema.isUUID())).annotate({
   identifier: "NotificationUuid",
@@ -15,7 +19,9 @@ const Uuid = Schema.String.pipe(Schema.check(Schema.isUUID())).annotate({
 export const NotificationDate = Schema.Union([
   Schema.Date,
   Schema.DateFromString,
-]).annotate({ identifier: "NotificationDate" });
+]).annotate({
+  identifier: "NotificationDate",
+});
 
 export const NotificationId = Uuid.annotate({
   identifier: "NotificationId",
@@ -243,7 +249,9 @@ export const DeliveryAttemptRetryableFailure = Schema.TaggedStruct(
 
 export const DeliveryAttemptPermanentFailure = Schema.TaggedStruct(
   "PermanentFailure",
-  { message: Schema.NonEmptyString },
+  {
+    message: Schema.NonEmptyString,
+  },
 ).annotate({
   identifier: "NotificationDeliveryAttemptPermanentFailure",
 });
@@ -357,7 +365,9 @@ export const ReminderQueueJob = Schema.TaggedStruct("Reminder", {
 export const NotificationQueueJob = Schema.Union([
   DeliveryQueueJob,
   ReminderQueueJob,
-]).annotate({ identifier: "NotificationQueueJob" });
+]).annotate({
+  identifier: "NotificationQueueJob",
+});
 
 export const NotificationTransportInput = Schema.Struct({
   dispatchId: Schema.NonEmptyString,
@@ -820,6 +830,38 @@ export type ReminderPage = typeof ReminderPage.Type;
 export type ListSuppressionsInput = typeof ListSuppressionsInput.Type;
 export type SetSuppressionInput = typeof SetSuppressionInput.Type;
 export type ResetSuppressionInput = typeof ResetSuppressionInput.Type;
+
+export const NotificationBatchOptions = Schema.Struct({
+  passes: Schema.optional(PositiveInt),
+  intervalMillis: Schema.optional(PositiveInt),
+  maxRunMillis: Schema.optional(PositiveInt),
+  shutdownGraceMillis: Schema.optional(PositiveInt),
+  idleMillis: Schema.optional(PositiveInt),
+  deliveryConcurrency: Schema.optional(
+    PositiveInt.check(Schema.isLessThanOrEqualTo(8)),
+  ),
+}).annotate({ identifier: "NotificationBatchOptions" });
+export type NotificationBatchOptions = typeof NotificationBatchOptions.Type;
+
+export const NotificationBatchResult = Schema.Struct({
+  passes: Schema.Int,
+  elapsedMillis: Schema.Finite,
+  deliveries: Schema.Struct({
+    sent: Schema.Int,
+    retrying: Schema.Int,
+    failed: Schema.Int,
+    suppressed: Schema.Int,
+    skipped: Schema.Int,
+  }),
+  completedReminderJobs: Schema.Int,
+  stopReason: Schema.Literals(["completed", "time-limit"]),
+}).annotate({ identifier: "NotificationBatchResult" });
+export type NotificationBatchResult = typeof NotificationBatchResult.Type;
+
+export class NotificationBatchTimeoutError extends Schema.TaggedError<
+  NotificationBatchTimeoutError,
+  { readonly brand: unique symbol }
+>()("NotificationBatchTimeoutError", { message: Schema.NonEmptyString }) {}
 
 export type NotificationServiceError =
   | NotificationValidationError

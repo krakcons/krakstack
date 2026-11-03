@@ -2,6 +2,10 @@ import { Cause, Context, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
+import {
+  makeBatchRunner,
+  type DeliveryBatchOutcome,
+} from "./internal/batch.js";
 import { canonicalRecipientAddress } from "./internal/idempotency.js";
 import {
   deliveryWorkDecision,
@@ -39,6 +43,9 @@ import {
   ReminderHandlerInput,
   ReminderHandlerUnavailable,
   RetryPolicy,
+  type NotificationBatchOptions,
+  type NotificationBatchResult,
+  type NotificationBatchTimeoutError,
   type NotificationDataError as NotificationDataErrorType,
   type NotificationDelivery as NotificationDeliveryType,
   type NotificationReminder as NotificationReminderType,
@@ -199,9 +206,17 @@ export class ReminderHandlerRegistry extends Context.Service<
 }
 
 export type NotificationRuntimeError =
-  NotificationStorageError | NotificationQueueError | NotificationDataErrorType;
+  | NotificationStorageError
+  | NotificationQueueError
+  | NotificationDataErrorType;
 
 export interface NotificationRuntimeContract {
+  readonly runBatch: (
+    options?: NotificationBatchOptions,
+  ) => Effect.Effect<
+    NotificationBatchResult,
+    NotificationRuntimeError | NotificationBatchTimeoutError
+  >;
   readonly enqueueDue: (
     input?: EnqueueDueInput,
   ) => Effect.Effect<EnqueueDueResult, NotificationRuntimeError>;
@@ -243,7 +258,11 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
       readonly deliveryId: string;
       readonly jobId: string;
       readonly reason:
-        "cancelled" | "expired" | "stale" | "terminal" | "suppressed";
+        | "cancelled"
+        | "expired"
+        | "stale"
+        | "terminal"
+        | "suppressed";
       readonly now: Date;
     }) {
       yield* sql`
@@ -441,7 +460,8 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
           rows,
         );
         const delivery = decoded.at(0);
-        if (delivery === undefined) return;
+        if (delivery === undefined)
+          return "skipped" satisfies DeliveryBatchOutcome;
 
         const decision = deliveryWorkDecision({
           now,
@@ -475,7 +495,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
               }
             }),
           );
-          return;
+          return "skipped" satisfies DeliveryBatchOutcome;
         }
 
         const claimed = yield* sql.withTransaction(
@@ -513,7 +533,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
             reason: "stale",
             now,
           });
-          return;
+          return "skipped" satisfies DeliveryBatchOutcome;
         }
 
         const transportInput = yield* Schema.decodeEffect(
@@ -574,10 +594,10 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
               `;
             }),
           );
-          return;
+          return "suppressed" satisfies DeliveryBatchOutcome;
         }
 
-        yield* registrySend(transports, transportInput).pipe(
+        return yield* registrySend(transports, transportInput).pipe(
           Effect.matchEffect({
             onFailure: (error) =>
               DateTime.nowAsDate.pipe(
@@ -587,7 +607,14 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                     jobId: metadata.id,
                     error,
                     now: completedAt,
-                  }),
+                  }).pipe(
+                    Effect.as(
+                      error._tag !== "NotificationTransportPermanent" &&
+                        delivery.attempts < delivery.maxAttempts
+                        ? ("retrying" as const)
+                        : ("failed" as const),
+                    ),
+                  ),
                 ),
               ),
             onSuccess: (result) =>
@@ -598,7 +625,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                     jobId: metadata.id,
                     result,
                     now: completedAt,
-                  }),
+                  }).pipe(Effect.as("sent" as const)),
                 ),
               ),
           }),
@@ -862,9 +889,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                       ? "queue_job_reconciled"
                       : "application_attempt_budget_exhausted"
                   },
-                  scheduled_for = ${
-                    decision === "retry" ? now : delivery.scheduledFor
-                  },
+                  scheduled_for = ${decision === "retry" ? now : delivery.scheduledFor},
                   failed_at = ${decision === "fail" ? now : null},
                   updated_at = ${now}
                 WHERE id = ${delivery.id}
@@ -939,9 +964,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
                       ? "queue_job_reconciled"
                       : "application_attempt_budget_exhausted"
                   },
-                  scheduled_for = ${
-                    decision === "retry" ? now : reminder.scheduledFor
-                  },
+                  scheduled_for = ${decision === "retry" ? now : reminder.scheduledFor},
                   failed_at = ${decision === "fail" ? now : null},
                   updated_at = ${now}
                 WHERE id = ${reminder.id}
@@ -1062,6 +1085,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
     );
 
     const runDeliveryWorkerOnce = queues.deliveries.take(processDelivery).pipe(
+      Effect.asVoid,
       Effect.mapError(
         (cause) =>
           new NotificationQueueError({
@@ -1119,6 +1143,43 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
     );
 
     return {
+      runBatch: makeBatchRunner({
+        enqueueDue: enqueueDue(),
+        delivery: (start) =>
+          queues.deliveries
+            .take((job, metadata) =>
+              Effect.flatMap(start, (allowed) =>
+                allowed ? processDelivery(job, metadata) : Effect.interrupt,
+              ),
+            )
+            .pipe(
+              Effect.mapError(
+                (cause) =>
+                  new NotificationQueueError({
+                    operation: "runBatch.delivery",
+                    message: "Notification delivery batch iteration failed",
+                    cause,
+                  }),
+              ),
+            ),
+        reminder: (start) =>
+          queues.reminders
+            .take((job, metadata) =>
+              Effect.flatMap(start, (allowed) =>
+                allowed ? processReminder(job, metadata) : Effect.interrupt,
+              ),
+            )
+            .pipe(
+              Effect.mapError(
+                (cause) =>
+                  new NotificationQueueError({
+                    operation: "runBatch.reminder",
+                    message: "Notification reminder batch iteration failed",
+                    cause,
+                  }),
+              ),
+            ),
+      }),
       enqueueDue,
       runDeliveryWorkerOnce,
       runReminderWorkerOnce,
@@ -1150,6 +1211,9 @@ export class NotificationRuntime extends Context.Service<
 
 export const enqueueDue = (input?: EnqueueDueInput) =>
   NotificationRuntime.use((runtime) => runtime.enqueueDue(input));
+
+export const runBatch = (options?: NotificationBatchOptions) =>
+  NotificationRuntime.use((runtime) => runtime.runBatch(options));
 
 export const runDeliveryWorker = NotificationRuntime.use(
   (runtime) => runtime.runDeliveryWorker,

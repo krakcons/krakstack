@@ -34,7 +34,7 @@ The older shadcn registry items remain available for compatibility. They vendor 
 Install the package with the Effect PostgreSQL driver:
 
 ```bash
-bun add @krak-stack/notifications@0.1.0 @effect/sql-pg@4.0.0-rc.112 effect@4.0.0-rc.112
+bun add @krak-stack/notifications@0.2.0 @effect/sql-pg@4.1.0 effect@4.1.0
 ```
 
 Install only the optional email provider used by the application:
@@ -105,6 +105,29 @@ const transportRegistryLayer = NotificationTransportRegistry.layer([
 ```
 
 Only one transport can be registered for a channel. Do not register SES and SMTP together under `email`.
+
+## Run notifications from cron
+
+With notifications SDK 0.2.0 and Effect 4.1.0, call
+`NotificationRuntime.runBatch()` instead of keeping `notificationWorkersLayer`
+alive. Use the same SQL pool and transport registry. Acquire the migrated domain
+service before constructing the runtime; deployed jobs can use
+`NotificationService.layerWithoutMigrations` after web migrations complete.
+
+The defaults run two passes 30 seconds apart, stop starting work after 50 seconds,
+and allow 10 seconds of shutdown grace. Empty queues stop each pass without
+interrupting active provider calls. The result includes per-run delivery
+outcomes, completed reminder jobs, elapsed time and stop reason. Runtime or
+storage failures fail the command; provider retries remain durable for a later
+pass or invocation. Hard shutdown remains at least once.
+
+Schedule one container command every minute (`* * * * *`), forbid overlapping
+jobs, disable infrastructure retries and allow a 90-second execution deadline.
+Startup and backlog make the 30-second cadence approximate. Stop RC-era workers
+and pause old web publishers before migrations upgrade Effect's queue schema;
+use a maintenance cutover, not a mixed-runtime rolling deployment. Never run RC and stable
+workers together against the upgraded queue. Application code owns the command
+and process entry point, not the SDK or infrastructure scheduler.
 
 ## Publish a durable notification
 

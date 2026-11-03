@@ -34,7 +34,7 @@ Les anciens éléments du registre shadcn restent disponibles pour assurer la co
 Installez le package avec le pilote PostgreSQL d'Effect :
 
 ```bash
-bun add @krak-stack/notifications@0.1.0 @effect/sql-pg@4.0.0-rc.112 effect@4.0.0-rc.112
+bun add @krak-stack/notifications@0.2.0 @effect/sql-pg@4.1.0 effect@4.1.0
 ```
 
 Ajoutez uniquement le fournisseur de courriel utilisé par l'application :
@@ -105,6 +105,32 @@ const transportRegistryLayer = NotificationTransportRegistry.layer([
 ```
 
 Un seul transport peut être enregistré pour un canal. N'enregistrez pas SES et SMTP ensemble sous `email`.
+
+## Exécuter les notifications avec cron
+
+Avec le SDK de notifications 0.2.0 et Effect 4.1.0, appelez
+`NotificationRuntime.runBatch()` au lieu de maintenir `notificationWorkersLayer`
+en activité. Réutilisez le même pool SQL et le registre de transports. Construisez
+le runtime après le service migré; les tâches déployées peuvent utiliser
+`NotificationService.layerWithoutMigrations` après les migrations web.
+
+Par défaut, deux passes démarrent à 30 secondes d'intervalle. Après 50 secondes,
+aucune nouvelle itération ne démarre; les traitements en cours disposent de
+10 secondes supplémentaires. Une file vide termine la passe sans interrompre un
+envoi actif. Le résultat contient les résultats de livraison, le nombre de tâches
+de rappel terminées, la durée et la raison d'arrêt. Les erreurs d'infrastructure
+font échouer la commande; les nouvelles tentatives restent persistées. Un arrêt
+brutal conserve une sémantique de livraison au moins une fois.
+
+Planifiez une commande conteneur chaque minute (`* * * * *`), interdisez les
+exécutions simultanées, désactivez les nouvelles tentatives d'infrastructure et
+fixez une limite de 90 secondes. Le démarrage et la charge rendent la cadence de
+30 secondes approximative. Arrêtez les workers RC et suspendez les anciennes
+publications web avant les migrations de la file Effect. Utilisez une fenêtre
+de maintenance, pas un déploiement progressif mélangeant les runtimes RC et stables.
+Ne mélangez jamais les workers RC et
+stables sur la file mise à jour. L'application fournit la commande et son point
+d'entrée; le SDK et le planificateur ne les créent pas automatiquement.
 
 ## Publier une notification durable
 

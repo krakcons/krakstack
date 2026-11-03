@@ -102,6 +102,55 @@ Deployments that run migrations separately can use
 `NotificationService.layerWithoutMigrations` and invoke
 `notificationMigrationsLayer` in their deployment lifecycle.
 
+## Scheduled batch execution
+
+`NotificationRuntime.runBatch()` (also exported as `runBatch` from `/runtime`)
+processes durable delivery and reminder queues without starting permanent worker
+fibers. Provide the same runtime and transport layers as above, but **do not**
+start `notificationWorkersLayer`. Acquire `NotificationService.layer` before
+the runtime on a fresh database; deployed jobs can use `layerWithoutMigrations`
+after the web migration step completes. All layers must share one SQL pool.
+
+```ts
+const summary =
+  yield * NotificationRuntime.use((runtime) => runtime.runBatch());
+yield * Effect.logInfo("Notification batch finished", summary);
+```
+
+Defaults: two passes, 30,000ms between target start times, 50,000ms to claim work,
+10,000ms additional shutdown grace, 2,000ms empty-queue wait, one delivery worker.
+Override these with `passes`, `intervalMillis`, `maxRunMillis`,
+`shutdownGraceMillis`, `idleMillis`, and `deliveryConcurrency` (1–8).
+`dueBatchSize` remains a runtime-layer option, defaulting to 100. Each pass calls
+`enqueueDue` once; durable overflow and future retries remain for later runs.
+An empty pass exits promptly but still waits for the next configured pass.
+
+The result reports completed passes, elapsed time, delivery outcomes (`sent`,
+`retrying`, `failed`, `suppressed`, `skipped`), completed reminder jobs and
+`stopReason` (`completed` or `time-limit`). `sent` means provider acceptance,
+not confirmed receipt. Counts describe this invocation, not global queue totals.
+Reminder-job counts include acknowledged stale/skipped work.
+
+Empty-queue timeouts stop waiting without interrupting an acquired provider
+call. At the claim deadline no new iteration starts; in-flight work can finish
+within grace. Exceeding the hard limit fails with `NotificationBatchTimeoutError`;
+infrastructure failures also fail the invocation. Individual provider failures
+are recorded as outcomes and do not fail the job. Abrupt shutdown remains
+recoverable and at least once: a provider-accepted message may be duplicated.
+
+Run the command every minute with cron `* * * * *`, no overlapping jobs, zero
+infrastructure retries and an infrastructure deadline of 90 seconds. The SDK
+performs the second pass 30 seconds after the first pass's target start; it does
+not add a 30-second sleep after processing completes. Slow passes do not overlap.
+Container startup, backlog and skipped overlapping jobs mean this is an
+approximate cadence, not a 30-second delivery SLA. Do not use `*/30 * * * *`.
+
+When upgrading from the Effect RC runtime, stop old workers and pause old web
+publishers before running web migrations and starting stable-Effect jobs. Use a
+maintenance cutover, not a mixed-RC/stable rolling deployment. Effect owns the queue schema
+upgrade from `completed` to `state`; old and new runtime processes must not share
+the upgraded queue concurrently. No notification ledger reset is needed.
+
 ## Email Adapters
 
 Publisher code can validate and persist rendered email without installing or
