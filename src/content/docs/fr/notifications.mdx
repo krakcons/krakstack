@@ -1,15 +1,15 @@
 ---
 slug: notifications
 path: /docs/notifications
-title: Configuration des notifications et des courriels
-description: Construisez une boîte de réception durable, un moteur de livraison et un chemin direct pour les courriels d'authentification avec le package de notifications KrakStack.
+title: Notifications, courriels et notifications push natives
+description: Configurez les livraisons durables, les notifications push APNs/FCM et les courriels d'authentification avec le package de notifications KrakStack.
 order: 17
 locale: fr
 section: notifications
 type: how-to
 ---
 
-# Configuration des notifications et des courriels
+# Notifications, courriels et notifications push natives
 
 `@krak-stack/notifications` est désormais le backend par défaut des nouveaux systèmes de notifications durables. Il réunit des migrations PostgreSQL et des opérations CRUD gérées par le package, une file `PersistedQueue` d'Effect, les workers de livraison et de rappels, un planificateur du travail échu ainsi que des transports SES et SMTP facultatifs.
 
@@ -25,7 +25,7 @@ Les anciens éléments du registre shadcn restent disponibles pour assurer la co
 | Politique produit     | Comportement des préférences selon le caractère transactionnel ou facultatif et exécution des rappels ponctuels                                                       | Choix des destinataires, politique événementielle, récurrence, composition et cadence des récapitulatifs, obligations légales          |
 | Contenu               | Snapshots rendus persistés et validation du payload courriel indépendante du fournisseur                                                                              | Templates, rendu, localisation, liens et identité visuelle                                                                             |
 | Frontière applicative | Services Effect côté serveur                                                                                                                                          | API HTTP, handlers, atoms, routes, état de l'interface et invalidation du cache                                                        |
-| Fournisseurs          | Contrat de transport et adaptateurs SESv2 et SMTP                                                                                                                     | Choix du fournisseur, comptes, secrets, identités d'expéditeur et politique de délivrabilité                                           |
+| Fournisseurs          | Contrat de transport et adaptateurs SESv2, SMTP, APNs et FCM                                                                                                          | Choix du fournisseur, comptes, secrets, identités d'expéditeur et politique de délivrabilité                                           |
 
 > Ne considérez jamais un identifiant de destinataire, d'organisme ou d'espace de travail reçu du navigateur comme un périmètre fiable. Dérivez ce périmètre du contexte serveur authentifié avant d'appeler le package.
 
@@ -34,7 +34,7 @@ Les anciens éléments du registre shadcn restent disponibles pour assurer la co
 Installez le package avec le pilote PostgreSQL d'Effect :
 
 ```bash
-bun add @krak-stack/notifications@0.2.0 @effect/sql-pg@4.1.0 effect@4.1.0
+bun add @krak-stack/notifications@0.2.1 @effect/sql-pg@4.1.0 effect@4.1.0
 ```
 
 Ajoutez uniquement le fournisseur de courriel utilisé par l'application :
@@ -224,6 +224,89 @@ Les livraisons futures et les nouvelles tentatives restent dans le registre du p
 Les effets externes des fournisseurs et des handlers de rappel sont exécutés **au moins une fois**. Un processus peut s'arrêter après l'acceptation du message par le fournisseur, mais avant la validation de la transaction de succès. La même génération peut alors repartir. Lorsque le fournisseur le permet, utilisez l'identifiant stable de distribution ou de tâche comme clé d'idempotence.
 
 Un rappel ponctuel persiste une clé et une version de handler ainsi qu'un payload, puis passe par la file de rappels. Le package gère la planification, les nouvelles tentatives, le changement de date, l'annulation et l'exécution de cette invocation unique. L'application définit les règles de récurrence, crée l'occurrence suivante et choisit les événements d'un récapitulatif.
+
+## Configurer les notifications push natives avec APNs et FCM
+
+Utilisez `/transport/push` pour `PushPayloadV1` et `makePushTransport`,
+`/transport/push-apns` pour `ApnsPushTransport` et `/transport/push-fcm` pour
+`FcmPushTransport`. Enregistrez un seul transport composite pour le canal `push`,
+et non deux transports concurrents :
+
+```ts
+import { Effect, Layer } from "effect";
+import { BunHttpClient } from "@effect/platform-bun";
+import { ApnsPushTransport } from "@krak-stack/notifications/transport/push-apns";
+import { FcmPushTransport } from "@krak-stack/notifications/transport/push-fcm";
+import { makePushTransport } from "@krak-stack/notifications/transport/push";
+import { NotificationTransportRegistry } from "@krak-stack/notifications/transport";
+
+const apnsLayer = ApnsPushTransport.layerWithClient.pipe(
+  Layer.provide(BunHttpClient.layerOptions({ protocol: "http2" })),
+);
+
+const pushRegistry = Layer.unwrap(
+  Effect.gen(function* () {
+    const apns = yield* ApnsPushTransport;
+    const fcm = yield* FcmPushTransport;
+    return NotificationTransportRegistry.layer([
+      makePushTransport({ apns, fcm }),
+    ]);
+  }),
+).pipe(Layer.provide(Layer.merge(apnsLayer, FcmPushTransport.layer)));
+```
+
+Installez `@effect/platform-bun` pour cet exemple Bun. Sous Node, installez
+`@effect/platform-node` et remplacez `apnsLayer` par `ApnsPushTransport.layer`.
+Le client Node facultatif n'est chargé qu'à l'acquisition de cette couche par
+défaut. APNs exige HTTP/2; n'utilisez pas la couche de compatibilité Node/Undici de
+Bun. Fournissez `pushRegistry` comme `transportRegistryLayer` dans la composition
+PostgreSQL partagée ci-dessus. Les workers peuvent vivre dans un processus API
+permanent; aucun déploiement distinct n'est requis.
+
+Configurez ces secrets uniquement côté serveur dans le processus d'envoi :
+
+| Fournisseur | Configuration obligatoire                                       | Configuration facultative           |
+| ----------- | --------------------------------------------------------------- | ----------------------------------- |
+| APNs        | `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_TOPIC`, `APNS_PRIVATE_KEY` | `APNS_SANDBOX` (`false` par défaut) |
+| FCM         | `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`         | Aucune                              |
+
+`APNS_TOPIC` correspond à l'identifiant du bundle iOS. Les clés privées sont au
+format PEM PKCS#8; les retours à la ligne réels et les séquences littérales `\n`
+sont acceptés. Utilisez l'environnement sandbox pour les apps iOS signées pour le
+développement et la production pour TestFlight/App Store. Ne mélangez pas leurs
+jetons dans une même audience. Activez Firebase Cloud Messaging HTTP v1 et accordez
+au compte de service les permissions d'envoi. Les processus qui mettent seulement
+les livraisons en file n'ont pas besoin des secrets des fournisseurs.
+
+Persistez une livraison par installation avec `channel: "push"`,
+`payloadVersion: 1`, le jeton courant dans `recipientAddress` et un contenu rendu :
+
+```ts
+const payload = {
+  provider: "apns", // Utiliser "fcm" pour Android.
+  title: "Titre rendu",
+  body: "Contenu rendu",
+  data: { url: "/news/1" },
+  androidChannelId: "updates", // Facultatif; l'app Android doit créer ce canal.
+};
+```
+
+Les valeurs de `data` sont des chaînes et ne définissent jamais le destinataire.
+Sans canal Android explicite, le canal natif de repli s'applique. L'application
+gère l'authentification des installations, l'enregistrement et la rotation des
+jetons, les permissions, les canaux, la localisation, l'affichage au premier plan
+et la navigation au toucher. Les publications sans boîte de réception peuvent
+utiliser un `recipientUserId` nul; l'application doit alors appliquer les
+préférences de l'appareil et revérifier son admissibilité juste avant l'envoi.
+
+Seuls les refus explicites de jeton invalide définissent `invalidRecipient: true`
+sur `NotificationTransportPermanent`. Effacez un jeton uniquement s'il correspond
+toujours à la livraison en échec; une erreur de contenu ou d'expéditeur ne doit
+pas supprimer un jeton plus récent. Les envois FCM concurrents partagent le
+renouvellement OAuth. Les erreurs réessayables respectent `Retry-After`; un quota
+FCM impose au moins une minute d'attente. L'acceptation du fournisseur ne prouve
+pas l'affichage. Validez sur un appareil physique; les tests de publication du
+package utilisent de faux clients HTTP et n'envoient aucune notification réelle.
 
 ## Propriété de la base et des migrations
 

@@ -14,6 +14,9 @@ HTTP API, UI, provider credentials, or rendered product copy.
 - `@krak-stack/notifications/transport/email` provides the provider-free rendered email payload v1 schema.
 - `@krak-stack/notifications/transport/email-ses` provides the optional AWS SESv2 email adapter.
 - `@krak-stack/notifications/transport/email-smtp` provides the optional Nodemailer SMTP adapter.
+- `@krak-stack/notifications/transport/push` provides push payload v1 and a composite APNs/FCM transport.
+- `@krak-stack/notifications/transport/push-apns` provides the HTTP/2 APNs adapter.
+- `@krak-stack/notifications/transport/push-fcm` provides the FCM HTTP v1 adapter.
 - `@krak-stack/notifications/direct` provides transient dispatch without SQL or a queue.
 - `@krak-stack/notifications/testing` provides fake transport and reminder-handler layers.
 
@@ -252,6 +255,96 @@ persistence, suppression matching, and dispatch. Explicit SES access keys are
 supported for this release; AWS
 default-chain credentials and session tokens remain future work.
 
+## Native Push Adapters
+
+Push adapters use Effect Crypto for ES256/RS256 signing and Effect HttpClient for
+provider calls. APNs uses `@effect/platform-node`'s scoped Undici dispatcher with
+HTTP/2 enabled; install that optional peer when importing the APNs adapter.
+FCM uses the fetch-backed Effect client and needs no provider SDK.
+
+```ts
+import { Effect, Layer } from "effect";
+import { ApnsPushTransport } from "@krak-stack/notifications/transport/push-apns";
+import { FcmPushTransport } from "@krak-stack/notifications/transport/push-fcm";
+import { makePushTransport } from "@krak-stack/notifications/transport/push";
+import { NotificationTransportRegistry } from "@krak-stack/notifications/transport";
+
+export const pushRegistry = Layer.unwrap(
+  Effect.gen(function* () {
+    const apns = yield* ApnsPushTransport;
+    const fcm = yield* FcmPushTransport;
+    return NotificationTransportRegistry.layer([
+      makePushTransport({ apns, fcm }),
+    ]);
+  }),
+).pipe(
+  Layer.provide(Layer.merge(ApnsPushTransport.layer, FcmPushTransport.layer)),
+);
+```
+
+Both adapters expose `layerWithClient` for injecting an Effect HttpClient in tests
+or custom deployments. A custom APNs client must support HTTP/2. The optional Node
+client is loaded only when acquiring `ApnsPushTransport.layer`; importing
+`layerWithClient` does not require `@effect/platform-node` to be installed.
+
+On Bun, install `@effect/platform-bun` and replace the APNs layer above with:
+
+```ts
+import { BunHttpClient } from "@effect/platform-bun";
+
+const apnsLayer = ApnsPushTransport.layerWithClient.pipe(
+  Layer.provide(BunHttpClient.layerOptions({ protocol: "http2" })),
+);
+```
+
+Do not use Bun's Node/Undici compatibility shim for the default APNs client.
+Publishers only need the domain service and SQL; provider credentials and HTTP
+clients belong to the dispatching process, not to publication code.
+
+Configure APNs with `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_TOPIC` (bundle ID), and
+`APNS_PRIVATE_KEY` (PKCS#8 PEM `.p8` contents). `APNS_SANDBOX` defaults to `false`;
+set it to `true` for development-signed installations. Do not mix sandbox and
+production tokens in one adapter's audience. Configure FCM with `FCM_PROJECT_ID`,
+`FCM_CLIENT_EMAIL`, and `FCM_PRIVATE_KEY` (service account PKCS#8 PEM). Enable
+Firebase Cloud Messaging HTTP v1 and grant that account messaging permission.
+PEM configuration supports actual newlines or literal `\n` escapes.
+
+Persist `channel: "push"`, `payloadVersion: 1`, and this payload:
+
+```ts
+const payload = {
+  provider: "apns", // "fcm" for Android
+  title: "Rendered title",
+  body: "Rendered body",
+  data: { url: "/your/application/path" },
+  androidChannelId: "updates", // Optional; create this channel in the Android app.
+};
+```
+
+The ledger's `recipientAddress` is the sole destination token. Payload data is a
+string-to-string record; the application owns its meaning and validation. APNs
+reserves `aps` for its generated alert envelope. Provider acceptance returns the
+provider message ID, not a receipt confirmation. APNs enforces its 4096-byte
+payload limit. Authentication failures are unavailable, throttling/server failures
+are retryable, and rejected messages are permanent. Explicit APNs `BadDeviceToken`/
+`Unregistered` and FCM `UNREGISTERED` failures set `invalidRecipient: true` on
+`NotificationTransportPermanent`. Applications can wrap the adapter to clear a
+matching token; a payload error or sender/topic mismatch never triggers cleanup.
+
+FCM OAuth refreshes are serialized per adapter instance and reuse the cached token
+until one minute before expiry; a 401 invalidates it for the next attempt. Both
+adapters preserve `Retry-After` delays on retryable responses, including responses
+without JSON bodies. FCM quota failures wait at least one minute. The durable
+runtime uses the later of this provider deadline and its exponential backoff.
+Without `androidChannelId`, FCM omits the channel override and Android uses its
+configured fallback channel. Neither adapter creates native channels or requests
+OS permission. Foreground display and notification-tap navigation are app-owned.
+
+The package does not own installations, device authentication, permission state,
+account linking, token rotation, localization, or application routes. Delivery-only
+publications can set `recipientUserId: null`. In that case, applications must enforce
+device preferences themselves and should recheck eligibility before dispatch.
+
 ## Delivery Semantics
 
 - `publish` stores an optional rendered inbox and channel-neutral delivery snapshots under caller-provided idempotency keys.
@@ -295,7 +388,9 @@ bun run build
 ```
 
 The non-DB suite covers schemas, preference ranking, retry bounds, direct
-dispatch, and generation guards. `test/integration.test.ts` runs only when
+dispatch, generation guards, push request envelopes, Effect signing, concurrent
+OAuth refresh, and provider error/backoff handling. It does not send live pushes.
+`test/integration.test.ts` runs only when
 `TEST_DATABASE_URL` is exported and exercises migrations plus atomic
 ledger/attempt/queue persistence. Existing-table adoption should additionally
 be tested in an isolated database seeded with the three VolunteerConnector
@@ -319,3 +414,11 @@ the package before adding it to a sibling application; do not commit sibling
 this workspace. After publication, follow the consumer's migration runbook to
 stop its old worker, adopt existing tables, and switch producers and workers
 without dual delivery.
+
+From the workspace root, run `bun run version:packages` for pending changesets,
+review the resulting version/changelog and
+lockfile, then run the package release checks and pack inspection again before
+publishing from `packages/notifications` with `bun publish --access public`.
+Publishing and consumer dependency upgrades are separate steps. The package does
+not need live APNs/FCM credentials for release checks; physical-device delivery
+still requires a separate smoke test in the consumer application.

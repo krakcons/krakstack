@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "PostgreSQL-backed Effect notification inbox, delivery, and reminder primitives.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",
@@ -41,6 +41,18 @@
       "types": "./dist/transport/email.d.ts",
       "import": "./dist/transport/email.js"
     },
+    "./transport/push": {
+      "types": "./dist/transport/push.d.ts",
+      "import": "./dist/transport/push.js"
+    },
+    "./transport/push-apns": {
+      "types": "./dist/transport/push-apns.d.ts",
+      "import": "./dist/transport/push-apns.js"
+    },
+    "./transport/push-fcm": {
+      "types": "./dist/transport/push-fcm.d.ts",
+      "import": "./dist/transport/push-fcm.js"
+    },
     "./transport/email-ses": {
       "types": "./dist/transport/email-ses.d.ts",
       "import": "./dist/transport/email-ses.js"
@@ -74,6 +86,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
+    "@effect/platform-node": "4.1.0",
     "@effect/sql-pg": "4.1.0",
     "@effect/vitest": "4.1.0",
     "@types/node": "^22.19.21",
@@ -85,11 +98,15 @@
   },
   "peerDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
+    "@effect/platform-node": "^4.1.0",
     "@effect/sql-pg": "^4.1.0",
     "effect": "^4.1.0",
     "nodemailer": "^9.0.6"
   },
   "peerDependenciesMeta": {
+    "@effect/platform-node": {
+      "optional": true
+    },
     "@aws-sdk/client-sesv2": {
       "optional": true
     },

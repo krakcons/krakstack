@@ -682,6 +682,7 @@ export class NotificationTransportPermanent extends Schema.TaggedError<
 >()("NotificationTransportPermanent", {
   channel: Schema.NonEmptyString,
   message: Schema.NonEmptyString,
+  invalidRecipient: Schema.optional(Schema.Boolean),
   cause: Schema.optional(Schema.Defect()),
 }) {}
 

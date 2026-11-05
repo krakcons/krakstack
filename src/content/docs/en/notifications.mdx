@@ -1,15 +1,15 @@
 ---
 slug: notifications
 path: /docs/notifications
-title: Notifications and email setup
-description: Build a durable notification inbox, delivery runtime, and direct authentication email path with the KrakStack notifications package.
+title: Notifications, email, and native push
+description: Configure durable notification delivery, APNs/FCM push, and direct authentication email with the KrakStack notifications package.
 order: 17
 locale: en
 section: notifications
 type: how-to
 ---
 
-# Notifications and email setup
+# Notifications, email, and native push
 
 `@krak-stack/notifications` is the default backend for new durable notification systems. It combines package-owned PostgreSQL migrations and CRUD operations with an Effect `PersistedQueue`, delivery and reminder workers, a due-work scheduler, and optional SES or SMTP transports.
 
@@ -25,7 +25,7 @@ The older shadcn registry items remain available for compatibility. They vendor 
 | Product policy       | Transactional-versus-notification preference behavior and one-shot reminder execution                                            | Recipient selection, event policy, recurrence, digest membership and cadence, and legal requirements |
 | Content              | Persisted rendered snapshots and provider-neutral email payload validation                                                       | Templates, rendering, localization, links, and branding                                              |
 | Application boundary | Server-side Effect services                                                                                                      | HTTP APIs, handlers, atoms, routes, UI state, and cache invalidation                                 |
-| Providers            | Transport contract plus SESv2 and SMTP adapters                                                                                  | Provider choice, accounts, credentials, sender identities, and deliverability policy                 |
+| Providers            | Transport contract plus SESv2, SMTP, APNs, and FCM adapters                                                                      | Provider choice, accounts, credentials, sender identities, and deliverability policy                 |
 
 > Never accept a recipient, organization, or workspace identifier from the browser as trusted scope. Derive scope from the authenticated server context before calling the package.
 
@@ -34,7 +34,7 @@ The older shadcn registry items remain available for compatibility. They vendor 
 Install the package with the Effect PostgreSQL driver:
 
 ```bash
-bun add @krak-stack/notifications@0.2.0 @effect/sql-pg@4.1.0 effect@4.1.0
+bun add @krak-stack/notifications@0.2.1 @effect/sql-pg@4.1.0 effect@4.1.0
 ```
 
 Install only the optional email provider used by the application:
@@ -216,11 +216,94 @@ Both adapters accept rendered `subject`, `text`, optional `html`, optional `from
 
 ## Scheduled delivery, retries, and reminders
 
+For native push configuration, see the next section. Email and push use the same
+ledger, scheduler, retry policy, and worker runtime; no separate push queue or
+workflow engine is required.
+
 Future deliveries and retries remain in the package ledger until `NotificationRuntime.enqueueDue` runs. Scheduled delivery therefore requires the built-in scheduler, either through `notificationWorkersLayer` as shown above or by running `NotificationRuntime.runScheduler` yourself. Starting only the delivery worker does not enqueue future work.
 
 Provider and reminder-handler side effects are **at least once**. A process can crash after a provider accepts a message but before the success transaction commits, so the same dispatch generation can run again. Use the stable dispatch or queue job ID for provider idempotency when the provider supports it.
 
 One-shot reminders persist a versioned handler key and payload, then run through the reminder queue. The package owns scheduling, retry, rescheduling, cancellation, and worker execution for that one invocation. The application chooses recurrence rules, creates the next occurrence, and decides which events belong in a digest.
+
+## Configure native push with APNs and FCM
+
+Use `/transport/push` for `PushPayloadV1` and `makePushTransport`,
+`/transport/push-apns` for `ApnsPushTransport`, and `/transport/push-fcm` for
+`FcmPushTransport`. Register one composite transport under `push`, not two
+competing transports for that channel:
+
+```ts
+import { Effect, Layer } from "effect";
+import { BunHttpClient } from "@effect/platform-bun";
+import { ApnsPushTransport } from "@krak-stack/notifications/transport/push-apns";
+import { FcmPushTransport } from "@krak-stack/notifications/transport/push-fcm";
+import { makePushTransport } from "@krak-stack/notifications/transport/push";
+import { NotificationTransportRegistry } from "@krak-stack/notifications/transport";
+
+const apnsLayer = ApnsPushTransport.layerWithClient.pipe(
+  Layer.provide(BunHttpClient.layerOptions({ protocol: "http2" })),
+);
+
+const pushRegistry = Layer.unwrap(
+  Effect.gen(function* () {
+    const apns = yield* ApnsPushTransport;
+    const fcm = yield* FcmPushTransport;
+    return NotificationTransportRegistry.layer([
+      makePushTransport({ apns, fcm }),
+    ]);
+  }),
+).pipe(Layer.provide(Layer.merge(apnsLayer, FcmPushTransport.layer)));
+```
+
+Install `@effect/platform-bun` for this Bun example. On Node, install
+`@effect/platform-node` and use `ApnsPushTransport.layer` instead of `apnsLayer`.
+The optional Node client is loaded only when acquiring that default layer.
+APNs requires HTTP/2; do not use Bun's Node/Undici shim. Supply `pushRegistry` as
+`transportRegistryLayer` in the shared PostgreSQL composition above. Workers can
+live inside a long-running API process; a separate deployment is not required.
+
+Set these server-only credentials in the dispatching process:
+
+| Provider | Required configuration                                          | Optional configuration               |
+| -------- | --------------------------------------------------------------- | ------------------------------------ |
+| APNs     | `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_TOPIC`, `APNS_PRIVATE_KEY` | `APNS_SANDBOX` (defaults to `false`) |
+| FCM      | `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`         | None                                 |
+
+`APNS_TOPIC` is the iOS bundle ID. Private keys are PKCS#8 PEM contents; actual
+newlines and literal `\n` escapes are supported. Use APNs sandbox for
+development-signed iOS apps and production for TestFlight/App Store apps. Do not
+mix tokens from both environments in one audience. Enable Firebase Cloud
+Messaging HTTP v1 and grant the service account messaging permission. Publishers
+that only queue deliveries do not need provider credentials.
+
+Persist one delivery per installation with `channel: "push"`, `payloadVersion: 1`,
+the current device token in `recipientAddress`, and a rendered payload:
+
+```ts
+const payload = {
+  provider: "apns", // Use "fcm" for Android.
+  title: "Rendered title",
+  body: "Rendered body",
+  data: { url: "/news/1" },
+  androidChannelId: "updates", // Optional; the Android app must create it.
+};
+```
+
+Payload data contains string values. The package never derives a destination from
+it. Without an Android channel override, the native fallback channel applies.
+The application owns installation authentication, token registration/rotation,
+permissions, channel creation, localization, foreground display, and tap navigation.
+Delivery-only publications may use a null `recipientUserId`; the application must
+then enforce device preferences, including a final eligibility check before send.
+
+Only explicit invalid-token responses set `invalidRecipient: true` on
+`NotificationTransportPermanent`. Clear a stored token only if it still matches
+the failed delivery; payload and sender/topic errors must not erase newer tokens.
+OAuth refresh is shared across concurrent FCM sends. Retryable responses preserve
+`Retry-After`; FCM quota errors wait at least one minute. Provider acceptance is
+not proof of display. Validate with a physical-device smoke test; package release
+tests use fake HTTP clients and never send live pushes.
 
 ## Database and migration ownership
 

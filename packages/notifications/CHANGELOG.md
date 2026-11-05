@@ -1,5 +1,12 @@
 # @krak-stack/notifications
 
+## 0.2.1
+
+### Patch Changes
+
+- Add APNs and FCM transports with Effect Crypto signing, provider-neutral push payloads, explicit invalid-recipient errors, serialized OAuth refresh, and provider-aware retry deadlines. Support injected HTTP/2 clients on Bun without loading the optional Node client. Keep installation authentication, native channels, preferences, localization, and navigation application-owned.
+- Classify non-JSON provider errors by HTTP status and make the Android channel override application-owned. Document Node and Bun HTTP/2 composition.
+
 ## 0.2.0
 
 ### Minor Changes
