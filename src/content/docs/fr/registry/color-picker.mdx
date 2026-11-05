@@ -1,0 +1,59 @@
+---
+slug: color-picker
+path: /docs/color-picker
+title: Sélecteur de couleur
+description: Un champ HEX avec un échantillon et un panneau de sélection visuelle.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-05"
+updatedAt: "2026-11-05"
+---
+
+# Sélecteur de couleur
+
+## Présentation
+
+Saisissez un code HEX ou cliquez sur l’échantillon à droite pour ouvrir un carré de couleur et un curseur de teinte. Le sélecteur prend en charge la souris, le tactile et les touches fléchées. Il gère uniquement les couleurs opaques, sans transparence.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/color-picker
+```
+
+Ou utilisez le SDK :
+
+```tsx
+import { ColorPicker } from "@krak-stack/registry/color-picker";
+
+<ColorPicker value={color} onValueChange={setColor} />
+<ColorPicker defaultValue="#A855F7" />
+```
+
+Pour une installation depuis le registre, importez plutôt depuis `@/components/ui/color-picker`.
+
+## Comportement
+
+- Accepte trois ou six chiffres hexadécimaux, avec ou sans `#`.
+- `onValueChange` émet uniquement des couleurs valides au format `#RRGGBB` en majuscules.
+- Le texte incomplet reste modifiable. La perte de focus, Entrée ou Échap rétablit la dernière couleur valide.
+- Les changements externes de valeur remplacent les saisies obsolètes.
+- `disabled` et `readOnly` s’appliquent au champ et à l’échantillon.
+- Les propriétés standard (`id`, `name`, `aria-label`, `aria-describedby`, etc.) sont transmises au champ. `className` personnalise le groupe qui l’entoure.
+
+## Traduction
+
+Les libellés anglais et français suivent `KrakstackProvider`. La propriété `locale` permet de choisir une langue explicitement. `messages` personnalise les libellés par langue ou variante régionale ; l’anglais sert de repli final.
+
+```tsx
+<ColorPicker
+  locale="fr"
+  messages={{
+    fr: { input: "Couleur de marque", open: "Choisir la couleur de marque" },
+  }}
+  value={color}
+  onValueChange={setColor}
+/>
+```

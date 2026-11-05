@@ -124,6 +124,14 @@ const registryPreviews: Readonly<
     ),
   ],
   [
+    "color-picker",
+    lazy(() =>
+      import("@/components/registry-previews/color-picker-preview").then(
+        ({ ColorPickerPreview }) => ({ default: ColorPickerPreview }),
+      ),
+    ),
+  ],
+  [
     "virtualized-combobox",
     lazy(() =>
       import("@/components/registry-previews/virtualized-combobox-preview").then(

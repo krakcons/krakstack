@@ -1,4 +1,7 @@
 {
+  "color_picker_preview_title": "Sélecteur de couleur",
+  "color_picker_preview_description": "Saisissez un code HEX ou cliquez sur l’échantillon pour choisir une couleur visuellement.",
+  "color_picker_preview_disabled": "Sélecteur de couleur désactivé",
   "agent_preview_demo_description": "Choisissez un scénario, puis ouvrez l'assistant. Tous les appels d'outils et les réponses sont simulés ; aucune donnée n'est lue ni modifiée. Essayez les références @, le retrait du contexte, l'arrêt d'une réponse, la réduction, l'agrandissement et la fermeture pour réinitialiser.",
   "agent_preview_demo_prompt": "Montrez-moi la démonstration : {scenario}.",
   "agent_preview_chat": "Conversation",

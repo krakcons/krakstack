@@ -1,4 +1,7 @@
 {
+  "color_picker_preview_title": "Color Picker",
+  "color_picker_preview_description": "Enter a HEX code or click the swatch to choose a color visually.",
+  "color_picker_preview_disabled": "Disabled color picker",
   "agent_preview_demo_description": "Choose a scenario, then open the assistant. All tool calls and responses are simulated; no data is read or changed. Try @ references, removing context, stopping a response, minimizing, maximizing, and closing to reset.",
   "agent_preview_demo_prompt": "Show me the {scenario} demo.",
   "agent_preview_chat": "Conversation",

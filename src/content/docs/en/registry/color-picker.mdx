@@ -1,0 +1,59 @@
+---
+slug: color-picker
+path: /docs/color-picker
+title: Color Picker
+description: A HEX input with a live swatch and a visual color-selection popover.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-05"
+updatedAt: "2026-11-05"
+---
+
+# Color Picker
+
+## Overview
+
+Enter a HEX code or click the swatch on the right to open a color square and hue slider. The picker supports mouse, touch and keyboard arrow keys. It handles solid colors only, without opacity.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/color-picker
+```
+
+Or use the SDK export:
+
+```tsx
+import { ColorPicker } from "@krak-stack/registry/color-picker";
+
+<ColorPicker value={color} onValueChange={setColor} />
+<ColorPicker defaultValue="#A855F7" />
+```
+
+For registry installations, import from `@/components/ui/color-picker` instead.
+
+## Behavior
+
+- Accepts three or six HEX digits, with or without `#`.
+- `onValueChange` emits only valid, uppercase `#RRGGBB` colors.
+- Incomplete text remains editable. Blur, Enter or Escape restores the last valid color.
+- External value changes replace stale drafts.
+- `disabled` and `readOnly` apply to both the input and swatch.
+- Standard input props (`id`, `name`, `aria-label`, `aria-describedby`, etc.) are forwarded to the text field. `className` styles the surrounding input group.
+
+## Localization
+
+English and French labels follow `KrakstackProvider`. An explicit `locale` overrides the provider. Use `messages` to override labels by exact locale or base language; English is the final fallback.
+
+```tsx
+<ColorPicker
+  locale="fr"
+  messages={{
+    fr: { input: "Couleur de marque", open: "Choisir la couleur de marque" },
+  }}
+  value={color}
+  onValueChange={setColor}
+/>
+```

@@ -160,6 +160,10 @@
       "types": "./dist/components/ui/copy-button.d.ts",
       "import": "./dist/components/ui/copy-button.js"
     },
+    "./color-picker": {
+      "types": "./dist/components/ui/color-picker.d.ts",
+      "import": "./dist/components/ui/color-picker.js"
+    },
     "./data-table": {
       "types": "./dist/components/ui/data-table.d.ts",
       "import": "./dist/components/ui/data-table.js"
@@ -302,6 +306,7 @@
   "dependencies": {
     "@oxlint/plugins": "1.78.0",
     "bowser": "^2.14.1",
+    "react-colorful": "^5.8.1",
     "web-vitals": "^5.1.0"
   },
   "peerDependencies": {
