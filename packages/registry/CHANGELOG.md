@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.2.0
+
+### Minor Changes
+
+- 777c616: Add a localized ColorPicker with HEX entry, a live swatch, and a color-selection popover.
+
 ## 0.1.61
 
 ### Patch Changes
