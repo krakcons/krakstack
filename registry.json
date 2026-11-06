@@ -968,6 +968,28 @@
       ]
     },
     {
+      "name": "kraksend-campaigns",
+      "title": "KrakSend Campaigns",
+      "description": "Host-protected bilingual campaign creation, scheduling, pause/resume, cancellation, and delivery reporting.",
+      "type": "registry:component",
+      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-06" },
+      "registryDependencies": ["@krak-stack/data-table", "@krak-stack/form", "button", "dialog"],
+      "dependencies": ["@krak-stack/send@^0.1.0", "effect@latest", "react"],
+      "docs": "Mount SendCampaignAdmin behind the host admin guard. Supply authorized page/detail/report data, localized messages, and API-backed callbacks. Scheduling snapshots subscribed contacts; completed means fan-out finished, not confirmed delivery. Requires SendAdmin middleware, sender/environment safeguards, campaign workflows/scheduler, and the KrakSend notification dispatch policy. Package export: @krak-stack/registry/send/campaigns. See packages/send/README.md and src/agent-examples/send/campaign.admin.tsx.",
+      "files": [{ "path": "src/services/send/client/campaigns.tsx", "type": "registry:file", "target": "services/send/client/campaigns.tsx" }]
+    },
+    {
+      "name": "kraksend-contacts",
+      "title": "KrakSend Contacts",
+      "description": "A host-controlled KrakSend contact admin view with explicit email withdrawal, pagination, and no account-management dependency.",
+      "type": "registry:component",
+      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-06" },
+      "registryDependencies": ["@krak-stack/data-table", "@krak-stack/form", "button", "dialog"],
+      "dependencies": ["@krak-stack/send@^0.1.0", "effect@latest", "react"],
+      "docs": "## Usage\n\nMount `SendContacts` only behind the host application's admin guard. Pass an authorized `page`, loading/error state, localized `messages`, `defaultContactLocale`, and `onCreate`/`onWithdraw` callbacks backed by the protected KrakSend API. Supply `onNext` and `onPrevious` for server pagination. Creating a contact does not subscribe it. There is deliberately no bulk subscribe action. Source-copy consumers import from `@/services/send/client/contacts`; package consumers import from `@krak-stack/registry/send/contacts`. The backend is an initial foundation, not a complete campaign platform. See `packages/send/README.md` for runtime policy, release ordering, and host authorization requirements.",
+      "files": [{ "path": "src/services/send/client/contacts.tsx", "type": "registry:file", "target": "services/send/client/contacts.tsx" }]
+    },
+    {
       "name": "webhook-delivery-table",
       "title": "Webhook Delivery Table",
       "description": "A shared webhook activity table with delivery status, retry details, server pagination, application-owned links, and a JSON payload dialog.",

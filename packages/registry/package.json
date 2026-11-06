@@ -17,6 +17,14 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./send/campaigns": {
+      "types": "./dist/services/send/client/campaigns.d.ts",
+      "import": "./dist/services/send/client/campaigns.js"
+    },
+    "./send/contacts": {
+      "types": "./dist/services/send/client/contacts.d.ts",
+      "import": "./dist/services/send/client/contacts.js"
+    },
     "./webhooks/client": {
       "types": "./dist/services/webhooks/client/delivery-table.d.ts",
       "import": "./dist/services/webhooks/client/delivery-table.js"
@@ -309,7 +317,11 @@
     "react-colorful": "^5.8.1",
     "web-vitals": "^5.1.0"
   },
+  "devDependencies": {
+    "@krak-stack/send": "workspace:*"
+  },
   "peerDependencies": {
+    "@krak-stack/send": "^0.1.0",
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
@@ -334,6 +346,9 @@
     "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
+    "@krak-stack/send": {
+      "optional": true
+    },
     "@effect/sql-pg": {
       "optional": true
     },
