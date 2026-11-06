@@ -13,6 +13,7 @@ import { sendRuntimeLayer } from "../../src/policy.js";
 import { SendUnsubscribe } from "../../src/unsubscribe.js";
 import { SendFeedback } from "../../src/feedback.js";
 import { SendCampaigns } from "../../src/campaign.js";
+import { SendOperations } from "../../src/operations.js";
 import { makeCampaignSafetyLayer } from "../../src/campaign.safety.js";
 
 export const unsubscribeOptions = {
@@ -32,6 +33,7 @@ export const withSend = <A, E>(
     unsubscribe: SendUnsubscribe["Service"];
     feedback: SendFeedback["Service"];
     campaigns: SendCampaigns["Service"];
+    operations: SendOperations["Service"];
     setSenderVerified: (verified: boolean) => void;
     transport: ReturnType<typeof makeFakeTransport>;
     sql: SqlClient.SqlClient;
@@ -75,7 +77,11 @@ export const withSend = <A, E>(
         ),
       ),
     );
-    const layer = Layer.mergeAll(sendRuntimeLayer, SendFeedback.layer).pipe(
+    const layer = Layer.mergeAll(
+      sendRuntimeLayer,
+      SendFeedback.layer,
+      SendOperations.layer,
+    ).pipe(
       Layer.provideMerge(products),
       Layer.provide(safety),
       Layer.provide(transport.layer),
@@ -100,6 +106,7 @@ export const withSend = <A, E>(
             unsubscribe: yield* SendUnsubscribe,
             feedback: yield* SendFeedback,
             campaigns: yield* SendCampaigns,
+            operations: yield* SendOperations,
             setSenderVerified: (verified) => {
               senderVerified = verified;
             },

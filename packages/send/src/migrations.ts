@@ -92,6 +92,17 @@ export const sendMigrations = Migrator.fromRecord({
     yield* sql`CREATE INDEX kraksend_campaign_due_idx ON kraksend_campaigns(scheduled_for, id) WHERE status IN ('scheduled','running')`;
     yield* sql`CREATE INDEX kraksend_campaign_pending_idx ON kraksend_campaign_recipients(campaign_id, contact_id) WHERE status = 'pending'`;
   }),
+  "0004_operations_visibility": Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    yield* sql`ALTER TABLE kraksend_feedback_events ADD COLUMN id BIGSERIAL NOT NULL UNIQUE`;
+    yield* sql`CREATE INDEX kraksend_feedback_delivery_idx ON kraksend_feedback_events(delivery_id, kind) WHERE applied_at IS NOT NULL`;
+    yield* sql`CREATE TABLE kraksend_suppression_audit (
+      sequence BIGSERIAL PRIMARY KEY, request_id TEXT NOT NULL UNIQUE,
+      request JSONB NOT NULL, suppression_id UUID NOT NULL, email TEXT NOT NULL,
+      action TEXT NOT NULL CHECK (action IN ('add','remove')), reason TEXT NOT NULL,
+      previous_reason TEXT, actor TEXT NOT NULL, occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  }),
 });
 
 export const runSendMigrations = PgMigrator.run({

@@ -11,6 +11,22 @@
     "GLOSSARY.md"
   ],
   "exports": {
+    "./operations": {
+      "types": "./dist/operations.d.ts",
+      "import": "./dist/operations.js"
+    },
+    "./operations.schema": {
+      "types": "./dist/operations.schema.d.ts",
+      "import": "./dist/operations.schema.js"
+    },
+    "./operations.api": {
+      "types": "./dist/operations.api.d.ts",
+      "import": "./dist/operations.api.js"
+    },
+    "./operations.api.builder": {
+      "types": "./dist/operations.api.builder.d.ts",
+      "import": "./dist/operations.api.builder.js"
+    },
     "./campaign.api": {
       "types": "./dist/campaign.api.d.ts",
       "import": "./dist/campaign.api.js"
