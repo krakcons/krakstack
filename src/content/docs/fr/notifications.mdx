@@ -182,7 +182,105 @@ const publishApplicationApproved = Effect.gen(function* () {
 
 Une ligne de livraison représente un seul destinataire. L'adaptateur courriel déduit la destination de `recipientAddress` et `recipientName`; `EmailPayloadV1` ne contient volontairement ni `to`, ni `cc`, ni `bcc`. Créez une livraison de publication par destinataire.
 
-Avec `purpose: "notification"`, les préférences et les blocages actifs d'adresse sont appliqués. Avec `purpose: "transactional"`, les préférences sont ignorées, mais les blocages d'adresse restent actifs. Il appartient à l'application de déterminer quels événements sont transactionnels sur le plan légal ou opérationnel.
+Avec `purpose: "notification"`, les préférences, les désabonnements globaux du compte et les blocages actifs d'adresse sont appliqués. Avec `purpose: "transactional"`, les préférences et les désabonnements globaux sont ignorés, mais les blocages d'adresse restent actifs. Il appartient à l'application de déterminer quels événements sont transactionnels sur le plan légal ou opérationnel.
+
+## Se désabonner des courriels facultatifs
+
+Le SDK de notifications permet le désabonnement global d'un compte avec
+`@krak-stack/notifications/unsubscribe`. Le désabonnement arrête tous les
+courriels de notification facultatifs, pour tous les événements, organisations
+et espaces de travail, même si une préférence précise autorise l'envoi. Il suit
+le compte lorsque son adresse courriel change. Les courriels transactionnels,
+les autres canaux et les notifications dans l'application ne changent pas.
+
+Composez le module facultatif avec le service de notifications migré et le même
+pool PostgreSQL que le runtime :
+
+```ts
+import { Config, Effect, Layer } from "effect";
+import { NotificationService } from "@krak-stack/notifications";
+import { EmailUnsubscribe } from "@krak-stack/notifications/unsubscribe";
+
+const unsubscribeLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    return EmailUnsubscribe.makeLayer({
+      secret: yield* Config.Redacted("NOTIFICATION_UNSUBSCRIBE_SECRET"),
+      endpoint: yield* Config.NonEmptyString("NOTIFICATION_UNSUBSCRIBE_URL"),
+      audience: "my-app:production",
+    });
+  }),
+).pipe(Layer.provideMerge(NotificationService.layer));
+```
+
+Utilisez un secret généré de façon sécurisée, réservé au serveur, d'au moins
+32 caractères, et une URL HTTPS absolue telle que
+`https://app.example.com/notifications/unsubscribe`. Changer le secret invalide
+les liens existants. L'audience doit identifier cette application et cet
+environnement. Les jetons expirent après 180 jours par défaut; adaptez
+`tokenTtlMillis` aux délais de planification et à la durée de validité prévue
+pour les courriels envoyés.
+
+Avant de rendre un courriel facultatif, créez un lien pour le destinataire
+déterminé par l'application :
+
+```ts
+const unsubscribeUrl =
+  yield *
+  EmailUnsubscribe.use((unsubscribe) =>
+    unsubscribe.createLink({ recipientUserId: user.id }),
+  );
+```
+
+Passez cette URL et `m.notification_unsubscribe_footer({}, { locale: user.locale })`
+au moteur de modèles texte/HTML de l'application, avec échappement approprié.
+Ajoutez le lien aux deux pieds de page et persistez aussi `unsubscribeUrl` avec
+`subject`, `text` et `html` dans le payload courriel. SES et SMTP ajoutent alors
+`List-Unsubscribe` et `List-Unsubscribe-Post: List-Unsubscribe=One-Click`.
+La version 1 sans cette URL reste compatible. Réutilisez le rendu et le lien
+initiaux lors des répétitions idempotentes. N'ajoutez pas ces liens aux courriels
+d'authentification ou transactionnels.
+
+L'[exemple de routes applicatives](https://github.com/krakcons/krakstack/blob/main/src/agent-examples/notification/unsubscribe.tsx)
+fournit un formulaire de confirmation anglais/français sans hydratation et les
+deux handlers HTTP publics. Il s'agit d'un exemple d'intégration, pas d'une route
+active de ce site documentaire. Remplacez les imports du workspace par le
+sous-chemin public du SDK lors de son adoption.
+
+- **GET** valide le jeton et affiche une confirmation sans rien modifier. Les
+  robots d'analyse des liens ne doivent pas provoquer de désabonnement.
+- **POST** accepte `List-Unsubscribe=One-Click` en formulaire URL-encoded ou
+  multipart, puis appelle `EmailUnsubscribe.unsubscribe({ token })`. Aucune
+  connexion, cookie, CAPTCHA, redirection ou confirmation supplémentaire n'est
+  nécessaire.
+- Les requêtes réussies ou répétées retournent 200/204. Un jeton invalide ou
+  expiré retourne 400; une erreur de stockage ou de cryptographie retourne 503,
+  jamais un faux succès.
+- Utilisez uniquement le destinataire signé dans le jeton, jamais un identifiant
+  fourni séparément ou le compte connecté. Exemptez seulement ces routes du
+  contrôle CSRF lié à la session et des redirections de langue; gardez les autres
+  routes protégées.
+- Configurez DKIM pour signer les deux en-têtes et vérifiez un message livré.
+  Le fournisseur de messagerie décide d'afficher ou non son action native de
+  désabonnement.
+- Désactivez le cache et la transmission du référent, évitez les scripts tiers,
+  limitez la taille des requêtes et masquez les jetons/URL dans les journaux et
+  la télémétrie. Les données signées sont encodées, pas chiffrées; un lien
+  transféré permet de désabonner son compte d'origine.
+
+Les handlers de paramètres authentifiés peuvent appeler directement
+`NotificationService.unsubscribeEmail({ recipientUserId })` et consulter
+`getEmailSubscription({ recipientUserId })`. Ils doivent vérifier une
+autorisation au niveau du compte : un rôle d'organisation ne suffit pas à
+modifier le consentement global. Un `unsubscribedAt` nul indique l'absence de
+désabonnement global, pas l'autorisation d'envoyer malgré les préférences ou les
+blocages d'adresse.
+
+Le package vérifie le désabonnement à la publication et juste avant l'envoi,
+y compris pour le travail planifié et les nouvelles tentatives. Un courriel
+déjà en cours d'envoi ou accepté par le fournisseur ne peut pas être rappelé.
+Le mode direct ne vérifie toujours pas le consentement. Les préférences et les
+blocages d'adresse restent distincts; les réinitialiser ne réabonne pas le compte.
+Aucun jeton public de réabonnement n'est fourni.
 
 ## Configurer SES ou SMTP
 
@@ -320,6 +418,7 @@ package utilisent de faux clients HTTP et n'envoient aucune notification réelle
 - `notification_suppressions`
 - `notification_reminders`
 - `notification_publications`
+- `notification_email_unsubscribes`
 - `krakstack_notification_migrations`
 
 La `PersistedQueue` d'Effect possède `krakstack_notification_jobs` et `krakstack_notification_jobs_migrations`.

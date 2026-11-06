@@ -4,6 +4,7 @@ import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
+import { makeEmailSubscriptions } from "./internal/email-subscriptions.js";
 import {
   canonicalRecipientAddress,
   canonicalJsonString,
@@ -36,6 +37,8 @@ import {
   BulkInboxMutationInput,
   DeliveryMutationInput,
   EmailPayloadV1,
+  type EmailSubscription,
+  type EmailSubscriptionInput,
   InboxMutationInput,
   InboxNotification,
   ListDeliveriesInput,
@@ -154,6 +157,12 @@ const replayPayload = (
 };
 
 export interface NotificationServiceContract {
+  readonly getEmailSubscription: (
+    input: EmailSubscriptionInput,
+  ) => Effect.Effect<EmailSubscription, NotificationServiceError>;
+  readonly unsubscribeEmail: (
+    input: EmailSubscriptionInput,
+  ) => Effect.Effect<EmailSubscription, NotificationServiceError>;
   readonly publish: (
     input: PublishInputType,
   ) => Effect.Effect<PublishResult, NotificationServiceError>;
@@ -253,6 +262,7 @@ const makeNotificationService = Effect.gen(function* () {
   const sql = (yield* SqlClient.SqlClient).withoutTransforms();
   const pg = yield* PgClient.PgClient;
   const queues = yield* NotificationQueueService;
+  const emailSubscriptions = makeEmailSubscriptions(sql);
 
   const requireInbox = Effect.fn("NotificationService.requireInbox")(
     function* (input: {
@@ -756,8 +766,16 @@ const makeNotificationService = Effect.gen(function* () {
                 AND (x.expires_at IS NULL OR x.expires_at > ${now})
               LIMIT 1
             `;
+            const accountUnsubscribed =
+              intent.channel === "email" &&
+              intent.purpose === "notification" &&
+              recipientUserId !== null
+                ? yield* emailSubscriptions.isUnsubscribed({ recipientUserId })
+                : false;
             const suppressed =
-              preference?.enabled === false || endpointSuppressions.length > 0;
+              accountUnsubscribed ||
+              preference?.enabled === false ||
+              endpointSuppressions.length > 0;
             const expired =
               expiresAt !== null && expiresAt.getTime() <= now.getTime();
             const status = suppressed
@@ -766,9 +784,11 @@ const makeNotificationService = Effect.gen(function* () {
                 ? "cancelled"
                 : "queued";
             const errorMessage = suppressed
-              ? preference?.enabled === false
-                ? "preference_disabled"
-                : "endpoint_suppressed"
+              ? accountUnsubscribed
+                ? "email_unsubscribed"
+                : preference?.enabled === false
+                  ? "preference_disabled"
+                  : "endpoint_suppressed"
               : expired
                 ? "expired_before_enqueue"
                 : null;
@@ -1977,6 +1997,8 @@ const makeNotificationService = Effect.gen(function* () {
   );
 
   return {
+    getEmailSubscription: emailSubscriptions.get,
+    unsubscribeEmail: emailSubscriptions.unsubscribe,
     publish,
     listInbox,
     unreadCount,

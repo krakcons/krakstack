@@ -1,10 +1,4 @@
-import {
-  SESv2Client,
-  SendEmailCommand,
-  type Body,
-  type Destination,
-  type Message,
-} from "@aws-sdk/client-sesv2";
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import {
   Config,
   Context,
@@ -28,9 +22,8 @@ import {
   decodeEmailAddress,
   decodeEmailPayloadV1,
   decodeEmailRecipient,
-  formatEmailRecipient,
-  type EmailPayloadV1,
 } from "./email.js";
+import { sesEmailRequest } from "../internal/email-requests.js";
 
 const SesProviderErrorDetailsSchema = Schema.Struct({
   name: Schema.optional(Schema.String),
@@ -134,20 +127,6 @@ const classifyFailure = (cause: unknown): NotificationTransportFailure => {
   });
 };
 
-const message = (email: EmailPayloadV1): Message => {
-  const body: Body = {};
-  if (email.text !== undefined) {
-    body.Text = { Data: email.text, Charset: "UTF-8" };
-  }
-  if (email.html !== undefined) {
-    body.Html = { Data: email.html, Charset: "UTF-8" };
-  }
-  return {
-    Subject: { Data: email.subject, Charset: "UTF-8" },
-    Body: body,
-  };
-};
-
 const makeSesEmailTransport = Effect.gen(function* () {
   const environment = yield* Effect.gen(function* () {
     const region = yield* Config.NonEmptyString("SES_REGION");
@@ -234,15 +213,7 @@ const makeSesEmailTransport = Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
       try: () =>
         client.send(
-          new SendEmailCommand({
-            FromEmailAddress: from,
-            Destination: {
-              ToAddresses: [formatEmailRecipient(recipient)],
-            } satisfies Destination,
-            Content: { Simple: message(email) },
-            ReplyToAddresses:
-              email.replyTo === undefined ? undefined : [email.replyTo],
-          }),
+          new SendEmailCommand(sesEmailRequest({ email, recipient, from })),
         ),
       catch: classifyFailure,
     });

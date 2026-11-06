@@ -18,6 +18,7 @@ HTTP API, UI, provider credentials, or rendered product copy.
 - `@krak-stack/notifications/transport/push-apns` provides the HTTP/2 APNs adapter.
 - `@krak-stack/notifications/transport/push-fcm` provides the FCM HTTP v1 adapter.
 - `@krak-stack/notifications/direct` provides transient dispatch without SQL or a queue.
+- `@krak-stack/notifications/unsubscribe` provides signed account-wide email unsubscribe links and one-click form schemas.
 - `@krak-stack/notifications/testing` provides fake transport and reminder-handler layers.
 
 ## Database Ownership
@@ -36,6 +37,7 @@ Domain migrations use `krakstack_notification_migrations` and own these tables:
 - `notification_suppressions`
 - `notification_reminders`
 - `notification_publications`
+- `notification_email_unsubscribes`
 
 The migrations use additive columns and versioned corrected indexes so an
 installation with the legacy notification tables can be adopted without
@@ -157,7 +159,7 @@ the upgraded queue concurrently. No notification ledger reset is needed.
 ## Email Adapters
 
 Publisher code can validate and persist rendered email without installing or
-configuring a provider. The payload contains content and sender metadata only:
+configuring a provider. The payload contains content, sender metadata, and an optional unsubscribe URL:
 
 ```ts
 import { Schema } from "effect";
@@ -345,13 +347,132 @@ account linking, token rotation, localization, or application routes. Delivery-o
 publications can set `recipientUserId: null`. In that case, applications must enforce
 device preferences themselves and should recheck eligibility before dispatch.
 
+## Email unsubscribe
+
+`NotificationService.unsubscribeEmail({ recipientUserId })` stops all
+`channel: "email"`, `purpose: "notification"` deliveries for that account,
+across organizations, workspaces, event types, and future email-address changes.
+It is idempotent and preserves the first unsubscribe timestamp.
+`getEmailSubscription({ recipientUserId })` returns `{ recipientUserId,
+unsubscribedAt }`; `null` means no account-wide opt-out (individual preferences
+and endpoint suppressions can still block delivery).
+
+Account opt-out takes precedence over even explicitly enabled event preferences.
+It is checked at publication and again before provider dispatch, including
+queued, scheduled, and retrying mail. Suppressed rows retain the
+`email_unsubscribed` reason in the ledger. In-app notifications, other channels,
+transactional mail, and existing endpoint suppression rules are unchanged.
+An unsubscribe cannot recall mail already being dispatched or accepted by a
+provider. Direct mode does not consult this state and should not be used to
+bypass notification consent.
+
+This state is separate from both `notification_settings` and address-based
+`notification_suppressions`; resetting either does not undo an account opt-out.
+This release adds no public resubscribe-token operation. Any future re-enable
+flow must require explicit authenticated consent; an unsubscribe token must
+never authorize resubscription or other account mutations.
+
+### Generate a secure link
+
+```ts
+import { Config, Effect, Layer } from "effect";
+import { NotificationService } from "@krak-stack/notifications";
+import { EmailUnsubscribe } from "@krak-stack/notifications/unsubscribe";
+
+const unsubscribeLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const secret = yield* Config.Redacted("NOTIFICATION_UNSUBSCRIBE_SECRET");
+    const endpoint = yield* Config.NonEmptyString(
+      "NOTIFICATION_UNSUBSCRIBE_URL",
+    );
+    return EmailUnsubscribe.makeLayer({
+      secret,
+      endpoint, // https://app.example.com/notifications/unsubscribe
+      audience: "my-app:production",
+      // Default: 180 days. Include any scheduling delay in the lifetime.
+      tokenTtlMillis: 180 * 24 * 60 * 60 * 1000,
+    });
+  }),
+).pipe(Layer.provideMerge(NotificationService.layer));
+```
+
+Provide the same shared PostgreSQL layer as the domain/runtime composition.
+The signing secret must be a securely generated, server-only secret of at least
+32 characters. Do not reuse an authentication secret. Keep it consistent across
+web and publishing processes. Changing it invalidates old links; retain it for
+the supported lifetime of already-sent mail. Use a distinct audience for each
+application/environment, and never share package tables between independent
+applications whose account identifiers can collide.
+
+```ts
+const unsubscribeUrl =
+  yield *
+  EmailUnsubscribe.use((unsubscribe) =>
+    unsubscribe.createLink({ recipientUserId: user.id }),
+  );
+```
+
+Derive `user.id` from trusted application policy. Links contain signed,
+versioned HMAC-SHA-256 claims bound to that user and audience, and expire after
+the configured lifetime. They are bearer capabilities for **unsubscribe only**:
+anyone with a forwarded message can unsubscribe its original account. Claims
+are encoded, not encrypted. Do not place email addresses or other sensitive
+data in them, log the full URL/token, or send them to analytics.
+
+Render the localized link in both text and HTML footers using the application's
+escaped template renderer. Also persist it as `payload.unsubscribeUrl` in
+`EmailPayloadV1`; the SDK does not edit rendered bodies. SES and SMTP emit exactly
+one `List-Unsubscribe: <https://…>` header and one
+`List-Unsubscribe-Post: List-Unsubscribe=One-Click` header when this optional
+field is present. URLs must be printable ASCII (serialize Unicode URLs with
+`new URL(value).toString()`) and at most 978 characters to fit SES header limits.
+Payload version 1 without the field remains compatible.
+Only attach these links to optional account notification emails, not to direct
+authentication or transactional emails. Reuse the same rendered snapshot and
+link on idempotent publication replays rather than generating a new expiry.
+
+### Application-owned HTTP integration
+
+The SDK intentionally registers no routes. See the complete
+[KrakStack route example](https://github.com/krakcons/krakstack/blob/main/src/agent-examples/notification/unsubscribe.tsx)
+and its adjacent schema and tests. The example is not mounted on the KrakStack
+documentation site; integrate it into the consuming application and import
+`@krak-stack/notifications/unsubscribe` instead of workspace source paths.
+
+- Serve the configured HTTPS endpoint without login, cookies, CAPTCHA, or
+  locale/HTTPS redirects. Exempt this capability-authenticated endpoint from
+  session-based CSRF middleware, not the rest of the application.
+- **GET** calls `validateToken({ token })` and displays an English/French
+  confirmation form. It never changes state, so link scanners do not unsubscribe.
+- **POST** decodes `EmailUnsubscribePost`, which requires
+  `List-Unsubscribe=One-Click`, then calls `unsubscribe({ token })`. Accept both
+  `application/x-www-form-urlencoded` and `multipart/form-data`. The same form
+  supports manual confirmation and RFC 8058 mail-client one-click requests.
+- Use only the verified token to select the user. Never use a user/tenant/email
+  ID supplied separately in the request, or the logged-in browser's account.
+- Return 200/204 after persistence, including repeated requests, without a
+  redirect or further confirmation. Invalid/expired tokens return 400 with no
+  account details; storage/crypto failures return 503 so requests can be retried.
+- Use `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, no third-party
+  content, and URL redaction in proxy/server/telemetry logs. Bound request sizes
+  and rate-limit abuse without preventing legitimate one-click requests.
+- Configure the sending provider to DKIM-sign both unsubscribe headers and
+  verify the delivered message's `DKIM-Signature` `h=` list. Headers alone do
+  not guarantee a native unsubscribe button; mailbox providers decide whether
+  to offer one. SMTP operators must ensure their relay preserves and signs them.
+
+Authenticated account-settings handlers can call `unsubscribeEmail` directly,
+but must derive the account from trusted authentication and explicitly authorize
+the application-wide effect. Organization/workspace roles alone do not authorize
+changing a recipient's global consent.
+
 ## Delivery Semantics
 
 - `publish` stores an optional rendered inbox and channel-neutral delivery snapshots under caller-provided idempotency keys.
 - Publication and reminder idempotency keys are global. SHA-256 fingerprints cover immutable scope, event/handler, inbox, payload, schedule, expiry, attempt budget, and sorted caller references; changed replays fail with `NotificationIdempotencyConflictError`.
 - Delivery-only publication supports non-account recipients by setting `recipientUserId` to `null`; inbox and preference operations require `RecipientNotificationScope`.
 - Per-delivery references persist application, opportunity, organization, or other caller correlations transactionally; every public namespace beginning `krakstack.` is reserved for package metadata.
-- Transactional delivery bypasses preferences. Notification-purpose delivery resolves event, workspace, organization, then recipient defaults deterministically.
+- Transactional delivery bypasses preferences and account email opt-outs. Notification-purpose delivery resolves event, workspace, organization, then recipient defaults deterministically; an account-wide email opt-out always wins over preferences.
 - Active endpoint suppressions remain in the delivery ledger and can be managed through `listSuppressions`, `setSuppression`, and `resetSuppression`.
 - Null suppression scope fields are broader wildcards. A null suppression purpose applies to every purpose; otherwise it applies only to `transactional` or `notification` delivery.
 - Eligible immediate work allocates an attempt and random UUID queue job in the same SQL transaction as the queue offer.

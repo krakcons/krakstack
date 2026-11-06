@@ -179,7 +179,98 @@ const publishApplicationApproved = Effect.gen(function* () {
 
 One delivery row represents one recipient. The email adapter derives the destination from `recipientAddress` and `recipientName`; `EmailPayloadV1` deliberately has no `to`, `cc`, or `bcc`. Use one publication delivery per recipient.
 
-`purpose: "notification"` applies preferences and active endpoint suppressions. `purpose: "transactional"` bypasses preferences, but endpoint suppressions still apply. The application decides which events are legally or operationally transactional.
+`purpose: "notification"` applies preferences, account-wide email opt-outs, and active endpoint suppressions. `purpose: "transactional"` bypasses preferences and account email opt-outs, but endpoint suppressions still apply. The application decides which events are legally or operationally transactional.
+
+## Unsubscribe from optional emails
+
+The notifications SDK supports account-wide email unsubscribe through
+`@krak-stack/notifications/unsubscribe`. An opt-out stops all optional email
+notifications across event types, organizations, and workspaces, even when an
+event-specific preference is enabled. It follows the user account if its email
+address changes. Transactional emails, other channels, and in-app notifications
+remain unchanged.
+
+Compose the optional module with the migrated notification service and the same
+PostgreSQL pool used by the runtime:
+
+```ts
+import { Config, Effect, Layer } from "effect";
+import { NotificationService } from "@krak-stack/notifications";
+import { EmailUnsubscribe } from "@krak-stack/notifications/unsubscribe";
+
+const unsubscribeLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    return EmailUnsubscribe.makeLayer({
+      secret: yield* Config.Redacted("NOTIFICATION_UNSUBSCRIBE_SECRET"),
+      endpoint: yield* Config.NonEmptyString("NOTIFICATION_UNSUBSCRIBE_URL"),
+      audience: "my-app:production",
+    });
+  }),
+).pipe(Layer.provideMerge(NotificationService.layer));
+```
+
+Use a server-only, securely generated secret of at least 32 characters and an
+absolute HTTPS endpoint such as
+`https://app.example.com/notifications/unsubscribe`. Changing the secret
+invalidates existing links. The audience must identify this application and
+environment. Tokens expire after 180 days by default; configure `tokenTtlMillis`
+to cover scheduling delays and the supported lifetime of sent mail.
+
+Before rendering an optional account email, create a link for the trusted
+recipient:
+
+```ts
+const unsubscribeUrl =
+  yield *
+  EmailUnsubscribe.use((unsubscribe) =>
+    unsubscribe.createLink({ recipientUserId: user.id }),
+  );
+```
+
+Pass that URL and `m.notification_unsubscribe_footer({}, { locale: user.locale })`
+to the application's escaped text/HTML template renderer. Include the link in
+both footers and also persist `unsubscribeUrl` alongside `subject`, `text`, and
+`html` in the email payload. SES and SMTP then add `List-Unsubscribe` and
+`List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Existing payload version 1
+without the URL remains compatible. Reuse the original snapshot and link for
+idempotent replays. Do not add unsubscribe links to authentication or
+transactional mail.
+
+The [application route example](https://github.com/krakcons/krakstack/blob/main/src/agent-examples/notification/unsubscribe.tsx)
+provides an unhydrated English/French confirmation form and both public HTTP
+handlers. It is an integration example, not a live route on this documentation
+site. Replace workspace imports with the public SDK subpath when adopting it.
+
+- **GET** validates the token and shows confirmation, without writing anything.
+  Email link scanners must not cause unsubscribe actions.
+- **POST** accepts `List-Unsubscribe=One-Click` as URL-encoded or multipart form
+  data, then calls `EmailUnsubscribe.unsubscribe({ token })`. No login, cookies,
+  CAPTCHA, redirect, or additional confirmation is required.
+- Successful and repeated requests return 200/204. Invalid/expired tokens return
+  400; persistence or crypto failures return 503, not a false success.
+- Use only the signed token's recipient, never a separate browser-supplied user
+  ID or the current session. Exempt only these routes from session CSRF and
+  locale redirects; keep the rest of the application protected.
+- Configure DKIM to cover both unsubscribe headers and inspect a delivered
+  message to verify this. The mailbox provider decides whether to display its
+  native unsubscribe action.
+- Disable caching and referrer leakage, keep third-party scripts off the page,
+  bound request sizes, and redact tokens/URLs from access logs and telemetry.
+  Signed claims are encoded, not encrypted; forwarded links can unsubscribe the
+  original account.
+
+Authenticated settings handlers can call
+`NotificationService.unsubscribeEmail({ recipientUserId })` directly and inspect
+`getEmailSubscription({ recipientUserId })`. These operations require trusted,
+account-level authorization: organization roles alone do not authorize global
+consent changes. A null `unsubscribedAt` means there is no account opt-out, not
+that individual preferences or endpoint suppressions permit sending.
+
+The package checks account opt-outs at publication and immediately before
+dispatch, including scheduled and retrying work. Mail already being dispatched
+or accepted by a provider cannot be recalled. Direct dispatch still performs no
+consent lookup. Preferences and address suppressions remain separate; resetting
+them does not resubscribe an account. No public resubscribe token is provided.
 
 ## Configure SES or SMTP
 
@@ -317,6 +408,7 @@ tests use fake HTTP clients and never send live pushes.
 - `notification_suppressions`
 - `notification_reminders`
 - `notification_publications`
+- `notification_email_unsubscribes`
 - `krakstack_notification_migrations`
 
 Effect `PersistedQueue` owns `krakstack_notification_jobs` and `krakstack_notification_jobs_migrations`.

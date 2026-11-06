@@ -23,6 +23,7 @@ import {
   decodeEmailPayloadV1,
   decodeEmailRecipient,
 } from "./email.js";
+import { smtpEmailRequest } from "../internal/email-requests.js";
 
 const SmtpPort = Schema.Int.pipe(
   Schema.check(Schema.isGreaterThan(0), Schema.isLessThanOrEqualTo(65_535)),
@@ -201,19 +202,7 @@ const makeSmtpEmailTransport = Effect.gen(function* () {
     const from = email.from ?? environment.sender;
     const result = yield* Effect.tryPromise({
       try: () =>
-        transporter.sendMail({
-          from,
-          to: {
-            address: recipient.address,
-            name: recipient.name ?? undefined,
-          },
-          replyTo: email.replyTo,
-          subject: email.subject,
-          text: email.text,
-          html: email.html,
-          disableFileAccess: true,
-          disableUrlAccess: true,
-        }),
+        transporter.sendMail(smtpEmailRequest({ email, recipient, from })),
       catch: classifyFailure,
     });
     const providerMessageId = Option.getOrNull(

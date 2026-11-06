@@ -131,6 +131,74 @@ export const ResolvedNotificationPreference = Schema.Struct({
   preference: Schema.NullOr(NotificationPreference),
 }).annotate({ identifier: "ResolvedNotificationPreference" });
 
+export const EmailSubscriptionInput = Schema.Struct({
+  recipientUserId: Schema.NonEmptyString,
+}).annotate({ identifier: "NotificationEmailSubscriptionInput" });
+
+export const EmailSubscription = Schema.Struct({
+  recipientUserId: Schema.NonEmptyString,
+  unsubscribedAt: Schema.NullOr(NotificationDate),
+}).annotate({ identifier: "NotificationEmailSubscription" });
+
+export const EmailUnsubscribeUrl = Schema.NonEmptyString.pipe(
+  Schema.check(
+    Schema.isMaxLength(978),
+    Schema.isPattern(/^[\x21-\x7e]+$/),
+    Schema.isPattern(/^[^\s<>"\\]+$/),
+    Schema.makeFilter((value) => {
+      if (!URL.canParse(value)) return "Expected an absolute HTTPS URL";
+      const url = new URL(value);
+      return url.protocol === "https:" &&
+        url.username === "" &&
+        url.password === "" &&
+        url.hash === ""
+        ? undefined
+        : "Expected an HTTPS URL without credentials or a fragment";
+    }),
+  ),
+).annotate({ identifier: "NotificationEmailUnsubscribeUrl" });
+
+export const EmailUnsubscribeOptions = Schema.Struct({
+  secret: Schema.Redacted(Schema.String.check(Schema.isMinLength(32))),
+  audience: Schema.NonEmptyString,
+  endpoint: EmailUnsubscribeUrl,
+  tokenTtlMillis: Schema.optional(PositiveInt),
+}).annotate({ identifier: "NotificationEmailUnsubscribeOptions" });
+
+export const EmailUnsubscribeTokenInput = Schema.Struct({
+  token: Schema.String.check(
+    Schema.isMaxLength(4096),
+    Schema.isPattern(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/),
+  ),
+}).annotate({ identifier: "NotificationEmailUnsubscribeTokenInput" });
+
+export const EmailUnsubscribeTokenClaims = Schema.Struct({
+  version: Schema.Literal(1),
+  purpose: Schema.Literal("email-unsubscribe"),
+  audience: Schema.NonEmptyString,
+  recipientUserId: Schema.NonEmptyString,
+  expiresAt: NonNegativeInt,
+}).annotate({ identifier: "NotificationEmailUnsubscribeTokenClaimsV1" });
+
+export const EmailUnsubscribePost = Schema.Struct({
+  "List-Unsubscribe": Schema.Literal("One-Click"),
+}).annotate({ identifier: "NotificationEmailUnsubscribePost" });
+
+export class EmailUnsubscribeTokenError extends Schema.TaggedError<
+  EmailUnsubscribeTokenError,
+  { readonly brand: unique symbol }
+>()("EmailUnsubscribeTokenError", { message: Schema.String }) {}
+
+export class EmailUnsubscribeConfigurationError extends Schema.TaggedError<
+  EmailUnsubscribeConfigurationError,
+  { readonly brand: unique symbol }
+>()("EmailUnsubscribeConfigurationError", { message: Schema.String }) {}
+
+export class EmailUnsubscribeCryptoError extends Schema.TaggedError<
+  EmailUnsubscribeCryptoError,
+  { readonly brand: unique symbol }
+>()("EmailUnsubscribeCryptoError", { message: Schema.String }) {}
+
 export const NotificationDeliveryReferenceInput = Schema.Struct({
   namespace: Schema.NonEmptyString.pipe(
     Schema.check(Schema.isPattern(/^(?!krakstack\.)/)),
@@ -461,6 +529,7 @@ const EmailPayloadV1Fields = Schema.Struct({
   subject: Schema.NonEmptyString,
   text: Schema.optional(Schema.NonEmptyString),
   html: Schema.optional(Schema.NonEmptyString),
+  unsubscribeUrl: Schema.optional(EmailUnsubscribeUrl),
 });
 
 export const EmailPayloadV1 = EmailPayloadV1Fields.pipe(
@@ -774,6 +843,10 @@ export type InboxNotification = typeof InboxNotification.Type;
 export type NotificationPreference = typeof NotificationPreference.Type;
 export type ResolvedNotificationPreference =
   typeof ResolvedNotificationPreference.Type;
+export type EmailSubscriptionInput = typeof EmailSubscriptionInput.Type;
+export type EmailSubscription = typeof EmailSubscription.Type;
+export type EmailUnsubscribeOptions = typeof EmailUnsubscribeOptions.Type;
+export type EmailUnsubscribeTokenInput = typeof EmailUnsubscribeTokenInput.Type;
 export type NotificationDeliveryReferenceInput =
   typeof NotificationDeliveryReferenceInput.Type;
 export type PublishDeliveryInput = typeof PublishDeliveryInput.Type;

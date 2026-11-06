@@ -710,9 +710,19 @@ export const notificationMigrations = Migrator.fromRecord({
           FROM notification_delivery_correlations
           WHERE organization_id IS NOT NULL
           ON CONFLICT (delivery_id, namespace, value) DO NOTHING
-        $migration$;
+      $migration$;
       END
       $$
+    `;
+  }),
+  "0008_add_account_email_unsubscribes": Effect.gen(function* () {
+    const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+    yield* sql`
+      CREATE TABLE IF NOT EXISTS notification_email_unsubscribes (
+        recipient_user_id TEXT PRIMARY KEY,
+        unsubscribed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        CHECK (length(recipient_user_id) > 0)
+      )
     `;
   }),
 });

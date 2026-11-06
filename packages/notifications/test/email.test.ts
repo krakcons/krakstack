@@ -6,10 +6,54 @@ import { classifySmtpTransportError } from "../src/transport/email-smtp.js";
 import {
   decodeEmailPayloadV1,
   decodeEmailRecipient,
+  emailUnsubscribeHeaders,
   formatEmailRecipient,
 } from "../src/transport/email.js";
 
 describe("email payload v1", () => {
+  it.effect(
+    "emits one-click headers only when an HTTPS unsubscribe URL is supplied",
+    () =>
+      Effect.gen(function* () {
+        const withoutLink = yield* decodeEmailPayloadV1({
+          subject: "Subject",
+          text: "Body",
+        });
+        expect(emailUnsubscribeHeaders(withoutLink)).toEqual([]);
+        const withLink = yield* decodeEmailPayloadV1({
+          subject: "Subject",
+          html: "<p>Body</p>",
+          unsubscribeUrl: "https://example.com/unsubscribe?token=signed",
+        });
+        expect(emailUnsubscribeHeaders(withLink)).toEqual([
+          {
+            name: "List-Unsubscribe",
+            value: "<https://example.com/unsubscribe?token=signed>",
+          },
+          {
+            name: "List-Unsubscribe-Post",
+            value: "List-Unsubscribe=One-Click",
+          },
+        ]);
+        expect(withLink.html).toBe("<p>Body</p>");
+        for (const unsubscribeUrl of [
+          "http://example.com",
+          "https://example.com/\r\nBcc:injected@example.com",
+          "https://example.com/<bad>",
+          "https://example.com#fragment",
+          "/unsubscribe",
+          `https://example.com/${"a".repeat(978)}`,
+          "https://example.com/é",
+        ]) {
+          const result = yield* decodeEmailPayloadV1({
+            subject: "Subject",
+            text: "Body",
+            unsubscribeUrl,
+          }).pipe(Effect.exit);
+          expect(result._tag).toBe("Failure");
+        }
+      }),
+  );
   it.effect("decodes content without changing rendered bodies", () =>
     Effect.gen(function* () {
       const text = "Exact text\nwith spacing";

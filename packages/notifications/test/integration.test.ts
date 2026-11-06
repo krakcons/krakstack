@@ -16,7 +16,12 @@ import type {
   RecipientNotificationScope,
 } from "../src/schema.js";
 import { makeFakeReminderHandler, makeFakeTransport } from "../src/testing.js";
-import { NotificationTransportUnavailable } from "../src/transport.js";
+import {
+  NotificationTransportRegistry,
+  NotificationTransportUnavailable,
+} from "../src/transport.js";
+import { makePushTransport } from "../src/transport/push.js";
+import { EmailUnsubscribe } from "../src/unsubscribe.js";
 
 class NotificationFixtureTimeout extends Data.TaggedError(
   "NotificationFixtureTimeout",
@@ -105,6 +110,270 @@ const notificationLayerFor = (url: string) => {
 const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
 
 describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
+  it.effect(
+    "unsubscribes an account across tenants and addresses, including queued, scheduled and retrying email",
+    () => {
+      const url = process.env.TEST_DATABASE_URL;
+      if (url === undefined)
+        return Effect.die(new Error("TEST_DATABASE_URL is required"));
+      const schemaName = `notification_unsubscribe_${crypto.randomUUID().replaceAll("-", "")}`;
+      const postgres = postgresLayerFor(databaseUrlForSchema(url, schemaName));
+      const transport = makeFakeTransport({
+        channel: "email",
+        send: (input) =>
+          input.eventKey === "unsubscribe.retry"
+            ? Effect.fail(
+                new NotificationTransportUnavailable({
+                  channel: "email",
+                  message: "Retry later",
+                }),
+              )
+            : Effect.succeed({
+                provider: "fake",
+                providerMessageId: input.dispatchId,
+              }),
+      });
+      const apns = makeFakeTransport({
+        channel: "push",
+        send: (input) =>
+          Effect.succeed({
+            provider: "apns",
+            providerMessageId: input.dispatchId,
+          }),
+      });
+      const fcm = makeFakeTransport({
+        channel: "push",
+        send: (input) =>
+          Effect.succeed({
+            provider: "fcm",
+            providerMessageId: input.dispatchId,
+          }),
+      });
+      const transports = NotificationTransportRegistry.layer([
+        transport.transport,
+        makePushTransport({ apns: apns.transport, fcm: fcm.transport }),
+      ]);
+      const domain = NotificationService.layer.pipe(Layer.provide(postgres));
+      const unsubscribeLayer = EmailUnsubscribe.makeLayer({
+        secret: Redacted.make("integration-secret-with-at-least-32-characters"),
+        audience: "integration",
+        endpoint: "https://example.com/notifications/unsubscribe",
+      }).pipe(Layer.provideMerge(domain));
+      const layer = NotificationRuntime.makeLayer({
+        retryPolicy: { baseDelayMillis: 1, maxDelayMillis: 10 },
+      }).pipe(
+        Layer.provideMerge(unsubscribeLayer),
+        Layer.provide(transports),
+        Layer.provide(fakeReminderHandler.layer),
+        Layer.provideMerge(postgres),
+      );
+      const scope = {
+        recipientUserId: "user-1",
+        organizationId: "org-1",
+        workspaceId: "workspace-1",
+      };
+      const otherScope = {
+        recipientUserId: "user-1",
+        organizationId: "org-2",
+        workspaceId: "workspace-2",
+      };
+      const input = (
+        overrides: {
+          purpose?: NotificationDeliveryPurpose;
+          address?: string;
+          eventKey?: string;
+          scheduledFor?: Date;
+          scope?: RecipientNotificationScope;
+          channel?: string;
+        } = {},
+      ): PublishInput => ({
+        idempotencyKey: crypto.randomUUID(),
+        scope: overrides.scope ?? scope,
+        eventKey: overrides.eventKey ?? "unsubscribe.test",
+        eventVersion: 1,
+        inbox: {
+          locale: "en",
+          title: "Inbox remains enabled",
+          description: null,
+          href: null,
+          metadata: {},
+        },
+        deliveries: [
+          {
+            key: "primary",
+            channel: overrides.channel ?? "email",
+            purpose: overrides.purpose ?? "notification",
+            template: null,
+            recipientAddress: overrides.address ?? "original@example.com",
+            recipientName: null,
+            payloadVersion: 1,
+            payload: { subject: "Test", text: "Body" },
+            scheduledFor: overrides.scheduledFor,
+          },
+        ],
+      });
+      const program = Effect.gen(function* () {
+        const service = yield* NotificationService;
+        const runtime = yield* NotificationRuntime;
+        const unsubscribe = yield* EmailUnsubscribe;
+        expect(
+          (yield* service.getEmailSubscription({ recipientUserId: "user-1" }))
+            .unsubscribedAt,
+        ).toBeNull();
+
+        const retrying = yield* service.publish(
+          input({ eventKey: "unsubscribe.retry" }),
+        );
+        yield* runtime.runDeliveryWorkerOnce;
+        expect(
+          (yield* service.getDelivery({
+            scope,
+            deliveryId: retrying.deliveryIds[0],
+          })).delivery.status,
+        ).toBe("retrying");
+        const queued = yield* service.publish(input());
+        const now = yield* DateTime.nowAsDate;
+        const scheduled = yield* service.publish(
+          input({
+            scope: otherScope,
+            address: "changed@example.com",
+            scheduledFor: new Date(now.getTime() + 1000),
+          }),
+        );
+        yield* service.setPreference({
+          scope: otherScope,
+          eventKey: "unsubscribe.test",
+          channel: "email",
+          enabled: true,
+        });
+
+        const link = yield* unsubscribe.createLink({
+          recipientUserId: "user-1",
+        });
+        const token = new URL(link).searchParams.get("token") ?? "";
+        yield* unsubscribe.validateToken({ token });
+        expect(
+          (yield* service.getEmailSubscription({ recipientUserId: "user-1" }))
+            .unsubscribedAt,
+        ).toBeNull();
+        yield* unsubscribe.unsubscribe({ token });
+        const first = yield* service.getEmailSubscription({
+          recipientUserId: "user-1",
+        });
+        yield* unsubscribe.unsubscribe({ token });
+        expect(
+          yield* service.getEmailSubscription({ recipientUserId: "user-1" }),
+        ).toEqual(first);
+        expect(first.unsubscribedAt).not.toBeNull();
+        const afterUnsubscribe = yield* service.publish(
+          input({ scope: otherScope, address: "new-address@example.com" }),
+        );
+        const suppressed = yield* service.getDelivery({
+          scope: otherScope,
+          deliveryId: afterUnsubscribe.deliveryIds[0],
+        });
+        expect(suppressed.delivery.status).toBe("suppressed");
+        expect(suppressed.delivery.errorMessage).toBe("email_unsubscribed");
+
+        yield* TestClock.adjust(2000);
+        yield* runtime.enqueueDue({ limit: 100 });
+        for (let iteration = 0; iteration < 3; iteration++)
+          yield* runtime.runDeliveryWorkerOnce;
+        for (const [publication, deliveryScope] of [
+          [queued, scope],
+          [retrying, scope],
+          [scheduled, otherScope],
+        ] satisfies ReadonlyArray<
+          readonly [typeof queued, RecipientNotificationScope]
+        >) {
+          const detail = yield* service.getDelivery({
+            scope: deliveryScope,
+            deliveryId: publication.deliveryIds[0],
+          });
+          expect(detail.delivery.status).toBe("suppressed");
+          expect(detail.delivery.errorMessage).toBe("email_unsubscribed");
+        }
+        expect(transport.sent).toHaveLength(1);
+        expect(yield* service.unreadCount({ scope: otherScope })).toBe(2);
+
+        const transactional = yield* service.publish(
+          input({ purpose: "transactional" }),
+        );
+        yield* runtime.runDeliveryWorkerOnce;
+        expect(
+          (yield* service.getDelivery({
+            scope,
+            deliveryId: transactional.deliveryIds[0],
+          })).delivery.status,
+        ).toBe("sent");
+        const otherUserScope = { ...scope, recipientUserId: "user-2" };
+        const otherUser = yield* service.publish(
+          input({ scope: otherUserScope }),
+        );
+        yield* runtime.runDeliveryWorkerOnce;
+        expect(
+          (yield* service.getDelivery({
+            scope: otherUserScope,
+            deliveryId: otherUser.deliveryIds[0],
+          })).delivery.status,
+        ).toBe("sent");
+        expect(
+          (yield* service.getEmailSubscription({ recipientUserId: "user-2" }))
+            .unsubscribedAt,
+        ).toBeNull();
+        for (const provider of ["apns", "fcm"]) {
+          const token =
+            provider === "apns" ? "A".repeat(64) : "CaseSensitiveFcmToken";
+          const publication = input({ channel: "push", address: token });
+          const push = yield* service.publish({
+            ...publication,
+            deliveries: publication.deliveries.map((delivery) => ({
+              ...delivery,
+              payload: {
+                provider,
+                title: "Push remains enabled",
+                body: "Body",
+                data: {},
+              },
+            })),
+          });
+          yield* runtime.runDeliveryWorkerOnce;
+          const detail = yield* service.getDelivery({
+            scope,
+            deliveryId: push.deliveryIds[0],
+          });
+          expect(detail.delivery.status).toBe("sent");
+          expect(detail.delivery.provider).toBe(provider);
+          expect(detail.delivery.recipientAddress).toBe(token);
+        }
+        expect(apns.sent).toHaveLength(1);
+        expect(fcm.sent).toHaveLength(1);
+        const sms = yield* service.publish(
+          input({ channel: "sms", address: "+15555550100" }),
+        );
+        expect(
+          (yield* service.getDelivery({
+            scope,
+            deliveryId: sms.deliveryIds[0],
+          })).delivery.status,
+        ).toBe("queued");
+        const invalid = yield* service
+          .unsubscribeEmail({ recipientUserId: "" })
+          .pipe(Effect.flip);
+        expect(invalid._tag).toBe("NotificationValidationError");
+        yield* runNotificationMigrations;
+        expect(
+          yield* service.getEmailSubscription({ recipientUserId: "user-1" }),
+        ).toEqual(first);
+      }).pipe(Effect.provide(layer));
+      return Effect.acquireUseRelease(
+        createTestSchema(url, schemaName),
+        () => program,
+        () => dropTestSchema(url, schemaName).pipe(Effect.orDie),
+      );
+    },
+  );
+
   it.effect(
     "upgrades RC queue rows without losing pending work or completed jobs",
     () => {
@@ -1214,7 +1483,7 @@ describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
         `;
         yield* sql`
           DELETE FROM krakstack_notification_migrations
-          WHERE migration_id = 7
+          WHERE migration_id >= 7
         `;
         yield* runNotificationMigrations;
 

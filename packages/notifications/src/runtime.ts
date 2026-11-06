@@ -2,6 +2,7 @@ import { Cause, Context, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
+import { makeEmailSubscriptions } from "./internal/email-subscriptions.js";
 import {
   makeBatchRunner,
   type DeliveryBatchOutcome,
@@ -242,6 +243,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
       ),
     );
     const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+    const emailSubscriptions = makeEmailSubscriptions(sql);
     const notificationQueueTable = sql(NOTIFICATION_QUEUE_TABLE);
     const transports = yield* NotificationTransportRegistry;
     const reminderHandlers = yield* ReminderHandlerRegistry;
@@ -305,6 +307,12 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
         recipientUserId === null
       ) {
         return null;
+      }
+      if (
+        input.delivery.channel === "email" &&
+        (yield* emailSubscriptions.isUnsubscribed({ recipientUserId }))
+      ) {
+        return "email_unsubscribed";
       }
       const preferenceRows = yield* sql`
         SELECT ${preferenceColumns(sql)}

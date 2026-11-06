@@ -65,6 +65,10 @@
       "types": "./dist/direct.d.ts",
       "import": "./dist/direct.js"
     },
+    "./unsubscribe": {
+      "types": "./dist/unsubscribe.d.ts",
+      "import": "./dist/unsubscribe.js"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js"
