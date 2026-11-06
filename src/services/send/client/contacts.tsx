@@ -5,6 +5,7 @@ import {
   type Contact,
   type ContactPage,
   type EmailConsentEvent,
+  type ConsentEventPage,
 } from "@krak-stack/send/schema";
 
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,10 @@ export interface SendContactsProps {
   ) => Promise<typeof EmailConsentEvent.Type | void>;
   readonly onNext?: () => void;
   readonly onPrevious?: () => void;
+  readonly inspection?: {
+    readonly label: string;
+    readonly onSelect: (contact: Contact) => void;
+  };
 }
 
 // Data and mutation ownership stays with the host. Mount only behind the host's
@@ -62,6 +67,7 @@ export const SendContacts = ({
   onWithdraw,
   onNext,
   onPrevious,
+  inspection,
 }: SendContactsProps) => {
   const [creating, setCreating] = useState(false);
   const [withdrawing, setWithdrawing] = useState<string>();
@@ -122,6 +128,16 @@ export const SendContacts = ({
       ),
     },
   ];
+  if (inspection)
+    columns.push({
+      colId: "inspect",
+      headerName: inspection.label,
+      cellRenderer: ({ data }) => (
+        <Button variant="outline" onClick={() => inspection.onSelect(data)}>
+          {inspection.label}
+        </Button>
+      ),
+    });
   return (
     <section className="space-y-4" aria-busy={pending}>
       <div className="flex items-start justify-between gap-4">
@@ -206,3 +222,117 @@ export const SendContacts = ({
     </section>
   );
 };
+
+export interface SendContactDetailsMessages {
+  readonly title: string;
+  readonly id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly locale: string;
+  readonly consent: string;
+  readonly created: string;
+  readonly updated: string;
+  readonly requestId: string;
+  readonly status: string;
+  readonly source: string;
+  readonly actor: string;
+  readonly noticeVersion: string;
+  readonly occurred: string;
+  readonly previous: string;
+  readonly next: string;
+  readonly close: string;
+  readonly activity: string;
+  readonly states: Readonly<Record<Contact["emailConsent"], string>>;
+}
+export const SendContactDetails = ({
+  contact,
+  history,
+  messages: m,
+  error,
+  onClose,
+  onActivity,
+  onPrevious,
+  onNext,
+}: {
+  contact: Contact | undefined;
+  history: typeof ConsentEventPage.Type | undefined;
+  messages: SendContactDetailsMessages;
+  error?: string;
+  onClose: () => void;
+  onActivity: (id: string) => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
+}) => (
+  <section className="space-y-4">
+    <h2 className="text-xl font-semibold">{m.title}</h2>
+    {error && <p role="alert">{error}</p>}
+    {contact && (
+      <>
+        <dl className="grid gap-2 sm:grid-cols-2">
+          {[
+            [m.id, contact.id],
+            [m.email, contact.email],
+            [m.name, contact.name],
+            [m.locale, contact.locale],
+            [m.consent, m.states[contact.emailConsent]],
+            [m.created, contact.createdAt.toLocaleString()],
+            [m.updated, contact.updatedAt.toLocaleString()],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <Button variant="outline" onClick={() => onActivity(contact.id)}>
+          {m.activity}
+        </Button>
+      </>
+    )}
+    {history && (
+      <DataTable
+        rowData={history.items}
+        getRowId={(event) => event.requestId}
+        features={{
+          toolbar: false,
+          search: false,
+          filtering: false,
+          sorting: false,
+          pagination: false,
+          columnVisibility: false,
+        }}
+        columnDefs={[
+          { field: "requestId", headerName: m.requestId },
+          {
+            field: "status",
+            headerName: m.status,
+            cellRenderer: ({ data }) => m.states[data.status],
+          },
+          { field: "source", headerName: m.source },
+          { field: "actor", headerName: m.actor },
+          { field: "noticeVersion", headerName: m.noticeVersion },
+          {
+            colId: "occurred",
+            headerName: m.occurred,
+            cellRenderer: ({ data }) => data.occurredAt.toLocaleString(),
+          },
+        ]}
+      />
+    )}
+    <div className="flex gap-2">
+      <Button variant="outline" onClick={onPrevious} disabled={!onPrevious}>
+        {m.previous}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={onNext}
+        disabled={!onNext || !history?.nextCursor}
+      >
+        {m.next}
+      </Button>
+      <Button variant="outline" onClick={onClose}>
+        {m.close}
+      </Button>
+    </div>
+  </section>
+);

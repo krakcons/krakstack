@@ -15,9 +15,11 @@ import type { makeSendContactAtoms } from "./atom";
 export const SendContactsPanel = ({
   atoms,
   locale,
+  onInspect,
 }: {
   atoms: ReturnType<typeof makeSendContactAtoms>;
   locale: "en" | "fr";
+  onInspect?: (id: string) => void;
 }) => {
   const [cursors, setCursors] = useState([""]);
   const cursor = cursors.at(-1) ?? "";
@@ -51,6 +53,14 @@ export const SendContactsPanel = ({
       error={AsyncResult.isFailure(result) ? messages.savingFailed : undefined}
       messages={messages}
       defaultContactLocale={locale}
+      inspection={
+        onInspect
+          ? {
+              label: m.kraksend_ops_contact_history({}, options),
+              onSelect: (contact) => onInspect(contact.id),
+            }
+          : undefined
+      }
       onCreate={create}
       onWithdraw={(contact) =>
         withdraw({ contactId: contact.id, requestId: crypto.randomUUID() })

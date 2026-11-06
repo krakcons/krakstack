@@ -11,6 +11,7 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/services/send/client/operations.tsx",
     "../../src/services/send/client/campaigns.tsx",
     "../../src/services/send/client/contacts.tsx",
     "../../src/services/webhooks/client/delivery-table.tsx",

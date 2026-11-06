@@ -1,7 +1,13 @@
 import { Atom, AtomHttpApi, AsyncResult } from "effect/reactivity";
+import { Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { SendAdminApi } from "@krak-stack/send/api";
-import type { Contact, CreateContact } from "@krak-stack/send/schema";
+import {
+  SendId,
+  RequestId,
+  type Contact,
+  type CreateContact,
+} from "@krak-stack/send/schema";
 
 // Construct once per host application, using its trusted API origin. The host
 // adds its own HttpClient authentication/CSRF middleware where needed.
@@ -58,5 +64,32 @@ export const makeSendContactAtoms = (baseUrl: string) => {
       ),
     }),
   );
-  return { contacts, create, withdraw };
+  const contact = Atom.family((id: string) =>
+    Atom.optimistic(
+      SendClient.query("send", "getContact", {
+        params: { id },
+        reactivityKeys: ["kraksend.contacts"],
+        timeToLive: "10 seconds",
+      }),
+    ),
+  );
+  const HistoryKey = Schema.fromJsonString(
+    Schema.Struct({ id: SendId, before: Schema.optional(RequestId) }).annotate({
+      identifier: "SendContactHistoryKey",
+    }),
+  );
+  const historyQuery = Atom.family((key: string) => {
+    const { id, before } = Schema.decodeSync(HistoryKey)(key);
+    return Atom.optimistic(
+      SendClient.query("send", "listEmailConsentEvents", {
+        params: { id },
+        query: { before, limit: 25 },
+        reactivityKeys: ["kraksend.contacts"],
+        timeToLive: "10 seconds",
+      }),
+    );
+  });
+  const history = (id: string, before?: string) =>
+    historyQuery(Schema.encodeSync(HistoryKey)({ id, before }));
+  return { contacts, contact, history, create, withdraw };
 };

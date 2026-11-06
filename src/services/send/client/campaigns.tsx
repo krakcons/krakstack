@@ -73,6 +73,7 @@ export interface SendCampaignAdminProps {
   readonly messages: SendCampaignMessages;
   readonly onSelect: (campaign: typeof Campaign.Type) => void;
   readonly onClose: () => void;
+  readonly onRecipients?: (id: string) => void;
   readonly onCreate: (
     input: typeof CreateCampaign.Type,
   ) => Promise<typeof Campaign.Type | void>;
@@ -95,6 +96,7 @@ export const SendCampaignAdmin = ({
   messages: m,
   onSelect,
   onClose,
+  onRecipients,
   onCreate,
   onSchedule,
   onTransition,
@@ -263,6 +265,28 @@ export const SendCampaignAdmin = ({
         >
           <h2>{selected.name}</h2>
           <p>{m.statuses[selected.status]}</p>
+          <dl>
+            <dt>{m.from}</dt>
+            <dd>{selected.from}</dd>
+            <dt>{m.scheduledFor}</dt>
+            <dd>{selected.scheduledFor?.toISOString() ?? "—"}</dd>
+          </dl>
+          {(
+            ["en", "fr"] satisfies ReadonlyArray<keyof typeof selected.content>
+          ).map((locale) => (
+            <details key={locale}>
+              <summary>{locale === "en" ? m.english : m.french}</summary>
+              <h3>{selected.content[locale].subject}</h3>
+              <p className="whitespace-pre-wrap">
+                {selected.content[locale].text}
+              </p>
+            </details>
+          ))}
+          {onRecipients && (
+            <Button variant="outline" onClick={() => onRecipients(selected.id)}>
+              {m.metrics.audience}
+            </Button>
+          )}
           {selected.status === "draft" && (
             <scheduleForm.AppForm>
               <form

@@ -968,6 +968,30 @@
       ]
     },
     {
+      "name": "kraksend-operations",
+      "title": "KrakSend Operations",
+      "description": "Global email statistics, delivery and attempt inspection, bounce feedback, suppression management and audit history, and campaign recipient visibility.",
+      "type": "registry:component",
+      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-06" },
+      "registryDependencies": [
+        "@krak-stack/data-table",
+        "@krak-stack/form",
+        "button",
+        "dialog",
+        "tabs",
+        "select"
+      ],
+      "dependencies": ["@krak-stack/send@^0.1.0", "effect@latest", "react"],
+      "docs": "Mount SendOperationsAdmin behind the host admin guard. Supply the protected SendOperations API data, localized messages, server filters/pagination and authoritative suppression callbacks. See src/agent-examples/send/console.tsx for a unified contacts/campaigns/operations host panel. Removal requires the exact reviewed version and an audit reason; it never restores consent or resends mail. No rendered bodies, signed unsubscribe tokens or credentials are returned by the operations API.",
+      "files": [
+        {
+          "path": "src/services/send/client/operations.tsx",
+          "type": "registry:file",
+          "target": "services/send/client/operations.tsx"
+        }
+      ]
+    },
+    {
       "name": "kraksend-campaigns",
       "title": "KrakSend Campaigns",
       "description": "Host-protected bilingual campaign creation, scheduling, pause/resume, cancellation, and delivery reporting.",

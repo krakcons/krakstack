@@ -17,6 +17,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./send/operations": {
+      "types": "./dist/services/send/client/operations.d.ts",
+      "import": "./dist/services/send/client/operations.js"
+    },
     "./send/campaigns": {
       "types": "./dist/services/send/client/campaigns.d.ts",
       "import": "./dist/services/send/client/campaigns.js"
