@@ -1,0 +1,106 @@
+{
+  "name": "@krak-stack/send",
+  "version": "0.0.0",
+  "description": "Per-application KrakSend contacts, consent, campaigns, and durable email integration without an identity dependency.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "GLOSSARY.md"
+  ],
+  "exports": {
+    "./campaign.api": {
+      "types": "./dist/campaign.api.d.ts",
+      "import": "./dist/campaign.api.js"
+    },
+    "./campaign.api.builder": {
+      "types": "./dist/campaign.api.builder.d.ts",
+      "import": "./dist/campaign.api.builder.js"
+    },
+    "./campaign": {
+      "types": "./dist/campaign.d.ts",
+      "import": "./dist/campaign.js"
+    },
+    "./campaign.workflows": {
+      "types": "./dist/campaign.workflows.d.ts",
+      "import": "./dist/campaign.workflows.js"
+    },
+    "./campaign.safety": {
+      "types": "./dist/campaign.safety.d.ts",
+      "import": "./dist/campaign.safety.js"
+    },
+    "./feedback.ses": {
+      "types": "./dist/feedback.ses.d.ts",
+      "import": "./dist/feedback.ses.js"
+    },
+    "./feedback": {
+      "types": "./dist/feedback.d.ts",
+      "import": "./dist/feedback.js"
+    },
+    "./feedback.api": {
+      "types": "./dist/feedback.api.d.ts",
+      "import": "./dist/feedback.api.js"
+    },
+    "./feedback.api.builder": {
+      "types": "./dist/feedback.api.builder.d.ts",
+      "import": "./dist/feedback.api.builder.js"
+    },
+    "./unsubscribe": {
+      "types": "./dist/unsubscribe.d.ts",
+      "import": "./dist/unsubscribe.js"
+    },
+    "./unsubscribe.routes": {
+      "types": "./dist/unsubscribe.routes.d.ts",
+      "import": "./dist/unsubscribe.routes.js"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./api": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js"
+    },
+    "./api.builder": {
+      "types": "./dist/api.builder.d.ts",
+      "import": "./dist/api.builder.js"
+    },
+    "./policy": {
+      "types": "./dist/policy.d.ts",
+      "import": "./dist/policy.js"
+    },
+    "./migrations": {
+      "types": "./dist/migrations.d.ts",
+      "import": "./dist/migrations.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "bun run typecheck && bun run test && bun run build",
+    "check:release": "bun -e 'if (!process.env.TEST_DATABASE_URL) throw new Error(\"TEST_DATABASE_URL is required\")' && bun run check",
+    "prepack": "bun run check:release"
+  },
+  "peerDependencies": {
+    "@krak-stack/notifications": "^0.3.0",
+    "@effect/sql-pg": "^4.1.0",
+    "effect": "^4.1.0"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "4.1.0",
+    "@krak-stack/notifications": "workspace:*",
+    "@effect/sql-pg": "4.1.0",
+    "@effect/vitest": "4.1.0",
+    "@types/node": "^22.19.21",
+    "effect": "4.1.0",
+    "typescript": "7.0.1-rc",
+    "vitest": "^5.0.3"
+  }
+}
