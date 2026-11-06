@@ -53,6 +53,14 @@ requires host credentials, authenticated feedback, persistent workflow workers,
 rate limits and retention policies. Topics, imports, reusable templates,
 open/click analytics and SMS are not implemented.
 
+The `kraksend-operations` view adds global email statistics, searchable delivery
+and attempt inspection, individual bounce/complaint feedback, active/expired
+suppression lists and audited blocking/unblocking. A unified host-console example
+links contact consent history, campaign content, skipped recipients and provider
+evidence. Views refresh every 15 seconds. Unblocking never restores consent or
+resends a message; stale suppression changes are rejected. Administrative APIs
+omit rendered bodies, signed unsubscribe tokens and credentials.
+
 Install the package with the Effect PostgreSQL driver:
 
 ```bash

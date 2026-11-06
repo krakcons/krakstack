@@ -55,6 +55,15 @@ production exige les identifiants de l'hôte, des retours authentifiés, des wor
 durables, des limites de débit et une politique de conservation. Les sujets,
 imports, modèles réutilisables, statistiques d'ouverture/clic et SMS restent à venir.
 
+L’interface `kraksend-operations` ajoute les statistiques globales des courriels,
+la recherche et l’inspection des livraisons et tentatives, les rebonds/plaintes
+individuels, les blocages actifs/expirés et leur gestion auditée. Un exemple de
+console unifiée relie l’historique du consentement, le contenu des campagnes,
+les destinataires ignorés et les preuves fournisseur. Les vues sont actualisées
+toutes les 15 secondes. Débloquer ne rétablit pas le consentement et ne renvoie
+aucun message ; les modifications obsolètes sont refusées. Les API masquent les
+corps des messages, les liens signés de désabonnement et les identifiants secrets.
+
 Installez le package avec le pilote PostgreSQL d'Effect :
 
 ```bash

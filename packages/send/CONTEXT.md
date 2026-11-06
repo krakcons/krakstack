@@ -22,3 +22,6 @@
 - **Campaign**: a broadcast with defined content, recipient selection, and timing.
 - **Audience**: an explicit collection of contacts.
 - **Segment**: recipient selection rules evaluated over contact information and subscription choices.
+- **Operations console**: installation-wide email visibility, distinct from accounts or a centrally hosted project dashboard.
+- **Suppression audit**: trusted-actor evidence of a manual block/removal; never a consent grant or a resend instruction.
+- **Reviewed suppression version**: opaque row-version evidence used to reject removal after an intervening provider update.

@@ -24,3 +24,9 @@
   at dispatch; not deletion of history or recall of accepted mail.
 - **Sender verification**: current host/provider approval of an explicitly allowed
   sender, separate from sending enablement and non-production recipient allowlisting.
+- **Operations console**: host-protected visibility into installation email state,
+  provider evidence, recipient publication outcomes and suppression administration.
+- **Suppression audit**: attributable administrative block/removal evidence, separate
+  from provider feedback and consent history. Removing a block is not a subscription.
+- **Reviewed suppression version**: an opaque concurrency token for the exact record
+  an administrator reviewed; a later provider update invalidates removal of that version.

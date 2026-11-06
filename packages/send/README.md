@@ -363,8 +363,8 @@ authorized page/detail/report data, English/French messages and mutation callbac
 The host examples `campaign.atom.ts`, `campaign.admin.tsx` and `campaign.messages.ts`
 show query retention, detail-scoped optimistic pause/resume with rollback,
 authoritative creation/scheduling/cancellation and mutation-owned invalidation.
-Refresh/reselect to retrieve ongoing worker progress; no live-report polling is
-provided. Protect the frontend route and cookie-authenticated writes with host
+The host panel refreshes mounted lists/details/reports every 15 seconds.
+Protect the frontend route and cookie-authenticated writes with host
 authorization and CSRF controls.
 
 Reports count distinct snapshot recipients/publications: pending, published, skipped,
@@ -374,6 +374,97 @@ they are facts, not mutually exclusive delivery states. Accepted is not confirme
 and confirmed is not read. No open/click tracking or inferred delivery rate exists.
 
 ## Admin view
+
+### Sending operations and visibility
+
+`SendOperations.layer` depends on the same `KrakSend`, `NotificationService` and
+SQL layers. Acquiring KrakSend applies additive migration `0004_operations_visibility`:
+feedback ingestion sequence IDs, a correlated-feedback index, and administrative
+suppression audit history. Existing feedback/delivery records remain intact.
+
+Mount `sendOperationsRoutes` from `/operations.api.builder` with host-owned
+`SendAdmin` middleware. `/api/send/operations` provides:
+
+- `/overview`: global KrakSend email publication/current-state statistics, distinct
+  delivery confirmations, hard/soft bounces and complaints, unmatched feedback
+  event counts, and current active suppression-record counts.
+- `/deliveries` and `/deliveries/:id`: server-filtered activity and inspection of
+  recipient/contact, campaign, subject, purpose, status, scheduling, provider IDs,
+  error diagnostics, attempt generations/outcomes and timestamps.
+- `/feedback`: individual recipient feedback records, including hard/soft bounces,
+  complaints, confirmations and **pending/unmatched** events. Provider occurrence,
+  receipt, reconciliation and application times are distinct. Default frontend
+  browsing shows bounces; filters expose every supported kind/correlation state.
+- `/suppressions`: active, expired or all installation-wide email suppression
+  records, with endpoint, purpose, reason and expiry. Includes provider and manual
+  suppressions, including endpoints without a contact profile.
+- `/suppression-history`: paginated administrative additions/removals with audit
+  request ID, trusted actor, reason, previous reason and occurrence time. Automatic
+  provider blocks retain their evidence in feedback, not a fabricated admin event.
+- `/recipients`: pending, published or skipped members of a campaign snapshot,
+  including skip reason and delivery links. These are not just successful deliveries.
+
+Activity, recipient and suppression pagination is descending UUID order; feedback
+and audit history use descending ingestion sequence. Date windows are half-open
+(`since <= timestamp < until`). Global delivery statistics use publication time;
+pending feedback uses receipt time. Active suppression counts are current and do
+not use the date window. Feedback categories may overlap and duplicates cannot
+inflate delivery-level statistics. Suppression counts count records, not unique
+addresses. No metric means read/opened or guaranteed inbox placement.
+
+The boundary only exposes KrakSend-owned, installation-scope email deliveries.
+Account/organization/workspace deliveries, push suppressions and unrelated engine
+publications are not exposed. Suppression management is restricted to null-scope
+email records; narrower host permissions can be enforced in the host middleware
+per endpoint. Keep cookie-CSRF/origin checks on every administrative mutation.
+
+Install `@krak-stack/kraksend-operations` or import
+`@krak-stack/registry/send/operations`. `SendOperationsAdmin` is a controlled view;
+the host owns data/filters/pagination and mutations. The `operations.atom.ts`,
+`operations.admin.tsx` and `operations.messages.ts` examples retain previous query
+successes and refresh only mounted operations/inspection views every 15 seconds.
+Manual refresh is also available. Fetch/mutation errors remain visible, never
+presented as empty successful results or successful unblocking.
+
+`src/agent-examples/send/console.tsx` provides one **host-protected** frontend
+entry point for contacts, campaigns and sending operations. It includes contact
+profiles and paginated consent evidence, read-only bilingual campaign content,
+campaign-to-recipient and delivery-to-campaign/contact/feedback drill-downs.
+Campaign lists/reports refresh every 15 seconds. This is deliberately an integration
+example, not a publicly mounted documentation-site admin route.
+
+Maximum operational visibility does **not** mean exposing secrets: the operations
+API omits rendered message bodies, signed unsubscribe URLs, arbitrary publication
+references, worker claims and credentials. It shows the subject and operational
+facts; campaign-authored plain text is visible in the protected campaign view.
+Treat recipient addresses, diagnostics and evidence as private administrative data.
+
+### Safe suppression management
+
+POST `/operations/suppressions` with `{ requestId, email, reason }` creates an
+indefinite all-purpose endpoint block. It refuses to overwrite an existing
+all-purpose suppression, including provider evidence. Expired existing records can
+be reviewed/removed before creating a new block. No consent event is generated.
+
+POST `/operations/suppressions/:id/remove` with `{ requestId, version, reason }`
+requires the exact opaque `version` returned by the reviewed list record. A later
+provider update invalidates the version **even if the reason is unchanged**; refresh
+and review before retrying. The version uses PostgreSQL's row transaction version,
+not a long-lived identifier. Never cache removal authority across database restores
+or re-use it as authentication. The host's admin authorization remains mandatory.
+
+Mutations and actor-attributed audit evidence commit together. Repeated immutable
+requests replay without duplicating history or undoing later changes. Request IDs
+must be unique per administrative intent and retained across transport retries.
+Removing a suppression does **not** subscribe the contact, clear account opt-outs,
+alter feedback evidence, revive a failed/suppressed delivery, or resend mail.
+A new adverse provider event can block the endpoint again. Provider-accepted or
+in-flight messages cannot be recalled. There is no bulk unblock or feedback-delete UI.
+
+Focused browser coverage:
+`TEST_DATABASE_URL=postgresql://... bun run test:e2e -- e2e/send-operations.spec.ts`.
+The English/French journeys use the unified console, real protected API/Postgres,
+simulated provider feedback and fake transport. No production messages are sent.
 
 The `kraksend-contacts` registry item installs the controlled `SendContacts` view.
 Package consumers use `@krak-stack/registry/send/contacts`. Supply authorized page
