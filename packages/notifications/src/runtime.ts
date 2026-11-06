@@ -4,6 +4,11 @@ import { SqlClient } from "effect/sql";
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
 import { makeEmailSubscriptions } from "./internal/email-subscriptions.js";
 import {
+  DISPATCH_POLICY_REFERENCE_NAMESPACE,
+  DispatchDecision,
+  NotificationDispatchPolicy,
+} from "./policy.js";
+import {
   makeBatchRunner,
   type DeliveryBatchOutcome,
 } from "./internal/batch.js";
@@ -124,6 +129,10 @@ const QueueReconciliationObservation = Schema.Struct({
   ),
 }).annotate({ identifier: "NotificationQueueReconciliationObservation" });
 
+const DispatchPolicyRequirement = Schema.Struct({
+  value: Schema.NonEmptyString,
+}).annotate({ identifier: "NotificationDispatchPolicyRequirement" });
+
 export interface ReminderHandler {
   readonly key: string;
   readonly version: number;
@@ -207,9 +216,7 @@ export class ReminderHandlerRegistry extends Context.Service<
 }
 
 export type NotificationRuntimeError =
-  | NotificationStorageError
-  | NotificationQueueError
-  | NotificationDataErrorType;
+  NotificationStorageError | NotificationQueueError | NotificationDataErrorType;
 
 export interface NotificationRuntimeContract {
   readonly runBatch: (
@@ -248,6 +255,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
     const transports = yield* NotificationTransportRegistry;
     const reminderHandlers = yield* ReminderHandlerRegistry;
     const queues = yield* NotificationQueueService;
+    const dispatchPolicy = yield* NotificationDispatchPolicy;
     const retryPolicy = runtimeOptions.retryPolicy ?? DEFAULT_RETRY_POLICY;
     const dueBatchSize = runtimeOptions.dueBatchSize ?? 100;
     const queueMaxAttempts = runtimeOptions.queueMaxAttempts ?? 10;
@@ -264,7 +272,8 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
         | "expired"
         | "stale"
         | "terminal"
-        | "suppressed";
+        | "suppressed"
+        | "deferred";
       readonly now: Date;
     }) {
       yield* sql`
@@ -603,6 +612,82 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
             }),
           );
           return "suppressed" satisfies DeliveryBatchOutcome;
+        }
+
+        const requirements = yield* decodeRows(
+          "dispatch policy requirements",
+          DispatchPolicyRequirement,
+          yield* sql`
+          SELECT value FROM notification_delivery_references
+          WHERE delivery_id = ${delivery.id} AND namespace = ${DISPATCH_POLICY_REFERENCE_NAMESPACE}
+        `,
+        );
+        if (
+          requirements.some(
+            (requirement) => requirement.value !== dispatchPolicy.key,
+          )
+        ) {
+          return yield* new NotificationDataError({
+            entity: "notification dispatch policy",
+            message:
+              "The required dispatch policy is not installed on this worker",
+          });
+        }
+        const policyDecision = yield* dispatchPolicy.check(delivery).pipe(
+          Effect.flatMap(Schema.decodeEffect(DispatchDecision)),
+          Effect.mapError(
+            (cause) =>
+              new NotificationDataError({
+                entity: "notification dispatch policy",
+                message:
+                  "Notification dispatch policy failed or returned an invalid decision",
+                cause,
+              }),
+          ),
+        );
+        if (policyDecision._tag !== "Allow") {
+          const checkedAt = yield* DateTime.nowAsDate;
+          if (
+            policyDecision._tag === "Defer" &&
+            policyDecision.until.getTime() <= checkedAt.getTime()
+          ) {
+            return yield* new NotificationDataError({
+              entity: "notification dispatch policy",
+              message: "A dispatch deferral must be in the future",
+            });
+          }
+          yield* sql.withTransaction(
+            Effect.gen(function* () {
+              yield* markAttemptSkipped({
+                deliveryId: delivery.id,
+                jobId: metadata.id,
+                reason:
+                  policyDecision._tag === "Defer" ? "deferred" : "suppressed",
+                now: checkedAt,
+              });
+              if (policyDecision._tag === "Defer") {
+                yield* sql`
+                UPDATE notification_deliveries SET
+                  status = 'retrying', attempts = GREATEST(attempts - 1, 0),
+                  current_job_id = NULL, queued_at = NULL, processing_at = NULL,
+                  scheduled_for = ${policyDecision.until},
+                  error_message = ${policyDecision.reason}, updated_at = ${checkedAt}
+                WHERE id = ${delivery.id} AND current_job_id = ${metadata.id}
+                  AND job_generation = ${job.generation}
+              `;
+              } else {
+                yield* sql`
+                UPDATE notification_deliveries SET
+                  status = 'suppressed', current_job_id = NULL, processing_at = NULL,
+                  error_message = ${policyDecision.reason},
+                  suppressed_at = ${checkedAt}, updated_at = ${checkedAt}
+                WHERE id = ${delivery.id} AND current_job_id = ${metadata.id}
+                  AND job_generation = ${job.generation}
+              `;
+              }
+            }),
+          );
+          return policyDecision._tag === "Defer" ? "skipped" : "suppressed";
         }
 
         return yield* registrySend(transports, transportInput).pipe(

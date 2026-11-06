@@ -82,23 +82,28 @@ export const publicationFingerprint = (input: PublishInput): string => {
           },
     deliveries: [...input.deliveries]
       .sort((left, right) => compareStrings(left.key, right.key))
-      .map((delivery) => ({
-        key: delivery.key,
-        channel: delivery.channel,
-        purpose: delivery.purpose,
-        template: delivery.template,
-        recipientAddress: canonicalRecipientAddress(
-          delivery.channel,
-          delivery.recipientAddress,
-        ),
-        recipientName: delivery.recipientName,
-        payloadVersion: delivery.payloadVersion,
-        payload: delivery.payload,
-        scheduledFor: delivery.scheduledFor?.toISOString() ?? null,
-        expiresAt: delivery.expiresAt?.toISOString() ?? null,
-        maxAttempts: delivery.maxAttempts ?? 5,
-        references: canonicalReferences(delivery.references),
-      })),
+      .map((delivery) => {
+        const snapshot = {
+          key: delivery.key,
+          channel: delivery.channel,
+          purpose: delivery.purpose,
+          template: delivery.template,
+          recipientAddress: canonicalRecipientAddress(
+            delivery.channel,
+            delivery.recipientAddress,
+          ),
+          recipientName: delivery.recipientName,
+          payloadVersion: delivery.payloadVersion,
+          payload: delivery.payload,
+          scheduledFor: delivery.scheduledFor?.toISOString() ?? null,
+          expiresAt: delivery.expiresAt?.toISOString() ?? null,
+          maxAttempts: delivery.maxAttempts ?? 5,
+          references: canonicalReferences(delivery.references),
+        };
+        return delivery.dispatchPolicy === undefined
+          ? snapshot
+          : { ...snapshot, dispatchPolicy: delivery.dispatchPolicy };
+      }),
   };
   return sha256(request);
 };

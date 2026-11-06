@@ -468,6 +468,27 @@ changing a recipient's global consent.
 
 ## Delivery Semantics
 
+### Application dispatch policies
+
+`@krak-stack/notifications/policy` exports `NotificationDispatchPolicy`, an
+optional Effect context reference. Its `check(delivery)` returns `Allow`,
+`Suppress { reason }`, or `Defer { reason, until }`. Supply the implementation
+when acquiring `NotificationRuntime`, after capturing its application dependencies.
+Built-in preferences, account opt-outs, and endpoint suppressions still apply.
+Errors and invalid/past deferrals fail closed and use infrastructure queue recovery.
+
+For consent-sensitive publications set `delivery.dispatchPolicy` to the policy's
+`key`. The requirement persists in reserved delivery references and participates
+in the request fingerprint. A worker without the matching policy cannot dispatch
+that delivery. Existing publications without this option keep their fingerprints
+and default behavior. Caller references cannot use the reserved `krakstack.` prefix.
+
+Deferral ends the current queue generation, records a skipped/deferred attempt,
+releases the unused provider attempt budget, and schedules a new generation.
+It does not report provider acceptance. The scheduler must run to resume it.
+In-flight provider calls cannot be recalled; checks are not an atomic transaction
+with the external provider. Direct mode does not apply dispatch policies.
+
 - `publish` stores an optional rendered inbox and channel-neutral delivery snapshots under caller-provided idempotency keys.
 - Publication and reminder idempotency keys are global. SHA-256 fingerprints cover immutable scope, event/handler, inbox, payload, schedule, expiry, attempt budget, and sorted caller references; changed replays fail with `NotificationIdempotencyConflictError`.
 - Delivery-only publication supports non-account recipients by setting `recipientUserId` to `null`; inbox and preference operations require `RecipientNotificationScope`.

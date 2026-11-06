@@ -33,6 +33,10 @@
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js"
     },
+    "./policy": {
+      "types": "./dist/policy.d.ts",
+      "import": "./dist/policy.js"
+    },
     "./transport": {
       "types": "./dist/transport.d.ts",
       "import": "./dist/transport.js"

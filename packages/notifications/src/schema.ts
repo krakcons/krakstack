@@ -229,6 +229,7 @@ export const PublishDeliveryInput = Schema.Struct({
   expiresAt: Schema.optional(Schema.NullOr(NotificationDate)),
   maxAttempts: Schema.optional(PositiveInt),
   references: Schema.optional(Schema.Array(NotificationDeliveryReferenceInput)),
+  dispatchPolicy: Schema.optional(Schema.NonEmptyString),
 }).annotate({ identifier: "PublishNotificationDeliveryInput" });
 
 const PublishInputFields = Schema.Struct({
@@ -336,6 +337,7 @@ export const DeliveryAttemptSkipped = Schema.TaggedStruct("Skipped", {
     "stale",
     "terminal",
     "suppressed",
+    "deferred",
   ]),
 }).annotate({ identifier: "NotificationDeliveryAttemptSkipped" });
 

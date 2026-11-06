@@ -5,6 +5,7 @@ import { SqlClient } from "effect/sql";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
 import { makeEmailSubscriptions } from "./internal/email-subscriptions.js";
+import { DISPATCH_POLICY_REFERENCE_NAMESPACE } from "./policy.js";
 import {
   canonicalRecipientAddress,
   canonicalJsonString,
@@ -643,10 +644,15 @@ const makeNotificationService = Effect.gen(function* () {
                     : delivery.scheduledFor,
                 expiresAt: delivery.expiresAt,
                 maxAttempts: delivery.maxAttempts,
+                dispatchPolicy: references.find(
+                  ({ namespace }) =>
+                    namespace === DISPATCH_POLICY_REFERENCE_NAMESPACE,
+                )?.value,
                 references: references
                   .filter(
                     ({ namespace }) =>
-                      namespace !== PUBLICATION_REFERENCE_NAMESPACE,
+                      namespace !== PUBLICATION_REFERENCE_NAMESPACE &&
+                      namespace !== DISPATCH_POLICY_REFERENCE_NAMESPACE,
                   )
                   .map(({ namespace, value }) => ({ namespace, value })),
               });
@@ -855,6 +861,14 @@ const makeNotificationService = Effect.gen(function* () {
                 value: input.idempotencyKey,
               },
               ...(intent.references ?? []),
+              ...(intent.dispatchPolicy === undefined
+                ? []
+                : [
+                    {
+                      namespace: DISPATCH_POLICY_REFERENCE_NAMESPACE,
+                      value: intent.dispatchPolicy,
+                    },
+                  ]),
             ];
             for (const reference of references) {
               yield* sql`

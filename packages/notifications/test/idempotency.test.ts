@@ -103,6 +103,28 @@ describe("notification idempotency", () => {
     expect(publicationFingerprint(input)).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  it("includes an explicit dispatch policy without changing fingerprints for an omitted policy", () => {
+    const input = publication();
+    expect(
+      publicationFingerprint({
+        ...input,
+        deliveries: input.deliveries.map((delivery) => ({
+          ...delivery,
+          dispatchPolicy: undefined,
+        })),
+      }),
+    ).toBe(publicationFingerprint(input));
+    expect(
+      publicationFingerprint({
+        ...input,
+        deliveries: input.deliveries.map((delivery) => ({
+          ...delivery,
+          dispatchPolicy: "consent.v1",
+        })),
+      }),
+    ).not.toBe(publicationFingerprint(input));
+  });
+
   it("fingerprints reminder scope, handler, payload, schedule, and budget", () => {
     const reminder: ScheduleReminderInput = {
       idempotencyKey: "reminder-1",
