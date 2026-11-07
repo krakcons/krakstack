@@ -169,7 +169,8 @@ for (const locale of ["en", "fr"] as const) {
                   reference: "host:test-staff",
                   access: {
                     contactManaged: true,
-                    engineScopes: [{ _tag: "Exact", scope: staffScope }],
+                    engineScopes: [],
+                    deliveryScopes: [{ _tag: "Exact", scope: staffScope }],
                     referenceNamespaces: ["order"],
                   },
                 }),
@@ -486,8 +487,50 @@ for (const locale of ["en", "fr"] as const) {
                 },
               ],
             });
-          for (let n = 0; n < 23; n++)
+          for (let n = 0; n < 22; n++)
             yield* publishProduct(`staff-order-${String(n).padStart(2, "0")}`);
+          const scopedRecipient = yield* f.send.resolveEmailRecipient({
+            id: other.id,
+          });
+          const consentSubject = { namespace: "newsletter", value: other.id };
+          yield* f.consent.record({
+            requestId: "scoped-newsletter-consent",
+            subject: consentSubject,
+            recipientAddress: scopedRecipient.address,
+            scope: staffScope,
+            purpose: "marketing",
+            status: "granted",
+            actor: "host:fixture",
+            source: "explicit-opt-in",
+            noticeVersion: "v1",
+          });
+          yield* f.notifications.publish({
+            idempotencyKey: "staff-order-22",
+            scope: staffScope,
+            eventKey: "staff-order-22",
+            eventVersion: 1,
+            deliveries: [
+              {
+                key: "email",
+                channel: "email",
+                recipient: scopedRecipient,
+                policy: {
+                  kind: "marketing",
+                  consent: { kind: "stored", subject: consentSubject },
+                },
+                template: "newsletter-v1",
+                payloadVersion: 1,
+                payload: {
+                  subject: "Newsletter",
+                  text: "Private newsletter body",
+                  unsubscribeUrl: "https://example.com/unsubscribe",
+                },
+                references: [
+                  { namespace: "order", value: "newsletter-browser" },
+                ],
+              },
+            ],
+          });
           yield* f.runtime.runDeliveryWorkerOnce;
           const hidden = yield* publishProduct("hidden-product", "another-org");
           yield* Effect.promise(async () => {
@@ -533,7 +576,7 @@ for (const locale of ["en", "fr"] as const) {
                   name: dm.feedbackUnavailable,
                   exact: true,
                 })
-                .getByText("23", { exact: true }),
+                .getByText("22", { exact: true }),
             ).toBeVisible();
             await page
               .getByRole("tab", { name: m.views.activity, exact: true })
@@ -547,6 +590,40 @@ for (const locale of ["en", "fr"] as const) {
             await expect(
               page.getByText("staff-order-22", { exact: true }),
             ).toBeVisible();
+            const nativeRow = page
+              .getByRole("row")
+              .filter({
+                has: page.getByText("staff-order-22", { exact: true }),
+              });
+            await nativeRow
+              .getByRole("button", { name: m.inspect, exact: true })
+              .click();
+            const nativeDetail = page.getByRole("dialog");
+            await expect(
+              nativeDetail.getByText(dm.purposes.marketing, { exact: true }),
+            ).toBeVisible();
+            await expect(
+              nativeDetail.getByText("staff-account", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              nativeDetail.getByText("staff-org", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              nativeDetail.getByText("newsletter-v1", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              nativeDetail.getByRole("button", {
+                name: m.contactId,
+                exact: true,
+              }),
+            ).toBeVisible();
+            await expect(
+              nativeDetail.getByText("Private newsletter body", {
+                exact: true,
+              }),
+            ).toHaveCount(0);
+            await page.keyboard.press("Escape");
+            await expect(nativeDetail).not.toBeVisible();
             await page
               .getByPlaceholder(tableMessages.filter, { exact: true })
               .fill("staff-order-00");
@@ -623,6 +700,9 @@ for (const locale of ["en", "fr"] as const) {
             ).toBeVisible();
           });
           expect((yield* f.send.listContacts({})).items).toHaveLength(25);
+          expect(
+            yield* f.sql`SELECT request_id FROM kraksend_email_requests`,
+          ).toHaveLength(2);
         }).pipe(
           Effect.scoped,
           Effect.provide(
