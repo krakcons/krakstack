@@ -63,9 +63,10 @@
   },
   "peerDependencies": {
     "@krak-stack/notifications": "^0.3.0",
-    "@krak-stack/registry": "^0.3.0",
+    "@krak-stack/registry": "^0.2.2",
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
+    "@effect/platform-browser": "^4.1.0",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-virtual": "^3.14.5",

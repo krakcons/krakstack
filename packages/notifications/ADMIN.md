@@ -25,10 +25,11 @@ contracts, persistence and protected handlers. Hosts own authentication, routing
 authorization and the decision to use these views or reconstruct custom screens
 from KrakStack primitives. No TanStack Start runtime is required by the backend.
 
-Existing `@krak-stack/registry/notifications/*` imports and notification registry
-items remain compatibility re-exports, not duplicate screen implementations. In
-registry 0.3.0, install the optional notifications-admin peer when using those
-paths. Already published 0.2.x exports and legacy engines are unchanged.
+Import administration screens and Atom helpers exclusively from
+`@krak-stack/notifications-admin`. They are not registry exports or shadcn items.
+The UI uses shared registry primitives available in the published 0.2.2 release;
+registry does not depend on either notification SDK. Already published packages
+and legacy engines are unchanged.
 
 `src/agent-examples/send/console.tsx` exports `NotificationsAdminPanel` and
 `makeNotificationsAdminAtoms` for a unified English/French host integration.
@@ -204,7 +205,7 @@ into the scope-aware overview.
 ### Staff frontend
 
 `NotificationDeliveries` is exported by `@krak-stack/notifications-admin/deliveries`.
-The old registry operations export remains a compatibility bridge. It provides overview, shared
+It provides overview, shared
 activity tables and attempt inspection, without consent, suppression or resend
 controls. Contact/campaign links require real associations and their existing host
 permissions.

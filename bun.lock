@@ -135,8 +135,9 @@
       "peerDependencies": {
         "@base-ui/react": "^1.5.0",
         "@effect/atom-react": "^4.1.0",
+        "@effect/platform-browser": "^4.1.0",
         "@krak-stack/notifications": "^0.3.0",
-        "@krak-stack/registry": "^0.3.0",
+        "@krak-stack/registry": "^0.2.2",
         "@tanstack/react-form": "^1.33.0",
         "@tanstack/react-router": "^1.170.15",
         "@tanstack/react-virtual": "^3.14.5",
@@ -148,16 +149,12 @@
     },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.3.0",
+      "version": "0.2.2",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
         "bowser": "^2.14.1",
         "react-colorful": "^5.8.1",
         "web-vitals": "^5.1.0",
-      },
-      "devDependencies": {
-        "@krak-stack/notifications": "workspace:*",
-        "@krak-stack/notifications-admin": "workspace:*",
       },
       "peerDependencies": {
         "@aws-sdk/client-sesv2": "^3.1068.0",
@@ -167,8 +164,6 @@
         "@effect/sql-pg": "^4.1.0",
         "@iconify/react": "^6.0.2",
         "@inlang/paraglide-js": "^2.19.0",
-        "@krak-stack/notifications": "^0.3.0",
-        "@krak-stack/notifications-admin": "^0.1.0",
         "@lucas-barake/effect-form": "1.1.0",
         "@lucas-barake/effect-form-react": "1.1.0",
         "@tanstack/highlight": "^0.0.10",
@@ -191,8 +186,6 @@
         "@effect/platform-browser",
         "@effect/sql-pg",
         "@iconify/react",
-        "@krak-stack/notifications",
-        "@krak-stack/notifications-admin",
         "@lucas-barake/effect-form",
         "@lucas-barake/effect-form-react",
         "@tanstack/highlight",

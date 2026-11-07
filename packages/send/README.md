@@ -2,9 +2,9 @@
 
 > This private workspace now contains only compatibility adapters and regression
 > tests. The implementation is part of `@krak-stack/notifications/admin`.
-> Use [the notification administration guide](../notifications/ADMIN.md) and the
-> `notifications-contacts`, `notifications-campaigns`, `notifications-operations`
-> registry items. The historical notes below describe the original implementation;
+> Use [the notification administration guide](../notifications/ADMIN.md) and
+> `@krak-stack/notifications-admin` for React screens and Atom helpers.
+> The historical notes below describe the original implementation;
 > old package names and custom cursor UI integration are no longer installation guidance.
 
 KrakSend is installed inside a host application. It adds communication tooling,

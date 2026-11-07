@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.3.0",
+  "version": "0.2.2",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -17,18 +17,6 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./notifications/operations": {
-      "types": "./dist/services/send/client/operations.d.ts",
-      "import": "./dist/services/send/client/operations.js"
-    },
-    "./notifications/campaigns": {
-      "types": "./dist/services/send/client/campaigns.d.ts",
-      "import": "./dist/services/send/client/campaigns.js"
-    },
-    "./notifications/contacts": {
-      "types": "./dist/services/send/client/contacts.d.ts",
-      "import": "./dist/services/send/client/contacts.js"
-    },
     "./webhooks/client": {
       "types": "./dist/services/webhooks/client/delivery-table.d.ts",
       "import": "./dist/services/webhooks/client/delivery-table.js"
@@ -321,13 +309,7 @@
     "react-colorful": "^5.8.1",
     "web-vitals": "^5.1.0"
   },
-  "devDependencies": {
-    "@krak-stack/notifications": "workspace:*",
-    "@krak-stack/notifications-admin": "workspace:*"
-  },
   "peerDependencies": {
-    "@krak-stack/notifications": "^0.3.0",
-    "@krak-stack/notifications-admin": "^0.1.0",
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
@@ -352,12 +334,6 @@
     "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
-    "@krak-stack/notifications": {
-      "optional": true
-    },
-    "@krak-stack/notifications-admin": {
-      "optional": true
-    },
     "@effect/sql-pg": {
       "optional": true
     },

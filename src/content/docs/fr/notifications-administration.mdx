@@ -31,10 +31,10 @@ d'administration publique et aucun n'accorde de droit par lui-même.
 Pour l'administration web, ajoutez le package d'interface facultatif au backend :
 
 ```bash
-bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.3.0
+bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.2.2
 ```
 
-Installez ses dépendances homologues React, Effect Atom, TanStack, Base UI et icônes
+Installez ses dépendances homologues React, Effect Atom, plateforme navigateur Effect, TanStack, Base UI et icônes
 indiquées dans le [README de l'interface](https://github.com/krakcons/krakstack/blob/main/packages/notifications-admin/README.md).
 L'interface réutilise les tableaux et formulaires génériques du registre, pas un
 second moteur de notifications.
@@ -174,14 +174,14 @@ présente `NotificationsAdminPanel`, `makeNotificationsAdminAtoms`, la compositi
 protégée, la conservation des requêtes, les dialogues d'inspection et l'effacement
 après révocation. C'est un exemple d'intégration, pas une route publique ou un routeur imposé.
 
-## Imports existants
+## Frontière des packages
 
-Les imports `@krak-stack/registry/notifications/{contacts,campaigns,operations}` et
-leurs éléments de registre délèguent à notifications-admin. Installez cette
-dépendance homologue facultative pour ces chemins avec le registre 0.3.0. Les
-nouvelles applications doivent importer notifications-admin directement. Les
-packages 0.2.x publiés et les exports des anciens moteurs restent inchangés ; les
-autres consommateurs du registre n'ont pas besoin de l'interface de notifications.
+Importez les vues administratives et les helpers Atom exclusivement depuis
+`@krak-stack/notifications-admin`. Ce ne sont ni des exports du registre ni des
+éléments shadcn. Le registre fournit uniquement les primitives partagées et ne
+dépend d'aucun SDK de notifications. Sa version publiée 0.2.2 est prise en charge ;
+aucune nouvelle publication du registre n'est nécessaire. Les packages déjà
+publiés et les anciens moteurs de notifications restent inchangés.
 
 ## Références connexes
 

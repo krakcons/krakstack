@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { createRequire } from "node:module";
 import * as admin from "@krak-stack/notifications-admin";
 import { NotificationContacts } from "@krak-stack/notifications-admin/contacts";
 import { NotificationCampaigns } from "@krak-stack/notifications-admin/campaigns";
@@ -7,9 +8,6 @@ import {
   NotificationDeliveries,
 } from "@krak-stack/notifications-admin/operations";
 import { NotificationDeliveries as Deliveries } from "@krak-stack/notifications-admin/deliveries";
-import * as legacyContacts from "@krak-stack/registry/notifications/contacts";
-import * as legacyCampaigns from "@krak-stack/registry/notifications/campaigns";
-import * as legacyOperations from "@krak-stack/registry/notifications/operations";
 import {
   makeNotificationContactAtoms,
   makeSendContactAtoms,
@@ -19,27 +17,30 @@ import {
   makeSendOperationsAtoms,
 } from "@krak-stack/notifications-admin/atoms";
 
-describe("notification admin package compatibility", () => {
-  it("preserves one implementation across direct, root and legacy registry imports", () => {
+describe("notification admin package exports", () => {
+  it("preserves one implementation across direct, root and existing named exports", () => {
     expect(admin.NotificationContacts).toBe(NotificationContacts);
     expect(admin.NotificationCampaigns).toBe(NotificationCampaigns);
     expect(admin.NotificationOperations).toBe(NotificationOperations);
     expect(admin.NotificationDeliveries).toBe(Deliveries);
-    expect(legacyContacts.NotificationContacts).toBe(NotificationContacts);
-    expect(legacyCampaigns.NotificationCampaigns).toBe(NotificationCampaigns);
-    expect(legacyOperations.NotificationOperations).toBe(
-      NotificationOperations,
-    );
-    expect(legacyOperations.NotificationDeliveries).toBe(
-      NotificationDeliveries,
-    );
-    expect(legacyContacts.SendContacts).toBe(NotificationContacts);
-    expect(legacyCampaigns.SendCampaignAdmin).toBe(NotificationCampaigns);
-    expect(legacyOperations.SendOperationsAdmin).toBe(NotificationOperations);
+    expect(NotificationDeliveries).toBe(Deliveries);
+    expect(admin.SendContacts).toBe(NotificationContacts);
+    expect(admin.SendCampaignAdmin).toBe(NotificationCampaigns);
+    expect(admin.SendOperationsAdmin).toBe(NotificationOperations);
   });
   it("keeps existing Effect Atom factory names as aliases", () => {
     expect(makeNotificationContactAtoms).toBe(makeSendContactAtoms);
     expect(makeNotificationCampaignAtoms).toBe(makeSendCampaignAtoms);
     expect(makeNotificationOperationsAtoms).toBe(makeSendOperationsAtoms);
+  });
+  it("does not expose administration screens through registry", () => {
+    const require = createRequire(import.meta.url);
+    for (const screen of ["contacts", "campaigns", "operations"]) {
+      expect(() =>
+        require.resolve(`@krak-stack/registry/notifications/${screen}`),
+      ).toThrowError(
+        expect.objectContaining({ code: "ERR_PACKAGE_PATH_NOT_EXPORTED" }),
+      );
+    }
   });
 });

@@ -30,10 +30,10 @@ package creates a public admin route or grants access by itself.
 For web administration, add the optional UI package alongside the backend:
 
 ```bash
-bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.3.0
+bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.2.2
 ```
 
-Install its React, Effect Atom, TanStack, Base UI and icon peer dependencies listed
+Install its React, Effect Atom, Effect browser platform, TanStack, Base UI and icon peer dependencies listed
 in the [UI package README](https://github.com/krakcons/krakstack/blob/main/packages/notifications-admin/README.md).
 The UI reuses registry's generic tables and forms, not a second notification engine.
 
@@ -164,13 +164,13 @@ shows `NotificationsAdminPanel` and `makeNotificationsAdminAtoms`, protected
 composition, query retention, inspection dialogs and authorization-revocation
 clearing. It is an integration example, not a public route or mandatory router.
 
-## Existing imports
+## Package boundary
 
-Existing `@krak-stack/registry/notifications/{contacts,campaigns,operations}` imports
-and corresponding registry items delegate to notifications-admin. Install its
-optional peer when using those paths in registry 0.3.0. New applications should
-import notifications-admin directly. Published 0.2.x packages and legacy engine
-exports remain unchanged; unrelated registry consumers need no notification UI.
+Import notification administration screens and Atom helpers exclusively from
+`@krak-stack/notifications-admin`. They are not registry exports or shadcn items.
+Registry supplies only shared primitives and does not depend on either notification
+SDK. Its published 0.2.2 release is supported; no new registry release is required.
+Already published packages and legacy notification engines remain unchanged.
 
 ## Related references
 

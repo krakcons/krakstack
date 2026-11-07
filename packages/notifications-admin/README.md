@@ -8,10 +8,10 @@ TanStack or registry dependency.
 ## Install
 
 ```sh
-bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.3.0
+bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.2.2
 ```
 
-Install the React, Effect, Effect Atom, TanStack, Base UI and icon peer dependencies
+Install the React, Effect, Effect Atom, Effect browser platform, TanStack, Base UI and icon peer dependencies
 listed in `package.json`. The UI reuses registry's shared DataTable and form
 primitives; registry is not another notification engine. It is not required by
 backend-only consumers of `@krak-stack/notifications`.
@@ -74,14 +74,14 @@ shows complete composition with Effect Atom, query retention, explicit mutation
 invalidation, inspection dialogs and authorization-revocation clearing. It is an
 example, not a public route or a mandatory router integration.
 
-## Compatibility
+## Package boundary
 
-Existing `@krak-stack/registry/notifications/{contacts,campaigns,operations}` imports
-remain compatibility re-exports. Install `@krak-stack/notifications-admin` when using
-those paths in registry 0.3.0; its optional peer avoids forcing notification UI onto
-unrelated registry consumers. New applications should import this package directly.
-Already published 0.2.x packages are unchanged. Legacy notification engine exports
-are not redirected to a new backend.
+Notification administration screens and Atom helpers are available exclusively
+from this package, not registry exports or shadcn registry items. Registry supplies
+only the shared primitives used by these screens and does not depend on either
+notification SDK. Its published 0.2.2 release is supported; no new registry release
+is required. Already published packages and legacy notification engine exports
+remain unchanged.
 
 See the backend's [administration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md)
 for grants, feedback coverage, consent and suppression semantics.

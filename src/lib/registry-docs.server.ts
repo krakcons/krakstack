@@ -22,9 +22,6 @@ const supersededNotificationPages = new Set([
   "service-notification",
   "notification-channel-email-ses",
   "notification-persistence",
-  "notifications-contacts",
-  "notifications-campaigns",
-  "notifications-operations",
 ]);
 
 const sectionByGroup = {
