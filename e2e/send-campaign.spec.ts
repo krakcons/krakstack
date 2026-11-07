@@ -156,7 +156,7 @@ for (const locale of ["en", "fr"] as const) {
               .getByRole("button", { name: m.manage, exact: true })
               .click();
             await page
-              .getByLabel(m.scheduledFor, { exact: true })
+              .getByRole("textbox", { name: m.scheduledFor, exact: true })
               .fill("2026-01-01T00:00:00Z");
             await page
               .getByRole("button", { name: m.schedule, exact: true })

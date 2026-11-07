@@ -19,6 +19,7 @@ import { withSend } from "../packages/send/test/fixtures/send";
 import { sendOperationsMessages } from "../src/agent-examples/send/operations.messages";
 import { sendCampaignMessages } from "../src/agent-examples/send/campaign.messages";
 import * as messages from "../src/paraglide/messages";
+import { dataTableMessages } from "../src/components/ui/data-table";
 
 for (const locale of ["en", "fr"] as const) {
   test(`operations console exposes bounce evidence, audited suppression changes and recipient history in ${locale}`, async ({
@@ -28,6 +29,7 @@ for (const locale of ["en", "fr"] as const) {
     if (!process.env.TEST_DATABASE_URL)
       throw new Error("TEST_DATABASE_URL is required");
     const m = sendOperationsMessages(locale);
+    const tableMessages = dataTableMessages(locale);
     const cm = sendCampaignMessages(locale);
     const o = { locale };
     await Effect.runPromise(
@@ -87,6 +89,10 @@ for (const locale of ["en", "fr"] as const) {
           const other = yield* f.send.createContact({
             email: "other@example.com",
           });
+          for (let n = 0; n < 23; n++)
+            yield* f.send.createContact({
+              email: `table-${String(n).padStart(2, "0")}@example.com`,
+            });
           yield* f.send.queueEmail({
             requestId: "pending",
             contactId: other.id,
@@ -272,6 +278,29 @@ for (const locale of ["en", "fr"] as const) {
             ).toBeVisible();
             await page
               .getByRole("navigation")
+              .getByRole("button", {
+                name: messages.kraksend_contacts_title({}, o),
+                exact: true,
+              })
+              .click();
+            await page
+              .getByRole("button", {
+                name: tableMessages.goToNextPage,
+                exact: true,
+              })
+              .click();
+            await expect(
+              page.getByText("table-22@example.com", { exact: true }),
+            ).toBeVisible();
+            await page
+              .getByPlaceholder(tableMessages.filter, { exact: true })
+              .fill(email);
+            await expect(page.getByText(email, { exact: true })).toBeVisible();
+            await expect(
+              page.getByText("table-22@example.com", { exact: true }),
+            ).not.toBeVisible();
+            await page
+              .getByRole("navigation")
               .getByRole("button", { name: m.title, exact: true })
               .click();
             await page
@@ -283,13 +312,20 @@ for (const locale of ["en", "fr"] as const) {
             await expect(
               page.getByText("unmatched-bounce", { exact: true }),
             ).toBeVisible();
-            await page.getByLabel(m.correlation, { exact: true }).click();
             await page
-              .getByRole("option", { name: m.pending, exact: true })
+              .getByRole("menuitem", {
+                name: tableMessages.filters,
+                exact: true,
+              })
               .click();
             await page
-              .getByRole("button", { name: m.apply, exact: true })
+              .getByRole("menuitem", { name: m.correlation, exact: true })
+              .hover();
+            await page
+              .getByRole("menuitemcheckbox", { name: m.pending, exact: true })
               .click();
+            await page.keyboard.press("Escape");
+            await page.keyboard.press("Escape");
             await expect(
               page.getByText("bounce-one", { exact: true }),
             ).not.toBeVisible();
