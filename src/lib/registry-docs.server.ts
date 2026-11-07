@@ -16,6 +16,17 @@ import {
 const locales = ["en", "fr"] as const;
 const firstRegistryPageOrder = 4;
 
+// These registry items remain installable, but their documentation is superseded
+// by the Notifications and Administration guides.
+const supersededNotificationPages = new Set([
+  "service-notification",
+  "notification-channel-email-ses",
+  "notification-persistence",
+  "notifications-contacts",
+  "notifications-campaigns",
+  "notifications-operations",
+]);
+
 const sectionByGroup = {
   Components: "components",
   Configuration: "configuration",
@@ -42,10 +53,12 @@ const registryPages = (
 ): DocsPage[] => {
   const reservedOrders = new Set(contentPages.map((page) => page.order));
   let nextOrder = firstRegistryPageOrder;
-  const orderedItems = registryItems.map((item) => {
-    while (reservedOrders.has(nextOrder)) nextOrder++;
-    return { item, order: nextOrder++ };
-  });
+  const orderedItems = registryItems
+    .filter((item) => !supersededNotificationPages.has(item.name))
+    .map((item) => {
+      while (reservedOrders.has(nextOrder)) nextOrder++;
+      return { item, order: nextOrder++ };
+    });
   return locales.flatMap((locale) =>
     orderedItems.map(({ item, order }) => {
       const meta = getRegistryItemMeta(item);
@@ -67,7 +80,10 @@ const registryPages = (
         description: guide?.description ?? item.description,
         order,
         locale,
-        section: sectionByGroup[getRegistryGroup(item)],
+        section:
+          item.name === "notification-menu"
+            ? "components"
+            : sectionByGroup[getRegistryGroup(item)],
         type: "reference",
         createdAt: meta?.createdAt?.toISOString(),
         updatedAt: guide?.updatedAt ?? meta?.updatedAt?.toISOString(),

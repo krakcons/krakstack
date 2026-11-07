@@ -1,7 +1,7 @@
 ---
 slug: notifications
 path: /docs/notifications
-title: Notifications, email, and native push
+title: Notifications
 description: Configure durable notification delivery, APNs/FCM push, and direct authentication email with the KrakStack notifications package.
 order: 17
 locale: en
@@ -9,14 +9,13 @@ section: notifications
 type: how-to
 ---
 
-# Notifications, email, and native push
+# Notifications
 
 `@krak-stack/notifications` is the default backend for new durable notification systems. It combines package-owned PostgreSQL migrations and CRUD operations with an Effect `PersistedQueue`, delivery and reminder workers, a due-work scheduler, and optional SES or SMTP transports.
 
 The backend stays Effect-only: it does not depend on React, TanStack or registry.
-Optional React screens and Effect Atom helpers live in `@krak-stack/notifications-admin`.
-Older notification engine registry items remain available without being redirected
-to this runtime.
+For optional React screens, protected administrative APIs and Effect Atom helpers,
+see [Administration](/docs/notifications-administration).
 
 ## Responsibility matrix
 
@@ -32,9 +31,7 @@ to this runtime.
 
 > Never accept a recipient, organization, or workspace identifier from the browser as trusted scope. Derive scope from the authenticated server context before calling the package.
 
-## Install the durable package
-
-### One publication model
+## One publication model
 
 Use `NotificationService.publish()` for external addresses, contact-associated
 recipients and account-linked recipients. A delivery's `recipient` snapshot and
@@ -54,102 +51,7 @@ compatibility translation, with stable queued IDs and policies. See the
 [canonical publication guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/PUBLICATION.md)
 for examples, transaction/replay contracts and the breaking-release retirement path.
 
-### Per-application notification administration
-
-The experimental `@krak-stack/notifications/admin` module extends this durable engine for
-anonymous contacts, explicit optional-email consent/history, and idempotent email
-queueing. It requires no KrakAuth, accounts, organizations, or project directory.
-The host application protects its administrative API and frontend. A contact is
-not a login account, and creating a contact does not subscribe it.
-
-`@krak-stack/notifications-admin/contacts` provides a controlled admin view. Worker
-composition must use the matching notification administration dispatch policy; protected deliveries
-fail closed on a worker without it. See the [administration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md)
-for integration. Contact-specific signed unsubscribe links
-and public confirmation/one-click routes are available. Host-authenticated provider
-feedback can suppress email after permanent bounces and complaints; SES normalization
-and a pending-event reconciliation worker are included. Bilingual campaigns now
-support subscribed-audience snapshots, durable publication, pause/resume/cancel,
-verified-sender/environment safeguards and distinct acceptance/delivery reports.
-The `notifications-campaigns` view is host-protected, not a public route. Production use
-requires host credentials, authenticated feedback, persistent workflow workers,
-rate limits and retention policies. Topics, imports, reusable templates,
-open/click analytics and SMS are not implemented.
-
-The `notifications-operations` view adds global email statistics, searchable delivery
-and attempt inspection, individual bounce/complaint feedback, active/expired
-suppression lists and audited blocking/unblocking. A unified host-console example
-links contact consent history, campaign content, skipped recipients and provider
-evidence. Views refresh every 15 seconds. Unblocking never restores consent or
-resends a message; stale suppression changes are rejected. Administrative APIs
-omit rendered bodies, signed unsubscribe tokens and credentials.
-
-All lists use KrakStack tables with shared search, typed column filters, sorting,
-column visibility, and server pagination. Counts and pages are computed together
-in PostgreSQL over the full authorized dataset. No separate send package is required.
-
-For existing product emails published with `NotificationService.publish()`, opt in
-to `NotificationDeliveryAdmin` from `admin/deliveries` and mount `admin/delivery.api`
-with separate host-provided `DeliveryAdmin` staff authorization. Explicit exact,
-organization or installation grants restrict overview metrics, activity tables and
-attempt inspection before queries run. Null scope fields are exact nulls, not
-wildcards. `NotificationDeliveries` is exported by `@krak-stack/notifications-admin/deliveries`;
-the unified console enables it through an optional staff configuration.
-
-This read-only view uses the original deliveries, templates, allowlisted domain
-references and attempt history. It never republishes, creates synthetic contacts,
-changes retries or mixes account preferences with marketing consent. Contact and
-campaign behavior stays unchanged. Source-independent staff grants use `deliveryScopes`.
-Feedback reconciliation also supports native publications with explicitly configured
-provider feedback. Other publications remain visibly without coverage; contact
-association does not imply coverage or confirmed delivery. See the
-[staff integration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md#staff-administration-of-engine-published-emails).
-
-### Optional React administration
-
-Install the UI package only in applications that need web administration:
-
-```bash
-bun add @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.3.0
-```
-
-Install its React, Effect Atom, TanStack, Base UI and icon peer dependencies as
-listed in the [UI setup guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications-admin/README.md).
-The package reuses registry's generic tables and forms, not a second notification engine.
-Add its Tailwind source alongside your application's theme styles:
-
-```css
-@import "@krak-stack/notifications-admin/tailwind.css";
-```
-
-```tsx
-import {
-  NotificationContacts,
-  NotificationCampaigns,
-  NotificationOperations,
-  NotificationDeliveries,
-} from "@krak-stack/notifications-admin";
-import { makeNotificationDeliveryAtoms } from "@krak-stack/notifications-admin/atoms";
-import { KrakstackProvider } from "@krak-stack/registry/krakstack-provider";
-```
-
-Views accept controlled data, table state, callbacks and localized messages. Supply
-English and French copy through the host's Paraglide integration and share the
-registry `KrakstackProvider` for locale and component defaults. Hosts own TanStack
-routes, authentication, API authorization and cache invalidation. The `/atoms`
-factories are optional; customize transport for host authentication or CSRF needs.
-Recreate staff atoms when their non-secret `authorizationKey` changes and clear
-retained data on sign-out or authorization failure. A cache key is not a permission.
-
-Backend `/admin/*` paths remain Effect contracts and handlers, not React views.
-Existing `@krak-stack/registry/notifications/{contacts,campaigns,operations}` imports
-and corresponding registry items delegate to notifications-admin. Install its
-optional peer when using these compatibility paths in registry 0.3.0. Published
-0.2.x packages are unchanged; unrelated registry consumers need no notification UI.
-See the [bilingual host console](https://github.com/krakcons/krakstack/blob/main/src/agent-examples/send/console.tsx)
-for protected composition, or build custom screens from KrakStack primitives.
-
-### Backend installation
+## Installation
 
 Install the backend with the Effect PostgreSQL driver:
 
@@ -591,7 +493,7 @@ Direct mode has no persistence, retry scheduling, inbox record, delivery history
 
 ## Keep application APIs and UI scoped
 
-The package intentionally ships no HTTP group, handlers, atoms, routes, or UI. Wrap `NotificationService` methods in application APIs that derive the actor and scope from trusted authentication context. Return only records authorized for that scope, and invalidate the matching client query after mutations.
+For application inbox APIs, wrap `NotificationService` methods in handlers that derive the actor and scope from trusted authentication context. Return only records authorized for that scope, and invalidate the matching client query after mutations. The optional protected backend groups and React administration views are covered in [Administration](/docs/notifications-administration); they do not create application routes or confer authorization.
 
 For a source-installed UI, use the backend-neutral menu:
 
@@ -600,15 +502,6 @@ bunx shadcn@latest add @krak-stack/notification-menu
 ```
 
 `NotificationMenu` receives already-authorized records and reports IDs through controlled callbacks. The application maps package inbox records to the component, owns navigation, and supplies localized notification content and product branding.
-
-## Legacy source-vendored options
-
-- `service-notification` is a direct compatibility dispatcher for applications already using top-level channel messages. Its optional application store hook does not provide package migrations, a persisted queue, reconciliation, or workers.
-- `notification-channel-email-ses` is the matching legacy SES channel. New package users import `@krak-stack/notifications/transport/email-ses` instead.
-- `notification-persistence` installs the legacy three-table Drizzle definitions and codecs as editable application source. New durable applications should not install it; use `@krak-stack/notifications` and its migrations.
-- `notification-menu` remains a supported, backend-neutral presentation component.
-
-Do not compose the legacy dispatcher or application-owned worker with the new package runtime for the same event. Choose one delivery owner during migration to avoid duplicate sends.
 
 ## Production checklist
 
@@ -625,6 +518,5 @@ Do not compose the legacy dispatcher or application-owned worker with the new pa
 ## Related references
 
 - [Notification menu](/docs/notification-menu)
-- [Notification service compatibility item](/docs/service-notification)
-- [Legacy Amazon SES notification channel](/docs/notification-channel-email-ses)
+- [Administration](/docs/notifications-administration)
 - [Package README](https://github.com/krakcons/krakstack/tree/main/packages/notifications#readme)

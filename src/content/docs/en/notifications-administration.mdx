@@ -1,0 +1,180 @@
+---
+slug: notifications-administration
+path: /docs/notifications-administration
+title: Administration
+description: Set up protected notification administration for contacts, consent, campaigns, delivery inspection and provider feedback.
+order: 22
+locale: en
+section: notifications
+type: how-to
+---
+
+# Administration
+
+Manage contacts, consent, campaigns and email operations on the same delivery
+ledger as your product notifications. Start with the [Notifications](/docs/notifications)
+guide to configure the backend, PostgreSQL and workers.
+
+| Package                             | Responsibility                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `@krak-stack/notifications/admin/*` | Effect services, schemas, protected API contracts and handlers, workflows and dispatch policy        |
+| `@krak-stack/notifications-admin`   | Optional controlled React screens and Effect Atom helpers                                            |
+| Host application                    | Authentication, authorization, installation isolation, routes, translations and provider credentials |
+
+The backend remains Effect-only. You can use the administrative APIs without
+React, or build custom screens instead of installing the UI package. Neither
+package creates a public admin route or grants access by itself.
+
+## Installation
+
+For web administration, add the optional UI package alongside the backend:
+
+```bash
+bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.3.0
+```
+
+Install its React, Effect Atom, TanStack, Base UI and icon peer dependencies listed
+in the [UI package README](https://github.com/krakcons/krakstack/blob/main/packages/notifications-admin/README.md).
+The UI reuses registry's generic tables and forms, not a second notification engine.
+
+Add its Tailwind source alongside your host theme and base styles:
+
+```css
+@import "@krak-stack/notifications-admin/tailwind.css";
+```
+
+```tsx
+import {
+  NotificationContacts,
+  NotificationCampaigns,
+  NotificationOperations,
+  NotificationDeliveries,
+} from "@krak-stack/notifications-admin";
+import {
+  makeNotificationContactAtoms,
+  makeNotificationCampaignAtoms,
+  makeNotificationOperationsAtoms,
+  makeNotificationDeliveryAtoms,
+} from "@krak-stack/notifications-admin/atoms";
+import { KrakstackProvider } from "@krak-stack/registry/krakstack-provider";
+```
+
+The screens are also available from `/contacts`, `/campaigns`, `/operations` and
+`/deliveries`. Supply controlled data, table state, callbacks and English/French
+messages through the host's Paraglide integration. Share the registry
+`KrakstackProvider` for locale and component defaults. Language switchers should
+display `English` and `Français` in either locale.
+
+## Protected backend setup
+
+Mount only the backend groups your host needs, with mandatory host authorization:
+
+| Backend subpaths                                         | Purpose                                                                  |
+| -------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `/admin/api`, `/admin/api.builder`                       | Contacts and consent with host `SendAdmin` middleware                    |
+| `/admin/campaign.api`, `/admin/campaign.api.builder`     | Campaign creation, scheduling and reports                                |
+| `/admin/operations.api`, `/admin/operations.api.builder` | Email operations, feedback and audited suppressions                      |
+| `/admin/delivery.api`, `/admin/delivery.api.builder`     | Read-only staff delivery access with separate `DeliveryAdmin` middleware |
+
+These subpaths belong to `@krak-stack/notifications`, not the React package.
+The existing `/api/send` HTTP prefix is retained. Protect the frontend route as
+well as each API; hiding a tab is not authorization. Derive actors and scope from
+trusted server authentication, never browser-supplied identifiers.
+
+Acquire the contact layer to run administration migrations before use. Compose
+workers with `sendRuntimeLayer` from `@krak-stack/notifications/admin/policy` when
+using its protected deliveries: a missing named dispatch policy fails closed.
+Campaigns also require persistent durable-workflow workers and sender/environment
+safeguards. See the [backend integration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md)
+for layer composition, grants and signed unsubscribe routes.
+
+## Contacts and consent
+
+`NotificationContacts` manages recipients without requiring login accounts,
+KrakAuth, organizations or a project directory. Creating or linking a contact
+never subscribes it. Consent grants and withdrawals are explicit audited facts;
+suppression is a separate sending restriction.
+
+Contact details expose consent history and links to delivery activity. Signed
+contact unsubscribe links and public confirmation/one-click routes are available.
+Keep signed unsubscribe capabilities out of administrative list responses.
+
+For new publications, use `NotificationService.publish()` with an explicit policy
+and immutable recipient snapshot. Marketing consent is bound to the subject,
+address, exact scope and purpose. Existing `queueEmail()` calls remain deprecated
+compatibility entry points; do not rewrite queued work to migrate callers.
+
+## Campaigns
+
+`NotificationCampaigns` supports English/French content, scheduling, pause/resume,
+cancellation, subscribed-audience snapshots and delivery reports. Completion means
+publication finished, not confirmed delivery or reading.
+
+Production requires host credentials, sender/environment checks, persistent
+workflow workers, authenticated provider feedback, rate limits and retention
+policies. Topics, imports, reusable templates, open/click analytics and SMS are
+not implemented.
+
+## Operations and delivery inspection
+
+`NotificationOperations` provides installation-scope email statistics, searchable
+delivery and attempt inspection, individual provider feedback, suppression lists
+and audited blocking/unblocking. The host console links contacts, campaigns,
+skipped recipients and provider evidence. Operations and campaigns refresh every
+15 seconds and support manual refresh.
+
+Removing a suppression requires the exact reviewed row version and an audit
+reason. Stale changes are rejected. Unblocking never restores consent, clears an
+account opt-out, revives a delivery or resends mail. Administrative operations omit
+rendered message bodies, signed unsubscribe tokens and credentials.
+
+For existing product emails, opt in to `NotificationDeliveryAdmin` from
+`@krak-stack/notifications/admin/deliveries` and mount its protected routes.
+`NotificationDeliveries` displays overview metrics, activity and attempt history
+without republishing, manufacturing contact records or changing retries.
+
+`SendAdmin` alone never grants staff access to product emails. The host must
+provide `DeliveryAdmin` with explicit exact, organization or installation grants.
+Null scope fields are exact nulls, not wildcards. `deliveryScopes` supports
+source-independent grants; reference namespaces use an explicit allowlist.
+Authorization applies before counts, search, filtering and pagination.
+
+Provider acceptance, delivery confirmation, feedback coverage and consent remain
+distinct facts. Authenticated feedback can suppress email after permanent bounces
+or complaints; SES normalization and pending-event reconciliation are included.
+Native publications require explicitly configured feedback coverage. A contact
+association alone implies neither coverage nor confirmed delivery.
+
+## Tables, atoms and authorization changes
+
+Lists use shared KrakStack search, typed column filters, sorting, column visibility
+and server pagination. PostgreSQL computes totals and pages over the full
+authorized dataset. Pass controlled table state and authoritative totals; retain
+the previous total during loading to avoid resetting pagination to page zero.
+
+The `/atoms` factories are optional. Use host-owned atoms or customize the
+HttpClient transport for authentication and CSRF needs. Keep query invalidation
+beside mutations. Recreate staff atoms when their non-secret `authorizationKey`
+changes, unmount on sign-out and clear retained data on authorization failures.
+A cache key partitions data; it is not permission evidence. Prevent shared HTTP
+caching of administrative responses.
+
+The [bilingual host console example](https://github.com/krakcons/krakstack/blob/main/src/agent-examples/send/console.tsx)
+shows `NotificationsAdminPanel` and `makeNotificationsAdminAtoms`, protected
+composition, query retention, inspection dialogs and authorization-revocation
+clearing. It is an integration example, not a public route or mandatory router.
+
+## Existing imports
+
+Existing `@krak-stack/registry/notifications/{contacts,campaigns,operations}` imports
+and corresponding registry items delegate to notifications-admin. Install its
+optional peer when using those paths in registry 0.3.0. New applications should
+import notifications-admin directly. Published 0.2.x packages and legacy engine
+exports remain unchanged; unrelated registry consumers need no notification UI.
+
+## Related references
+
+- [Notifications](/docs/notifications)
+- [Backend administration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md)
+- [UI package README](https://github.com/krakcons/krakstack/blob/main/packages/notifications-admin/README.md)
+- [Canonical publication and consent](https://github.com/krakcons/krakstack/blob/main/packages/notifications/PUBLICATION.md)
