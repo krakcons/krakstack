@@ -17,15 +17,15 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./send/operations": {
+    "./notifications/operations": {
       "types": "./dist/services/send/client/operations.d.ts",
       "import": "./dist/services/send/client/operations.js"
     },
-    "./send/campaigns": {
+    "./notifications/campaigns": {
       "types": "./dist/services/send/client/campaigns.d.ts",
       "import": "./dist/services/send/client/campaigns.js"
     },
-    "./send/contacts": {
+    "./notifications/contacts": {
       "types": "./dist/services/send/client/contacts.d.ts",
       "import": "./dist/services/send/client/contacts.js"
     },
@@ -322,10 +322,10 @@
     "web-vitals": "^5.1.0"
   },
   "devDependencies": {
-    "@krak-stack/send": "workspace:*"
+    "@krak-stack/notifications": "workspace:*"
   },
   "peerDependencies": {
-    "@krak-stack/send": "^0.1.0",
+    "@krak-stack/notifications": "^0.3.0",
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
@@ -350,7 +350,7 @@
     "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
-    "@krak-stack/send": {
+    "@krak-stack/notifications": {
       "optional": true
     },
     "@effect/sql-pg": {

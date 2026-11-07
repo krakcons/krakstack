@@ -2,8 +2,13 @@ import { useState } from "react";
 import { useAtomValue } from "@effect/atom-react";
 import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
-import type * as S from "@krak-stack/send/operations.schema";
+import {
+  initialTableState,
+  type TableState,
+} from "@krak-stack/notifications/admin/table.schema";
+import type * as S from "@krak-stack/notifications/admin/operations.schema";
 import { Button } from "@/components/ui/button";
+import { KrakstackProvider } from "@/components/ui/krakstack-provider";
 import * as m from "@/paraglide/messages";
 import { makeSendContactAtoms } from "./atom";
 import { makeSendCampaignAtoms } from "./campaign.atom";
@@ -12,6 +17,12 @@ import { SendContactsPanel } from "./admin";
 import { SendCampaignPanel } from "./campaign.admin";
 import { SendOperationsPanel } from "./operations.admin";
 import { SendContactDetails } from "@/services/send/client/contacts";
+import { useTableTotal } from "./table";
+
+export {
+  SendAdminPanel as NotificationsAdminPanel,
+  makeSendAdminAtoms as makeNotificationsAdminAtoms,
+};
 
 export const makeSendAdminAtoms = (baseUrl: string) => ({
   contacts: makeSendContactAtoms(baseUrl),
@@ -39,86 +50,91 @@ export const SendAdminPanel = ({
   }>({ view: "overview", filters: {} });
   const o = { locale };
   return (
-    <div className="space-y-6">
-      <nav
-        className="flex flex-wrap gap-2"
-        aria-label={m.kraksend_ops_title({}, o)}
-      >
-        <Button
-          variant={area === "operations" ? "default" : "outline"}
-          onClick={() => setArea("operations")}
+    <KrakstackProvider locale={locale} locales={["en", "fr"]}>
+      <div className="space-y-6">
+        <nav
+          className="flex flex-wrap gap-2"
+          aria-label={m.kraksend_ops_title({}, o)}
         >
-          {m.kraksend_ops_title({}, o)}
-        </Button>
-        <Button
-          variant={area === "contacts" ? "default" : "outline"}
-          onClick={() => {
-            setContactId(undefined);
-            setArea("contacts");
-          }}
-        >
-          {m.kraksend_contacts_title({}, o)}
-        </Button>
-        <Button
-          variant={area === "campaigns" ? "default" : "outline"}
-          onClick={() => {
-            setCampaignId(undefined);
-            setArea("campaigns");
-          }}
-        >
-          {m.kraksend_campaign_title({}, o)}
-        </Button>
-      </nav>
-      {area === "contacts" &&
-        (contactId ? (
-          <ContactDetail
-            key={contactId}
-            id={contactId}
-            atoms={atoms.contacts}
+          <Button
+            variant={area === "operations" ? "default" : "outline"}
+            onClick={() => setArea("operations")}
+          >
+            {m.kraksend_ops_title({}, o)}
+          </Button>
+          <Button
+            variant={area === "contacts" ? "default" : "outline"}
+            onClick={() => {
+              setContactId(undefined);
+              setArea("contacts");
+            }}
+          >
+            {m.kraksend_contacts_title({}, o)}
+          </Button>
+          <Button
+            variant={area === "campaigns" ? "default" : "outline"}
+            onClick={() => {
+              setCampaignId(undefined);
+              setArea("campaigns");
+            }}
+          >
+            {m.kraksend_campaign_title({}, o)}
+          </Button>
+        </nav>
+        {area === "contacts" &&
+          (contactId ? (
+            <ContactDetail
+              key={contactId}
+              id={contactId}
+              atoms={atoms.contacts}
+              locale={locale}
+              onClose={() => setContactId(undefined)}
+              onActivity={(id) => {
+                setOperations({ view: "activity", filters: { contactId: id } });
+                setArea("operations");
+              }}
+            />
+          ) : (
+            <SendContactsPanel
+              atoms={atoms.contacts}
+              locale={locale}
+              onInspect={setContactId}
+            />
+          ))}
+        {area === "campaigns" && (
+          <SendCampaignPanel
+            key={campaignId ?? "campaigns"}
+            atoms={atoms.campaigns}
             locale={locale}
-            onClose={() => setContactId(undefined)}
-            onActivity={(id) => {
-              setOperations({ view: "activity", filters: { contactId: id } });
+            initialSelected={campaignId}
+            onRecipients={(id) => {
+              setOperations({
+                view: "recipients",
+                filters: { campaignId: id },
+              });
               setArea("operations");
             }}
           />
-        ) : (
-          <SendContactsPanel
-            atoms={atoms.contacts}
+        )}
+        {area === "operations" && (
+          <SendOperationsPanel
+            key={JSON.stringify(operations)}
+            atoms={atoms.operations}
             locale={locale}
-            onInspect={setContactId}
+            initialView={operations.view}
+            initialFilters={operations.filters}
+            onCampaign={(id) => {
+              setCampaignId(id);
+              setArea("campaigns");
+            }}
+            onContact={(id) => {
+              setContactId(id);
+              setArea("contacts");
+            }}
           />
-        ))}
-      {area === "campaigns" && (
-        <SendCampaignPanel
-          key={campaignId ?? "campaigns"}
-          atoms={atoms.campaigns}
-          locale={locale}
-          initialSelected={campaignId}
-          onRecipients={(id) => {
-            setOperations({ view: "recipients", filters: { campaignId: id } });
-            setArea("operations");
-          }}
-        />
-      )}
-      {area === "operations" && (
-        <SendOperationsPanel
-          key={JSON.stringify(operations)}
-          atoms={atoms.operations}
-          locale={locale}
-          initialView={operations.view}
-          initialFilters={operations.filters}
-          onCampaign={(id) => {
-            setCampaignId(id);
-            setArea("campaigns");
-          }}
-          onContact={(id) => {
-            setContactId(id);
-            setArea("contacts");
-          }}
-        />
-      )}
-    </div>
+        )}
+      </div>
+    </KrakstackProvider>
   );
 };
 
@@ -135,15 +151,25 @@ const ContactDetail = ({
   onClose: () => void;
   onActivity: (id: string) => void;
 }) => {
-  const [cursors, setCursors] = useState([""]);
+  const [table, setTable] = useState<typeof TableState.Type>(initialTableState);
   const contact = useAtomValue(atoms.contact(id));
-  const history = useAtomValue(atoms.history(id, cursors.at(-1) || undefined));
+  const history = useAtomValue(atoms.history(id, table));
   const page = Option.getOrUndefined(AsyncResult.value(history));
+  const total = useTableTotal(page?.total);
   const o = { locale };
   return (
     <SendContactDetails
       contact={Option.getOrUndefined(AsyncResult.value(contact))}
       history={page}
+      table={{
+        state: table,
+        onStateChange: setTable,
+        status: {
+          loading:
+            AsyncResult.isInitial(history) || AsyncResult.isWaiting(history),
+        },
+        features: { pagination: { mode: "server", rowCount: total } },
+      }}
       error={
         AsyncResult.isFailure(contact) || AsyncResult.isFailure(history)
           ? m.kraksend_ops_failed({}, o)
@@ -151,12 +177,6 @@ const ContactDetail = ({
       }
       onClose={onClose}
       onActivity={onActivity}
-      onNext={() => {
-        if (page?.nextCursor) setCursors([...cursors, page.nextCursor]);
-      }}
-      onPrevious={
-        cursors.length > 1 ? () => setCursors(cursors.slice(0, -1)) : undefined
-      }
       messages={{
         title: m.kraksend_ops_contact_history({}, o),
         id: m.kraksend_ops_contact_id({}, o),

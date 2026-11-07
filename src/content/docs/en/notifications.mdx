@@ -31,35 +31,39 @@ The older shadcn registry items remain available for compatibility. They vendor 
 
 ## Install the durable package
 
-### KrakSend: per-application administration
+### Per-application notification administration
 
-The experimental `@krak-stack/send` foundation builds on this durable engine for
+The experimental `@krak-stack/notifications/admin` module extends this durable engine for
 anonymous contacts, explicit optional-email consent/history, and idempotent email
 queueing. It requires no KrakAuth, accounts, organizations, or project directory.
 The host application protects its administrative API and frontend. A contact is
 not a login account, and creating a contact does not subscribe it.
 
-The `kraksend-contacts` registry item provides a controlled admin view. Worker
-composition must use the matching KrakSend dispatch policy; protected deliveries
-fail closed on a worker without it. See the [KrakSend README](https://github.com/krakcons/krakstack/tree/main/packages/send)
-for integration and release ordering. Contact-specific signed unsubscribe links
+The `notifications-contacts` registry item provides a controlled admin view. Worker
+composition must use the matching notification administration dispatch policy; protected deliveries
+fail closed on a worker without it. See the [administration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md)
+for integration. Contact-specific signed unsubscribe links
 and public confirmation/one-click routes are available. Host-authenticated provider
 feedback can suppress email after permanent bounces and complaints; SES normalization
 and a pending-event reconciliation worker are included. Bilingual campaigns now
 support subscribed-audience snapshots, durable publication, pause/resume/cancel,
 verified-sender/environment safeguards and distinct acceptance/delivery reports.
-The `kraksend-campaigns` view is host-protected, not a public route. Production use
+The `notifications-campaigns` view is host-protected, not a public route. Production use
 requires host credentials, authenticated feedback, persistent workflow workers,
 rate limits and retention policies. Topics, imports, reusable templates,
 open/click analytics and SMS are not implemented.
 
-The `kraksend-operations` view adds global email statistics, searchable delivery
+The `notifications-operations` view adds global email statistics, searchable delivery
 and attempt inspection, individual bounce/complaint feedback, active/expired
 suppression lists and audited blocking/unblocking. A unified host-console example
 links contact consent history, campaign content, skipped recipients and provider
 evidence. Views refresh every 15 seconds. Unblocking never restores consent or
 resends a message; stale suppression changes are rejected. Administrative APIs
 omit rendered bodies, signed unsubscribe tokens and credentials.
+
+All lists use KrakStack tables with shared search, typed column filters, sorting,
+column visibility, and server pagination. Counts and pages are computed together
+in PostgreSQL over the full authorized dataset. No separate send package is required.
 
 Install the package with the Effect PostgreSQL driver:
 

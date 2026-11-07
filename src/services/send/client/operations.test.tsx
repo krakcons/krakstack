@@ -29,31 +29,25 @@ const props = (): SendOperationsProps => ({
   onRemoveSuppression: vi.fn(),
 });
 describe("sending operations frontend behavior", () => {
-  it("keeps a chosen feedback correlation controlled across rerenders and applies it", async () => {
+  it("forwards shared table search to the server and resets the page", async () => {
     const apply = vi.fn();
     const p = {
       ...props(),
       view: "feedback",
-      onFilters: apply,
+      tableState: { page: 1, pageSize: 20 },
+      total: 50,
+      onTableStateChange: apply,
     } satisfies SendOperationsProps;
-    const rendered = render(<SendOperationsAdmin {...p} />);
-    fireEvent.click(screen.getByLabelText(m.correlation));
-    const option = await screen.findByRole("option", { name: m.pending });
-    fireEvent.pointerDown(option, { pointerType: "mouse" });
-    fireEvent.click(option);
-    await waitFor(() =>
-      expect(screen.getByLabelText(m.correlation).textContent).toContain(
-        m.pending,
-      ),
-    );
-    rendered.rerender(<SendOperationsAdmin {...p} pending />);
-    expect(screen.getByLabelText(m.correlation).textContent).toContain(
-      m.pending,
-    );
-    fireEvent.click(screen.getByRole("button", { name: m.apply }));
+    render(<SendOperationsAdmin {...p} />);
+    fireEvent.change(screen.getByPlaceholderText("Filter results..."), {
+      target: { value: "recipient@example.com" },
+    });
     await waitFor(() =>
       expect(apply).toHaveBeenCalledWith(
-        expect.objectContaining({ correlation: "pending" }),
+        expect.objectContaining({
+          globalFilter: "recipient@example.com",
+          page: 0,
+        }),
       ),
     );
   });

@@ -3,12 +3,12 @@ import {
   type SESv2Client,
 } from "@aws-sdk/client-sesv2";
 import { Effect, Schema } from "effect";
-import { makeCampaignSafetyLayer } from "@krak-stack/send/campaign.safety";
+import { makeCampaignSafetyLayer } from "@krak-stack/notifications/admin/campaign.safety";
 import {
   CampaignSafetyError,
   CampaignSafetyOptions,
   ContactEmail,
-} from "@krak-stack/send/schema";
+} from "@krak-stack/notifications/admin/schema";
 
 const SesIdentity = Schema.Struct({
   VerifiedForSendingStatus: Schema.Boolean,

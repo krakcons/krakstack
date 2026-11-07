@@ -1,13 +1,17 @@
 import { Atom, AtomHttpApi, AsyncResult } from "effect/reactivity";
 import { Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
-import { SendAdminApi } from "@krak-stack/send/api";
+import { SendAdminApi } from "@krak-stack/notifications/admin/api";
+import {
+  TableState,
+  initialTableState,
+} from "@krak-stack/notifications/admin/table.schema";
+const TableCodec = Schema.fromJsonString(TableState);
 import {
   SendId,
-  RequestId,
   type Contact,
   type CreateContact,
-} from "@krak-stack/send/schema";
+} from "@krak-stack/notifications/admin/schema";
 
 // Construct once per host application, using its trusted API origin. The host
 // adds its own HttpClient authentication/CSRF middleware where needed.
@@ -23,11 +27,19 @@ export const makeSendContactAtoms = (baseUrl: string) => {
 
   const contacts = Atom.family((after: string) =>
     Atom.optimistic(
-      SendClient.query("send", "listContacts", {
-        query: { limit: 25, after: after || undefined },
-        timeToLive: "30 seconds",
-        reactivityKeys: ["kraksend.contacts"],
-      }),
+      Atom.map(
+        SendClient.query("send", "contactsTable", {
+          query: {
+            table: after
+              ? Schema.decodeSync(TableCodec)(after)
+              : initialTableState,
+          },
+          timeToLive: "30 seconds",
+          reactivityKeys: ["kraksend.contacts"],
+        }),
+        (result) =>
+          AsyncResult.map(result, (page) => ({ ...page, nextCursor: null })),
+      ),
     ),
   );
   const createMutation = SendClient.mutation("send", "createContact");
@@ -74,22 +86,28 @@ export const makeSendContactAtoms = (baseUrl: string) => {
     ),
   );
   const HistoryKey = Schema.fromJsonString(
-    Schema.Struct({ id: SendId, before: Schema.optional(RequestId) }).annotate({
+    Schema.Struct({ id: SendId, table: TableState }).annotate({
       identifier: "SendContactHistoryKey",
     }),
   );
   const historyQuery = Atom.family((key: string) => {
-    const { id, before } = Schema.decodeSync(HistoryKey)(key);
+    const { id, table } = Schema.decodeSync(HistoryKey)(key);
     return Atom.optimistic(
-      SendClient.query("send", "listEmailConsentEvents", {
-        params: { id },
-        query: { before, limit: 25 },
-        reactivityKeys: ["kraksend.contacts"],
-        timeToLive: "10 seconds",
-      }),
+      Atom.map(
+        SendClient.query("send", "consentTable", {
+          params: { id },
+          query: { table },
+          reactivityKeys: ["kraksend.contacts"],
+          timeToLive: "10 seconds",
+        }),
+        (result) =>
+          AsyncResult.map(result, (page) => ({ ...page, nextCursor: null })),
+      ),
     );
   });
-  const history = (id: string, before?: string) =>
-    historyQuery(Schema.encodeSync(HistoryKey)({ id, before }));
+  const history = (
+    id: string,
+    table: typeof TableState.Type = initialTableState,
+  ) => historyQuery(Schema.encodeSync(HistoryKey)({ id, table }));
   return { contacts, contact, history, create, withdraw };
 };

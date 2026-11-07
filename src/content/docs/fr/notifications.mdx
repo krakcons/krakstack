@@ -31,18 +31,18 @@ Les anciens éléments du registre shadcn restent disponibles pour assurer la co
 
 ## Installer le package durable
 
-### KrakSend : administration par application
+### Administration des notifications par application
 
-Le socle expérimental `@krak-stack/send` utilise ce moteur durable pour les
+Le module expérimental `@krak-stack/notifications/admin` enrichit ce moteur durable pour les
 contacts sans compte, le consentement explicite aux courriels facultatifs et son
 historique, ainsi que la mise en file idempotente. Il ne nécessite ni KrakAuth,
 ni comptes, ni organisations, ni répertoire de projets. L'application hôte protège
 son API et son interface d'administration. Créer un contact ne l'abonne pas.
 
-L'élément `kraksend-contacts` fournit une interface d'administration contrôlée.
-Les workers doivent utiliser la politique KrakSend correspondante : une livraison
-protégée reste bloquée si elle manque. Le [README KrakSend](https://github.com/krakcons/krakstack/tree/main/packages/send)
-décrit l'intégration et l'ordre de publication. Les liens signés et les routes
+L'élément `notifications-contacts` fournit une interface d'administration contrôlée.
+Les workers doivent utiliser la politique d'administration correspondante : une livraison
+protégée reste bloquée si elle manque. Le [guide d'administration](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md)
+décrit l'intégration. Les liens signés et les routes
 publiques de confirmation et de désabonnement en un clic des contacts sont disponibles.
 Les retours fournisseurs authentifiés par l'hôte peuvent bloquer les courriels
 après un échec permanent ou une plainte. La normalisation SES et un worker de
@@ -50,12 +50,12 @@ rapprochement des événements en attente sont inclus. Les campagnes bilingues
 permettent désormais les instantanés de contacts abonnés, la publication durable,
 la suspension, la reprise, l'annulation, la vérification de l'expéditeur et de
 l'environnement, et des rapports distinguant acceptation et livraison.
-L'interface `kraksend-campaigns` est protégée par l'hôte, jamais publique. La
+L'interface `notifications-campaigns` est protégée par l'hôte, jamais publique. La
 production exige les identifiants de l'hôte, des retours authentifiés, des workers
 durables, des limites de débit et une politique de conservation. Les sujets,
 imports, modèles réutilisables, statistiques d'ouverture/clic et SMS restent à venir.
 
-L’interface `kraksend-operations` ajoute les statistiques globales des courriels,
+L’interface `notifications-operations` ajoute les statistiques globales des courriels,
 la recherche et l’inspection des livraisons et tentatives, les rebonds/plaintes
 individuels, les blocages actifs/expirés et leur gestion auditée. Un exemple de
 console unifiée relie l’historique du consentement, le contenu des campagnes,
@@ -63,6 +63,10 @@ les destinataires ignorés et les preuves fournisseur. Les vues sont actualisée
 toutes les 15 secondes. Débloquer ne rétablit pas le consentement et ne renvoie
 aucun message ; les modifications obsolètes sont refusées. Les API masquent les
 corps des messages, les liens signés de désabonnement et les identifiants secrets.
+
+Les listes utilisent les tableaux KrakStack : recherche, filtres typés, tri,
+visibilité des colonnes et pagination serveur. PostgreSQL calcule les totaux et
+les pages ensemble sur toutes les données autorisées. Aucun package d'envoi séparé n'est requis.
 
 Installez le package avec le pilote PostgreSQL d'Effect :
 

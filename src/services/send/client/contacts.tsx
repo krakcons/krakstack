@@ -6,10 +6,11 @@ import {
   type ContactPage,
   type EmailConsentEvent,
   type ConsentEventPage,
-} from "@krak-stack/send/schema";
+} from "@krak-stack/notifications/admin/schema";
 
 import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableColDef } from "@/components/ui/data-table";
+import type { DataTableProps } from "@/components/ui/data-table";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppForm } from "@/components/ui/form";
+
+export {
+  SendContacts as NotificationContacts,
+  SendContactDetails as NotificationContactDetails,
+};
+export type {
+  SendContactsProps as NotificationContactsProps,
+  SendContactsMessages as NotificationContactsMessages,
+};
 
 export interface SendContactsMessages {
   readonly title: string;
@@ -38,6 +48,10 @@ export interface SendContactsMessages {
 }
 
 export interface SendContactsProps {
+  readonly table?: Pick<
+    DataTableProps<Contact>,
+    "state" | "onStateChange" | "features" | "status"
+  >;
   readonly page: typeof ContactPage.Type | undefined;
   readonly pending?: boolean;
   readonly error?: string;
@@ -47,8 +61,6 @@ export interface SendContactsProps {
   readonly onWithdraw: (
     contact: Contact,
   ) => Promise<typeof EmailConsentEvent.Type | void>;
-  readonly onNext?: () => void;
-  readonly onPrevious?: () => void;
   readonly inspection?: {
     readonly label: string;
     readonly onSelect: (contact: Contact) => void;
@@ -65,9 +77,8 @@ export const SendContacts = ({
   defaultContactLocale,
   onCreate,
   onWithdraw,
-  onNext,
-  onPrevious,
   inspection,
+  table,
 }: SendContactsProps) => {
   const [creating, setCreating] = useState(false);
   const [withdrawing, setWithdrawing] = useState<string>();
@@ -97,10 +108,17 @@ export const SendContacts = ({
     {
       field: "emailConsent",
       headerName: messages.consent,
+      filterOptions: (["unknown", "subscribed", "unsubscribed"] as const).map(
+        (value) => ({ value, label: messages[value] }),
+      ),
       cellRenderer: ({ data }) => messages[data.emailConsent],
     },
     {
       colId: "withdraw",
+      sortable: false,
+      filterable: false,
+      searchable: false,
+      hideable: false,
       headerName: messages.withdraw,
       cellRenderer: ({ data }) => (
         <Button
@@ -131,6 +149,10 @@ export const SendContacts = ({
   if (inspection)
     columns.push({
       colId: "inspect",
+      sortable: false,
+      filterable: false,
+      searchable: false,
+      hideable: false,
       headerName: inspection.label,
       cellRenderer: ({ data }) => (
         <Button variant="outline" onClick={() => inspection.onSelect(data)}>
@@ -155,43 +177,14 @@ export const SendContacts = ({
         </Button>
       </div>
       {(error || failure) && <p role="alert">{error || failure}</p>}
-      {page ? (
-        page.items.length ? (
-          <DataTable
-            columnDefs={columns}
-            rowData={page.items}
-            getRowId={(contact) => contact.id}
-            features={{
-              toolbar: false,
-              search: false,
-              filtering: false,
-              sorting: false,
-              pagination: false,
-              columnVisibility: false,
-            }}
-          />
-        ) : (
-          <p>{messages.empty}</p>
-        )
-      ) : pending ? (
-        <p role="status">{messages.loading}</p>
-      ) : null}
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          disabled={!onPrevious || pending}
-          onClick={onPrevious}
-        >
-          {messages.previous}
-        </Button>
-        <Button
-          variant="outline"
-          disabled={!page?.nextCursor || !onNext || pending}
-          onClick={onNext}
-        >
-          {messages.next}
-        </Button>
-      </div>
+      <DataTable
+        columnDefs={columns}
+        rowData={page?.items ?? []}
+        getRowId={(contact) => contact.id}
+        features={{ pagination: { mode: "client" } }}
+        status={{ loading: pending, error }}
+        {...table}
+      />
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent>
           <DialogHeader>
@@ -251,17 +244,18 @@ export const SendContactDetails = ({
   error,
   onClose,
   onActivity,
-  onPrevious,
-  onNext,
+  table,
 }: {
   contact: Contact | undefined;
   history: typeof ConsentEventPage.Type | undefined;
+  table?: Pick<
+    DataTableProps<typeof EmailConsentEvent.Type>,
+    "state" | "onStateChange" | "features" | "status"
+  >;
   messages: SendContactDetailsMessages;
   error?: string;
   onClose: () => void;
   onActivity: (id: string) => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
 }) => (
   <section className="space-y-4">
     <h2 className="text-xl font-semibold">{m.title}</h2>
@@ -289,47 +283,30 @@ export const SendContactDetails = ({
         </Button>
       </>
     )}
-    {history && (
-      <DataTable
-        rowData={history.items}
-        getRowId={(event) => event.requestId}
-        features={{
-          toolbar: false,
-          search: false,
-          filtering: false,
-          sorting: false,
-          pagination: false,
-          columnVisibility: false,
-        }}
-        columnDefs={[
-          { field: "requestId", headerName: m.requestId },
-          {
-            field: "status",
-            headerName: m.status,
-            cellRenderer: ({ data }) => m.states[data.status],
-          },
-          { field: "source", headerName: m.source },
-          { field: "actor", headerName: m.actor },
-          { field: "noticeVersion", headerName: m.noticeVersion },
-          {
-            colId: "occurred",
-            headerName: m.occurred,
-            cellRenderer: ({ data }) => data.occurredAt.toLocaleString(),
-          },
-        ]}
-      />
-    )}
+    <DataTable
+      rowData={history?.items ?? []}
+      getRowId={(event) => event.requestId}
+      features={{ pagination: { mode: "client" } }}
+      {...table}
+      columnDefs={[
+        { field: "requestId", headerName: m.requestId },
+        {
+          field: "status",
+          headerName: m.status,
+          cellRenderer: ({ data }) => m.states[data.status],
+        },
+        { field: "source", headerName: m.source },
+        { field: "actor", headerName: m.actor },
+        { field: "noticeVersion", headerName: m.noticeVersion },
+        {
+          field: "occurredAt",
+          type: "date",
+          headerName: m.occurred,
+          cellRenderer: ({ data }) => data.occurredAt.toLocaleString(),
+        },
+      ]}
+    />
     <div className="flex gap-2">
-      <Button variant="outline" onClick={onPrevious} disabled={!onPrevious}>
-        {m.previous}
-      </Button>
-      <Button
-        variant="outline"
-        onClick={onNext}
-        disabled={!onNext || !history?.nextCursor}
-      >
-        {m.next}
-      </Button>
       <Button variant="outline" onClick={onClose}>
         {m.close}
       </Button>

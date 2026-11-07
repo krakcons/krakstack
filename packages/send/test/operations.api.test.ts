@@ -17,6 +17,11 @@ const fixture = (fail = false) => {
       throw new Error("Unexpected invocation");
     });
   const domain = Layer.succeed(SendOperations, {
+    activityTable: unused,
+    feedbackTable: unused,
+    suppressionsTable: unused,
+    auditTable: unused,
+    recipientsTable: unused,
     overview: unused,
     activity: unused,
     inspect: unused,
@@ -67,6 +72,25 @@ describe("sending operations administrative boundary", () => {
           ["sendOperations"],
         );
         const requests = [
+          Effect.asVoid(
+            c.activityTable({ query: { table: { page: 0, pageSize: 20 } } }),
+          ),
+          Effect.asVoid(
+            c.feedbackTable({ query: { table: { page: 0, pageSize: 20 } } }),
+          ),
+          Effect.asVoid(
+            c.suppressionsTable({
+              query: { table: { page: 0, pageSize: 20 } },
+            }),
+          ),
+          Effect.asVoid(
+            c.auditTable({ query: { table: { page: 0, pageSize: 20 } } }),
+          ),
+          Effect.asVoid(
+            c.recipientsTable({
+              query: { campaignId: id, table: { page: 0, pageSize: 20 } },
+            }),
+          ),
           Effect.asVoid(c.overview({ query: {} })),
           Effect.asVoid(c.activity({ query: {} })),
           Effect.asVoid(c.inspect({ params: { id } })),

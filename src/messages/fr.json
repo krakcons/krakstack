@@ -112,7 +112,7 @@
   "kraksend_unsubscribe_invalid": "Ce lien de désabonnement est invalide ou a expiré.",
   "kraksend_unsubscribe_unavailable": "Nous n’avons pas pu enregistrer votre choix. Veuillez réessayer.",
   "kraksend_unsubscribe_success": "Vous êtes désabonné des courriels facultatifs pour cette application.",
-  "kraksend_contacts_title": "Contacts KrakSend",
+  "kraksend_contacts_title": "Contacts des notifications",
   "kraksend_contacts_description": "Gérez les destinataires de cette application. Créer un contact ne l’abonne pas aux courriels facultatifs.",
   "kraksend_contacts_create": "Ajouter un contact",
   "kraksend_contacts_name": "Nom",

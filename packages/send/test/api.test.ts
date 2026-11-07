@@ -14,6 +14,8 @@ const fixture = () => {
   const unused = () => Effect.die(new Error("Unexpected operation"));
   const contactId = "019a0000-0000-7000-8000-000000000001";
   const send = Layer.succeed(KrakSend, {
+    contactsTable: unused,
+    consentTable: unused,
     createContact: unused,
     getContact: unused,
     updateContact: unused,
@@ -44,6 +46,19 @@ describe("KrakSend administrative protection", () => {
       const test = fixture();
       return Effect.gen(function* () {
         const client = yield* HttpApiTest.groups(SendAdminApi, ["send"]);
+        expect(
+          (yield* client.send
+            .contactsTable({ query: { table: { page: 0, pageSize: 20 } } })
+            .pipe(Effect.flip))._tag,
+        ).toBe("Forbidden");
+        expect(
+          (yield* client.send
+            .consentTable({
+              params: { id: test.contactId },
+              query: { table: { page: 0, pageSize: 20 } },
+            })
+            .pipe(Effect.flip))._tag,
+        ).toBe("Forbidden");
         expect(
           (yield* client.send.listContacts({ query: {} }).pipe(Effect.flip))
             ._tag,
@@ -125,6 +140,8 @@ describe("KrakSend administrative protection", () => {
     () => {
       const unused = () => Effect.die(new Error("Unexpected operation"));
       const failing = Layer.succeed(KrakSend, {
+        contactsTable: unused,
+        consentTable: unused,
         createContact: unused,
         getContact: unused,
         updateContact: unused,

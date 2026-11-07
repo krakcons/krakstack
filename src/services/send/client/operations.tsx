@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Effect, Schema } from "effect";
-import * as S from "@krak-stack/send/operations.schema";
+import * as S from "@krak-stack/notifications/admin/operations.schema";
 import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableColDef } from "@/components/ui/data-table";
+import type {
+  DataTableProps,
+  DataTablePublicState,
+} from "@/components/ui/data-table";
 import {
   Dialog,
   DialogContent,
@@ -11,13 +15,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAppForm } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+export { SendOperationsAdmin as NotificationOperations };
+export type {
+  SendOperationsProps as NotificationOperationsProps,
+  SendOperationsMessages as NotificationOperationsMessages,
+};
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type View = typeof S.OperationsView.Type;
@@ -104,6 +107,9 @@ export interface SendOperationsMessages {
   readonly id: string;
 }
 export interface SendOperationsProps {
+  readonly tableState?: DataTablePublicState;
+  readonly onTableStateChange?: (state: DataTablePublicState) => void;
+  readonly total?: number;
   readonly view: View;
   readonly filters: Filters;
   readonly messages: SendOperationsMessages;
@@ -132,8 +138,6 @@ export interface SendOperationsProps {
     id: string;
     payload: typeof S.RemoveSuppression.Type;
   }) => Promise<typeof S.SuppressionChange.Type | void>;
-  readonly onNext?: () => void;
-  readonly onPrevious?: () => void;
 }
 const views = S.OperationsView.literals;
 const metricKeys = [
@@ -153,115 +157,68 @@ const metricKeys = [
   "activeSuppressions",
 ] satisfies ReadonlyArray<keyof typeof S.SendingOverview.Type>;
 const tableFeatures = {
-  toolbar: false,
-  search: false,
-  filtering: false,
-  sorting: false,
-  pagination: false,
-  columnVisibility: false,
+  pagination: { mode: "client" },
 } as const;
 const Records = <T extends { readonly id: string }>({
   items,
   columns,
   m,
+  table,
 }: {
   items: ReadonlyArray<T> | undefined;
   columns: DataTableColDef<T>[];
   m: SendOperationsMessages;
-}) =>
-  items ? (
-    items.length ? (
-      <DataTable
-        rowData={items}
-        columnDefs={columns}
-        getRowId={(row) => row.id}
-        features={tableFeatures}
-      />
-    ) : (
-      <p>{m.empty}</p>
-    )
-  ) : null;
-
-// Keep filter selects controlled without modifying registry-managed form fields.
-const FilterSelect = <T extends Schema.ConstraintDecoder<unknown, never>>({
-  schema,
-  value,
-  onChange,
-  name,
-  label,
-  options,
-}: {
-  schema: T;
-  value: T["Type"];
-  onChange: (value: T["Type"]) => void;
-  name: string;
-  label: string;
-  options: ReadonlyArray<{ value: string; label: string }>;
+  table?: Pick<
+    DataTableProps<T>,
+    "state" | "onStateChange" | "status" | "features"
+  >;
 }) => (
-  <div className="space-y-2">
-    <label htmlFor={name}>{label}</label>
-    <Select
-      items={[...options]}
-      value={value}
-      onValueChange={(raw) =>
-        onChange(Schema.decodeUnknownSync(schema)(raw ?? ""))
-      }
-    >
-      <SelectTrigger id={name}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
+  <DataTable
+    rowData={items ?? []}
+    columnDefs={columns.map((column) =>
+      column.colId === "inspect" || column.colId === "remove"
+        ? {
+            ...column,
+            sortable: false,
+            filterable: false,
+            searchable: false,
+            hideable: false,
+          }
+        : column,
+    )}
+    getRowId={(row) => row.id}
+    features={tableFeatures}
+    messages={{
+      en: { empty: m.empty, loading: m.loading },
+      fr: { empty: m.empty, loading: m.loading },
+    }}
+    {...table}
+  />
 );
 
-const FiltersForm = ({
+const OverviewWindowForm = ({
   filters,
-  view,
   m,
   onFilters,
 }: {
   filters: Filters;
-  view: View;
   m: SendOperationsMessages;
   onFilters: (filters: Filters) => void;
 }) => {
-  const defaultValues: typeof S.OperationsFilterForm.Encoded = {
-    search: filters.search ?? "",
+  const defaultValues: typeof S.OverviewWindowForm.Encoded = {
     since: filters.since?.toISOString() ?? "",
     until: filters.until?.toISOString() ?? "",
-    campaignId: filters.campaignId ?? "",
-    status: filters.status ?? "",
-    kind: filters.kind ?? "",
-    correlation: filters.correlation ?? "",
-    state: filters.state ?? "active",
-    recipientStatus: filters.recipientStatus ?? "",
   };
   const form = useAppForm({
     defaultValues,
-    validators: { onSubmit: Schema.toStandardSchemaV1(S.OperationsFilterForm) },
+    validators: { onSubmit: Schema.toStandardSchemaV1(S.OverviewWindowForm) },
     onSubmit: async ({ value }) => {
       const v = await Effect.runPromise(
-        Schema.decodeEffect(S.OperationsFilterForm)(value),
+        Schema.decodeEffect(S.OverviewWindowForm)(value),
       );
       onFilters({
-        search: v.search || undefined,
         since: v.since || undefined,
         until: v.until || undefined,
-        campaignId: v.campaignId || undefined,
-        status: v.status || undefined,
-        kind: v.kind || undefined,
-        correlation: v.correlation || undefined,
-        state: v.state,
-        recipientStatus: v.recipientStatus || undefined,
-        deliveryId: undefined,
-        contactId: undefined,
       });
     },
   });
@@ -274,121 +231,14 @@ const FiltersForm = ({
           void form.handleSubmit();
         }}
       >
-        {view !== "overview" && (
-          <form.AppField name="search">
-            {(field) => <field.TextField label={m.search} />}
+        <>
+          <form.AppField name="since">
+            {(field) => <field.TextField label={m.since} />}
           </form.AppField>
-        )}
-        {view !== "recipients" && (
-          <>
-            <form.AppField name="since">
-              {(field) => <field.TextField label={m.since} />}
-            </form.AppField>
-            <form.AppField name="until">
-              {(field) => <field.TextField label={m.until} />}
-            </form.AppField>
-          </>
-        )}
-        {(view === "activity" || view === "recipients") && (
-          <form.AppField name="campaignId">
-            {(field) => <field.TextField label={m.campaignId} />}
+          <form.AppField name="until">
+            {(field) => <field.TextField label={m.until} />}
           </form.AppField>
-        )}
-        {view === "activity" && (
-          <form.AppField name="status">
-            {(field) => (
-              <FilterSelect
-                schema={S.OperationsFilterForm.fields.status}
-                name={field.name}
-                value={field.state.value}
-                onChange={(value) => field.handleChange(value)}
-                label={m.status}
-                options={[
-                  { value: "", label: m.all },
-                  ...Object.entries(m.statuses).map(([value, label]) => ({
-                    value,
-                    label,
-                  })),
-                ]}
-              />
-            )}
-          </form.AppField>
-        )}
-        {view === "feedback" && (
-          <>
-            <form.AppField name="kind">
-              {(field) => (
-                <FilterSelect
-                  schema={S.OperationsFilterForm.fields.kind}
-                  name={field.name}
-                  value={field.state.value}
-                  onChange={(value) => field.handleChange(value)}
-                  label={m.views.feedback}
-                  options={[
-                    { value: "", label: m.all },
-                    ...Object.entries(m.kinds).map(([value, label]) => ({
-                      value,
-                      label,
-                    })),
-                  ]}
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="correlation">
-              {(field) => (
-                <FilterSelect
-                  schema={S.OperationsFilterForm.fields.correlation}
-                  name={field.name}
-                  value={field.state.value}
-                  onChange={(value) => field.handleChange(value)}
-                  label={m.correlation}
-                  options={[
-                    { value: "", label: m.all },
-                    { value: "pending", label: m.pending },
-                    { value: "applied", label: m.applied },
-                  ]}
-                />
-              )}
-            </form.AppField>
-          </>
-        )}
-        {view === "suppressions" && (
-          <form.AppField name="state">
-            {(field) => (
-              <FilterSelect
-                schema={S.OperationsFilterForm.fields.state}
-                name={field.name}
-                value={field.state.value}
-                onChange={(value) => field.handleChange(value)}
-                label={m.status}
-                options={[
-                  { value: "active", label: m.active },
-                  { value: "expired", label: m.expired },
-                  { value: "all", label: m.all },
-                ]}
-              />
-            )}
-          </form.AppField>
-        )}
-        {view === "recipients" && (
-          <form.AppField name="recipientStatus">
-            {(field) => (
-              <FilterSelect
-                schema={S.OperationsFilterForm.fields.recipientStatus}
-                name={field.name}
-                value={field.state.value}
-                onChange={(value) => field.handleChange(value)}
-                label={m.status}
-                options={[
-                  { value: "", label: m.all },
-                  ...Object.entries(m.recipientStatuses).map(
-                    ([value, label]) => ({ value, label }),
-                  ),
-                ]}
-              />
-            )}
-          </form.AppField>
-        )}
+        </>
         <form.SubmitButton>{m.apply}</form.SubmitButton>
       </form>
     </form.AppForm>
@@ -484,6 +334,18 @@ const SuppressionDialog = ({
 
 export const SendOperationsAdmin = (p: SendOperationsProps) => {
   const { messages: m, view } = p;
+  const tableControls = {
+    state: p.tableState,
+    onStateChange: p.onTableStateChange,
+    status: { loading: p.pending, error: p.error },
+    features: {
+      pagination:
+        p.total === undefined
+          ? { mode: "client" as const }
+          : { mode: "server" as const, rowCount: p.total },
+      refresh: p.onRefresh,
+    },
+  };
   const [manage, setManage] = useState<
     typeof S.SuppressionRecord.Type | null | undefined
   >();
@@ -495,6 +357,10 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
     {
       field: "status",
       headerName: m.status,
+      filterOptions: Object.entries(m.statuses).map(([value, label]) => ({
+        value,
+        label,
+      })),
       cellRenderer: ({ data }) => m.statuses[data.status],
     },
     {
@@ -512,9 +378,12 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
           (data.campaignName ?? "—")
         ),
     },
-    { field: "attempts", headerName: m.attempts },
+    { field: "attempts", headerName: m.attempts, type: "number" },
     { field: "provider", headerName: m.provider },
     { field: "errorMessage", headerName: m.reason },
+    { field: "createdAt", headerName: m.created, type: "date" },
+    { field: "scheduledFor", headerName: m.scheduled, type: "date" },
+    { field: "sentAt", headerName: m.accepted, type: "date" },
     {
       colId: "inspect",
       headerName: m.inspect,
@@ -530,33 +399,45 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
     {
       field: "kind",
       headerName: m.views.feedback,
+      filterOptions: Object.entries(m.kinds)
+        .filter(([value]) => value !== "bounces")
+        .map(([value, label]) => ({ value, label })),
       cellRenderer: ({ data }) => m.kinds[data.kind],
     },
     {
       colId: "correlation",
       headerName: m.correlation,
+      filterOptions: [
+        { value: "pending", label: m.pending },
+        { value: "applied", label: m.applied },
+      ],
+      filterValueGetter: ({ data }) => (data.appliedAt ? "applied" : "pending"),
       cellRenderer: ({ data }) => (data.appliedAt ? m.applied : m.pending),
     },
     { field: "provider", headerName: m.provider },
     { field: "providerMessageId", headerName: m.providerMessageId },
     { field: "eventId", headerName: m.eventId },
     {
-      colId: "occurred",
+      field: "occurredAt",
+      type: "date",
       headerName: m.occurred,
       cellRenderer: ({ data }) => date(data.occurredAt),
     },
     {
-      colId: "received",
+      field: "receivedAt",
+      type: "date",
       headerName: m.received,
       cellRenderer: ({ data }) => date(data.receivedAt),
     },
     {
-      colId: "checked",
+      field: "checkedAt",
+      type: "date",
       headerName: m.checked,
       cellRenderer: ({ data }) => date(data.checkedAt),
     },
     {
-      colId: "applied",
+      field: "appliedAt",
+      type: "date",
       headerName: m.applied,
       cellRenderer: ({ data }) => date(data.appliedAt),
     },
@@ -589,17 +470,21 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
       },
       { field: "reason", headerName: m.reason },
       {
-        colId: "active",
+        field: "active",
+        type: "boolean",
+        typeOptions: { trueLabel: m.active, falseLabel: m.expired },
         headerName: m.status,
         cellRenderer: ({ data }) => (data.active ? m.active : m.expired),
       },
       {
-        colId: "created",
+        field: "createdAt",
+        type: "date",
         headerName: m.created,
         cellRenderer: ({ data }) => date(data.createdAt),
       },
       {
-        colId: "expires",
+        field: "expiresAt",
+        type: "date",
         headerName: m.expires,
         cellRenderer: ({ data }) => date(data.expiresAt),
       },
@@ -620,13 +505,18 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
     {
       field: "action",
       headerName: m.action,
+      filterOptions: [
+        { value: "add", label: m.add },
+        { value: "remove", label: m.remove },
+      ],
       cellRenderer: ({ data }) => (data.action === "add" ? m.add : m.remove),
     },
     { field: "reason", headerName: m.reason },
     { field: "previousReason", headerName: m.previousReason },
     { field: "actor", headerName: m.actor },
     {
-      colId: "occurred",
+      field: "occurredAt",
+      type: "date",
       headerName: m.occurred,
       cellRenderer: ({ data }) => date(data.occurredAt),
     },
@@ -639,6 +529,9 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
       field: "status",
       headerName: m.status,
       cellRenderer: ({ data }) => m.recipientStatuses[data.status],
+      filterOptions: Object.entries(m.recipientStatuses).map(
+        ([value, label]) => ({ value, label }),
+      ),
     },
     { field: "reason", headerName: m.reason },
     {
@@ -657,16 +550,6 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
         ),
     },
   ];
-  const next =
-    view === "activity"
-      ? p.activity?.nextCursor
-      : view === "feedback"
-        ? p.feedback?.nextCursor
-        : view === "suppressions"
-          ? p.suppressions?.nextCursor
-          : view === "audit"
-            ? p.audit?.nextCursor
-            : p.recipients?.nextCursor;
   const delivery = p.inspection?.delivery;
   return (
     <section className="space-y-4" aria-busy={p.pending}>
@@ -693,13 +576,14 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
           ))}
         </TabsList>
       </Tabs>
-      <FiltersForm
-        key={`${view}:${JSON.stringify(p.filters)}`}
-        filters={p.filters}
-        view={view}
-        m={m}
-        onFilters={p.onFilters}
-      />
+      {view === "overview" && (
+        <OverviewWindowForm
+          key={`${view}:${JSON.stringify(p.filters)}`}
+          filters={p.filters}
+          m={m}
+          onFilters={p.onFilters}
+        />
+      )}
       {p.filters.contactId && (
         <p>
           {m.contactId}: <code>{p.filters.contactId}</code>
@@ -728,10 +612,20 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
         </dl>
       )}
       {view === "activity" && (
-        <Records items={p.activity?.items} columns={activityColumns} m={m} />
+        <Records
+          items={p.activity?.items}
+          columns={activityColumns}
+          m={m}
+          table={tableControls}
+        />
       )}
       {view === "feedback" && (
-        <Records items={p.feedback?.items} columns={feedbackColumns} m={m} />
+        <Records
+          items={p.feedback?.items}
+          columns={feedbackColumns}
+          m={m}
+          table={tableControls}
+        />
       )}
       {view === "suppressions" && (
         <>
@@ -739,6 +633,7 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
           <Records
             items={p.suppressions?.items}
             columns={suppressionColumns}
+            table={tableControls}
             m={m}
           />
         </>
@@ -747,6 +642,7 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
         <Records
           items={p.audit?.items.map((row) => ({ ...row, id: row.requestId }))}
           columns={auditColumns}
+          table={tableControls}
           m={m}
         />
       )}
@@ -755,29 +651,12 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
           <Records
             items={p.recipients?.items}
             columns={recipientColumns}
+            table={tableControls}
             m={m}
           />
         ) : (
           <p>{m.recipientsHint}</p>
         ))}
-      {view !== "overview" && (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            disabled={!p.onPrevious || p.pending}
-            onClick={p.onPrevious}
-          >
-            {m.previous}
-          </Button>
-          <Button
-            variant="outline"
-            disabled={!next || !p.onNext || p.pending}
-            onClick={p.onNext}
-          >
-            {m.next}
-          </Button>
-        </div>
-      )}
       <Dialog
         open={p.inspecting}
         onOpenChange={(open) => {

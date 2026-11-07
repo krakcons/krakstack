@@ -10,9 +10,10 @@ import {
   type CampaignTransition,
   type CreateCampaign,
   type ScheduleCampaign,
-} from "@krak-stack/send/schema";
+} from "@krak-stack/notifications/admin/schema";
 import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableColDef } from "@/components/ui/data-table";
+import type { DataTableProps } from "@/components/ui/data-table";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppForm } from "@/components/ui/form";
+
+export { SendCampaignAdmin as NotificationCampaigns };
+export type {
+  SendCampaignAdminProps as NotificationCampaignsProps,
+  SendCampaignMessages as NotificationCampaignMessages,
+};
 
 export interface SendCampaignMessages {
   readonly title: string;
@@ -65,6 +72,10 @@ const metricKeys = [
   "complained",
 ] satisfies ReadonlyArray<keyof typeof CampaignReport.Type>;
 export interface SendCampaignAdminProps {
+  readonly table?: Pick<
+    DataTableProps<typeof Campaign.Type>,
+    "state" | "onStateChange" | "features" | "status"
+  >;
   readonly page: typeof CampaignPage.Type | undefined;
   readonly selected?: typeof Campaign.Type;
   readonly report?: typeof CampaignReport.Type;
@@ -83,8 +94,6 @@ export interface SendCampaignAdminProps {
   readonly onTransition: (
     input: typeof CampaignTransition.Type,
   ) => Promise<typeof Campaign.Type | void>;
-  readonly onNext?: () => void;
-  readonly onPrevious?: () => void;
 }
 
 export const SendCampaignAdmin = ({
@@ -97,11 +106,10 @@ export const SendCampaignAdmin = ({
   onSelect,
   onClose,
   onRecipients,
+  table,
   onCreate,
   onSchedule,
   onTransition,
-  onNext,
-  onPrevious,
 }: SendCampaignAdminProps) => {
   const [creating, setCreating] = useState(false);
   const [requestId, setRequestId] = useState("");
@@ -183,13 +191,23 @@ export const SendCampaignAdmin = ({
   };
   const columns: DataTableColDef<typeof Campaign.Type>[] = [
     { field: "name", headerName: m.name },
+    { field: "from", headerName: m.from },
+    { field: "scheduledFor", headerName: m.scheduledFor, type: "date" },
     {
       field: "status",
       headerName: m.status,
+      filterOptions: Object.entries(m.statuses).map(([value, label]) => ({
+        value,
+        label,
+      })),
       cellRenderer: ({ data }) => m.statuses[data.status],
     },
     {
       colId: "manage",
+      sortable: false,
+      filterable: false,
+      searchable: false,
+      hideable: false,
       headerName: m.manage,
       cellRenderer: ({ data }) => (
         <Button
@@ -224,40 +242,14 @@ export const SendCampaignAdmin = ({
       {(error || (failure && !creating)) && (
         <p role="alert">{error || failure}</p>
       )}
-      {page &&
-        (page.items.length ? (
-          <DataTable
-            columnDefs={columns}
-            rowData={page.items}
-            getRowId={(campaign) => campaign.id}
-            features={{
-              toolbar: false,
-              search: false,
-              filtering: false,
-              sorting: false,
-              pagination: false,
-              columnVisibility: false,
-            }}
-          />
-        ) : (
-          <p>{m.empty}</p>
-        ))}
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          onClick={onPrevious}
-          disabled={!onPrevious || pending}
-        >
-          {m.previous}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onNext}
-          disabled={!onNext || !page?.nextCursor || pending}
-        >
-          {m.next}
-        </Button>
-      </div>
+      <DataTable
+        columnDefs={columns}
+        rowData={page?.items ?? []}
+        getRowId={(campaign) => campaign.id}
+        features={{ pagination: { mode: "client" } }}
+        status={{ loading: pending, error }}
+        {...table}
+      />
       {selected && (
         <section
           aria-label={selected.name}

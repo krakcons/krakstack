@@ -1,5 +1,9 @@
 # @krak-stack/notifications
 
+Host-protected contacts, consent, campaigns and email operations are available
+through `@krak-stack/notifications/admin`. See [Notification administration](./ADMIN.md)
+for KrakStack table integration, server search/filter/pagination and safety boundaries.
+
 PostgreSQL-backed Effect primitives for notification inboxes, preferences,
 durable deliveries, and one-shot reminders. The package owns no product auth,
 HTTP API, UI, provider credentials, or rendered product copy.

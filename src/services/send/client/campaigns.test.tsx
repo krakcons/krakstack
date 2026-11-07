@@ -9,7 +9,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
-import type { Campaign } from "@krak-stack/send/schema";
+import type { Campaign } from "@krak-stack/notifications/admin/schema";
 import { SendCampaignAdmin } from "./campaigns";
 import { sendCampaignMessages } from "@/agent-examples/send/campaign.messages";
 
@@ -105,7 +105,7 @@ describe("campaign admin behavior", () => {
     render(
       <SendCampaignAdmin {...p} selected={{ ...campaign, status: "draft" }} />,
     );
-    fireEvent.change(screen.getByLabelText(m.scheduledFor), {
+    fireEvent.change(screen.getByRole("textbox", { name: m.scheduledFor }), {
       target: { value: "invalid" },
     });
     fireEvent.click(screen.getByRole("button", { name: m.schedule }));
@@ -117,7 +117,7 @@ describe("campaign admin behavior", () => {
       ).toBe(false),
     );
     expect(p.onSchedule).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText(m.scheduledFor), {
+    fireEvent.change(screen.getByRole("textbox", { name: m.scheduledFor }), {
       target: { value: "2026-12-01T12:00:00Z" },
     });
     fireEvent.click(screen.getByRole("button", { name: m.schedule }));

@@ -2,13 +2,18 @@ import { useEffect, useState } from "react";
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
-import type * as S from "@krak-stack/send/operations.schema";
+import type * as S from "@krak-stack/notifications/admin/operations.schema";
+import {
+  initialTableState,
+  type TableState,
+} from "@krak-stack/notifications/admin/table.schema";
 import {
   SendOperationsAdmin,
   type SendOperationsProps,
 } from "@/services/send/client/operations";
 import { makeSendOperationsAtoms, operationsQueryKey } from "./operations.atom";
 import { sendOperationsMessages } from "./operations.messages";
+import { useTableTotal } from "./table";
 
 type Atoms = ReturnType<typeof makeSendOperationsAtoms>;
 export const SendOperationsPanel = ({
@@ -28,13 +33,12 @@ export const SendOperationsPanel = ({
 }) => {
   const [view, setView] = useState(initialView);
   const [filters, setFilters] = useState(initialFilters);
-  const [cursors, setCursors] = useState([""]);
+  const [table, setTable] = useState<typeof TableState.Type>(initialTableState);
   const [selected, setSelected] = useState<string>();
-  const resource = atoms.query(
-    operationsQueryKey({ view, filters, before: cursors.at(-1) || undefined }),
-  );
+  const resource = atoms.query(operationsQueryKey({ view, filters, table }));
   const result = useAtomValue(resource.atom);
   const data = Option.getOrUndefined(AsyncResult.value(result));
+  const total = useTableTotal(data?.total);
   const refresh = useAtomRefresh(resource.refresh);
   const add = useAtomSet(atoms.add, { mode: "promise" });
   const remove = useAtomSet(atoms.remove, { mode: "promise" });
@@ -50,20 +54,22 @@ export const SendOperationsPanel = ({
     filters,
     messages: m,
     ...data,
+    total,
+    tableState: table,
+    onTableStateChange: setTable,
     pending: AsyncResult.isInitial(result) || AsyncResult.isWaiting(result),
     error: AsyncResult.isFailure(result) ? m.failed : undefined,
     onView: (v) => {
       setView(v);
-      setCursors([""]);
+      setTable(initialTableState);
       setFilters((f) => ({
         ...f,
-        kind: v === "feedback" ? "bounces" : f.kind,
         deliveryId: undefined,
       }));
     },
     onFilters: (f) => {
       setFilters(f);
-      setCursors([""]);
+      setTable(initialTableState);
     },
     onRefresh: refresh,
     onInspect: setSelected,
@@ -73,22 +79,11 @@ export const SendOperationsPanel = ({
     onDeliveryFeedback: (id) => {
       setSelected(undefined);
       setView("feedback");
-      setCursors([""]);
+      setTable(initialTableState);
       setFilters({ deliveryId: id });
     },
     onAddSuppression: add,
     onRemoveSuppression: remove,
-    onNext: () => {
-      const cursor =
-        data?.activity?.nextCursor ??
-        data?.feedback?.nextCursor ??
-        data?.suppressions?.nextCursor ??
-        data?.audit?.nextCursor ??
-        data?.recipients?.nextCursor;
-      if (cursor) setCursors([...cursors, cursor]);
-    },
-    onPrevious:
-      cursors.length > 1 ? () => setCursors(cursors.slice(0, -1)) : undefined,
   };
   return selected ? (
     <Inspection key={selected} atoms={atoms} id={selected} common={common} />

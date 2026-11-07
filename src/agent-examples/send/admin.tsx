@@ -1,5 +1,9 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { Option } from "effect";
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
+import { Option, Schema } from "effect";
+import {
+  TableState,
+  initialTableState,
+} from "@krak-stack/notifications/admin/table.schema";
 import { AsyncResult } from "effect/reactivity";
 import { useState } from "react";
 
@@ -9,6 +13,7 @@ import {
 } from "@/services/send/client/contacts";
 import * as m from "@/paraglide/messages";
 import type { makeSendContactAtoms } from "./atom";
+import { useTableTotal } from "./table";
 
 // This is not a public route. The host must protect both the route mounting
 // this panel and the SendAdmin API, using its existing authorization.
@@ -21,10 +26,12 @@ export const SendContactsPanel = ({
   locale: "en" | "fr";
   onInspect?: (id: string) => void;
 }) => {
-  const [cursors, setCursors] = useState([""]);
-  const cursor = cursors.at(-1) ?? "";
+  const [table, setTable] = useState<typeof TableState.Type>(initialTableState);
+  const cursor = Schema.encodeSync(Schema.fromJsonString(TableState))(table);
   const result = useAtomValue(atoms.contacts(cursor));
+  const refresh = useAtomRefresh(atoms.contacts(cursor));
   const page = Option.getOrUndefined(AsyncResult.value(result));
+  const total = useTableTotal(page?.total);
   const create = useAtomSet(atoms.create, { mode: "promise" });
   const withdraw = useAtomSet(atoms.withdraw(cursor), { mode: "promise" });
   const options = { locale };
@@ -49,6 +56,11 @@ export const SendContactsPanel = ({
   return (
     <SendContacts
       page={page}
+      table={{
+        state: table,
+        onStateChange: setTable,
+        features: { pagination: { mode: "server", rowCount: total }, refresh },
+      }}
       pending={AsyncResult.isInitial(result) || AsyncResult.isWaiting(result)}
       error={AsyncResult.isFailure(result) ? messages.savingFailed : undefined}
       messages={messages}
@@ -64,12 +76,6 @@ export const SendContactsPanel = ({
       onCreate={create}
       onWithdraw={(contact) =>
         withdraw({ contactId: contact.id, requestId: crypto.randomUUID() })
-      }
-      onNext={() => {
-        if (page?.nextCursor) setCursors([...cursors, page.nextCursor]);
-      }}
-      onPrevious={
-        cursors.length > 1 ? () => setCursors(cursors.slice(0, -1)) : undefined
       }
     />
   );

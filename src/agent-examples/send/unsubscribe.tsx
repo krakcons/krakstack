@@ -4,8 +4,8 @@ import { makeSendUnsubscribeRoutes } from "../../../packages/send/src/unsubscrib
 import * as m from "../../paraglide/messages";
 
 // Mount separately from host login, cookie-CSRF and locale-redirect middleware.
-// Installed applications import makeSendUnsubscribeRoutes from @krak-stack/send/unsubscribe.routes.
-// Supply SendUnsubscribe.makeLayer(...) with the host's shared KrakSend layer.
+// Installed applications import makeSendUnsubscribeRoutes from @krak-stack/notifications/admin/unsubscribe.routes.
+// Supply SendUnsubscribe.makeLayer(...) with the host's shared NotificationContacts layer.
 export const sendUnsubscribeRoutes = makeSendUnsubscribeRoutes({
   path: "/send/unsubscribe",
   confirmation: (locale) =>

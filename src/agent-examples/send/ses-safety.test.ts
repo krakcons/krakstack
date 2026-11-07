@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { SESv2Client } from "@aws-sdk/client-sesv2";
-import { SendCampaignSafety } from "@krak-stack/send/campaign.safety";
+import { SendCampaignSafety } from "@krak-stack/notifications/admin/campaign.safety";
 import { makeSesCampaignSafety } from "./ses-safety";
 
 describe("host SES sender verification adapter", () => {

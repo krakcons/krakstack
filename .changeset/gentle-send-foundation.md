@@ -1,10 +1,9 @@
 ---
 "@krak-stack/notifications": minor
-"@krak-stack/send": minor
 "@krak-stack/registry": minor
 ---
 
-Start the per-application KrakSend foundation with anonymous contacts, explicit email consent history, idempotent durable email publications, a host-authorized administrative API, and a controlled contact admin view. Add an optional dispatch policy to the notification engine for fail-closed consent checks, suppression, and deferral without consuming provider attempt budgets. No KrakAuth, accounts, organizations, or central project management are required.
+Extend notifications with per-application administration: anonymous contacts, explicit email consent history, idempotent durable email publications, a host-authorized administrative API, and a controlled contact admin view. Add an optional dispatch policy to the notification engine for fail-closed consent checks, suppression, and deferral without consuming provider attempt budgets. No KrakAuth, accounts, organizations, or central project management are required.
 
 Add signed contact-specific unsubscribe capabilities and public read-only confirmation / one-click POST routes, with installation-bound tokens, atomic audited withdrawal, English/French integration examples, and focused PostgreSQL and Playwright regressions.
 

@@ -12,11 +12,20 @@
   "files": [
     "dist",
     "README.md",
+    "ADMIN.md",
     "CHANGELOG.md"
   ],
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/index.js"
+    },
+    "./admin/*": {
+      "types": "./dist/admin/*.d.ts",
+      "import": "./dist/admin/*.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -84,7 +93,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "check": "bun run typecheck && bun run test && bun run build",
-    "check:release": "bun -e 'if (!process.env.TEST_DATABASE_URL) { console.error(\"TEST_DATABASE_URL is required for notification release checks\"); process.exit(1); }' && bun run check",
+    "check:release": "bun -e 'if (!process.env.TEST_DATABASE_URL) { console.error(\"TEST_DATABASE_URL is required for notification release checks\"); process.exit(1); }' && bun run check && bun run --cwd ../send typecheck && bun run --cwd ../send test",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "prepack": "bun run check:release"

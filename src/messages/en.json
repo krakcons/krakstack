@@ -112,7 +112,7 @@
   "kraksend_unsubscribe_invalid": "This unsubscribe link is invalid or has expired.",
   "kraksend_unsubscribe_unavailable": "We could not save your choice. Please try again.",
   "kraksend_unsubscribe_success": "You have unsubscribed from optional email for this application.",
-  "kraksend_contacts_title": "KrakSend contacts",
+  "kraksend_contacts_title": "Notification contacts",
   "kraksend_contacts_description": "Manage recipients for this application. Creating a contact does not subscribe it to optional email.",
   "kraksend_contacts_create": "Add contact",
   "kraksend_contacts_name": "Name",

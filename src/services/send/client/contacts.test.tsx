@@ -10,7 +10,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
-import type { Contact } from "@krak-stack/send/schema";
+import type { Contact } from "@krak-stack/notifications/admin/schema";
 
 import { SendContacts, type SendContactsMessages } from "./contacts";
 

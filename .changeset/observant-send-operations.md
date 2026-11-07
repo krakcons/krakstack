@@ -1,5 +1,5 @@
 ---
-"@krak-stack/send": minor
+"@krak-stack/notifications": minor
 "@krak-stack/registry": minor
 ---
 

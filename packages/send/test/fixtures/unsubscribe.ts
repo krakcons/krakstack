@@ -7,6 +7,8 @@ export const makeUnsubscribeFixture = (failure?: SendStorageError) => {
   const withdrawals: string[] = [];
   const unused = () => Effect.die(new Error("Unexpected operation"));
   const layer = Layer.succeed(KrakSend, {
+    contactsTable: unused,
+    consentTable: unused,
     createContact: unused,
     updateContact: unused,
     listContacts: unused,

@@ -1,11 +1,16 @@
 import { Atom, AtomHttpApi, AsyncResult } from "effect/reactivity";
 import { FetchHttpClient } from "effect/http";
-import { SendCampaignApi } from "@krak-stack/send/campaign.api";
+import { SendCampaignApi } from "@krak-stack/notifications/admin/campaign.api";
+import { Schema } from "effect";
+import {
+  TableState,
+  initialTableState,
+} from "@krak-stack/notifications/admin/table.schema";
 import type {
   CampaignTransition,
   CreateCampaign,
   ScheduleCampaign,
-} from "@krak-stack/send/schema";
+} from "@krak-stack/notifications/admin/schema";
 
 // Construct once inside the host's authenticated application. Add host-owned
 // HttpClient authentication/CSRF middleware; no KrakAuth dependency is required.
@@ -21,11 +26,19 @@ export const makeSendCampaignAtoms = (baseUrl: string) => {
   const key = "kraksend.campaigns";
   const campaigns = Atom.family((after: string) =>
     Atom.optimistic(
-      Client.query("sendCampaigns", "list", {
-        query: { limit: 25, after: after || undefined },
-        timeToLive: "10 seconds",
-        reactivityKeys: [key],
-      }),
+      Atom.map(
+        Client.query("sendCampaigns", "table", {
+          query: {
+            table: after
+              ? Schema.decodeSync(Schema.fromJsonString(TableState))(after)
+              : initialTableState,
+          },
+          timeToLive: "10 seconds",
+          reactivityKeys: [key],
+        }),
+        (result) =>
+          AsyncResult.map(result, (page) => ({ ...page, nextCursor: null })),
+      ),
     ),
   );
   const campaign = Atom.family((id: string) =>

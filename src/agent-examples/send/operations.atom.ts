@@ -1,17 +1,19 @@
 import { Schema } from "effect";
 import { Atom, AtomHttpApi, AsyncResult } from "effect/reactivity";
 import { FetchHttpClient } from "effect/http";
-import { SendOperationsApi } from "@krak-stack/send/operations.api";
-import * as S from "@krak-stack/send/operations.schema";
+import { SendOperationsApi } from "@krak-stack/notifications/admin/operations.api";
+import * as S from "@krak-stack/notifications/admin/operations.schema";
+import { TableState } from "@krak-stack/notifications/admin/table.schema";
 
 export const OperationsQueryKey = Schema.Struct({
   view: S.OperationsView,
   filters: S.OperationsFilters,
-  before: Schema.optional(Schema.String),
+  table: TableState,
 }).annotate({ identifier: "SendOperationsQueryKey" });
 const KeyCodec = Schema.fromJsonString(OperationsQueryKey);
 export const operationsQueryKey = Schema.encodeSync(KeyCodec);
 export interface OperationsData {
+  readonly total?: number;
   readonly overview?: typeof S.SendingOverview.Type;
   readonly activity?: typeof S.ActivityPage.Type;
   readonly feedback?: typeof S.FeedbackPage.Type;
@@ -42,14 +44,7 @@ export const makeSendOperationsAtoms = (baseUrl: string) => {
   ) {}
   const reactivityKeys = ["kraksend.operations"];
   const query = Atom.family((key: string): Resource => {
-    const { view, filters: f, before } = Schema.decodeSync(KeyCodec)(key);
-    const common = {
-      search: f.search,
-      since: f.since,
-      until: f.until,
-      before,
-      limit: 25,
-    };
+    const { view, filters: f, table } = Schema.decodeSync(KeyCodec)(key);
     switch (view) {
       case "overview":
         return retain(
@@ -62,63 +57,74 @@ export const makeSendOperationsAtoms = (baseUrl: string) => {
         );
       case "activity":
         return retain(
-          Client.query("sendOperations", "activity", {
+          Client.query("sendOperations", "activityTable", {
             query: {
-              ...common,
-              status: f.status,
+              table,
               campaignId: f.campaignId,
               contactId: f.contactId,
             },
             reactivityKeys,
             timeToLive: "10 seconds",
           }),
-          (activity) => ({ activity }),
+          (page) => ({
+            total: page.total,
+            activity: { ...page, nextCursor: null },
+          }),
         );
       case "feedback":
         return retain(
-          Client.query("sendOperations", "feedback", {
+          Client.query("sendOperations", "feedbackTable", {
             query: {
-              ...common,
-              kind: f.kind,
-              correlation: f.correlation,
+              table,
               deliveryId: f.deliveryId,
             },
             reactivityKeys,
             timeToLive: "10 seconds",
           }),
-          (feedback) => ({ feedback }),
+          (page) => ({
+            total: page.total,
+            feedback: { ...page, nextCursor: null },
+          }),
         );
       case "suppressions":
         return retain(
-          Client.query("sendOperations", "suppressions", {
-            query: { ...common, state: f.state },
+          Client.query("sendOperations", "suppressionsTable", {
+            query: { table },
             reactivityKeys,
             timeToLive: "10 seconds",
           }),
-          (suppressions) => ({ suppressions }),
+          (page) => ({
+            total: page.total,
+            suppressions: { ...page, nextCursor: null },
+          }),
         );
       case "audit":
         return retain(
-          Client.query("sendOperations", "audit", {
-            query: common,
+          Client.query("sendOperations", "auditTable", {
+            query: { table },
             reactivityKeys,
             timeToLive: "10 seconds",
           }),
-          (audit) => ({ audit }),
+          (page) => ({
+            total: page.total,
+            audit: { ...page, nextCursor: null },
+          }),
         );
       case "recipients":
         return f.campaignId
           ? retain(
-              Client.query("sendOperations", "recipients", {
+              Client.query("sendOperations", "recipientsTable", {
                 query: {
-                  ...common,
+                  table,
                   campaignId: f.campaignId,
-                  status: f.recipientStatus,
                 },
                 reactivityKeys,
                 timeToLive: "10 seconds",
               }),
-              (recipients) => ({ recipients }),
+              (page) => ({
+                total: page.total,
+                recipients: { ...page, nextCursor: null },
+              }),
             )
           : {
               atom: Atom.make(AsyncResult.success({})),

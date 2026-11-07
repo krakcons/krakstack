@@ -30,6 +30,7 @@ const fixture = (fail = false) => {
   const routes = sendCampaignHandlers.pipe(
     Layer.provide(
       Layer.succeed(SendCampaigns, {
+        table: unused,
         get: unused,
         schedule: unused,
         transition: unused,
@@ -83,6 +84,7 @@ describe("campaign administrative boundary", () => {
         "sendCampaigns",
       ]);
       const requests = [
+        Effect.asVoid(c.table({query:{table:{page:0,pageSize:20}}})),
         Effect.asVoid(c.list({ query: {} })),
         Effect.asVoid(c.get({ params: { id } })),
         Effect.asVoid(c.report({ params: { id } })),
