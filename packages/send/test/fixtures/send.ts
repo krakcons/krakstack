@@ -7,13 +7,17 @@ import {
   NotificationRuntime,
   ReminderHandlerRegistry,
 } from "@krak-stack/notifications/runtime";
-import { makeFakeTransport } from "@krak-stack/notifications/testing";
+import {
+  makeFakeTransport,
+  type FakeTransportOptions,
+} from "@krak-stack/notifications/testing";
 import { KrakSend } from "../../src/index.js";
 import { sendRuntimeLayer } from "../../src/policy.js";
 import { SendUnsubscribe } from "../../src/unsubscribe.js";
 import { SendFeedback } from "../../src/feedback.js";
 import { SendCampaigns } from "../../src/campaign.js";
 import { SendOperations } from "../../src/operations.js";
+import { NotificationDeliveryAdmin } from "../../../notifications/src/admin/deliveries.js";
 import { makeCampaignSafetyLayer } from "../../src/campaign.safety.js";
 
 export const unsubscribeOptions = {
@@ -34,10 +38,12 @@ export const withSend = <A, E>(
     feedback: SendFeedback["Service"];
     campaigns: SendCampaigns["Service"];
     operations: SendOperations["Service"];
+    deliveries: NotificationDeliveryAdmin["Service"];
     setSenderVerified: (verified: boolean) => void;
     transport: ReturnType<typeof makeFakeTransport>;
     sql: SqlClient.SqlClient;
   }) => Effect.Effect<A, E>,
+  transportOptions?: Pick<FakeTransportOptions, "send">,
 ) =>
   Effect.gen(function* () {
     const url = process.env.TEST_DATABASE_URL;
@@ -50,7 +56,10 @@ export const withSend = <A, E>(
     const postgres = PgClient.layer({
       url: Redacted.make(scopedUrl.toString()),
     });
-    const transport = makeFakeTransport({ channel: "email" });
+    const transport = makeFakeTransport({
+      channel: "email",
+      ...transportOptions,
+    });
     const domain = KrakSend.layer.pipe(
       Layer.provideMerge(NotificationService.layer),
     );
@@ -81,6 +90,7 @@ export const withSend = <A, E>(
       sendRuntimeLayer,
       SendFeedback.layer,
       SendOperations.layer,
+      NotificationDeliveryAdmin.layer,
     ).pipe(
       Layer.provideMerge(products),
       Layer.provide(safety),
@@ -107,6 +117,7 @@ export const withSend = <A, E>(
             feedback: yield* SendFeedback,
             campaigns: yield* SendCampaigns,
             operations: yield* SendOperations,
+            deliveries: yield* NotificationDeliveryAdmin,
             setSenderVerified: (verified) => {
               senderVerified = verified;
             },

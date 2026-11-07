@@ -65,6 +65,22 @@ All lists use KrakStack tables with shared search, typed column filters, sorting
 column visibility, and server pagination. Counts and pages are computed together
 in PostgreSQL over the full authorized dataset. No separate send package is required.
 
+For existing product emails published with `NotificationService.publish()`, opt in
+to `NotificationDeliveryAdmin` from `admin/deliveries` and mount `admin/delivery.api`
+with separate host-provided `DeliveryAdmin` staff authorization. Explicit exact,
+organization or installation grants restrict overview metrics, activity tables and
+attempt inspection before queries run. Null scope fields are exact nulls, not
+wildcards. `NotificationDeliveries` is exported by the operations registry item;
+the unified console enables it through an optional staff configuration.
+
+This read-only view uses the original deliveries, templates, allowlisted domain
+references and attempt history. It never republishes, creates synthetic contacts,
+changes retries or mixes account preferences with marketing consent. Contact and
+campaign behavior stays unchanged. Feedback reconciliation remains contact-only;
+the staff view explicitly reports product emails without feedback coverage rather
+than treating provider acceptance as confirmed delivery. See the
+[staff integration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md#staff-administration-of-engine-published-emails).
+
 Install the package with the Effect PostgreSQL driver:
 
 ```bash

@@ -18,16 +18,24 @@ import { SendCampaignPanel } from "./campaign.admin";
 import { SendOperationsPanel } from "./operations.admin";
 import { SendContactDetails } from "@/services/send/client/contacts";
 import { useTableTotal } from "./table";
+import { makeNotificationDeliveryAtoms } from "./delivery.atom";
+import { NotificationDeliveriesPanel } from "./delivery.admin";
 
 export {
   SendAdminPanel as NotificationsAdminPanel,
   makeSendAdminAtoms as makeNotificationsAdminAtoms,
 };
 
-export const makeSendAdminAtoms = (baseUrl: string) => ({
+export const makeSendAdminAtoms = (
+  baseUrl: string,
+  staff?: Omit<Parameters<typeof makeNotificationDeliveryAtoms>[0], "baseUrl">,
+) => ({
   contacts: makeSendContactAtoms(baseUrl),
   campaigns: makeSendCampaignAtoms(baseUrl),
   operations: makeSendOperationsAtoms(baseUrl),
+  deliveries: staff
+    ? makeNotificationDeliveryAtoms({ baseUrl, ...staff })
+    : undefined,
 });
 
 // Mount this entire console only in the host's authorized admin route. Every
@@ -39,9 +47,9 @@ export const SendAdminPanel = ({
   atoms: ReturnType<typeof makeSendAdminAtoms>;
   locale: "en" | "fr";
 }) => {
-  const [area, setArea] = useState<"contacts" | "campaigns" | "operations">(
-    "operations",
-  );
+  const [area, setArea] = useState<
+    "contacts" | "campaigns" | "operations" | "deliveries"
+  >("operations");
   const [campaignId, setCampaignId] = useState<string>();
   const [contactId, setContactId] = useState<string>();
   const [operations, setOperations] = useState<{
@@ -56,6 +64,14 @@ export const SendAdminPanel = ({
           className="flex flex-wrap gap-2"
           aria-label={m.kraksend_ops_title({}, o)}
         >
+          {atoms.deliveries && (
+            <Button
+              variant={area === "deliveries" ? "default" : "outline"}
+              onClick={() => setArea("deliveries")}
+            >
+              {m.notifications_staff_title({}, o)}
+            </Button>
+          )}
           <Button
             variant={area === "operations" ? "default" : "outline"}
             onClick={() => setArea("operations")}
@@ -81,6 +97,21 @@ export const SendAdminPanel = ({
             {m.kraksend_campaign_title({}, o)}
           </Button>
         </nav>
+        {area === "deliveries" && atoms.deliveries && (
+          <NotificationDeliveriesPanel
+            key={atoms.deliveries.authorizationKey}
+            atoms={atoms.deliveries}
+            locale={locale}
+            onContact={(id) => {
+              setContactId(id);
+              setArea("contacts");
+            }}
+            onCampaign={(id) => {
+              setCampaignId(id);
+              setArea("campaigns");
+            }}
+          />
+        )}
         {area === "contacts" &&
           (contactId ? (
             <ContactDetail

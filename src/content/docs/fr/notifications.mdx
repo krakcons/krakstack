@@ -68,6 +68,24 @@ Les listes utilisent les tableaux KrakStack : recherche, filtres typés, tri,
 visibilité des colonnes et pagination serveur. PostgreSQL calcule les totaux et
 les pages ensemble sur toutes les données autorisées. Aucun package d'envoi séparé n'est requis.
 
+Pour les courriels du produit déjà publiés avec `NotificationService.publish()`,
+activez `NotificationDeliveryAdmin` depuis `admin/deliveries` et montez
+`admin/delivery.api` avec une autorisation distincte du personnel fournie par
+l’hôte via `DeliveryAdmin`. Des droits explicites par périmètre exact, organisation
+ou installation limitent les statistiques, les tableaux d’activité et l’inspection
+des tentatives avant toute requête. Les champs de périmètre nuls sont des valeurs
+exactes, jamais des jokers. L’élément de registre des opérations exporte
+`NotificationDeliveries` ; une configuration facultative l’active dans la console.
+
+Cette vue en lecture seule utilise les livraisons, modèles, références métier
+autorisées et tentatives d’origine. Elle ne republie rien, ne crée pas de contacts
+artificiels, ne modifie pas les nouvelles tentatives et ne confond pas les
+préférences des comptes avec le consentement marketing. Les contacts et campagnes
+restent inchangés. Le rapprochement des retours reste limité aux contacts ; la vue
+signale explicitement les courriels du produit sans couverture des retours, sans
+assimiler acceptation fournisseur et livraison confirmée. Consultez le
+[guide d’intégration du personnel](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md#staff-administration-of-engine-published-emails).
+
 Installez le package avec le pilote PostgreSQL d'Effect :
 
 ```bash

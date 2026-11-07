@@ -1,4 +1,9 @@
 import { useState } from "react";
+export { NotificationDeliveries } from "./deliveries";
+export type {
+  NotificationDeliveriesProps,
+  NotificationDeliveryMessages,
+} from "./deliveries";
 import { Effect, Schema } from "effect";
 import * as S from "@krak-stack/notifications/admin/operations.schema";
 import { Button } from "@/components/ui/button";

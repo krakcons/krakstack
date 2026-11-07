@@ -972,11 +972,14 @@
       "title": "Notification Operations",
       "description": "Global email statistics, delivery and attempt inspection, bounce feedback, suppression management and audit history, and campaign recipient visibility.",
       "type": "registry:component",
-      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-06" },
+      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-07" },
       "registryDependencies": ["@krak-stack/data-table", "@krak-stack/form", "button", "dialog", "tabs", "select"],
       "dependencies": ["@krak-stack/notifications@^0.3.0", "effect@latest", "react"],
-      "docs": "Mount NotificationOperations behind the host admin guard. Use @krak-stack/notifications/admin and its table endpoints for authorized data. Pass tableState, onTableStateChange, and the authoritative total to use KrakStack search, filters, sorting and pagination. Suppression removal requires the exact reviewed version and an audit reason; it never restores consent or resends mail. See src/agent-examples/send/console.tsx for the unified NotificationsAdminPanel. Package export: @krak-stack/registry/notifications/operations.",
-      "files": [{ "path": "src/services/send/client/operations.tsx", "type": "registry:file", "target": "services/send/client/operations.tsx" }]
+      "docs": "Mount NotificationOperations behind the host admin guard. Use @krak-stack/notifications/admin and its table endpoints for authorized data. Pass tableState, onTableStateChange, and the authoritative total to use KrakStack search, filters, sorting and pagination. NotificationDeliveries adds opt-in, read-only overview, activity and attempt inspection for existing engine-published product emails. Mount admin/delivery.api with separate DeliveryAdmin middleware and explicit host scope grants; SendAdmin alone never grants product-email access. No republishing or synthetic contacts are needed. Feedback coverage is explicitly distinguished from delivery acceptance. Suppression removal requires the exact reviewed version and an audit reason; it never restores consent or resends mail. See src/agent-examples/send/console.tsx for the unified NotificationsAdminPanel. Package export: @krak-stack/registry/notifications/operations.",
+      "files": [
+        { "path": "src/services/send/client/operations.tsx", "type": "registry:file", "target": "services/send/client/operations.tsx" },
+        { "path": "src/services/send/client/deliveries.tsx", "type": "registry:file", "target": "services/send/client/deliveries.tsx" }
+      ]
     },
     {
       "name": "notifications-campaigns",
