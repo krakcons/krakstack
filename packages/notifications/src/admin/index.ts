@@ -6,6 +6,7 @@ import { PgClient } from "@effect/sql-pg";
 import { NotificationService } from "@krak-stack/notifications";
 import type { NotificationDelivery } from "@krak-stack/notifications/schema";
 import type { DispatchDecision } from "@krak-stack/notifications/policy";
+import { PublicationRecipient } from "../schema.js";
 
 import { runSendMigrations } from "./migrations.js";
 import { queryTable } from "./table.js";
@@ -97,6 +98,23 @@ export class NotificationContacts extends Context.Service<NotificationContacts>(
         input: typeof ContactParams.Type,
       ) {
         return yield* requireContact(yield* validate(ContactParams, input));
+      }, mapPersistenceError);
+
+      // Resolution returns a snapshot, not permission to publish or evidence of consent.
+      const resolveEmailRecipient = Effect.fn(
+        "NotificationContacts.resolveEmailRecipient",
+      )(function* (raw: typeof ContactParams.Type) {
+        const input = yield* validate(ContactParams, raw);
+        const recipient = yield* SqlSchema.findOneOption({
+          Request: ContactParams,
+          Result: PublicationRecipient,
+          execute: ({ id }) => sql`SELECT e.address, NULLIF(c.name, '') AS name,
+            jsonb_build_object('id', c.id, 'endpointId', e.id) AS contact
+            FROM kraksend_contacts c JOIN kraksend_email_endpoints e ON e.contact_id = c.id WHERE c.id = ${id}`,
+        })(input);
+        if (Option.isNone(recipient))
+          return yield* new SendNotFound({ id: input.id });
+        return recipient.value;
       }, mapPersistenceError);
 
       const createContact = Effect.fn("KrakSend.createContact")(function* (
@@ -314,6 +332,7 @@ export class NotificationContacts extends Context.Service<NotificationContacts>(
         mapPersistenceError,
       );
 
+      /** @deprecated Use NotificationService.publish with recipient and policy. Retained for legacy requests. */
       const queueEmail = Effect.fn("KrakSend.queueEmail")(function* (
         raw: QueueEmail,
       ) {
@@ -448,6 +467,7 @@ export class NotificationContacts extends Context.Service<NotificationContacts>(
       return {
         createContact,
         getContact,
+        resolveEmailRecipient,
         updateContact,
         listContacts,
         contactsTable,

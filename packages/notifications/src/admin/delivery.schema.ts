@@ -23,6 +23,8 @@ export const DeliveryScopeGrant = Schema.Union([
 
 // Supplied by trusted host middleware, never decoded from a browser query.
 export const DeliveryAdminAccess = Schema.Struct({
+  // Opt-in source-independent grants; old grants retain their original meaning.
+  deliveryScopes: Schema.optional(Schema.Array(DeliveryScopeGrant)),
   contactManaged: Schema.Boolean,
   engineScopes: Schema.Array(DeliveryScopeGrant),
   referenceNamespaces: Schema.Array(Schema.NonEmptyString),

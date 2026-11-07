@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
 
 const PositiveInt = Schema.Int.pipe(
   Schema.check(Schema.isGreaterThan(0)),
@@ -57,6 +57,7 @@ export const RecipientNotificationScope = Schema.Struct({
 export const NotificationDeliveryPurpose = Schema.Literals([
   "transactional",
   "notification",
+  "marketing",
 ]).annotate({ identifier: "NotificationDeliveryPurpose" });
 
 export const NotificationDeliveryStatus = Schema.Literals([
@@ -217,9 +218,18 @@ export const NotificationRecipientAddress = Schema.NonEmptyString.pipe(
 ).annotate({ identifier: "NotificationRecipientAddress" });
 
 export const PublishDeliveryInput = Schema.Struct({
+  recipient: Schema.optional(Schema.Never),
+  policy: Schema.optional(Schema.Never),
+  publication: Schema.optional(Schema.Never),
   key: Schema.NonEmptyString,
   channel: Schema.NonEmptyString,
-  purpose: NotificationDeliveryPurpose,
+  purpose: NotificationDeliveryPurpose.check(
+    Schema.makeFilter((purpose) =>
+      purpose === "marketing"
+        ? "Marketing requires an explicit publication policy"
+        : undefined,
+    ),
+  ),
   template: Schema.NullOr(Schema.NonEmptyString),
   recipientAddress: NotificationRecipientAddress,
   recipientName: Schema.NullOr(Schema.NonEmptyString),
@@ -264,7 +274,133 @@ export const PublishInput = PublishInputFields.pipe(
   ),
 ).annotate({ identifier: "PublishNotificationInput" });
 
+export const ConsentSubject = Schema.Struct({
+  namespace: Schema.NonEmptyString,
+  value: Schema.NonEmptyString,
+}).annotate({ identifier: "NotificationConsentSubject" });
+
+export const PublicationPolicyRequirement = Schema.Struct({
+  key: Schema.NonEmptyString,
+  version: PositiveInt,
+  subject: ConsentSubject,
+}).annotate({ identifier: "NotificationPublicationPolicyRequirement" });
+
+export const ConsentRequirement = Schema.Union([
+  Schema.Struct({ kind: Schema.Literal("stored"), subject: ConsentSubject }),
+  Schema.Struct({
+    kind: Schema.Literal("extension"),
+    ...PublicationPolicyRequirement.fields,
+  }),
+]).annotate({ identifier: "NotificationConsentRequirement" });
+
+export const DeliveryPolicy = Schema.Union([
+  Schema.Struct({ kind: Schema.Literal("transactional") }),
+  Schema.Struct({
+    kind: Schema.Literal("notification"),
+    consent: Schema.optional(ConsentRequirement),
+  }),
+  Schema.Struct({
+    kind: Schema.Literal("marketing"),
+    consent: ConsentRequirement,
+  }),
+]).annotate({ identifier: "NotificationDeliveryPolicy" });
+
+export const PublicationRecipient = Schema.Struct({
+  address: NotificationRecipientAddress,
+  name: Schema.NullOr(Schema.NonEmptyString),
+  contact: Schema.optional(Schema.Struct({ id: Uuid, endpointId: Uuid })),
+}).annotate({ identifier: "NotificationPublicationRecipient" });
+
+export const PublicationDeliveryMetadata = Schema.Struct({
+  version: Schema.Literal(1),
+  recipient: PublicationRecipient,
+  policy: DeliveryPolicy,
+  checks: Schema.Array(PublicationPolicyRequirement),
+}).annotate({ identifier: "NotificationPublicationDeliveryMetadata" });
+
+export const PublicationDeliveryInput = Schema.Struct({
+  key: Schema.NonEmptyString,
+  channel: Schema.NonEmptyString,
+  recipient: PublicationRecipient,
+  policy: DeliveryPolicy,
+  checks: Schema.optional(Schema.Array(PublicationPolicyRequirement)),
+  template: Schema.NullOr(Schema.NonEmptyString),
+  payloadVersion: PositiveInt,
+  payload: Schema.Json,
+  scheduledFor: Schema.optional(NotificationDate),
+  expiresAt: Schema.optional(Schema.NullOr(NotificationDate)),
+  maxAttempts: Schema.optional(PositiveInt),
+  references: Schema.optional(Schema.Array(NotificationDeliveryReferenceInput)),
+  dispatchPolicy: Schema.optional(Schema.NonEmptyString),
+  purpose: Schema.optional(Schema.Never),
+  recipientAddress: Schema.optional(Schema.Never),
+  recipientName: Schema.optional(Schema.Never),
+}).annotate({ identifier: "NotificationPublicationDeliveryInput" });
+
+export const PublicationInput = Schema.Struct({
+  ...PublishInputFields.fields,
+  deliveries: Schema.Array(PublicationDeliveryInput),
+})
+  .check(
+    Schema.makeFilter((input) => {
+      if (!input.inbox && input.deliveries.length === 0)
+        return "Publication requires inbox or deliveries";
+      if (input.inbox && input.scope.recipientUserId === null)
+        return "Inbox requires an account recipient";
+      if (
+        new Set(input.deliveries.map(({ key }) => key)).size !==
+        input.deliveries.length
+      )
+        return "Delivery keys must be unique";
+      for (const delivery of input.deliveries) {
+        if (
+          delivery.channel === "email" &&
+          Option.isNone(
+            Schema.decodeOption(EmailRecipient)({
+              address: delivery.recipient.address.trim(),
+              name: delivery.recipient.name,
+            }),
+          )
+        )
+          return "Invalid email recipient";
+        if (
+          delivery.channel !== "email" &&
+          (delivery.recipient.contact || delivery.policy.kind === "marketing")
+        )
+          return "Contact and marketing policies require email";
+        if (
+          delivery.channel !== "email" &&
+          delivery.policy.kind === "notification" &&
+          delivery.policy.consent?.kind === "stored"
+        )
+          return "Stored consent applies to email only";
+        if (
+          delivery.policy.kind === "notification" &&
+          !delivery.policy.consent &&
+          (delivery.recipient.contact || input.scope.recipientUserId === null)
+        )
+          return "External and contact notifications require consent";
+        if (
+          delivery.channel === "email" &&
+          delivery.policy.kind !== "transactional"
+        ) {
+          const email = Schema.decodeUnknownOption(EmailPayloadV1)(
+            delivery.payload,
+          );
+          if (
+            delivery.payloadVersion !== 1 ||
+            Option.isNone(email) ||
+            !email.value.unsubscribeUrl
+          )
+            return "Optional email requires unsubscribe support";
+        }
+      }
+    }),
+  )
+  .annotate({ identifier: "NotificationPublicationInput" });
+
 export const NotificationDelivery = Schema.Struct({
+  publication: Schema.optional(Schema.NullOr(PublicationDeliveryMetadata)),
   id: NotificationDeliveryId,
   notificationId: Schema.NullOr(NotificationId),
   idempotencyKey: Schema.NonEmptyString,
@@ -376,6 +512,9 @@ export const NotificationDeliveryDetail = Schema.Struct({
 }).annotate({ identifier: "NotificationDeliveryDetail" });
 
 export const NotificationSuppression = Schema.Struct({
+  scopeMatch: Schema.optional(
+    Schema.Literals(["legacy", "exact", "organization", "installation"]),
+  ),
   id: Uuid,
   scope: NotificationScope,
   channel: Schema.NonEmptyString,
@@ -660,15 +799,40 @@ export const ListSuppressionsInput = Schema.Struct({
 }).annotate({ identifier: "ListNotificationSuppressionsInput" });
 
 export const SetSuppressionInput = Schema.Struct({
+  scopeMatch: Schema.optional(
+    Schema.Literals(["exact", "organization", "installation"]),
+  ),
   scope: NotificationScope,
   channel: Schema.NonEmptyString,
   purpose: Schema.NullOr(NotificationDeliveryPurpose),
   recipientAddress: NotificationRecipientAddress,
   reason: Schema.NullOr(Schema.String),
   expiresAt: Schema.NullOr(NotificationDate),
-}).annotate({ identifier: "SetNotificationSuppressionInput" });
+})
+  .check(
+    Schema.makeFilter((input) => {
+      if (
+        input.scopeMatch === "installation" &&
+        (input.scope.recipientUserId !== null ||
+          input.scope.organizationId !== null ||
+          input.scope.workspaceId !== null)
+      )
+        return "Installation suppression requires null scope";
+      if (
+        input.scopeMatch === "organization" &&
+        (input.scope.organizationId === null ||
+          input.scope.recipientUserId !== null ||
+          input.scope.workspaceId !== null)
+      )
+        return "Organization suppression requires organization-only scope";
+    }),
+  )
+  .annotate({ identifier: "SetNotificationSuppressionInput" });
 
 export const ResetSuppressionInput = Schema.Struct({
+  scopeMatch: Schema.optional(
+    Schema.Literals(["exact", "organization", "installation"]),
+  ),
   scope: NotificationScope,
   channel: Schema.NonEmptyString,
   purpose: Schema.NullOr(NotificationDeliveryPurpose),
@@ -853,6 +1017,13 @@ export type NotificationDeliveryReferenceInput =
   typeof NotificationDeliveryReferenceInput.Type;
 export type PublishDeliveryInput = typeof PublishDeliveryInput.Type;
 export type PublishInput = typeof PublishInput.Type;
+export type PublicationInput = typeof PublicationInput.Type;
+export type PublicationDeliveryInput = typeof PublicationDeliveryInput.Type;
+export type PublicationDeliveryMetadata =
+  typeof PublicationDeliveryMetadata.Type;
+export type PublicationRecipient = typeof PublicationRecipient.Type;
+export type DeliveryPolicy = typeof DeliveryPolicy.Type;
+export type ConsentRequirement = typeof ConsentRequirement.Type;
 export type NotificationDelivery = typeof NotificationDelivery.Type;
 export type DeliveryAttemptOutcome = typeof DeliveryAttemptOutcome.Type;
 export type NotificationDeliveryAttempt =

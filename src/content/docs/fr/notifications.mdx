@@ -31,6 +31,30 @@ Les anciens éléments du registre shadcn restent disponibles pour assurer la co
 
 ## Installer le package durable
 
+### Un seul modèle de publication
+
+Utilisez `NotificationService.publish()` pour les adresses externes, les destinataires
+associés à un contact et ceux liés à un compte. L’instantané `recipient` et la
+`policy` explicite d’une livraison sont indépendants de son périmètre de compte,
+d’organisation et d’espace de travail. Aucun compte de connexion n’est requis pour
+un contact ; sa création ou son association n’accorde jamais de consentement.
+
+Reçus transactionnels, avis de sécurité et lettres d’information avec consentement
+utilisent le même registre et le même moteur. Le marketing exige un consentement
+explicite lié à l’adresse et au périmètre. Les notifications facultatives respectent
+le consentement applicable, le désabonnement du compte et ses préférences. Un blocage
+prévaut sur une autorisation. L’hôte reste responsable de la classification des
+messages, de la résolution fiable des destinataires et des autorisations.
+
+L’adaptateur facultatif `/integration` distingue les droits de publication,
+d’inspection, d’annulation et de nouvelle tentative, avec une autorisation obligatoire
+de l’hôte. `/consent` enregistre les preuves auditées ; publier n’en crée jamais.
+`queueEmail` reste une traduction de compatibilité dépréciée, sans modifier les
+identifiants ni les politiques des envois déjà acceptés. Le
+[guide de publication canonique](https://github.com/krakcons/krakstack/blob/main/packages/notifications/PUBLICATION.md)
+présente les exemples, les contrats transactionnels et de rejeu, ainsi que le retrait
+prévu lors d’une prochaine version incompatible.
+
 ### Administration des notifications par application
 
 Le module expérimental `@krak-stack/notifications/admin` enrichit ce moteur durable pour les
@@ -81,9 +105,11 @@ Cette vue en lecture seule utilise les livraisons, modèles, références métie
 autorisées et tentatives d’origine. Elle ne republie rien, ne crée pas de contacts
 artificiels, ne modifie pas les nouvelles tentatives et ne confond pas les
 préférences des comptes avec le consentement marketing. Les contacts et campagnes
-restent inchangés. Le rapprochement des retours reste limité aux contacts ; la vue
-signale explicitement les courriels du produit sans couverture des retours, sans
-assimiler acceptation fournisseur et livraison confirmée. Consultez le
+restent inchangés. Les droits `deliveryScopes` sont indépendants de la source.
+Le rapprochement couvre aussi les publications natives dont les retours fournisseurs
+sont explicitement configurés. Les autres restent signalées sans couverture ; une
+association à un contact ne garantit ni cette couverture ni une livraison confirmée.
+Consultez le
 [guide d’intégration du personnel](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md#staff-administration-of-engine-published-emails).
 
 Installez le package avec le pilote PostgreSQL d'Effect :

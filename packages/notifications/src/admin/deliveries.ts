@@ -54,21 +54,35 @@ export class NotificationDeliveryAdmin extends Context.Service<NotificationDeliv
         access: typeof S.DeliveryAdminAccess.Type,
         selection: typeof S.DeliverySelection.Type,
       ) => {
-        const engine = sql.or(
-          access.engineScopes.map((grant) => {
-            switch (grant._tag) {
-              case "Exact":
-                return exact(grant.scope);
-              case "Organization":
-                return sql`d.organization_id = ${grant.organizationId}`;
-              case "Installation":
-                return sql`TRUE`;
-            }
-          }),
-        );
+        const scopes = (
+          grants: ReadonlyArray<typeof S.DeliveryScopeGrant.Type>,
+        ) =>
+          sql.or(
+            grants.map((grant) => {
+              switch (grant._tag) {
+                case "Exact":
+                  return exact(grant.scope);
+                case "Organization":
+                  return sql`d.organization_id = ${grant.organizationId}`;
+                case "Installation":
+                  return sql`TRUE`;
+              }
+            }),
+          );
+        const engine = scopes(access.engineScopes);
+        const canonical = access.deliveryScopes?.length
+          ? scopes(access.deliveryScopes)
+          : sql`FALSE`;
+        const source =
+          selection.source === "contacts"
+            ? managed
+            : selection.source === "engine"
+              ? sql`NOT ${managed}`
+              : sql`TRUE`;
         return sql`d.channel = 'email'
         AND (${access.contactManaged && selection.source !== "engine" ? sql`${managed} AND ${exact({ recipientUserId: null, organizationId: null, workspaceId: null })}` : sql`FALSE`}
-          OR ${selection.source !== "contacts" && access.engineScopes.length ? sql`NOT ${managed} AND (${engine})` : sql`FALSE`})
+          OR ${selection.source !== "contacts" && access.engineScopes.length ? sql`NOT ${managed} AND (${engine})` : sql`FALSE`}
+          OR (${canonical} AND ${source}))
         AND ${selection.scope ? exact(selection.scope) : sql`TRUE`}`;
       };
       // These joins are unique by delivery_id. Attempts, feedback and references
@@ -79,7 +93,7 @@ export class NotificationDeliveryAdmin extends Context.Service<NotificationDeliv
       LEFT JOIN kraksend_campaigns c ON c.id = cr.campaign_id`;
       const columns = sql`d.id, CASE WHEN r.delivery_id IS NULL THEN 'engine' ELSE 'contacts' END AS source,
       d.recipient_user_id AS "recipientUserId", d.organization_id AS "organizationId", d.workspace_id AS "workspaceId",
-      r.contact_id AS "contactId", cr.campaign_id AS "campaignId", c.name AS "campaignName",
+       COALESCE(r.contact_id::text, d.publication_metadata #>> '{recipient,contact,id}') AS "contactId", cr.campaign_id AS "campaignId", c.name AS "campaignName",
       d.recipient_address AS "recipientAddress", d.recipient_name AS "recipientName", d.event_key AS "eventKey",
       d.purpose, d.template, d.status, d.attempts, d.max_attempts AS "maxAttempts", d.provider,
       d.provider_message_id AS "providerMessageId", d.error_message AS "errorMessage",
@@ -157,8 +171,8 @@ export class NotificationDeliveryAdmin extends Context.Service<NotificationDeliv
           count(*) FILTER (WHERE d.status = 'failed')::int AS failed,
           count(*) FILTER (WHERE d.status = 'suppressed')::int AS suppressed,
           count(*) FILTER (WHERE d.status = 'cancelled')::int AS cancelled,
-          count(*) FILTER (WHERE ${managed})::int AS "feedbackCovered",
-          count(*) FILTER (WHERE NOT ${managed})::int AS "feedbackUnavailable",
+          count(*) FILTER (WHERE ${managed} OR d.feedback_expected)::int AS "feedbackCovered",
+          count(*) FILTER (WHERE NOT ${managed} AND NOT d.feedback_expected)::int AS "feedbackUnavailable",
           count(*) FILTER (WHERE ${flag("delivered")})::int AS confirmed,
           count(*) FILTER (WHERE ${flag("hard_bounce")})::int AS "hardBounced",
           count(*) FILTER (WHERE ${flag("soft_bounce")})::int AS "softBounced",

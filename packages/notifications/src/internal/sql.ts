@@ -59,6 +59,7 @@ export const deliveryColumns = (sql: SqlClient.SqlClient, alias?: "d") => {
     ${prefix}event_version AS "eventVersion",
     ${prefix}channel,
     ${prefix}purpose,
+    ${prefix}publication_metadata AS publication,
     ${prefix}template,
     ${prefix}recipient_address AS "recipientAddress",
     ${prefix}recipient_name AS "recipientName",
@@ -174,6 +175,7 @@ export const suppressionColumns = (sql: SqlClient.SqlClient) =>
       'workspaceId', workspace_id
     ) AS scope,
     channel,
+    scope_match AS "scopeMatch",
     purpose,
     recipient_address AS "recipientAddress",
     reason,
@@ -207,9 +209,15 @@ export const wildcardScope = (
   const workspace = sql.literal(`${alias}.workspace_id`);
 
   return sql`
-    (${recipient} IS NULL OR ${recipient} IS NOT DISTINCT FROM ${scope.recipientUserId})
+    CASE ${sql.literal(`${alias}.scope_match`)}
+    WHEN 'exact' THEN (${recipient} IS NOT DISTINCT FROM ${scope.recipientUserId}
+      AND ${organization} IS NOT DISTINCT FROM ${scope.organizationId}
+      AND ${workspace} IS NOT DISTINCT FROM ${scope.workspaceId})
+    WHEN 'installation' THEN TRUE
+    WHEN 'organization' THEN ${organization} = ${scope.organizationId}
+    ELSE ((${recipient} IS NULL OR ${recipient} IS NOT DISTINCT FROM ${scope.recipientUserId})
     AND (${organization} IS NULL OR ${organization} IS NOT DISTINCT FROM ${scope.organizationId})
-    AND (${workspace} IS NULL OR ${workspace} IS NOT DISTINCT FROM ${scope.workspaceId})
+    AND (${workspace} IS NULL OR ${workspace} IS NOT DISTINCT FROM ${scope.workspaceId})) END
   `;
 };
 

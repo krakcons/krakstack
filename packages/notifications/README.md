@@ -525,6 +525,14 @@ backlog causes reconciliation to allocate a replacement generation.
 Reminder records are durable one-shot invocations keyed by handler name and
 version. Recurrence and grouping are intentionally outside this package.
 
+## Unified publication
+
+New integrations should use the recipient/policy form of `NotificationService.publish()`.
+It supports scoped external, contact-associated and account-linked deliveries through
+the existing engine, with explicit transactional, notification and marketing policy.
+See [PUBLICATION.md](./PUBLICATION.md) for consent, authorization, transaction/replay
+contracts, generic examples and the legacy authoring retirement path.
+
 ## Testing
 
 ```sh

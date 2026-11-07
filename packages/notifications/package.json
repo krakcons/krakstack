@@ -13,6 +13,7 @@
     "dist",
     "README.md",
     "ADMIN.md",
+    "PUBLICATION.md",
     "CHANGELOG.md"
   ],
   "type": "module",
@@ -45,6 +46,22 @@
     "./policy": {
       "types": "./dist/policy.d.ts",
       "import": "./dist/policy.js"
+    },
+    "./publication-policy": {
+      "types": "./dist/publication-policy.d.ts",
+      "import": "./dist/publication-policy.js"
+    },
+    "./consent": {
+      "types": "./dist/consent.d.ts",
+      "import": "./dist/consent.js"
+    },
+    "./integration": {
+      "types": "./dist/integration.d.ts",
+      "import": "./dist/integration.js"
+    },
+    "./feedback": {
+      "types": "./dist/feedback.d.ts",
+      "import": "./dist/feedback.js"
     },
     "./transport": {
       "types": "./dist/transport.d.ts",

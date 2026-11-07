@@ -1,5 +1,7 @@
 import { Cause, Context, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
+import { PgClient } from "@effect/sql-pg";
+import { makePublicationPolicy } from "./publication-policy.js";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
 import { makeEmailSubscriptions } from "./internal/email-subscriptions.js";
@@ -250,6 +252,10 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
       ),
     );
     const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+    const publicationPolicy = yield* makePublicationPolicy(
+      sql,
+      yield* PgClient.PgClient,
+    );
     const emailSubscriptions = makeEmailSubscriptions(sql);
     const notificationQueueTable = sql(NOTIFICATION_QUEUE_TABLE);
     const transports = yield* NotificationTransportRegistry;
@@ -303,7 +309,8 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
         FROM notification_suppressions x
         WHERE ${wildcardScope(sql, "x", input.delivery.scope)}
           AND x.channel = ${input.delivery.channel}
-          AND (x.purpose IS NULL OR x.purpose = ${input.delivery.purpose})
+          AND (x.purpose IS NULL OR x.purpose = ${input.delivery.purpose}
+            OR (x.purpose = 'notification' AND ${input.delivery.purpose} = 'marketing'))
           AND x.recipient_address = ${recipientAddress}
           AND (x.expires_at IS NULL OR x.expires_at > ${input.now})
         LIMIT 1
@@ -312,7 +319,7 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
 
       const recipientUserId = input.delivery.scope.recipientUserId;
       if (
-        input.delivery.purpose !== "notification" ||
+        input.delivery.purpose === "transactional" ||
         recipientUserId === null
       ) {
         return null;
@@ -633,7 +640,18 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
               "The required dispatch policy is not installed on this worker",
           });
         }
-        const policyDecision = yield* dispatchPolicy.check(delivery).pipe(
+        const policyDecision = yield* Effect.gen(function* () {
+          if (delivery.publication) {
+            const decision = yield* publicationPolicy({
+              scope: delivery.scope,
+              eventKey: delivery.eventKey,
+              channel: delivery.channel,
+              publication: delivery.publication,
+            });
+            if (decision._tag !== "Allow") return decision;
+          }
+          return yield* dispatchPolicy.check(delivery);
+        }).pipe(
           Effect.flatMap(Schema.decodeEffect(DispatchDecision)),
           Effect.mapError(
             (cause) =>

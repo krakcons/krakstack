@@ -19,6 +19,13 @@ import { SendCampaigns } from "../../src/campaign.js";
 import { SendOperations } from "../../src/operations.js";
 import { NotificationDeliveryAdmin } from "../../../notifications/src/admin/deliveries.js";
 import { makeCampaignSafetyLayer } from "../../src/campaign.safety.js";
+import { contactRecipientPolicyLayer } from "../../../notifications/src/admin/recipient.js";
+import { NotificationEmailConsent } from "../../../notifications/src/consent.js";
+import {
+  publicationPoliciesLayer,
+  type PublicationPolicyExtension,
+} from "../../../notifications/src/publication-policy.js";
+import { notificationFeedbackLayer } from "../../../notifications/src/feedback.js";
 
 export const unsubscribeOptions = {
   secret: Redacted.make(
@@ -39,11 +46,13 @@ export const withSend = <A, E>(
     campaigns: SendCampaigns["Service"];
     operations: SendOperations["Service"];
     deliveries: NotificationDeliveryAdmin["Service"];
+    consent: NotificationEmailConsent["Service"];
     setSenderVerified: (verified: boolean) => void;
     transport: ReturnType<typeof makeFakeTransport>;
     sql: SqlClient.SqlClient;
   }) => Effect.Effect<A, E>,
   transportOptions?: Pick<FakeTransportOptions, "send">,
+  policies: ReadonlyArray<PublicationPolicyExtension> = [],
 ) =>
   Effect.gen(function* () {
     const url = process.env.TEST_DATABASE_URL;
@@ -61,7 +70,11 @@ export const withSend = <A, E>(
       ...transportOptions,
     });
     const domain = KrakSend.layer.pipe(
-      Layer.provideMerge(NotificationService.layer),
+      Layer.provideMerge(
+        NotificationService.layer.pipe(
+          Layer.provide(contactRecipientPolicyLayer),
+        ),
+      ),
     );
     let senderVerified = true;
     const safety = makeCampaignSafetyLayer(
@@ -91,8 +104,11 @@ export const withSend = <A, E>(
       SendFeedback.layer,
       SendOperations.layer,
       NotificationDeliveryAdmin.layer,
+      NotificationEmailConsent.layer,
     ).pipe(
       Layer.provideMerge(products),
+      Layer.provide(publicationPoliciesLayer(policies)),
+      Layer.provide(notificationFeedbackLayer(["email"])),
       Layer.provide(safety),
       Layer.provide(transport.layer),
       Layer.provide(ReminderHandlerRegistry.emptyLayer),
@@ -118,6 +134,7 @@ export const withSend = <A, E>(
             campaigns: yield* SendCampaigns,
             operations: yield* SendOperations,
             deliveries: yield* NotificationDeliveryAdmin,
+            consent: yield* NotificationEmailConsent,
             setSenderVerified: (verified) => {
               senderVerified = verified;
             },

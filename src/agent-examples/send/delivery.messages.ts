@@ -22,6 +22,7 @@ export const notificationDeliveryMessages = (
     purposes: {
       transactional: m.notifications_staff_transactional({}, o),
       notification: m.notifications_staff_notification({}, o),
+      marketing: m.notifications_staff_marketing({}, o),
     },
     eventKey: m.notifications_staff_event({}, o),
     references: m.notifications_staff_references({}, o),

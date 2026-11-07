@@ -7,6 +7,7 @@ import {
 import { NotificationRuntime } from "@krak-stack/notifications/runtime";
 
 import { KrakSend } from "./index.js";
+import { contactRecipientPolicyLayer } from "./recipient.js";
 
 export const sendDispatchPolicyLayer = Layer.effect(
   NotificationDispatchPolicy,
@@ -30,4 +31,5 @@ export const sendDispatchPolicyLayer = Layer.effect(
 
 export const sendRuntimeLayer = NotificationRuntime.layer.pipe(
   Layer.provide(sendDispatchPolicyLayer),
+  Layer.provide(contactRecipientPolicyLayer),
 );

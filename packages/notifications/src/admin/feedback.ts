@@ -3,6 +3,7 @@ import { Context, Effect, Layer, Option, Schedule, Schema } from "effect";
 import { SqlClient, SqlSchema, SqlError } from "effect/sql";
 import { NotificationService } from "@krak-stack/notifications";
 import { KrakSend } from "./index.js";
+import { NotificationScope } from "../schema.js";
 import {
   ContactParams,
   FeedbackReceipt,
@@ -48,12 +49,19 @@ export class SendFeedback extends Context.Service<SendFeedback>()(
         // can have more than one provider message ID. Never match by address alone.
         const candidates = yield* SqlSchema.findAll({
           Request: RecordFeedback,
-          Result: ContactParams,
+          Result: Schema.Struct({
+            ...ContactParams.fields,
+            scope: NotificationScope,
+            legacy: Schema.Boolean,
+          }).annotate({ identifier: "NotificationFeedbackDelivery" }),
           execute: (input) => sql`
-          SELECT DISTINCT d.id FROM notification_deliveries d
-          JOIN kraksend_email_requests r ON r.delivery_id = d.id
+          SELECT DISTINCT d.id,
+            jsonb_build_object('recipientUserId',d.recipient_user_id,'organizationId',d.organization_id,'workspaceId',d.workspace_id) AS scope,
+            EXISTS (SELECT 1 FROM kraksend_email_requests r WHERE r.delivery_id = d.id) AS legacy
+          FROM notification_deliveries d
           JOIN notification_delivery_attempts a ON a.delivery_id = d.id
           WHERE d.channel = 'email' AND lower(btrim(d.recipient_address)) = ${input.recipientAddress}
+            AND (d.feedback_expected OR EXISTS (SELECT 1 FROM kraksend_email_requests r WHERE r.delivery_id = d.id))
             AND a.outcome = 'sent' AND a.provider = ${input.provider}
             AND a.provider_message_id = ${input.providerMessageId}
           LIMIT 2
@@ -68,11 +76,8 @@ export class SendFeedback extends Context.Service<SendFeedback>()(
         if (event.kind === "hard_bounce" || event.kind === "complaint") {
           yield* notifications
             .setSuppression({
-              scope: {
-                recipientUserId: null,
-                organizationId: null,
-                workspaceId: null,
-              },
+              scope: delivery.scope,
+              scopeMatch: delivery.legacy ? undefined : "exact",
               channel: "email",
               purpose: null,
               recipientAddress: event.recipientAddress,

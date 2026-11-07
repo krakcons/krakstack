@@ -31,6 +31,26 @@ The older shadcn registry items remain available for compatibility. They vendor 
 
 ## Install the durable package
 
+### One publication model
+
+Use `NotificationService.publish()` for external addresses, contact-associated
+recipients and account-linked recipients. A delivery's `recipient` snapshot and
+explicit `policy` are independent of its account/organization/workspace scope.
+Contacts require no login account; creating or linking one never grants consent.
+
+Transactional receipts, account security notices and consent-based newsletters use
+the same ledger and runtime. Marketing requires explicit scoped, address-bound
+consent; optional notifications respect applicable consent, account opt-out and
+preferences. Suppression wins over permission. The host owns message classification,
+trusted recipient resolution and authorization—not caller-supplied scope.
+
+The optional `/integration` adapter has separate publish, inspect, cancel and retry
+permissions plus mandatory host authorization. `/consent` records audited evidence;
+publication never creates it. Existing `queueEmail` calls remain deprecated
+compatibility translation, with stable queued IDs and policies. See the
+[canonical publication guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/PUBLICATION.md)
+for examples, transaction/replay contracts and the breaking-release retirement path.
+
 ### Per-application notification administration
 
 The experimental `@krak-stack/notifications/admin` module extends this durable engine for
@@ -76,9 +96,10 @@ the unified console enables it through an optional staff configuration.
 This read-only view uses the original deliveries, templates, allowlisted domain
 references and attempt history. It never republishes, creates synthetic contacts,
 changes retries or mixes account preferences with marketing consent. Contact and
-campaign behavior stays unchanged. Feedback reconciliation remains contact-only;
-the staff view explicitly reports product emails without feedback coverage rather
-than treating provider acceptance as confirmed delivery. See the
+campaign behavior stays unchanged. Source-independent staff grants use `deliveryScopes`.
+Feedback reconciliation also supports native publications with explicitly configured
+provider feedback. Other publications remain visibly without coverage; contact
+association does not imply coverage or confirmed delivery. See the
 [staff integration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md#staff-administration-of-engine-published-emails).
 
 Install the package with the Effect PostgreSQL driver:

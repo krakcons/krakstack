@@ -47,6 +47,11 @@ client column filters cannot widen that scope. Legacy cursor APIs remain availab
 
 ## Visibility and safety
 
+Canonical recipient/policy publication is documented in [PUBLICATION.md](./PUBLICATION.md).
+Native publications can combine contact, account, organization and workspace context
+without legacy contact-request records. `queueEmail` is now a deprecated compatibility
+entry point; accepted legacy work and its consent/policy interpretation remain stable.
+
 - Contacts are independent of login accounts. Creation never grants consent.
   Grants/withdrawals and suppression changes are distinct audited facts.
 - Campaigns snapshot subscribed audiences. Completion means publication finished,
@@ -88,8 +93,9 @@ import { deliveryAdminRoutes } from "@krak-stack/notifications/admin/delivery.ap
 
 Provide `NotificationDeliveryAdmin.layer` with the existing `NotificationContacts`,
 `NotificationService` and `SqlClient` layers. Contact acquisition ensures the
-existing administration migrations have run. No new migration or backfill is
-needed. Mount `deliveryAdminRoutes` alongside the existing protected routes.
+existing administration migrations have run. Package layers run the required additive
+migrations; historical deliveries need no association backfill or republishing.
+Mount `deliveryAdminRoutes` alongside the existing protected routes.
 `DeliveryAdminApi`, `DeliveryAdminGroup` and `deliveryAdminHandlers` are also exported
 for host composition.
 
@@ -137,6 +143,9 @@ default middleware and no fallback to `SendAdmin`. Empty grants expose no data.
   contact-managed dataset. Engine grants do not confer this permission.
 - `referenceNamespaces` is an exact allowlist of domain reference namespaces
   returned by inspection. Use `[]` to expose none.
+- Optional `deliveryScopes` uses the same grant shapes for source-independent
+  delivery access, including scoped contact-associated native publications. Existing
+  `contactManaged` and `engineScopes` permissions are not silently expanded.
 
 Protected GET endpoints under `/api/send/staff/deliveries`:
 
@@ -156,7 +165,8 @@ Authorization applies before aggregates, search, filters and pagination. An
 inaccessible inspection ID returns not-found before attempts or references are
 read. Inspection uses the delivery's stored exact scope. Each delivery counts once,
 even with overlapping grants, multiple attempts, references or feedback events.
-Engine source means no contact-managed request is associated; it is not inferred
+Engine source means no legacy contact-managed request is associated; a native
+publication can still have a real contact/endpoint association. It is not inferred
 from addresses, template names or idempotency-key prefixes.
 
 Rows expose scope, source, nullable contact/campaign associations, engine purpose,
@@ -168,10 +178,14 @@ in the engine are never rewritten. Reads never publish, enqueue, retry, alter
 account preferences/suppressions or create marketing consent.
 
 Delivery-state metrics cover all selected authorized emails. `accepted` means
-provider acceptance, not confirmed delivery or reading. Feedback reconciliation
-remains contact-only: `feedbackCovered` counts contact-managed emails and
-`feedbackUnavailable` counts engine emails. Confirmation/bounce/complaint counts
-must not be presented as complete product-email coverage. Unmatched feedback and
+provider acceptance, not confirmed delivery or reading. Feedback reconciliation covers
+legacy contact requests and native deliveries accepted with host-configured feedback
+capability. Configure `notificationFeedbackLayer(["email"])` on the publisher only
+when authenticated ingestion and reconciliation are deployed. Without this opt-in,
+native emails remain `feedbackUnavailable`, even with a contact association. Coverage
+is not inferred from contact membership. New native bounce/complaint blocks use exact
+scope. Historical engine emails are not retroactively marked covered. Counts must
+not be presented as complete product-email coverage. Unmatched feedback and
 active-suppression metrics remain in the existing contact operations, not mixed
 into the scope-aware overview.
 
