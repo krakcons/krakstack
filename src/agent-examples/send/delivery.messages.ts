@@ -1,5 +1,5 @@
 import * as m from "@/paraglide/messages";
-import type { NotificationDeliveryMessages } from "@/services/send/client/operations";
+import type { NotificationDeliveryMessages } from "@krak-stack/notifications-admin/deliveries";
 import { sendOperationsMessages } from "./operations.messages";
 export const notificationDeliveryMessages = (
   locale: "en" | "fr",

@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["../../src/*"],
+      "@krak-stack/registry/data-table": [
+        "../../src/components/ui/data-table.tsx"
+      ],
+      "@krak-stack/registry/form": ["../../src/components/ui/form.tsx"]
+    },
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "outDir": "./dist/.declarations",
+    "sourceMap": false
+  },
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}

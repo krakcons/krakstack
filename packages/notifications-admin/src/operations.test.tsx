@@ -9,7 +9,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
-import { SendOperationsAdmin, type SendOperationsProps } from "./operations";
+import { SendOperationsAdmin, type SendOperationsProps } from "./operations.js";
 import { sendOperationsMessages } from "@/agent-examples/send/operations.messages";
 afterEach(cleanup);
 const m = sendOperationsMessages("en");

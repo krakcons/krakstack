@@ -13,10 +13,22 @@ account unsubscribe, inbox and APNs/FCM integrations are unchanged.
 
 ## Frontend
 
-Install `@krak-stack/notifications-contacts`, `@krak-stack/notifications-campaigns`
-and `@krak-stack/notifications-operations` through the KrakStack registry, or import
-`NotificationContacts`, `NotificationCampaigns` and `NotificationOperations` from
-the corresponding `@krak-stack/registry/notifications/*` exports.
+Install the optional `@krak-stack/notifications-admin` package for React web views
+and Effect Atom factories. Import `NotificationContacts`, `NotificationCampaigns`,
+`NotificationOperations` and `NotificationDeliveries` from that package or its
+`/contacts`, `/campaigns`, `/operations` and `/deliveries` subpaths. Effect Atom
+factories live in `/atoms`. See its [setup guide](../notifications-admin/README.md)
+for shared KrakStack primitives, styles, localization and peer dependencies.
+
+The backend SDK owns no React dependency. Its `/admin/*` subpaths remain Effect
+contracts, persistence and protected handlers. Hosts own authentication, routing,
+authorization and the decision to use these views or reconstruct custom screens
+from KrakStack primitives. No TanStack Start runtime is required by the backend.
+
+Existing `@krak-stack/registry/notifications/*` imports and notification registry
+items remain compatibility re-exports, not duplicate screen implementations. In
+registry 0.3.0, install the optional notifications-admin peer when using those
+paths. Already published 0.2.x exports and legacy engines are unchanged.
 
 `src/agent-examples/send/console.tsx` exports `NotificationsAdminPanel` and
 `makeNotificationsAdminAtoms` for a unified English/French host integration.
@@ -191,8 +203,8 @@ into the scope-aware overview.
 
 ### Staff frontend
 
-`NotificationDeliveries` is exported by `@krak-stack/registry/notifications/operations`
-and the `notifications-operations` registry item. It provides overview, shared
+`NotificationDeliveries` is exported by `@krak-stack/notifications-admin/deliveries`.
+The old registry operations export remains a compatibility bridge. It provides overview, shared
 activity tables and attempt inspection, without consent, suppression or resend
 controls. Contact/campaign links require real associations and their existing host
 permissions.

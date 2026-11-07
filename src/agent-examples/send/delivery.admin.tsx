@@ -10,7 +10,7 @@ import {
 import {
   NotificationDeliveries,
   type NotificationDeliveriesProps,
-} from "@/services/send/client/operations";
+} from "@krak-stack/notifications-admin/deliveries";
 import {
   makeNotificationDeliveryAtoms,
   deliveryQueryKey,

@@ -13,7 +13,10 @@ type: how-to
 
 `@krak-stack/notifications` is the default backend for new durable notification systems. It combines package-owned PostgreSQL migrations and CRUD operations with an Effect `PersistedQueue`, delivery and reminder workers, a due-work scheduler, and optional SES or SMTP transports.
 
-The older shadcn registry items remain available for compatibility. They vendor editable source into an application, but they are not the recommended durable runtime.
+The backend stays Effect-only: it does not depend on React, TanStack or registry.
+Optional React screens and Effect Atom helpers live in `@krak-stack/notifications-admin`.
+Older notification engine registry items remain available without being redirected
+to this runtime.
 
 ## Responsibility matrix
 
@@ -59,7 +62,7 @@ queueing. It requires no KrakAuth, accounts, organizations, or project directory
 The host application protects its administrative API and frontend. A contact is
 not a login account, and creating a contact does not subscribe it.
 
-The `notifications-contacts` registry item provides a controlled admin view. Worker
+`@krak-stack/notifications-admin/contacts` provides a controlled admin view. Worker
 composition must use the matching notification administration dispatch policy; protected deliveries
 fail closed on a worker without it. See the [administration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md)
 for integration. Contact-specific signed unsubscribe links
@@ -90,7 +93,7 @@ to `NotificationDeliveryAdmin` from `admin/deliveries` and mount `admin/delivery
 with separate host-provided `DeliveryAdmin` staff authorization. Explicit exact,
 organization or installation grants restrict overview metrics, activity tables and
 attempt inspection before queries run. Null scope fields are exact nulls, not
-wildcards. `NotificationDeliveries` is exported by the operations registry item;
+wildcards. `NotificationDeliveries` is exported by `@krak-stack/notifications-admin/deliveries`;
 the unified console enables it through an optional staff configuration.
 
 This read-only view uses the original deliveries, templates, allowlisted domain
@@ -102,10 +105,56 @@ provider feedback. Other publications remain visibly without coverage; contact
 association does not imply coverage or confirmed delivery. See the
 [staff integration guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/ADMIN.md#staff-administration-of-engine-published-emails).
 
-Install the package with the Effect PostgreSQL driver:
+### Optional React administration
+
+Install the UI package only in applications that need web administration:
 
 ```bash
-bun add @krak-stack/notifications@0.2.1 @effect/sql-pg@4.1.0 effect@4.1.0
+bun add @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.3.0
+```
+
+Install its React, Effect Atom, TanStack, Base UI and icon peer dependencies as
+listed in the [UI setup guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications-admin/README.md).
+The package reuses registry's generic tables and forms, not a second notification engine.
+Add its Tailwind source alongside your application's theme styles:
+
+```css
+@import "@krak-stack/notifications-admin/tailwind.css";
+```
+
+```tsx
+import {
+  NotificationContacts,
+  NotificationCampaigns,
+  NotificationOperations,
+  NotificationDeliveries,
+} from "@krak-stack/notifications-admin";
+import { makeNotificationDeliveryAtoms } from "@krak-stack/notifications-admin/atoms";
+import { KrakstackProvider } from "@krak-stack/registry/krakstack-provider";
+```
+
+Views accept controlled data, table state, callbacks and localized messages. Supply
+English and French copy through the host's Paraglide integration and share the
+registry `KrakstackProvider` for locale and component defaults. Hosts own TanStack
+routes, authentication, API authorization and cache invalidation. The `/atoms`
+factories are optional; customize transport for host authentication or CSRF needs.
+Recreate staff atoms when their non-secret `authorizationKey` changes and clear
+retained data on sign-out or authorization failure. A cache key is not a permission.
+
+Backend `/admin/*` paths remain Effect contracts and handlers, not React views.
+Existing `@krak-stack/registry/notifications/{contacts,campaigns,operations}` imports
+and corresponding registry items delegate to notifications-admin. Install its
+optional peer when using these compatibility paths in registry 0.3.0. Published
+0.2.x packages are unchanged; unrelated registry consumers need no notification UI.
+See the [bilingual host console](https://github.com/krakcons/krakstack/blob/main/src/agent-examples/send/console.tsx)
+for protected composition, or build custom screens from KrakStack primitives.
+
+### Backend installation
+
+Install the backend with the Effect PostgreSQL driver:
+
+```bash
+bun add @krak-stack/notifications@0.3.0 @effect/sql-pg@4.1.0 effect@4.1.0
 ```
 
 Install only the optional email provider used by the application:
@@ -179,7 +228,7 @@ Only one transport can be registered for a channel. Do not register SES and SMTP
 
 ## Run notifications from cron
 
-With notifications SDK 0.2.0 and Effect 4.1.0, call
+With notifications SDK 0.3.0 and Effect 4.1.0, call
 `NotificationRuntime.runBatch()` instead of keeping `notificationWorkersLayer`
 alive. Use the same SQL pool and transport registry. Acquire the migrated domain
 service before constructing the runtime; deployed jobs can use

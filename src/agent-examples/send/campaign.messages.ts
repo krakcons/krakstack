@@ -1,5 +1,5 @@
 import * as m from "@/paraglide/messages";
-import type { SendCampaignMessages } from "@/services/send/client/campaigns";
+import type { SendCampaignMessages } from "@krak-stack/notifications-admin/campaigns";
 
 export const sendCampaignMessages = (
   locale: "en" | "fr",

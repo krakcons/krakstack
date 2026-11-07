@@ -4,6 +4,11 @@ Host-protected contacts, consent, campaigns and email operations are available
 through `@krak-stack/notifications/admin`. See [Notification administration](./ADMIN.md)
 for KrakStack table integration, server search/filter/pagination and safety boundaries.
 
+This is the Effect backend SDK. Optional React/TanStack web administration lives in
+[`@krak-stack/notifications-admin`](../notifications-admin/README.md), including its
+Effect Atom helpers. Installing the backend does not install React or registry.
+The backend `/admin/*` subpaths are server contracts and handlers, not React screens.
+
 PostgreSQL-backed Effect primitives for notification inboxes, preferences,
 durable deliveries, and one-shot reminders. The package owns no product auth,
 HTTP API, UI, provider credentials, or rendered product copy.
@@ -14,6 +19,10 @@ HTTP API, UI, provider credentials, or rendered product copy.
 - `@krak-stack/notifications/schema` provides schemas, records, inputs, statuses, and typed errors.
 - `@krak-stack/notifications/migrations` provides the package migration loader, runner, and layer.
 - `@krak-stack/notifications/runtime` provides due-work enqueueing, workers, retry policy, and reminder handlers.
+- `@krak-stack/notifications/consent` provides audited, address/purpose/exact-scope consent evidence.
+- `@krak-stack/notifications/publication-policy` provides versioned publication policy extensions and the contact-recipient policy seam.
+- `@krak-stack/notifications/integration` provides host-authorized publish, inspect, cancel and retry operations, with no default authentication or public routes.
+- `@krak-stack/notifications/feedback` provides host-configured provider-feedback coverage for new canonical publications.
 - `@krak-stack/notifications/transport` provides the transport contract and channel registry.
 - `@krak-stack/notifications/transport/email` provides the provider-free rendered email payload v1 schema.
 - `@krak-stack/notifications/transport/email-ses` provides the optional AWS SESv2 email adapter.
@@ -42,6 +51,7 @@ Domain migrations use `krakstack_notification_migrations` and own these tables:
 - `notification_reminders`
 - `notification_publications`
 - `notification_email_unsubscribes`
+- `notification_email_consent_events`
 
 The migrations use additive columns and versioned corrected indexes so an
 installation with the legacy notification tables can be adopted without

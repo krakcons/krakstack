@@ -6,7 +6,7 @@ import {
 } from "@krak-stack/notifications/admin/table.schema";
 import { AsyncResult } from "effect/reactivity";
 import { useEffect, useState } from "react";
-import { SendCampaignAdmin } from "@/services/send/client/campaigns";
+import { SendCampaignAdmin } from "@krak-stack/notifications-admin/campaigns";
 import { sendCampaignMessages } from "./campaign.messages";
 import type { makeSendCampaignAtoms } from "./campaign.atom";
 import { useTableTotal } from "./table";

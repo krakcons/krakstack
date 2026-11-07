@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -322,10 +322,12 @@
     "web-vitals": "^5.1.0"
   },
   "devDependencies": {
-    "@krak-stack/notifications": "workspace:*"
+    "@krak-stack/notifications": "workspace:*",
+    "@krak-stack/notifications-admin": "workspace:*"
   },
   "peerDependencies": {
     "@krak-stack/notifications": "^0.3.0",
+    "@krak-stack/notifications-admin": "^0.1.0",
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
@@ -351,6 +353,9 @@
   },
   "peerDependenciesMeta": {
     "@krak-stack/notifications": {
+      "optional": true
+    },
+    "@krak-stack/notifications-admin": {
       "optional": true
     },
     "@effect/sql-pg": {

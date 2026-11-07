@@ -14,6 +14,7 @@
         "@effect/sql-pg": "4.1.0",
         "@iconify/react": "^6.0.2",
         "@krak-stack/notifications": "workspace:*",
+        "@krak-stack/notifications-admin": "workspace:*",
         "@krak-stack/registry": "workspace:*",
         "@lucas-barake/effect-form": "1.1.0",
         "@lucas-barake/effect-form-react": "1.1.0",
@@ -95,7 +96,7 @@
     },
     "packages/notifications": {
       "name": "@krak-stack/notifications",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "dependencies": {
         "@effect/platform-node-shared": "4.1.0",
       },
@@ -124,9 +125,30 @@
         "nodemailer",
       ],
     },
+    "packages/notifications-admin": {
+      "name": "@krak-stack/notifications-admin",
+      "version": "0.1.0",
+      "dependencies": {
+        "class-variance-authority": "^0.7.1",
+        "cn": "^0.3.0",
+      },
+      "peerDependencies": {
+        "@base-ui/react": "^1.5.0",
+        "@effect/atom-react": "^4.1.0",
+        "@krak-stack/notifications": "^0.3.0",
+        "@krak-stack/registry": "^0.3.0",
+        "@tanstack/react-form": "^1.33.0",
+        "@tanstack/react-router": "^1.170.15",
+        "@tanstack/react-virtual": "^3.14.5",
+        "effect": "^4.1.0",
+        "lucide-react": "^1.18.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+      },
+    },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
         "bowser": "^2.14.1",
@@ -135,6 +157,7 @@
       },
       "devDependencies": {
         "@krak-stack/notifications": "workspace:*",
+        "@krak-stack/notifications-admin": "workspace:*",
       },
       "peerDependencies": {
         "@aws-sdk/client-sesv2": "^3.1068.0",
@@ -145,6 +168,7 @@
         "@iconify/react": "^6.0.2",
         "@inlang/paraglide-js": "^2.19.0",
         "@krak-stack/notifications": "^0.3.0",
+        "@krak-stack/notifications-admin": "^0.1.0",
         "@lucas-barake/effect-form": "1.1.0",
         "@lucas-barake/effect-form-react": "1.1.0",
         "@tanstack/highlight": "^0.0.10",
@@ -168,6 +192,7 @@
         "@effect/sql-pg",
         "@iconify/react",
         "@krak-stack/notifications",
+        "@krak-stack/notifications-admin",
         "@lucas-barake/effect-form",
         "@lucas-barake/effect-form-react",
         "@tanstack/highlight",
@@ -516,6 +541,8 @@
     "@krak-stack/auth": ["@krak-stack/auth@0.2.32", "", { "dependencies": { "@effect/atom-react": "^4.1.0", "@lucas-barake/effect-form-react": "1.1.0", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@krak-stack/registry": "^0.1.61", "@tanstack/react-router": "^1.170.15", "effect": "^4.1.0", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-6cmw+IcX36UjjTeeINTkIStI8mFB4Uiuugf2eXg8vSrrqrDefVUSVcedVUjXZfCoWG+5XQ2HD54LagIlaeIHhw=="],
 
     "@krak-stack/notifications": ["@krak-stack/notifications@workspace:packages/notifications"],
+
+    "@krak-stack/notifications-admin": ["@krak-stack/notifications-admin@workspace:packages/notifications-admin"],
 
     "@krak-stack/notifications-admin-compat": ["@krak-stack/notifications-admin-compat@workspace:packages/send"],
 

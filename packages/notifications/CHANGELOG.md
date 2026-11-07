@@ -1,5 +1,18 @@
 # @krak-stack/notifications
 
+## 0.3.0
+
+### Minor Changes
+
+- Unify publication through the existing delivery engine with immutable address/contact associations, independent account/organization/workspace scope, explicit transactional, notification and marketing policies, audited exact-scope consent, and versioned fail-closed policy extensions.
+- Add protected server-side integration operations with separate publish, inspect, cancel and retry permissions and mandatory host authorization. Keep authentication, trusted recipient resolution, templates and business classification application-owned.
+- Add host-protected contact and consent administration, signed contact unsubscribe, bilingual campaigns, durable audience publication, sender/environment safeguards, and email operations with audited suppression changes.
+- Keep this package Effect-only. Optional React screens and Effect Atom helpers are distributed separately as `@krak-stack/notifications-admin@0.1.0`; backend `/admin/*` subpaths remain server contracts and handlers.
+- Add source-independent, scope-authorized staff metrics, activity tables and attempt inspection. Use shared server-backed KrakStack tables without republishing messages or manufacturing contact requests.
+- Extend authenticated provider feedback to opted-in native publications with exact-scope bounce/complaint suppression and explicit feedback coverage. Preserve legacy broad blocks while adding explicit suppression matching modes.
+- Add account-wide optional-email opt-out and signed unsubscribe links, enforced at publication and dispatch without changing transactional email, push or direct-dispatch behavior.
+- Preserve legacy publication fingerprints, queued IDs, retries, migration identifiers, tokens and workflow names. Existing publication shapes and `NotificationContacts.queueEmail()` remain compatibility entry points; see [PUBLICATION.md](./PUBLICATION.md) for migration and retirement guidance. Existing `0.2.x` releases remain unchanged; upgrading to `0.3.0` is explicit for consumers using `^0.2.x`.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @krak-stack/registry
 
+## 0.3.0
+
+### Minor Changes
+
+- Add host-protected notification contact, campaign and operations components through the notification-named package exports. Use shared KrakStack server-backed tables for search, filtering, sorting and pagination.
+- Add opt-in scoped delivery inspection and metrics for native publications, including contact-associated marketing deliveries, with bilingual labels and truthful provider-feedback coverage.
+- Make `@krak-stack/notifications-admin@0.1.0` the owner of notification UI and Effect Atom helpers. Keep notification component subpaths as compatibility re-exports with an optional admin peer; unrelated registry consumers need not install notification UI.
+- Preserve legacy notification exports instead of redirecting them to the durable notifications package. Applications opt into `@krak-stack/notifications@0.3.0` and its notification administration components separately; the notifications peer dependency remains optional for other registry consumers.
+
 ## 0.2.0
 
 ### Minor Changes

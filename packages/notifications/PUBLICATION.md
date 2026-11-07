@@ -243,6 +243,12 @@ still own database/schema installation isolation and confidential error mapping.
 
 ## Operations and provider feedback
 
+The optional React screens and Effect Atom helpers are owned by
+`@krak-stack/notifications-admin`. The Effect backend owns `/admin/*` contracts and
+handlers, not UI. The host can use the packaged screens or build custom ones from
+shared KrakStack primitives without changing publication. Existing registry
+notification UI imports delegate to the new package for compatibility.
+
 Native scoped contact deliveries need no `kraksend_email_requests` record.
 Administration reads existing deliveries and joins real recipient associations.
 `deliveryScopes` opts into source-independent staff grants; old `contactManaged`

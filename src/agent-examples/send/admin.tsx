@@ -10,7 +10,7 @@ import { useState } from "react";
 import {
   SendContacts,
   type SendContactsMessages,
-} from "@/services/send/client/contacts";
+} from "@krak-stack/notifications-admin/contacts";
 import * as m from "@/paraglide/messages";
 import type { makeSendContactAtoms } from "./atom";
 import { useTableTotal } from "./table";

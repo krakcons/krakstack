@@ -35,7 +35,7 @@ const messages: SendContactsMessages = {
   next: "Next",
 };
 
-describe("KrakSend contact administration", () => {
+describe("notification contact administration", () => {
   it("creates a contact without adding consent and waits for server completion", async () => {
     const create = vi.fn().mockResolvedValue(undefined);
     const withdraw = vi.fn();

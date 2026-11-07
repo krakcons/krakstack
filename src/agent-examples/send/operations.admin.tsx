@@ -10,7 +10,7 @@ import {
 import {
   SendOperationsAdmin,
   type SendOperationsProps,
-} from "@/services/send/client/operations";
+} from "@krak-stack/notifications-admin/operations";
 import { makeSendOperationsAtoms, operationsQueryKey } from "./operations.atom";
 import { sendOperationsMessages } from "./operations.messages";
 import { useTableTotal } from "./table";

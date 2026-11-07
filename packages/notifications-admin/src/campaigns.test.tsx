@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 import type { Campaign } from "@krak-stack/notifications/admin/schema";
-import { SendCampaignAdmin } from "./campaigns";
+import { SendCampaignAdmin } from "./campaigns.js";
 import { sendCampaignMessages } from "@/agent-examples/send/campaign.messages";
 
 afterEach(cleanup);

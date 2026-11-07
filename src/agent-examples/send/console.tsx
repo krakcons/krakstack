@@ -8,7 +8,7 @@ import {
 } from "@krak-stack/notifications/admin/table.schema";
 import type * as S from "@krak-stack/notifications/admin/operations.schema";
 import { Button } from "@/components/ui/button";
-import { KrakstackProvider } from "@/components/ui/krakstack-provider";
+import { KrakstackProvider } from "@krak-stack/registry/krakstack-provider";
 import * as m from "@/paraglide/messages";
 import { makeSendContactAtoms } from "./atom";
 import { makeSendCampaignAtoms } from "./campaign.atom";
@@ -16,7 +16,7 @@ import { makeSendOperationsAtoms } from "./operations.atom";
 import { SendContactsPanel } from "./admin";
 import { SendCampaignPanel } from "./campaign.admin";
 import { SendOperationsPanel } from "./operations.admin";
-import { SendContactDetails } from "@/services/send/client/contacts";
+import { SendContactDetails } from "@krak-stack/notifications-admin/contacts";
 import { useTableTotal } from "./table";
 import { makeNotificationDeliveryAtoms } from "./delivery.atom";
 import { NotificationDeliveriesPanel } from "./delivery.admin";

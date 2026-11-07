@@ -970,18 +970,13 @@
     {
       "name": "notifications-operations",
       "title": "Notification Operations",
-      "description": "Global email statistics, delivery and attempt inspection, bounce feedback, suppression management and audit history, and campaign recipient visibility.",
+      "description": "Compatibility exports of @krak-stack/notifications-admin/operations and /deliveries. Import its Tailwind stylesheet and share the registry KrakstackProvider. Hosts own authorization and localized messages.",
       "type": "registry:component",
       "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-07" },
-      "registryDependencies": [
-        "@krak-stack/data-table",
-        "@krak-stack/form",
-        "button",
-        "dialog",
-        "tabs",
-        "select"
-      ],
+      "registryDependencies": [],
       "dependencies": [
+        "@krak-stack/notifications-admin@^0.1.0",
+        "@krak-stack/registry@^0.3.0",
         "@krak-stack/notifications@^0.3.0",
         "effect@latest",
         "react"
@@ -1003,16 +998,13 @@
     {
       "name": "notifications-campaigns",
       "title": "Notification Campaigns",
-      "description": "Host-protected bilingual campaign creation, scheduling, pause/resume, cancellation, and delivery reporting.",
+      "description": "Compatibility export of @krak-stack/notifications-admin/campaigns for host-protected campaign administration. Import its Tailwind stylesheet and share the registry KrakstackProvider. Hosts own authorization and localized messages.",
       "type": "registry:component",
-      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-06" },
-      "registryDependencies": [
-        "@krak-stack/data-table",
-        "@krak-stack/form",
-        "button",
-        "dialog"
-      ],
+      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-07" },
+      "registryDependencies": [],
       "dependencies": [
+        "@krak-stack/notifications-admin@^0.1.0",
+        "@krak-stack/registry@^0.3.0",
         "@krak-stack/notifications@^0.3.0",
         "effect@latest",
         "react"
@@ -1029,16 +1021,13 @@
     {
       "name": "notifications-contacts",
       "title": "Notification Contacts",
-      "description": "Host-protected notification contacts and consent history using KrakStack tables, search, filters, sorting and pagination.",
+      "description": "Compatibility export of @krak-stack/notifications-admin/contacts for host-protected contacts and consent history. Import its Tailwind stylesheet and share the registry KrakstackProvider. Hosts own authorization and localized messages.",
       "type": "registry:component",
-      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-06" },
-      "registryDependencies": [
-        "@krak-stack/data-table",
-        "@krak-stack/form",
-        "button",
-        "dialog"
-      ],
+      "meta": { "createdAt": "2026-11-06", "updatedAt": "2026-11-07" },
+      "registryDependencies": [],
       "dependencies": [
+        "@krak-stack/notifications-admin@^0.1.0",
+        "@krak-stack/registry@^0.3.0",
         "@krak-stack/notifications@^0.3.0",
         "effect@latest",
         "react"

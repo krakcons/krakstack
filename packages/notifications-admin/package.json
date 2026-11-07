@@ -1,0 +1,77 @@
+{
+  "name": "@krak-stack/notifications-admin",
+  "version": "0.1.0",
+  "description": "Optional React administration screens and Effect Atom helpers for KrakStack notifications.",
+  "homepage": "https://krakstack.net/docs/notifications",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krakcons/krakstack.git",
+    "directory": "packages/notifications-admin"
+  },
+  "type": "module",
+  "sideEffects": [
+    "./tailwind.css"
+  ],
+  "files": [
+    "dist",
+    "tailwind.css",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./contacts": {
+      "types": "./dist/contacts.d.ts",
+      "import": "./dist/contacts.js"
+    },
+    "./campaigns": {
+      "types": "./dist/campaigns.d.ts",
+      "import": "./dist/campaigns.js"
+    },
+    "./operations": {
+      "types": "./dist/operations.d.ts",
+      "import": "./dist/operations.js"
+    },
+    "./deliveries": {
+      "types": "./dist/deliveries.d.ts",
+      "import": "./dist/deliveries.js"
+    },
+    "./atoms": {
+      "types": "./dist/atoms.d.ts",
+      "import": "./dist/atoms.js"
+    },
+    "./tailwind.css": "./tailwind.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "NODE_ENV=production bun run build.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check:release": "bun run build && bun run test",
+    "prepack": "bun run check:release"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@krak-stack/notifications": "^0.3.0",
+    "@krak-stack/registry": "^0.3.0",
+    "@base-ui/react": "^1.5.0",
+    "@effect/atom-react": "^4.1.0",
+    "@tanstack/react-form": "^1.33.0",
+    "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-virtual": "^3.14.5",
+    "effect": "^4.1.0",
+    "lucide-react": "^1.18.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
