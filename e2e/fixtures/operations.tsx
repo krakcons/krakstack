@@ -13,7 +13,9 @@ if (!root) throw new Error("Missing test root");
 createRoot(root).render(
   <RegistryProvider>
     <NotificationsAdminPanel
-      atoms={makeNotificationsAdminAtoms(location.origin)}
+      atoms={makeNotificationsAdminAtoms(location.origin, {
+        authorizationKey: "staff-test-session",
+      })}
       locale={locale}
     />
   </RegistryProvider>,

@@ -20,6 +20,13 @@ import { sendOperationsMessages } from "../src/agent-examples/send/operations.me
 import { sendCampaignMessages } from "../src/agent-examples/send/campaign.messages";
 import * as messages from "../src/paraglide/messages";
 import { dataTableMessages } from "../src/components/ui/data-table";
+import {
+  CurrentDeliveryAdmin,
+  DeliveryAdmin,
+} from "../packages/notifications/src/admin/delivery.api";
+import { deliveryAdminRoutes } from "../packages/notifications/src/admin/delivery.api.builder";
+import { NotificationDeliveryAdmin } from "../packages/notifications/src/admin/deliveries";
+import { notificationDeliveryMessages } from "../src/agent-examples/send/delivery.messages";
 
 for (const locale of ["en", "fr"] as const) {
   test(`operations console exposes bounce evidence, audited suppression changes and recipient history in ${locale}`, async ({
@@ -31,6 +38,7 @@ for (const locale of ["en", "fr"] as const) {
     const m = sendOperationsMessages(locale);
     const tableMessages = dataTableMessages(locale);
     const cm = sendCampaignMessages(locale);
+    const dm = notificationDeliveryMessages(locale);
     const o = { locale };
     await Effect.runPromise(
       withSend((f) =>
@@ -146,17 +154,42 @@ for (const locale of ["en", "fr"] as const) {
               );
             }),
           );
+          const staffScope = {
+            recipientUserId: "staff-account",
+            organizationId: "staff-org",
+            workspaceId: null,
+          };
+          const staffGuard = Layer.succeed(DeliveryAdmin, (effect) =>
+            Effect.gen(function* () {
+              const req = yield* HttpServerRequest.HttpServerRequest;
+              if (!req.headers.cookie?.includes("staff-test-admin=allowed"))
+                return yield* new HttpApiError.Forbidden({});
+              return yield* effect.pipe(
+                Effect.provideService(CurrentDeliveryAdmin, {
+                  reference: "host:test-staff",
+                  access: {
+                    contactManaged: true,
+                    engineScopes: [{ _tag: "Exact", scope: staffScope }],
+                    referenceNamespaces: ["order"],
+                  },
+                }),
+              );
+            }),
+          );
           const routes = Layer.mergeAll(
             sendAdminRoutes,
             sendCampaignRoutes,
             sendOperationsRoutes,
+            deliveryAdminRoutes,
           ).pipe(
             Layer.provide(guard),
+            Layer.provide(staffGuard),
             Layer.provide(
               Layer.mergeAll(
                 Layer.succeed(KrakSend, f.send),
                 Layer.succeed(SendCampaigns, f.campaigns),
                 Layer.succeed(SendOperations, f.operations),
+                Layer.succeed(NotificationDeliveryAdmin, f.deliveries),
               ),
             ),
           );
@@ -419,6 +452,177 @@ for (const locale of ["en", "fr"] as const) {
                 .getByText("1", { exact: true }),
             ).toBeVisible();
           });
+          // Product emails already published through the engine need no contact
+          // records, republishing, or dispatch-policy changes to become visible.
+          const publishProduct = (
+            key: string,
+            organizationId = staffScope.organizationId,
+          ) =>
+            f.notifications.publish({
+              idempotencyKey: key,
+              scope: { ...staffScope, organizationId },
+              eventKey: key,
+              eventVersion: 1,
+              deliveries: [
+                {
+                  key: "email",
+                  channel: "email",
+                  purpose: "transactional",
+                  template: "order-receipt-v2",
+                  recipientAddress: `${key}@example.com`,
+                  recipientName: null,
+                  payloadVersion: 1,
+                  payload: {
+                    text: "Private product body",
+                    token: "private-product-token",
+                  },
+                  references: [
+                    { namespace: "order", value: "order-browser" },
+                    {
+                      namespace: "internal",
+                      value: "private-product-reference",
+                    },
+                  ],
+                },
+              ],
+            });
+          for (let n = 0; n < 23; n++)
+            yield* publishProduct(`staff-order-${String(n).padStart(2, "0")}`);
+          yield* f.runtime.runDeliveryWorkerOnce;
+          const hidden = yield* publishProduct("hidden-product", "another-org");
+          yield* Effect.promise(async () => {
+            expect(
+              (
+                await page.request.get(
+                  `${origin}api/send/staff/deliveries/overview`,
+                )
+              ).status(),
+            ).toBe(403);
+            await page
+              .context()
+              .addCookies([
+                { name: "staff-test-admin", value: "allowed", url: origin },
+              ]);
+            const forbidden = await page.request.get(
+              `${origin}api/send/staff/deliveries/${hidden.deliveryIds[0]}`,
+            );
+            expect(forbidden.status()).toBe(404);
+            await page
+              .getByRole("navigation")
+              .getByRole("button", { name: dm.title, exact: true })
+              .click();
+            await expect(
+              page
+                .getByRole("group", { name: m.metrics.total, exact: true })
+                .getByText("25", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              page.getByText(dm.feedbackNotice, { exact: true }),
+            ).toBeVisible();
+            await page
+              .getByRole("tab", { name: dm.sources.engine, exact: true })
+              .click();
+            await expect(
+              page
+                .getByRole("group", { name: m.metrics.total, exact: true })
+                .getByText("23", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              page
+                .getByRole("group", {
+                  name: dm.feedbackUnavailable,
+                  exact: true,
+                })
+                .getByText("23", { exact: true }),
+            ).toBeVisible();
+            await page
+              .getByRole("tab", { name: m.views.activity, exact: true })
+              .click();
+            await page
+              .getByRole("button", {
+                name: tableMessages.goToNextPage,
+                exact: true,
+              })
+              .click();
+            await expect(
+              page.getByText("staff-order-22", { exact: true }),
+            ).toBeVisible();
+            await page
+              .getByPlaceholder(tableMessages.filter, { exact: true })
+              .fill("staff-order-00");
+            const product = page.getByRole("row").filter({
+              has: page.getByText("staff-order-00@example.com", {
+                exact: true,
+              }),
+            });
+            await product
+              .getByRole("button", { name: m.inspect, exact: true })
+              .click();
+            const detail = page.getByRole("dialog");
+            await expect(
+              detail.getByText("order-receipt-v2", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              detail.getByText("order-browser", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              detail.getByText("staff-account", { exact: true }),
+            ).toBeVisible();
+            await expect(
+              detail.getByRole("cell", { name: m.outcomes.Sent, exact: true }),
+            ).toBeVisible();
+            await expect(
+              detail.getByRole("button", { name: m.contactId, exact: true }),
+            ).toHaveCount(0);
+            await expect(
+              detail.getByRole("button", {
+                name: m.addSuppression,
+                exact: true,
+              }),
+            ).toHaveCount(0);
+            const body = await detail.textContent();
+            expect(body).not.toMatch(
+              /Private product body|private-product-token|private-product-reference/,
+            );
+            await page.keyboard.press("Escape");
+            await expect(detail).not.toBeVisible();
+            await page
+              .getByRole("tab", { name: dm.sources.contacts, exact: true })
+              .click();
+            await expect(
+              page
+                .getByRole("group", { name: m.metrics.total, exact: true })
+                .getByText("2", { exact: true }),
+            ).toBeVisible();
+            await page
+              .getByRole("tab", { name: m.views.activity, exact: true })
+              .click();
+            const contactRow = page
+              .getByRole("row")
+              .filter({ has: page.getByText(email, { exact: true }) });
+            await contactRow
+              .getByRole("button", { name: m.inspect, exact: true })
+              .click();
+            await expect(
+              detail.getByText(email, { exact: true }),
+            ).toBeVisible();
+            // Revocation must hide rows, pagination totals and inspection data.
+            await page.context().clearCookies({ name: "staff-test-admin" });
+            await detail
+              .getByRole("button", { name: m.refresh, exact: true })
+              .click();
+            await expect(detail.getByRole("alert")).toHaveText(m.failed);
+            await expect(detail.getByText(email, { exact: true })).toHaveCount(
+              0,
+            );
+            await page.keyboard.press("Escape");
+            await expect(detail).not.toBeVisible();
+            await expect(contactRow).toHaveCount(0);
+            await expect(
+              page.getByText(tableMessages.results(0), { exact: true }),
+            ).toBeVisible();
+          });
+          expect((yield* f.send.listContacts({})).items).toHaveLength(25);
         }).pipe(
           Effect.scoped,
           Effect.provide(
