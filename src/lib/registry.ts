@@ -78,6 +78,7 @@ export function getRegistryGroup(item: RegistryItem) {
       "icon-input",
       "loading",
       "pagination",
+      "stepper",
       "virtualized-combobox",
     ].includes(item.name)
   ) {

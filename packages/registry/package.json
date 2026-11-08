@@ -160,6 +160,10 @@
       "types": "./dist/components/ui/copy-button.d.ts",
       "import": "./dist/components/ui/copy-button.js"
     },
+    "./stepper": {
+      "types": "./dist/components/ui/stepper.d.ts",
+      "import": "./dist/components/ui/stepper.js"
+    },
     "./color-picker": {
       "types": "./dist/components/ui/color-picker.d.ts",
       "import": "./dist/components/ui/color-picker.js"
