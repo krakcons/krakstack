@@ -1,4 +1,10 @@
 {
+  "map_picker_preview_title": "Sélecteur de lieu",
+  "map_picker_preview_description": "Essayez la barre d’outils, les rayons et la confirmation des modifications. Les suggestions et les actions de localisation IP/navigateur utilisent des exemples ; aucune recherche ni autorisation de localisation n’est demandée. Ajoutez une clé de navigateur facultative pour afficher la carte Google.",
+  "map_picker_preview_key": "Clé de navigateur Google Maps (facultative)",
+  "map_picker_preview_key_placeholder": "Une clé de navigateur avec restriction de référent",
+  "map_picker_preview_open": "Choisir un lieu",
+  "map_picker_preview_selected": "Sélection : {place} · {distance} km",
   "stepper_preview_title": "Navigation par étapes",
   "stepper_preview_description": "Essayez les étapes ou utilisez Précédent et Continuer. L’application contrôle la navigation ; le stepper n’enregistre jamais de formulaire.",
   "stepper_preview_connect": "Connexion",

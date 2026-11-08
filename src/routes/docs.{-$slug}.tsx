@@ -1,12 +1,7 @@
 import { RegistryDocsLayout } from "@/components/registry-docs-layout";
 import { AgentsPreview } from "@/components/registry-previews/agents-preview";
 import { QueryStandard } from "@/lib/query";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { RegistryItem } from "@/lib/registry";
 import { getRegistryItem } from "@/lib/registry";
 import {
@@ -25,131 +20,133 @@ import {
 import { getLocale } from "@/paraglide/runtime";
 import { TrackingNotice } from "@/services/events/client/tracking-notice";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
-import {
-  lazy,
-  Suspense,
-  type ComponentType,
-  type LazyExoticComponent,
-} from "react";
+import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from "react";
 
-const registryPreviews: Readonly<
-  Record<string, LazyExoticComponent<ComponentType> | undefined>
-> = Object.fromEntries([
-  [
-    "stepper",
-    lazy(() =>
-      import("@/components/registry-previews/stepper-preview").then(
-        ({ StepperPreview }) => ({ default: StepperPreview }),
+const googleMapPreview = lazy(() =>
+  import("@/components/registry-previews/google-map-picker-preview").then(
+    ({ GoogleMapPickerPreview }) => ({ default: GoogleMapPickerPreview }),
+  ),
+);
+
+const registryPreviews: Readonly<Record<string, LazyExoticComponent<ComponentType> | undefined>> =
+  Object.fromEntries([
+    ["google-map", googleMapPreview],
+    ["google-map-picker", googleMapPreview],
+    [
+      "stepper",
+      lazy(() =>
+        import("@/components/registry-previews/stepper-preview").then(({ StepperPreview }) => ({
+          default: StepperPreview,
+        })),
       ),
-    ),
-  ],
-  [
-    "error-component",
-    lazy(() =>
-      import("@/components/registry-previews/error-component-preview").then(
-        ({ ErrorComponentPreview }) => ({ default: ErrorComponentPreview }),
+    ],
+    [
+      "error-component",
+      lazy(() =>
+        import("@/components/registry-previews/error-component-preview").then(
+          ({ ErrorComponentPreview }) => ({ default: ErrorComponentPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "data-table",
-    lazy(() =>
-      import("@/components/registry-previews/data-table-preview").then(
-        ({ DataTablePreview }) => ({ default: DataTablePreview }),
+    ],
+    [
+      "data-table",
+      lazy(() =>
+        import("@/components/registry-previews/data-table-preview").then(
+          ({ DataTablePreview }) => ({ default: DataTablePreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "form",
-    lazy(() =>
-      import("@/components/registry-previews/form-preview").then(
-        ({ FormPreview }) => ({ default: FormPreview }),
+    ],
+    [
+      "form",
+      lazy(() =>
+        import("@/components/registry-previews/form-preview").then(({ FormPreview }) => ({
+          default: FormPreview,
+        })),
       ),
-    ),
-  ],
-  [
-    "effect-form",
-    lazy(() =>
-      import("@/components/registry-previews/effect-form-preview").then(
-        ({ EffectFormPreview }) => ({ default: EffectFormPreview }),
+    ],
+    [
+      "effect-form",
+      lazy(() =>
+        import("@/components/registry-previews/effect-form-preview").then(
+          ({ EffectFormPreview }) => ({ default: EffectFormPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "file-picker",
-    lazy(() =>
-      import("@/components/registry-previews/file-picker-preview").then(
-        ({ FilePickerPreview }) => ({ default: FilePickerPreview }),
+    ],
+    [
+      "file-picker",
+      lazy(() =>
+        import("@/components/registry-previews/file-picker-preview").then(
+          ({ FilePickerPreview }) => ({ default: FilePickerPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "lint-format",
-    lazy(() =>
-      import("@/components/registry-previews/lint-format-preview").then(
-        ({ LintFormatPreview }) => ({ default: LintFormatPreview }),
+    ],
+    [
+      "lint-format",
+      lazy(() =>
+        import("@/components/registry-previews/lint-format-preview").then(
+          ({ LintFormatPreview }) => ({ default: LintFormatPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "copy-button",
-    lazy(() =>
-      import("@/components/registry-previews/copy-button-preview").then(
-        ({ CopyButtonPreview }) => ({ default: CopyButtonPreview }),
+    ],
+    [
+      "copy-button",
+      lazy(() =>
+        import("@/components/registry-previews/copy-button-preview").then(
+          ({ CopyButtonPreview }) => ({ default: CopyButtonPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "agent",
-    lazy(() =>
-      import("@/components/registry-previews/agent-preview").then(
-        ({ AgentPreview }) => ({ default: AgentPreview }),
+    ],
+    [
+      "agent",
+      lazy(() =>
+        import("@/components/registry-previews/agent-preview").then(({ AgentPreview }) => ({
+          default: AgentPreview,
+        })),
       ),
-    ),
-  ],
-  [
-    "loading",
-    lazy(() =>
-      import("@/components/registry-previews/loading-preview").then(
-        ({ LoadingPreview }) => ({ default: LoadingPreview }),
+    ],
+    [
+      "loading",
+      lazy(() =>
+        import("@/components/registry-previews/loading-preview").then(({ LoadingPreview }) => ({
+          default: LoadingPreview,
+        })),
       ),
-    ),
-  ],
-  [
-    "pagination",
-    lazy(() =>
-      import("@/components/registry-previews/pagination-preview").then(
-        ({ PaginationPreview }) => ({ default: PaginationPreview }),
+    ],
+    [
+      "pagination",
+      lazy(() =>
+        import("@/components/registry-previews/pagination-preview").then(
+          ({ PaginationPreview }) => ({ default: PaginationPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "icon-input",
-    lazy(() =>
-      import("@/components/registry-previews/icon-input-preview").then(
-        ({ IconInputPreview }) => ({ default: IconInputPreview }),
+    ],
+    [
+      "icon-input",
+      lazy(() =>
+        import("@/components/registry-previews/icon-input-preview").then(
+          ({ IconInputPreview }) => ({ default: IconInputPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "color-picker",
-    lazy(() =>
-      import("@/components/registry-previews/color-picker-preview").then(
-        ({ ColorPickerPreview }) => ({ default: ColorPickerPreview }),
+    ],
+    [
+      "color-picker",
+      lazy(() =>
+        import("@/components/registry-previews/color-picker-preview").then(
+          ({ ColorPickerPreview }) => ({ default: ColorPickerPreview }),
+        ),
       ),
-    ),
-  ],
-  [
-    "virtualized-combobox",
-    lazy(() =>
-      import("@/components/registry-previews/virtualized-combobox-preview").then(
-        ({ VirtualizedComboboxPreview }) => ({
-          default: VirtualizedComboboxPreview,
-        }),
+    ],
+    [
+      "virtualized-combobox",
+      lazy(() =>
+        import("@/components/registry-previews/virtualized-combobox-preview").then(
+          ({ VirtualizedComboboxPreview }) => ({
+            default: VirtualizedComboboxPreview,
+          }),
+        ),
       ),
-    ),
-  ],
-]);
+    ],
+  ]);
 
 export const Route = createFileRoute("/docs/{-$slug}")({
   validateSearch: QueryStandard,
@@ -175,14 +172,11 @@ export const Route = createFileRoute("/docs/{-$slug}")({
     return docs.getHead(options);
   },
   component: RegistryDocs,
-  notFoundComponent: () => (
-    <DocsNotFound docs={registryDocsShell} locale={getLocale()} />
-  ),
+  notFoundComponent: () => <DocsNotFound docs={registryDocsShell} locale={getLocale()} />,
 });
 
 function RegistryDocs() {
-  const { agentsPreviewMarkdown, item, pages, resolution } =
-    Route.useLoaderData();
+  const { agentsPreviewMarkdown, item, pages, resolution } = Route.useLoaderData();
   const docs = makeRegistryDocs(pages);
 
   return (
@@ -193,16 +187,11 @@ function RegistryDocs() {
         {item ? (
           <div className="mt-12 grid gap-8">
             <Dependencies item={item} />
-            <RegistryPreview
-              agentsMarkdown={agentsPreviewMarkdown}
-              slug={item.name}
-            />
+            <RegistryPreview agentsMarkdown={agentsPreviewMarkdown} slug={item.name} />
           </div>
         ) : null}
         <DocsFooter docs={docs} resolution={resolution} />
-        {item?.name === "service-events" ? (
-          <TrackingNotice locale={getLocale()} />
-        ) : null}
+        {item?.name === "service-events" ? <TrackingNotice locale={getLocale()} /> : null}
       </DocsPage>
     </RegistryDocsLayout>
   );
@@ -276,13 +265,8 @@ function getNpmHref(dependency: string) {
 }
 
 function getPackageName(dependency: string) {
-  const versionSeparator = dependency.indexOf(
-    "@",
-    dependency.startsWith("@") ? 1 : 0,
-  );
-  return versionSeparator === -1
-    ? dependency
-    : dependency.slice(0, versionSeparator);
+  const versionSeparator = dependency.indexOf("@", dependency.startsWith("@") ? 1 : 0);
+  return versionSeparator === -1 ? dependency : dependency.slice(0, versionSeparator);
 }
 
 function getRegistryDependencyHref(dependency: string) {
@@ -306,9 +290,7 @@ function RegistryPreview({
 
   return (
     <section className="grid gap-3">
-      <h2 className="text-foreground text-3xl font-semibold tracking-tight">
-        Preview
-      </h2>
+      <h2 className="text-foreground text-3xl font-semibold tracking-tight">Preview</h2>
       <Suspense fallback={null}>
         {slug === "agents" && agentsMarkdown ? (
           <AgentsPreview markdown={agentsMarkdown} />

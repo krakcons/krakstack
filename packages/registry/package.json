@@ -196,6 +196,10 @@
       "types": "./dist/components/ui/google-map.d.ts",
       "import": "./dist/components/ui/google-map.js"
     },
+    "./google-map-picker": {
+      "types": "./dist/components/ui/google-map-picker.d.ts",
+      "import": "./dist/components/ui/google-map-picker.js"
+    },
     "./icon-input": {
       "types": "./dist/components/ui/icon-input.d.ts",
       "import": "./dist/components/ui/icon-input.js"

@@ -44,6 +44,7 @@
     "../../src/components/ui/error-component.tsx",
     "../../src/components/ui/loading.tsx",
     "../../src/components/ui/google-map.tsx",
+    "../../src/components/ui/google-map-picker.tsx",
     "../../src/components/ui/icon-input.tsx",
     "../../src/components/ui/pagination.tsx",
     "../../src/components/ui/data-table.tsx",

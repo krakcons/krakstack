@@ -1,4 +1,10 @@
 {
+  "map_picker_preview_title": "Location picker",
+  "map_picker_preview_description": "Try the toolbar, radius choices and draft confirmation. Suggestions and IP/browser location actions use example data; no lookup or location permission is requested. Add an optional browser key to load the Google map.",
+  "map_picker_preview_key": "Google Maps browser key (optional)",
+  "map_picker_preview_key_placeholder": "A referrer-restricted browser key",
+  "map_picker_preview_open": "Choose a location",
+  "map_picker_preview_selected": "Selected: {place} · {distance} km",
   "stepper_preview_title": "Step navigation",
   "stepper_preview_description": "Try the steps or use Previous and Continue. The host controls navigation; the stepper never saves a form.",
   "stepper_preview_connect": "Connect",
