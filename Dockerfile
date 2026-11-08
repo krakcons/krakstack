@@ -12,6 +12,7 @@ ENV VITE_SITE_URL=$VITE_SITE_URL
 COPY package.json bun.lock ./
 COPY packages/assets/package.json ./packages/assets/package.json
 COPY packages/notifications/package.json ./packages/notifications/package.json
+COPY packages/notifications-admin/package.json ./packages/notifications-admin/package.json
 COPY packages/registry/package.json ./packages/registry/package.json
 RUN bun install --frozen-lockfile --ignore-scripts
 
