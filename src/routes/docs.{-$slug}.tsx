@@ -36,6 +36,14 @@ const registryPreviews: Readonly<
   Record<string, LazyExoticComponent<ComponentType> | undefined>
 > = Object.fromEntries([
   [
+    "stepper",
+    lazy(() =>
+      import("@/components/registry-previews/stepper-preview").then(
+        ({ StepperPreview }) => ({ default: StepperPreview }),
+      ),
+    ),
+  ],
+  [
     "error-component",
     lazy(() =>
       import("@/components/registry-previews/error-component-preview").then(
