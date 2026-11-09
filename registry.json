@@ -10,7 +10,7 @@
       "description": "A HEX input with a live swatch and an accessible color-selection popover.",
       "meta": {
         "createdAt": "2026-11-05",
-        "updatedAt": "2026-11-05"
+        "updatedAt": "2026-11-06"
       },
       "docs": "## Overview\n\n`ColorPicker` combines a HEX input with a clickable swatch. The swatch opens a color square and hue slider, with mouse, touch and arrow-key support. Solid colors only; no opacity.\n\n## Usage\n\n```tsx\nimport { ColorPicker } from \"@/components/ui/color-picker\";\n\n<ColorPicker value={color} onValueChange={setColor} />\n<ColorPicker defaultValue=\"#A855F7\" />\n```\n\nThe SDK export is `@krak-stack/registry/color-picker`. Accepted input is three or six HEX digits, with an optional `#`. Callbacks emit uppercase `#RRGGBB` values. Incomplete text stays editable; blur, Enter or Escape restores the last valid color. External value changes reset stale drafts.\n\nPass standard input props such as `id`, `name`, `aria-label`, `aria-describedby`, `disabled` and `readOnly`. `className` styles the input group. `disabled` and `readOnly` also prevent opening the picker.\n\nEnglish and French defaults follow `KrakstackProvider`. Use `locale` for an explicit override and `messages` for exact-locale or base-language message overrides, with English as the final fallback.",
       "files": [
@@ -1353,7 +1353,7 @@
         "react"
       ],
       "meta": {
-        "updatedAt": "2026-10-02"
+        "updatedAt": "2026-11-06"
       }
     }
   ]

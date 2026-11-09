@@ -1,5 +1,17 @@
 # @krak-stack/registry
 
+## 0.2.2
+
+### Patch Changes
+
+- Prevent virtualized combobox group headings from collapsing into options after asynchronous search results refresh.
+
+## 0.2.1
+
+### Patch Changes
+
+- Keep the color picker panel full-width inside its popup, with even padding and a HEX value centered beneath it. Prevent react-colorful's injected styles from overriding panel, hue slider, and pointer dimensions.
+
 ## 0.2.0
 
 ### Minor Changes

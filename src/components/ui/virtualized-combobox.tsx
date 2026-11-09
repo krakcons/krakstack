@@ -124,8 +124,7 @@ const VirtualizedComboboxList = <TData,>({
   locale?: string | undefined;
   messages?: VirtualizedComboboxMessageTranslations | undefined;
   renderItem?:
-    | ((item: VirtualizedComboboxOption<TData>) => ReactNode)
-    | undefined;
+    ((item: VirtualizedComboboxOption<TData>) => ReactNode) | undefined;
   selectedValues: ReadonlySet<string>;
   virtualizerRef: RefObject<VirtualizedComboboxVirtualizer | null>;
 }) => {
@@ -143,26 +142,31 @@ const VirtualizedComboboxList = <TData,>({
   const availableEntries = itemEntries.filter(
     ({ item }) => !selectedValues.has(item.value),
   );
-  const entries = groupSelections
-    ? [
-        ...(selectedEntries.length > 0
-          ? [
-              {
-                kind: "group" as const,
-                key: "selected",
-                label: labels.selected(selectedValues.size),
-              },
-              ...selectedEntries,
-            ]
-          : []),
-        {
-          kind: "group" as const,
-          key: "available",
-          label: labels.selectMore,
-        },
-        ...availableEntries,
-      ]
-    : itemEntries;
+  // A hidden list reports zero-size measurements. Do not leave a group heading
+  // mounted during remote loading, or its cached size collapses the next result set.
+  const entries =
+    filteredItems.length === 0
+      ? []
+      : groupSelections
+        ? [
+            ...(selectedEntries.length > 0
+              ? [
+                  {
+                    kind: "group" as const,
+                    key: "selected",
+                    label: labels.selected(selectedValues.size),
+                  },
+                  ...selectedEntries,
+                ]
+              : []),
+            {
+              kind: "group" as const,
+              key: "available",
+              label: labels.selectMore,
+            },
+            ...availableEntries,
+          ]
+        : itemEntries;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const virtualizer = useVirtualizer({
     count: entries.length,
@@ -299,7 +303,7 @@ const VirtualizedComboboxContent = <TData,>({
       >
         <ComboboxPrimitive.Popup
           className={cn(
-            "relative flex max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-0 origin-(--transform-origin) flex-col overflow-hidden rounded-md bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-in-95",
+            "bg-popover text-popover-foreground ring-foreground/10 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-in-95 relative flex max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-0 origin-(--transform-origin) flex-col overflow-hidden rounded-md shadow-md ring-1 duration-100",
             contentClassName,
           )}
         >

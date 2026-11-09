@@ -2,6 +2,9 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Color_Picker_Preview_TitleInputs */
+/** @typedef {{}} Color_Picker_Preview_DescriptionInputs */
+/** @typedef {{}} Color_Picker_Preview_DisabledInputs */
 /** @typedef {{}} Agent_Preview_Demo_DescriptionInputs */
 /** @typedef {{ scenario: NonNullable<unknown> }} Agent_Preview_Demo_PromptInputs */
 /** @typedef {{}} Agent_Preview_ChatInputs */
@@ -166,6 +169,48 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Color Picker" |
+*
+* @param {Color_Picker_Preview_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const color_picker_preview_title = /** @type {((inputs?: Color_Picker_Preview_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Color_Picker_Preview_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.color_picker_preview_title(inputs)
+	return __fr.color_picker_preview_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Enter a HEX code or click the swatch to choose a color visually." |
+*
+* @param {Color_Picker_Preview_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const color_picker_preview_description = /** @type {((inputs?: Color_Picker_Preview_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Color_Picker_Preview_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.color_picker_preview_description(inputs)
+	return __fr.color_picker_preview_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Disabled color picker" |
+*
+* @param {Color_Picker_Preview_DisabledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const color_picker_preview_disabled = /** @type {((inputs?: Color_Picker_Preview_DisabledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Color_Picker_Preview_DisabledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.color_picker_preview_disabled(inputs)
+	return __fr.color_picker_preview_disabled(inputs)
+});
 /**
 * | output |
 * | --- |

@@ -8,13 +8,66 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { createRef } from "react";
+import { afterEach, vi } from "vitest";
 
-import { VirtualizedCombobox } from "./virtualized-combobox";
+import {
+  VirtualizedCombobox,
+  type VirtualizedComboboxVirtualizer,
+} from "./virtualized-combobox";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("VirtualizedCombobox focus", () => {
+  it("does not measure hidden group headings between remote search responses", async () => {
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(288);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(320);
+    const virtualizerRef = createRef<VirtualizedComboboxVirtualizer>();
+    const items = [
+      { value: "municipality", label: "Toronto municipality" },
+      { value: "division", label: "Toronto census division" },
+      { value: "centre", label: "Toronto population centre" },
+    ];
+    const props = {
+      multiple: true as const,
+      ariaLabel: "Places",
+      emptyLabel: "Loading places",
+      placeholder: "Places",
+      value: [],
+      onValueChange: () => {},
+      onSearchValueChange: () => {},
+      virtualizerRef,
+    };
+    const { rerender } = render(
+      <VirtualizedCombobox {...props} searchValue="To" items={items} />,
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: "Places" }));
+    const input = await screen.findByPlaceholderText("Search...");
+    await screen.findByRole("option", { name: "Toronto municipality" });
+    await waitFor(() => expect(document.activeElement).toBe(input));
+
+    for (const searchValue of ["Tor", "Toro", "To"]) {
+      rerender(
+        <VirtualizedCombobox {...props} searchValue={searchValue} items={[]} />,
+      );
+      await waitFor(() =>
+        expect(virtualizerRef.current?.getVirtualItems()).toEqual([]),
+      );
+      expect(document.activeElement).toBe(input);
+      rerender(
+        <VirtualizedCombobox
+          {...props}
+          searchValue={searchValue}
+          items={items}
+        />,
+      );
+      await screen.findByRole("option", { name: "Toronto municipality" });
+      expect(document.activeElement).toBe(input);
+    }
+  });
   it("keeps the search focused when asynchronous results change", async () => {
     const props = {
       ariaLabel: "Select icon",

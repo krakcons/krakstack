@@ -118,9 +118,13 @@ const ColorPanel = ({
   return (
     <div
       ref={ref}
-      className="[&_.react-colorful]:h-48 [&_.react-colorful]:w-full [&_.react-colorful__hue]:h-4 [&_.react-colorful__pointer]:size-5"
+      className="[&_.react-colorful__hue]:h-4! [&_.react-colorful__pointer]:size-5!"
     >
-      <HexColorPicker color={color} onChange={onChange} />
+      <HexColorPicker
+        color={color}
+        onChange={onChange}
+        style={{ width: "100%", height: "12rem" }}
+      />
     </div>
   );
 };
