@@ -2,18 +2,18 @@ import { useState } from "react";
 import { useHydrated } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GoogleMapPicker, type GoogleMapPickerLocation } from "@/components/ui/google-map-picker";
+import { MapMenu, MapMenuMode, type MapMenuLocation } from "@/components/ui/map-menu";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 
-const initialPlace: GoogleMapPickerLocation = {
+const initialPlace: MapMenuLocation = {
   id: "toronto",
   label: "Toronto, Ontario, Canada",
   title: "Toronto",
   details: "Ontario, Canada",
   center: { lat: 43.6532, lng: -79.3832 },
 };
-const places: readonly GoogleMapPickerLocation[] = [
+const places: readonly MapMenuLocation[] = [
   initialPlace,
   {
     id: "calgary",
@@ -31,11 +31,15 @@ const places: readonly GoogleMapPickerLocation[] = [
   },
 ];
 
-export const GoogleMapPickerPreview = () => {
+export const MapMenuPreview = () => {
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState(MapMenuMode.Radius);
   const [apiKey, setApiKey] = useState(import.meta.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY ?? "");
-  const [confirmed, setConfirmed] = useState({ location: initialPlace, radiusKm: 100 });
+  const [confirmed, setConfirmed] = useState<{
+    location: MapMenuLocation;
+    radiusKm?: number;
+  }>({ location: initialPlace, radiusKm: 100 });
   const [selected, setSelected] = useState(initialPlace);
   const [input, setInput] = useState(initialPlace.label);
   const [radiusKm, setRadiusKm] = useState(100);
@@ -46,17 +50,14 @@ export const GoogleMapPickerPreview = () => {
     if (next) {
       setSelected(confirmed.location);
       setInput(confirmed.location.label);
-      setRadiusKm(confirmed.radiusKm);
+      setRadiusKm(confirmed.radiusKm ?? 100);
       setProvenance(confirmedProvenance);
     }
     setOpen(next);
   };
 
   return (
-    <div
-      data-example="google-map-picker"
-      className="bg-card space-y-5 rounded-xl border p-5 sm:p-6"
-    >
+    <div data-example="map-menu" className="bg-card space-y-5 rounded-xl border p-5 sm:p-6">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">{m.map_picker_preview_title()}</h3>
         <p className="text-muted-foreground max-w-prose text-sm leading-6">
@@ -74,25 +75,60 @@ export const GoogleMapPickerPreview = () => {
         />
       </label>
       <div className="flex flex-wrap items-center gap-4">
-        <Button disabled={!hydrated} onClick={() => changeOpen(true)}>
+        <Button
+          disabled={!hydrated}
+          onClick={() => {
+            setMode(MapMenuMode.Radius);
+            changeOpen(true);
+          }}
+        >
           {m.map_picker_preview_open()}
         </Button>
+        <Button
+          variant="outline"
+          disabled={!hydrated}
+          onClick={() => {
+            setMode(MapMenuMode.Point);
+            changeOpen(true);
+          }}
+        >
+          {m.map_menu_preview_point()}
+        </Button>
         <p role="status" className="text-muted-foreground text-sm">
-          {m.map_picker_preview_selected({
-            place: confirmed.location.label,
-            distance: confirmed.radiusKm,
-          })}
+          {confirmed.radiusKm === undefined
+            ? m.map_menu_preview_selected_point({
+                place: confirmed.location.label,
+              })
+            : m.map_picker_preview_selected({
+                place: confirmed.location.label,
+                distance: confirmed.radiusKm,
+              })}
         </p>
       </div>
-      <GoogleMapPicker
+      <MapMenu
         apiKey={apiKey}
         open={open}
         onOpenChange={changeOpen}
         input={input}
         onInputChange={setInput}
         selectedLocation={selected}
-        radiusKm={radiusKm}
-        onRadiusChange={setRadiusKm}
+        {...(mode === MapMenuMode.Point
+          ? {
+              mode: MapMenuMode.Point,
+              onConfirm: (selection: { location: MapMenuLocation }) => {
+                setConfirmed(selection);
+                setConfirmedProvenance(provenance);
+              },
+            }
+          : {
+              mode: MapMenuMode.Radius,
+              radiusKm,
+              onRadiusChange: setRadiusKm,
+              onConfirm: (selection: { location: MapMenuLocation; radiusKm: number }) => {
+                setConfirmed(selection);
+                setConfirmedProvenance(provenance);
+              },
+            })}
         locale={getLocale()}
         provenance={provenance}
         suggestions={
@@ -112,10 +148,6 @@ export const GoogleMapPickerPreview = () => {
           setSelected(initialPlace);
           setInput(initialPlace.label);
           setProvenance("browser");
-        }}
-        onConfirm={(selection) => {
-          setConfirmed(selection);
-          setConfirmedProvenance(provenance);
         }}
       />
     </div>

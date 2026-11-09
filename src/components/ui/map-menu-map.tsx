@@ -272,7 +272,8 @@ const createMapState = (loadState: LoadState, currentZoom: number) => {
   };
 };
 
-export function GoogleMap({
+/** Internal renderer shipped with MapMenu; not a standalone registry/package entry. */
+export const MapMenuMap = ({
   apiKey,
   center,
   zoom,
@@ -288,7 +289,7 @@ export function GoogleMap({
   controlsClassName,
   messages: messageOverrides,
   locale: localeOverride,
-}: GoogleMapProps) {
+}: GoogleMapProps) => {
   const locale = useKrakstackLocale(localeOverride);
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<GoogleMapsApi | null>(null);
@@ -546,7 +547,7 @@ export function GoogleMap({
 
   return (
     <div
-      data-slot="google-map"
+      data-slot="map-menu-renderer"
       className={cn(
         "bg-muted relative isolate min-h-64 min-w-0 overflow-hidden rounded-lg border",
         className,
@@ -554,14 +555,14 @@ export function GoogleMap({
     >
       <div
         ref={mapElementRef}
-        data-slot="google-map-canvas"
+        data-slot="map-menu-canvas"
         className="h-full min-h-[inherit] w-full"
         role="region"
         aria-label={labels.mapLabel}
       />
       {loadState === "ready" && zoomControls ? (
         <div
-          data-slot="google-map-controls"
+          data-slot="map-menu-controls"
           className={cn(
             "bg-background/95 absolute top-3 right-3 z-10 overflow-hidden rounded-md border shadow-sm backdrop-blur",
             controlsClassName,
@@ -570,7 +571,7 @@ export function GoogleMap({
           {fitRadius && radiusMeters !== undefined ? (
             <>
               <button
-                data-slot="google-map-control"
+                data-slot="map-menu-control"
                 type="button"
                 onClick={showSelectedArea}
                 aria-label={labels.showArea}
@@ -583,7 +584,7 @@ export function GoogleMap({
             </>
           ) : null}
           <button
-            data-slot="google-map-control"
+            data-slot="map-menu-control"
             type="button"
             className="text-foreground hover:bg-accent focus-visible:ring-ring relative flex size-11 items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50"
             disabled={currentZoom >= normalizedMaxZoom}
@@ -594,7 +595,7 @@ export function GoogleMap({
           </button>
           <div className="bg-border h-px" />
           <button
-            data-slot="google-map-control"
+            data-slot="map-menu-control"
             type="button"
             className="text-foreground hover:bg-accent focus-visible:ring-ring relative flex size-11 items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50"
             disabled={currentZoom <= normalizedMinZoom}
@@ -630,4 +631,4 @@ export function GoogleMap({
       ) : null}
     </div>
   );
-}
+};

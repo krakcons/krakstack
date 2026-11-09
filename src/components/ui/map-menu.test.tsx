@@ -4,7 +4,11 @@ import { describe, expect, it } from "@effect/vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, vi } from "vitest";
-import { GoogleMapPicker, type GoogleMapPickerLocation } from "./google-map-picker";
+import {
+  MapMenu as GoogleMapPicker,
+  MapMenuMode,
+  type MapMenuLocation as GoogleMapPickerLocation,
+} from "./map-menu";
 
 afterEach(cleanup);
 
@@ -58,7 +62,54 @@ const Harness = ({
   );
 };
 
-describe("GoogleMapPicker", () => {
+describe("MapMenu", () => {
+  it("confirms a pinpoint without radius props or radius UI", async () => {
+    const confirm = vi.fn();
+    const changeOpen = vi.fn();
+    render(
+      <GoogleMapPicker
+        mode={MapMenuMode.Point}
+        apiKey=""
+        open
+        onOpenChange={changeOpen}
+        input={toronto.label}
+        onInputChange={vi.fn()}
+        selectedLocation={toronto}
+        suggestions={[]}
+        onSelectLocation={vi.fn()}
+        onConfirm={confirm}
+      />,
+    );
+    expect(screen.queryByRole("combobox", { name: "Search within" })).toBeNull();
+    expect(screen.queryByText("The circle shows your search area.")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Use this location" }));
+    await waitFor(() => expect(changeOpen).toHaveBeenCalledWith(false));
+    expect(confirm).toHaveBeenCalledExactlyOnceWith({ location: toronto });
+  });
+
+  it("keeps an unselected pinpoint from being confirmed", () => {
+    const confirm = vi.fn();
+    render(
+      <GoogleMapPicker
+        mode={MapMenuMode.Point}
+        apiKey=""
+        open
+        onOpenChange={vi.fn()}
+        input="Toronto"
+        onInputChange={vi.fn()}
+        selectedLocation={null}
+        suggestions={[]}
+        onSelectLocation={vi.fn()}
+        onConfirm={confirm}
+      />,
+    );
+    const action = screen.getByRole<HTMLButtonElement>("button", {
+      name: "Use this location",
+    });
+    expect(action.disabled).toBe(true);
+    fireEvent.click(action);
+    expect(confirm).not.toHaveBeenCalled();
+  });
   it("shows at most three host-provided suggestions", () => {
     render(
       <GoogleMapPicker
@@ -86,7 +137,9 @@ describe("GoogleMapPicker", () => {
     const confirm = vi.fn();
     render(<Harness confirm={confirm} />);
     const dialog = screen.getByRole("dialog");
-    const radius = within(dialog).getByRole("combobox", { name: "Search within" });
+    const radius = within(dialog).getByRole("combobox", {
+      name: "Search within",
+    });
     expect(
       within(radius)
         .getAllByRole("option")
@@ -108,7 +161,9 @@ describe("GoogleMapPicker", () => {
     const input = screen.getByRole("combobox", { name: "City or address" });
     fireEvent.change(input, { target: { value: "Cal" } });
     expect(screen.getByRole("status").textContent).toContain("IP address");
-    const action = screen.getByRole<HTMLButtonElement>("button", { name: "Use this location" });
+    const action = screen.getByRole<HTMLButtonElement>("button", {
+      name: "Use this location",
+    });
     expect(action.disabled).toBe(true);
     fireEvent.keyDown(input, { key: "ArrowDown" });
     const suggestion = screen.getByRole("option", { name: calgary.label });
@@ -141,7 +196,9 @@ describe("GoogleMapPicker", () => {
     const pending = Promise.withResolvers<void>();
     const confirm = vi.fn(() => pending.promise);
     render(<Harness confirm={confirm} />);
-    const action = screen.getByRole<HTMLButtonElement>("button", { name: "Use this location" });
+    const action = screen.getByRole<HTMLButtonElement>("button", {
+      name: "Use this location",
+    });
     fireEvent.click(action);
     fireEvent.click(action);
     expect(action.disabled).toBe(true);

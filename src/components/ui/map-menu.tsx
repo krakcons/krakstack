@@ -11,22 +11,29 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { GoogleMap, type GoogleMapPoint } from "@/components/ui/google-map";
+import { MapMenuMap, type GoogleMapPoint } from "@/components/ui/map-menu-map";
 import { Input } from "@/components/ui/input";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 import { cn } from "@/lib/utils";
 
-export const googleMapPickerRadiiKm = [1, 2, 5, 10, 20, 40, 60, 80, 100, 250, 500] as const;
+export enum MapMenuMode {
+  Point = "point",
+  Radius = "radius",
+}
 
-export type GoogleMapPickerLocation = {
+export type MapMenuPoint = GoogleMapPoint;
+
+export const mapMenuRadiiKm = [1, 2, 5, 10, 20, 40, 60, 80, 100, 250, 500] as const;
+
+export type MapMenuLocation = {
   id: string;
   label: string;
   title?: string | undefined;
   details?: string | undefined;
-  center: GoogleMapPoint;
+  center: MapMenuPoint;
 };
 
-export type GoogleMapPickerMessages = {
+export type MapMenuMessages = {
   title: string;
   location: string;
   placeholder: string;
@@ -46,22 +53,15 @@ export type GoogleMapPickerMessages = {
   confirmError: string;
 };
 
-export type GoogleMapPickerProps = {
+type MapMenuCommonProps = {
   apiKey: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   input: string;
   onInputChange: (input: string) => void;
-  selectedLocation: GoogleMapPickerLocation | null;
-  suggestions: readonly GoogleMapPickerLocation[];
-  onSelectLocation: (location: GoogleMapPickerLocation) => void;
-  radiusKm: number;
-  onRadiusChange: (radiusKm: number) => void;
-  radiusOptions?: readonly number[] | undefined;
-  onConfirm: (selection: {
-    location: GoogleMapPickerLocation;
-    radiusKm: number;
-  }) => void | Promise<void>;
+  selectedLocation: MapMenuLocation | null;
+  suggestions: readonly MapMenuLocation[];
+  onSelectLocation: (location: MapMenuLocation) => void;
   onUseCurrentLocation?: (() => void) | undefined;
   locating?: boolean | undefined;
   loadingSuggestions?: boolean | undefined;
@@ -72,8 +72,29 @@ export type GoogleMapPickerProps = {
   className?: string | undefined;
   confirmClassName?: string | undefined;
   locale?: string | undefined;
-  messages?: Partial<Record<string, Partial<GoogleMapPickerMessages>>> | undefined;
+  messages?: Partial<Record<string, Partial<MapMenuMessages>>> | undefined;
 };
+
+export type MapMenuProps = MapMenuCommonProps &
+  (
+    | {
+        mode: MapMenuMode.Point;
+        radiusKm?: never;
+        onRadiusChange?: never;
+        radiusOptions?: never;
+        onConfirm: (selection: { location: MapMenuLocation }) => void | Promise<void>;
+      }
+    | {
+        mode?: MapMenuMode.Radius | undefined;
+        radiusKm: number;
+        onRadiusChange: (radiusKm: number) => void;
+        radiusOptions?: readonly number[] | undefined;
+        onConfirm: (selection: {
+          location: MapMenuLocation;
+          radiusKm: number;
+        }) => void | Promise<void>;
+      }
+  );
 
 const defaultMessages = {
   en: {
@@ -114,34 +135,34 @@ const defaultMessages = {
     confirm: "Utiliser ce lieu",
     confirmError: "Votre lieu n’a pas pu être enregistré. Réessayez.",
   },
-} satisfies Record<"en" | "fr", GoogleMapPickerMessages>;
+} satisfies Record<"en" | "fr", MapMenuMessages>;
 
 /** Controlled picker: the host owns lookup, location acquisition and persisted state. */
-export const GoogleMapPicker = ({
-  apiKey,
-  open,
-  onOpenChange,
-  input,
-  onInputChange,
-  selectedLocation,
-  suggestions: locationSuggestions,
-  onSelectLocation,
-  radiusKm,
-  onRadiusChange,
-  radiusOptions = googleMapPickerRadiiKm,
-  onConfirm,
-  onUseCurrentLocation,
-  locating = false,
-  loadingSuggestions = false,
-  suggestionsError,
-  error,
-  provenance,
-  overlayColor = "#f56476",
-  className,
-  confirmClassName,
-  locale: localeOverride,
-  messages,
-}: GoogleMapPickerProps) => {
+export const MapMenu = (props: MapMenuProps) => {
+  const {
+    apiKey,
+    open,
+    onOpenChange,
+    input,
+    onInputChange,
+    selectedLocation,
+    suggestions: locationSuggestions,
+    onSelectLocation,
+    radiusKm,
+    radiusOptions = mapMenuRadiiKm,
+    onUseCurrentLocation,
+    locating = false,
+    loadingSuggestions = false,
+    suggestionsError,
+    error,
+    provenance,
+    overlayColor = "#f56476",
+    className,
+    confirmClassName,
+    locale: localeOverride,
+    messages,
+  } = props;
+  const radiusEnabled = props.mode !== MapMenuMode.Point;
   const locale = useKrakstackLocale(localeOverride);
   const suggestions = locationSuggestions.slice(0, 3);
   const baseLocale = locale.split("-")[0] ?? "en";
@@ -198,7 +219,7 @@ export const GoogleMapPicker = ({
     setConfirmFailed(false);
     onOpenChange(next);
   };
-  const select = (location: GoogleMapPickerLocation) => {
+  const select = (location: MapMenuLocation) => {
     onInputChange(location.label);
     onSelectLocation(location);
     inputRef.current?.focus();
@@ -211,7 +232,14 @@ export const GoogleMapPicker = ({
     setConfirmFailed(false);
     setDropdownOpen(false);
     try {
-      await onConfirm({ location: selectedLocation, radiusKm });
+      if (props.mode === MapMenuMode.Point) {
+        await props.onConfirm({ location: selectedLocation });
+      } else {
+        await props.onConfirm({
+          location: selectedLocation,
+          radiusKm: props.radiusKm,
+        });
+      }
       onOpenChange(false);
     } catch {
       setConfirmFailed(true);
@@ -228,9 +256,9 @@ export const GoogleMapPicker = ({
           ref={popupRef}
           initialFocus={inputRef}
           aria-describedby={undefined}
-          data-slot="google-map-picker"
+          data-slot="map-menu"
           className={cn(
-            "bg-muted text-foreground fixed left-1/2 z-50 flex h-[var(--map-picker-height,100dvh)] w-screen max-w-none -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden border p-0 outline-none top-[calc(var(--map-picker-top,0px)_+_var(--map-picker-height,100dvh)/2)] sm:h-[min(46.75rem,calc(var(--map-picker-height,100dvh)_-_5rem))] sm:w-[calc(100vw-4rem)] sm:max-w-[840px] sm:rounded-[10px] [@media(max-height:599px)]:h-[var(--map-picker-height,100dvh)]",
+            "bg-muted text-foreground fixed top-[calc(var(--map-picker-top,0px)_+_var(--map-picker-height,100dvh)/2)] left-1/2 z-50 flex h-[var(--map-picker-height,100dvh)] w-screen max-w-none -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden border p-0 outline-none sm:h-[min(46.75rem,calc(var(--map-picker-height,100dvh)_-_5rem))] sm:w-[calc(100vw-4rem)] sm:max-w-[840px] sm:rounded-[10px] [@media(max-height:599px)]:h-[var(--map-picker-height,100dvh)]",
             className,
           )}
         >
@@ -251,7 +279,7 @@ export const GoogleMapPicker = ({
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-[18px] overflow-y-auto px-5 pb-6 sm:px-7 [@media(max-height:599px)]:pb-3">
             <fieldset
               disabled={applying}
-              data-slot="google-map-picker-toolbar"
+              data-slot="map-menu-toolbar"
               className={cn(
                 "grid min-w-0 shrink-0 grid-cols-1 items-end gap-3",
                 onUseCurrentLocation && "sm:grid-cols-[minmax(0,1fr)_max-content]",
@@ -399,9 +427,9 @@ export const GoogleMapPicker = ({
                 <Button
                   type="button"
                   variant="outline"
-                  data-slot="google-map-picker-current"
+                  data-slot="map-menu-current"
                   disabled={locating}
-                  className="bg-card h-[50px] w-max justify-self-start gap-[7px] px-3 shadow-none"
+                  className="bg-card h-[50px] w-max gap-[7px] justify-self-start px-3 shadow-none"
                   onClick={onUseCurrentLocation}
                 >
                   <LocateFixed className="text-foreground size-[17px]" />
@@ -421,7 +449,7 @@ export const GoogleMapPicker = ({
                 {notice ? (
                   <p
                     role="status"
-                    data-slot="google-map-picker-provenance"
+                    data-slot="map-menu-provenance"
                     className="text-muted-foreground col-start-1 row-start-1 flex items-start gap-2"
                   >
                     <MapPin aria-hidden="true" className="text-foreground mt-0.5 size-4 shrink-0" />
@@ -429,41 +457,43 @@ export const GoogleMapPicker = ({
                   </p>
                 ) : null}
               </div>
-              <div className="col-span-full flex flex-wrap items-center gap-3 after:h-px after:flex-1 after:bg-border">
-                <label htmlFor={`${id}-radius`} className="text-sm font-medium">
-                  {labels.searchWithin}
-                </label>
-                <div className="relative">
-                  <select
-                    id={`${id}-radius`}
-                    value={radiusKm}
-                    className="bg-card focus-visible:outline-ring h-11 appearance-none rounded border py-2 pr-9 pl-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-                    onChange={(event) => onRadiusChange(Number(event.currentTarget.value))}
-                  >
-                    {radiusOptions.map((radius) => (
-                      <option key={radius} value={radius}>
-                        {radius} km
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
-                  />
+              {radiusEnabled ? (
+                <div className="after:bg-border col-span-full flex flex-wrap items-center gap-3 after:h-px after:flex-1">
+                  <label htmlFor={`${id}-radius`} className="text-sm font-medium">
+                    {labels.searchWithin}
+                  </label>
+                  <div className="relative">
+                    <select
+                      id={`${id}-radius`}
+                      value={radiusKm}
+                      className="bg-card focus-visible:outline-ring h-11 appearance-none rounded border py-2 pr-9 pl-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                      onChange={(event) => props.onRadiusChange(Number(event.currentTarget.value))}
+                    >
+                      {radiusOptions.map((radius) => (
+                        <option key={radius} value={radius}>
+                          {radius} km
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </fieldset>
             <div
-              data-slot="google-map-picker-map"
+              data-slot="map-menu-map"
               className="relative min-h-56 min-w-0 flex-[1_0_14rem] [@media(max-height:599px)]:min-h-[182px] [@media(max-height:599px)]:basis-[182px]"
             >
-              <GoogleMap
+              <MapMenuMap
                 apiKey={apiKey}
                 center={selectedLocation?.center ?? { lat: 0, lng: 0 }}
-                zoom={4}
+                zoom={!radiusEnabled && selectedLocation ? 15 : 4}
                 marker={selectedLocation ? { icon: markerIcon } : undefined}
                 radius={
-                  selectedLocation
+                  radiusEnabled && selectedLocation && radiusKm !== undefined
                     ? {
                         radiusMeters: radiusKm * 1000,
                         fillColor: overlayColor,
@@ -474,7 +504,7 @@ export const GoogleMapPicker = ({
                       }
                     : undefined
                 }
-                fitRadius={Boolean(selectedLocation)}
+                fitRadius={radiusEnabled && Boolean(selectedLocation)}
                 fitPadding={40}
                 minZoom={3}
                 maxZoom={18}
@@ -482,7 +512,7 @@ export const GoogleMapPicker = ({
                 className="h-full min-h-0 w-full rounded-md"
                 controlsClassName="bg-card rounded-md shadow-md"
               />
-              {selectedLocation ? (
+              {radiusEnabled && selectedLocation ? (
                 <p className="bg-card text-muted-foreground pointer-events-none absolute bottom-[25px] left-3 m-0 max-w-[calc(100%-24px)] rounded px-2.5 py-[7px] text-xs shadow-sm">
                   {labels.radiusHint}
                 </p>
@@ -510,7 +540,7 @@ export const GoogleMapPicker = ({
               </Button>
               <Button
                 type="button"
-                data-slot="google-map-picker-confirm"
+                data-slot="map-menu-confirm"
                 className={cn(
                   "min-h-11 flex-[2] bg-[oklch(0.9247_0.0524_66.1732)] text-zinc-950 hover:bg-[oklch(0.9247_0.0524_66.1732)] hover:brightness-95",
                   confirmClassName,
