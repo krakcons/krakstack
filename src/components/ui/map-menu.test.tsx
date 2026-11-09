@@ -7,6 +7,7 @@ import { afterEach, vi } from "vitest";
 import {
   MapMenu as GoogleMapPicker,
   MapMenuMode,
+  MapMenuPresentation,
   type MapMenuLocation as GoogleMapPickerLocation,
 } from "./map-menu";
 
@@ -62,7 +63,148 @@ const Harness = ({
   );
 };
 
+const InlineHarness = ({
+  confirm = () => undefined,
+  cancel = () => undefined,
+  submit = () => undefined,
+  mode = MapMenuMode.Point,
+  locating = false,
+}: {
+  confirm?: (selection: {
+    location: GoogleMapPickerLocation;
+    radiusKm?: number;
+  }) => void | Promise<void>;
+  cancel?: () => void;
+  submit?: () => void;
+  mode?: MapMenuMode;
+  locating?: boolean;
+}) => {
+  const [input, setInput] = useState(toronto.label);
+  const [selected, setSelected] = useState(toronto);
+  const [radiusKm, setRadiusKm] = useState(20);
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit();
+      }}
+    >
+      <GoogleMapPicker
+        presentation={MapMenuPresentation.Inline}
+        apiKey=""
+        input={input}
+        onInputChange={setInput}
+        selectedLocation={selected}
+        suggestions={[calgary]}
+        onSelectLocation={setSelected}
+        onUseCurrentLocation={vi.fn()}
+        locating={locating}
+        onConfirm={confirm}
+        onCancel={() => {
+          setInput(toronto.label);
+          setSelected(toronto);
+          setRadiusKm(20);
+          cancel();
+        }}
+        {...(mode === MapMenuMode.Point
+          ? { mode: MapMenuMode.Point }
+          : { mode: MapMenuMode.Radius, radiusKm, onRadiusChange: setRadiusKm })}
+      />
+    </form>
+  );
+};
+
 describe("MapMenu", () => {
+  it("selects inline suggestions without a dialog, implicit save or parent form submission", () => {
+    const confirm = vi.fn();
+    const submit = vi.fn();
+    render(<InlineHarness confirm={confirm} submit={submit} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("group", { name: "Choose your location" })).toBeDefined();
+    const input = screen.getByRole<HTMLInputElement>("combobox", { name: "City or address" });
+    expect(document.activeElement).not.toBe(input);
+    fireEvent.change(input, { target: { value: "Cal" } });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    const suggestion = screen.getByRole("option", { name: calgary.label });
+    expect(input.getAttribute("aria-activedescendant")).toBe(suggestion.id);
+    expect(within(suggestion).getByText("Calgary")).toBeDefined();
+    expect(within(suggestion).getByText("Alberta, Canada")).toBeDefined();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(input.value).toBe(calgary.label);
+    expect(screen.queryByRole("listbox")).toBeNull();
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    fireEvent(input, enter);
+    expect(enter.defaultPrevented).toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it.each([MapMenuMode.Point, MapMenuMode.Radius])(
+    "confirms inline %s selection and stays mounted",
+    async (mode) => {
+      const confirm = vi.fn();
+      render(<InlineHarness mode={mode} confirm={confirm} />);
+      if (mode === MapMenuMode.Radius) {
+        fireEvent.change(screen.getByRole("combobox", { name: "Search within" }), {
+          target: { value: "5" },
+        });
+      } else {
+        expect(screen.queryByRole("combobox", { name: "Search within" })).toBeNull();
+      }
+      fireEvent.click(screen.getByRole("button", { name: "Use this location" }));
+      await waitFor(() =>
+        expect(confirm).toHaveBeenCalledExactlyOnceWith(
+          mode === MapMenuMode.Point ? { location: toronto } : { location: toronto, radiusKm: 5 },
+        ),
+      );
+      expect(screen.getByRole("group", { name: "Choose your location" })).toBeDefined();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    },
+  );
+
+  it("retains failed inline drafts for retry and lets the host restore them on Cancel", async () => {
+    const pending = Promise.withResolvers<void>();
+    const confirm = vi.fn(() => pending.promise);
+    const cancel = vi.fn();
+    render(<InlineHarness confirm={confirm} cancel={cancel} />);
+    const input = screen.getByRole<HTMLInputElement>("combobox", { name: "City or address" });
+    fireEvent.change(input, { target: { value: "Cal" } });
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Use this location" }).disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("option", { name: calgary.label }));
+    const action = screen.getByRole<HTMLButtonElement>("button", { name: "Use this location" });
+    fireEvent.click(action);
+    fireEvent.click(action);
+    const cancelAction = screen.getByRole<HTMLButtonElement>("button", { name: "Cancel" });
+    expect(cancelAction.disabled).toBe(true);
+    fireEvent.click(cancelAction);
+    expect(cancel).not.toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalledExactlyOnceWith({ location: calgary });
+    await act(async () => pending.reject(new Error("save failed")));
+    expect(screen.getByText("Your location could not be saved. Try again.")).toBeDefined();
+    expect(input.value).toBe(calgary.label);
+    expect(action.disabled).toBe(false);
+    confirm.mockImplementation(() => Promise.resolve());
+    fireEvent.click(action);
+    await waitFor(() => expect(action.disabled).toBe(false));
+    expect(confirm).toHaveBeenCalledTimes(2);
+    fireEvent.click(cancelAction);
+    expect(cancel).toHaveBeenCalledExactlyOnceWith();
+    expect(input.value).toBe(toronto.label);
+    expect(screen.queryByText("Your location could not be saved. Try again.")).toBeNull();
+    expect(screen.getByRole("group", { name: "Choose your location" })).toBeDefined();
+  });
+
+  it("blocks inline confirmation while acquiring a location", () => {
+    const confirm = vi.fn();
+    render(<InlineHarness locating confirm={confirm} />);
+    const action = screen.getByRole<HTMLButtonElement>("button", { name: "Use this location" });
+    expect(action.disabled).toBe(true);
+    fireEvent.click(action);
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
   it("confirms a pinpoint without radius props or radius UI", async () => {
     const confirm = vi.fn();
     const changeOpen = vi.fn();

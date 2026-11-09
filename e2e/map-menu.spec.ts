@@ -2,6 +2,103 @@ import { expect, test } from "@playwright/test";
 
 const origin = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/maps.googleapis.com/**", (route) => route.abort());
+  await page.addInitScript(() => {
+    class MapView {
+      zoom = 8;
+      constructor(element: HTMLElement) {
+        element.style.background = "#e4e8e3";
+      }
+      getZoom = () => this.zoom;
+      setZoom = (zoom: number) => {
+        this.zoom = zoom;
+      };
+      setCenter = () => undefined;
+      setOptions = () => undefined;
+      fitBounds = () => undefined;
+    }
+    class Overlay {
+      setMap = () => undefined;
+      setPosition = () => undefined;
+      setIcon = () => undefined;
+      setCenter = () => undefined;
+      setOptions = () => undefined;
+      setRadius = () => undefined;
+      getBounds = () => ({ toJSON: () => ({ north: 44, south: 43, east: -79, west: -80 }) });
+    }
+    Object.assign(window, {
+      google: {
+        maps: {
+          Map: MapView,
+          Marker: Overlay,
+          Circle: Overlay,
+          event: {
+            addListener: () => ({ remove: () => undefined }),
+            clearInstanceListeners: () => undefined,
+          },
+        },
+      },
+    });
+  });
+});
+
+for (const locale of ["en", "fr"]) {
+  for (const width of [390, 1440]) {
+    test(`inline map menu drafts and suggestion styling in ${locale}, ${width}px`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${origin}/${locale}/docs/map-menu`);
+      await page.locator('[data-example="map-menu"] input[type="password"]').fill("map-test-key");
+      const example = page.locator('[data-example="map-menu-inline"]');
+      const input = example.getByRole("combobox", {
+        name: locale === "fr" ? "Ville ou adresse" : "City or address",
+      });
+      const selectCalgary = async () => {
+        await input.fill("Cal");
+        const suggestion = example.getByRole("option", { name: "Calgary, Alberta, Canada" });
+        await expect(suggestion.locator("svg")).toHaveCSS("color", "rgb(245, 100, 118)");
+        const title = suggestion.getByText("Calgary", { exact: true });
+        const details = suggestion.getByText("Alberta, Canada", { exact: true });
+        await expect(details).toHaveClass(/text-muted-foreground/);
+        const titleBounds = await title.boundingBox();
+        const detailBounds = await details.boundingBox();
+        expect(detailBounds?.y).toBeGreaterThan((titleBounds?.y ?? 0) + (titleBounds?.height ?? 0));
+        await input.press("ArrowDown");
+        await input.press("Enter");
+        await expect(input).toHaveValue("Calgary, Alberta, Canada");
+      };
+      await expect(input).toHaveValue("Toronto, Ontario, Canada");
+      await expect(example.getByRole("region")).toBeVisible();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(example.getByRole("combobox")).toHaveCount(1);
+      await selectCalgary();
+      await expect(example.getByRole("status")).toContainText("Toronto");
+      await example
+        .getByRole("button", { name: locale === "fr" ? "Annuler" : "Cancel", exact: true })
+        .click();
+      await expect(input).toHaveValue("Toronto, Ontario, Canada");
+      await selectCalgary();
+      await example
+        .getByRole("button", {
+          name: locale === "fr" ? "Utiliser ce lieu" : "Use this location",
+          exact: true,
+        })
+        .click();
+      await expect(example.getByRole("status")).toContainText("Calgary");
+      await expect(input).toBeVisible();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await input.fill("Tor");
+      await example
+        .getByRole("button", { name: locale === "fr" ? "Annuler" : "Cancel", exact: true })
+        .click();
+      await expect(input).toHaveValue("Calgary, Alberta, Canada");
+      await example.screenshot({ path: testInfo.outputPath(`inline-${locale}-${width}.png`) });
+    });
+  }
+}
+
 for (const locale of ["en", "fr"]) {
   for (const theme of ["light", "dark"]) {
     for (const [width, height] of [
@@ -13,46 +110,6 @@ for (const locale of ["en", "fr"]) {
       test(`map menu modes and drafts in ${locale}, ${theme}, ${width}x${height}`, async ({
         page,
       }, testInfo) => {
-        await page.route("**/maps.googleapis.com/**", (route) => route.abort());
-        await page.addInitScript(() => {
-          class MapView {
-            zoom = 8;
-            constructor(element: HTMLElement) {
-              element.style.background = "#e4e8e3";
-            }
-            getZoom = () => this.zoom;
-            setZoom = (zoom: number) => {
-              this.zoom = zoom;
-            };
-            setCenter = () => undefined;
-            setOptions = () => undefined;
-            fitBounds = () => undefined;
-          }
-          class Overlay {
-            setMap = () => undefined;
-            setPosition = () => undefined;
-            setIcon = () => undefined;
-            setCenter = () => undefined;
-            setOptions = () => undefined;
-            setRadius = () => undefined;
-            getBounds = () => ({
-              toJSON: () => ({ north: 44, south: 43, east: -79, west: -80 }),
-            });
-          }
-          Object.assign(window, {
-            google: {
-              maps: {
-                Map: MapView,
-                Marker: Overlay,
-                Circle: Overlay,
-                event: {
-                  addListener: () => ({ remove: () => undefined }),
-                  clearInstanceListeners: () => undefined,
-                },
-              },
-            },
-          });
-        });
         await page.setViewportSize({
           width: width ?? 390,
           height: height ?? 844,

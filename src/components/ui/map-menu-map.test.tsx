@@ -5,7 +5,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
 import { MapMenuMap as GoogleMap, type GoogleMapPoint, type GoogleMapsApi } from "./map-menu-map";
-import { MapMenu, MapMenuMode, type MapMenuLocation } from "./map-menu";
+import { MapMenu, MapMenuMode, MapMenuPresentation, type MapMenuLocation } from "./map-menu";
 
 type MockMapOptions = {
   center: GoogleMapPoint;
@@ -75,7 +75,7 @@ describe("MapMenu internal renderer", () => {
       setMap = vi.fn((_map: MockMapReference | null) => undefined);
       setPosition = vi.fn((_position: GoogleMapPoint) => undefined);
 
-      constructor(_options: MockMarkerOptions) {
+      constructor(readonly options: MockMarkerOptions) {
         markers.push(this);
       }
     }
@@ -301,8 +301,6 @@ describe("MapMenu internal renderer", () => {
     };
     const common = {
       apiKey: "test-key",
-      open: true,
-      onOpenChange: vi.fn(),
       input: location.label,
       onInputChange: vi.fn(),
       selectedLocation: location,
@@ -312,22 +310,45 @@ describe("MapMenu internal renderer", () => {
     };
     const circleCount = circles.length;
     const markerCount = markers.length;
-    const menu = render(<MapMenu {...common} mode={MapMenuMode.Point} />);
+    const menu = render(
+      <MapMenu {...common} open onOpenChange={vi.fn()} mode={MapMenuMode.Point} />,
+    );
     await waitFor(() => expect(markers).toHaveLength(markerCount + 1));
     expect(circles).toHaveLength(circleCount);
     expect(maps.at(-1)?.setZoom).toHaveBeenLastCalledWith(15);
     expect(screen.queryByRole("button", { name: "Show selected area" })).toBeNull();
 
     menu.rerender(
-      <MapMenu {...common} mode={MapMenuMode.Radius} radiusKm={20} onRadiusChange={vi.fn()} />,
+      <MapMenu
+        {...common}
+        open
+        onOpenChange={vi.fn()}
+        mode={MapMenuMode.Radius}
+        radiusKm={20}
+        onRadiusChange={vi.fn()}
+      />,
     );
     await waitFor(() => expect(circles).toHaveLength(circleCount + 1));
     expect(screen.getByRole("button", { name: "Show selected area" })).toBeDefined();
     const radiusCircle = circles.at(-1);
-    menu.rerender(<MapMenu {...common} mode={MapMenuMode.Point} />);
+    menu.rerender(<MapMenu {...common} open onOpenChange={vi.fn()} mode={MapMenuMode.Point} />);
     await waitFor(() => expect(radiusCircle?.setMap).toHaveBeenLastCalledWith(null));
     expect(screen.queryByRole("button", { name: "Show selected area" })).toBeNull();
     expect(screen.queryByRole("combobox", { name: "Search within" })).toBeNull();
     expect(maps).toHaveLength(3);
+    menu.rerender(
+      <MapMenu
+        {...common}
+        presentation={MapMenuPresentation.Inline}
+        onCancel={vi.fn()}
+        mode={MapMenuMode.Point}
+      />,
+    );
+    await waitFor(() => expect(maps).toHaveLength(4));
+    expect(markers.at(-1)?.options.icon).toContain(encodeURIComponent('fill="#f56476"'));
+    expect(circles).toHaveLength(circleCount + 1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("group", { name: "Choose your location" })).toBeDefined();
+    expect(maps.at(-1)?.setZoom).toHaveBeenLastCalledWith(15);
   });
 });
