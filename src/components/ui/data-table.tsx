@@ -937,7 +937,9 @@ const DateInput = Schema.Union([
   Schema.Int,
   CalendarDate,
   InstantString,
-]).annotate({ identifier: "DataTableDateInput" });
+]).annotate({
+  identifier: "DataTableDateInput",
+});
 const decodeDateInput = Schema.decodeUnknownOption(DateInput);
 
 // The model deliberately retains the original value for consumer formatters/comparators.
@@ -1699,7 +1701,9 @@ const renderCell = <TData extends RowData>(
       <DataTableReferenceCell
         item={colDef.typeOptions.getItem(row.data)}
         emptyLabel={colDef.typeOptions.emptyLabel}
-        imageVariant={colDef.typeOptions.imageVariant}
+        {...(colDef.typeOptions.imageVariant
+          ? { imageVariant: colDef.typeOptions.imageVariant }
+          : {})}
       />
     );
   }
@@ -2426,14 +2430,12 @@ const FilterEditor = <TData extends RowData>({
         event.preventDefault();
         if (kind === "text")
           apply({ id: column.id, kind, operator, value: primary.trim() });
-        else if (kind === "date")
-          apply({
-            id: column.id,
-            kind,
-            from: primary || undefined,
-            to: secondary || undefined,
-          });
-        else {
+        else if (kind === "date") {
+          const draft: DataTableFilterDraft = { id: column.id, kind };
+          if (primary) draft.from = primary;
+          if (secondary) draft.to = secondary;
+          apply(draft);
+        } else {
           const min = primary
             ? Schema.decodeOption(Schema.FiniteFromString)(primary)
             : Option.some(undefined);
@@ -2444,7 +2446,10 @@ const FilterEditor = <TData extends RowData>({
             setInvalid(true);
             return;
           }
-          apply({ id: column.id, kind, min: min.value, max: max.value });
+          const draft: DataTableFilterDraft = { id: column.id, kind };
+          if (min.value !== undefined) draft.min = min.value;
+          if (max.value !== undefined) draft.max = max.value;
+          apply(draft);
         }
       }}
     >

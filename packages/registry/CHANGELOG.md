@@ -1,5 +1,19 @@
 # @krak-stack/registry
 
+## 0.3.0
+
+### Minor Changes
+
+- 20be5ee: Replace the GoogleMap and GoogleMapPicker public entries with MapMenu at `@krak-stack/registry/map-menu` and `@krak-stack/map-menu` in the shadcn registry. Map rendering is now internal.
+
+  Use the exported `MapMenuMode.Point` enum member for pinpoint-only selection without radius props, controls, circle or hint. `MapMenuMode.Radius` remains the default and retains radius confirmation. Rename picker types and styling slots to their MapMenu equivalents. Old public imports are removed without compatibility aliases.
+
+- 4e746f4: Add a controlled GoogleMapPicker with responsive toolbar layout, floating suggestions, configurable radius presets, localized source notices and a yellow default confirmation action. Keep lookup and persistence host-owned. GoogleMap radius fitting waits for updated overlays to paint and cancels stale scheduled fits.
+
+  The default confirmation colour uses KrakStack's `oklch(0.9247 0.0524 66.1732)` rather than Tailwind yellow.
+
+- 86fc54f: Add a domain-neutral Stepper and optional StepperContent with controlled navigation, underline/labelled/segmented presentations, explicit completion/error states, bilingual defaults, and reduced-motion-aware directional slide transitions inside a stationary frame.
+
 ## 0.2.0
 
 ### Minor Changes
