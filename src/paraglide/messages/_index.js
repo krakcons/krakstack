@@ -2,9 +2,191 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Map_Picker_Preview_TitleInputs */
+/** @typedef {{}} Map_Picker_Preview_DescriptionInputs */
+/** @typedef {{}} Map_Picker_Preview_KeyInputs */
+/** @typedef {{}} Map_Picker_Preview_Key_PlaceholderInputs */
+/** @typedef {{}} Map_Picker_Preview_OpenInputs */
+/** @typedef {{ place: NonNullable<unknown>, distance: NonNullable<unknown> }} Map_Picker_Preview_SelectedInputs */
+/** @typedef {{}} Stepper_Preview_TitleInputs */
+/** @typedef {{}} Stepper_Preview_DescriptionInputs */
+/** @typedef {{}} Stepper_Preview_ConnectInputs */
+/** @typedef {{}} Stepper_Preview_ConfigureInputs */
+/** @typedef {{}} Stepper_Preview_VerifyInputs */
+/** @typedef {{}} Stepper_Preview_ContentInputs */
+/** @typedef {{}} Stepper_Preview_PreviousInputs */
+/** @typedef {{}} Stepper_Preview_ContinueInputs */
+/** @typedef {{}} Stepper_Preview_RestartInputs */
+/** @typedef {{}} Stepper_Example_DetailsInputs */
+/** @typedef {{}} Stepper_Example_ReviewInputs */
+/** @typedef {{}} Stepper_Example_DoneInputs */
+/** @typedef {{}} Stepper_Example_Form_TitleInputs */
+/** @typedef {{}} Stepper_Example_Form_DescriptionInputs */
+/** @typedef {{}} Stepper_Example_NameInputs */
+/** @typedef {{}} Stepper_Example_ConfirmInputs */
+/** @typedef {{}} Stepper_Example_FinishedInputs */
+/** @typedef {{}} Stepper_Example_Vertical_TitleInputs */
+/** @typedef {{}} Stepper_Example_Vertical_DescriptionInputs */
+/** @typedef {{}} Stepper_Example_ConnectedInputs */
+/** @typedef {{}} Stepper_Example_AttentionInputs */
+/** @typedef {{}} Stepper_Example_WaitingInputs */
+/** @typedef {{}} Notifications_Staff_TitleInputs */
+/** @typedef {{}} Notifications_Staff_DescriptionInputs */
+/** @typedef {{}} Notifications_Staff_SourceInputs */
+/** @typedef {{}} Notifications_Staff_AllInputs */
+/** @typedef {{}} Notifications_Staff_ContactsInputs */
+/** @typedef {{}} Notifications_Staff_EngineInputs */
+/** @typedef {{}} Notifications_Staff_AccountInputs */
+/** @typedef {{}} Notifications_Staff_OrganizationInputs */
+/** @typedef {{}} Notifications_Staff_WorkspaceInputs */
+/** @typedef {{}} Notifications_Staff_TemplateInputs */
+/** @typedef {{}} Notifications_Staff_TransactionalInputs */
+/** @typedef {{}} Notifications_Staff_NotificationInputs */
+/** @typedef {{}} Notifications_Staff_MarketingInputs */
+/** @typedef {{}} Notifications_Staff_EventInputs */
+/** @typedef {{}} Notifications_Staff_ReferencesInputs */
+/** @typedef {{}} Notifications_Staff_Feedback_NoticeInputs */
+/** @typedef {{}} Notifications_Staff_Feedback_CoveredInputs */
+/** @typedef {{}} Notifications_Staff_Feedback_UnavailableInputs */
+/** @typedef {{}} Kraksend_Ops_Contact_HistoryInputs */
+/** @typedef {{}} Kraksend_Ops_SourceInputs */
+/** @typedef {{}} Kraksend_Ops_Notice_VersionInputs */
+/** @typedef {{}} Kraksend_Ops_LocaleInputs */
+/** @typedef {{}} Kraksend_Ops_TitleInputs */
+/** @typedef {{}} Kraksend_Ops_DescriptionInputs */
+/** @typedef {{}} Kraksend_Ops_OverviewInputs */
+/** @typedef {{}} Kraksend_Ops_ActivityInputs */
+/** @typedef {{}} Kraksend_Ops_FeedbackInputs */
+/** @typedef {{}} Kraksend_Ops_SuppressionsInputs */
+/** @typedef {{}} Kraksend_Ops_AuditInputs */
+/** @typedef {{}} Kraksend_Ops_RecipientsInputs */
+/** @typedef {{}} Kraksend_Ops_RefreshInputs */
+/** @typedef {{}} Kraksend_Ops_EmptyInputs */
+/** @typedef {{}} Kraksend_Ops_SearchInputs */
+/** @typedef {{}} Kraksend_Ops_SinceInputs */
+/** @typedef {{}} Kraksend_Ops_UntilInputs */
+/** @typedef {{}} Kraksend_Ops_ApplyInputs */
+/** @typedef {{}} Kraksend_Ops_AllInputs */
+/** @typedef {{}} Kraksend_Ops_TotalInputs */
+/** @typedef {{}} Kraksend_Ops_QueuedInputs */
+/** @typedef {{}} Kraksend_Ops_ProcessingInputs */
+/** @typedef {{}} Kraksend_Ops_RetryingInputs */
+/** @typedef {{}} Kraksend_Ops_Soft_BouncedInputs */
+/** @typedef {{}} Kraksend_Ops_Pending_FeedbackInputs */
+/** @typedef {{}} Kraksend_Ops_Active_SuppressionsInputs */
+/** @typedef {{}} Kraksend_Ops_BouncesInputs */
+/** @typedef {{}} Kraksend_Ops_CampaignInputs */
+/** @typedef {{}} Kraksend_Ops_Campaign_IdInputs */
+/** @typedef {{}} Kraksend_Ops_ProviderInputs */
+/** @typedef {{}} Kraksend_Ops_Provider_Message_IdInputs */
+/** @typedef {{}} Kraksend_Ops_AttemptsInputs */
+/** @typedef {{}} Kraksend_Ops_CreatedInputs */
+/** @typedef {{}} Kraksend_Ops_ScheduledInputs */
+/** @typedef {{}} Kraksend_Ops_UpdatedInputs */
+/** @typedef {{}} Kraksend_Ops_ReasonInputs */
+/** @typedef {{}} Kraksend_Ops_InspectInputs */
+/** @typedef {{}} Kraksend_Ops_CorrelationInputs */
+/** @typedef {{}} Kraksend_Ops_PendingInputs */
+/** @typedef {{}} Kraksend_Ops_AppliedInputs */
+/** @typedef {{}} Kraksend_Ops_OccurredInputs */
+/** @typedef {{}} Kraksend_Ops_ReceivedInputs */
+/** @typedef {{}} Kraksend_Ops_CheckedInputs */
+/** @typedef {{}} Kraksend_Ops_Event_IdInputs */
+/** @typedef {{}} Kraksend_Ops_Delivery_IdInputs */
+/** @typedef {{}} Kraksend_Ops_Contact_IdInputs */
+/** @typedef {{}} Kraksend_Ops_Add_SuppressionInputs */
+/** @typedef {{}} Kraksend_Ops_Remove_SuppressionInputs */
+/** @typedef {{}} Kraksend_Ops_Suppression_WarningInputs */
+/** @typedef {{}} Kraksend_Ops_ConfirmInputs */
+/** @typedef {{}} Kraksend_Ops_ActiveInputs */
+/** @typedef {{}} Kraksend_Ops_ExpiredInputs */
+/** @typedef {{}} Kraksend_Ops_ExpiresInputs */
+/** @typedef {{}} Kraksend_Ops_NeverInputs */
+/** @typedef {{}} Kraksend_Ops_PurposeInputs */
+/** @typedef {{}} Kraksend_Ops_ActorInputs */
+/** @typedef {{}} Kraksend_Ops_ActionInputs */
+/** @typedef {{}} Kraksend_Ops_AddInputs */
+/** @typedef {{}} Kraksend_Ops_RemoveInputs */
+/** @typedef {{}} Kraksend_Ops_Previous_ReasonInputs */
+/** @typedef {{}} Kraksend_Ops_Request_IdInputs */
+/** @typedef {{}} Kraksend_Ops_Recipients_HintInputs */
+/** @typedef {{}} Kraksend_Ops_GenerationInputs */
+/** @typedef {{}} Kraksend_Ops_OutcomeInputs */
+/** @typedef {{}} Kraksend_Ops_StartedInputs */
+/** @typedef {{}} Kraksend_Ops_CompletedInputs */
+/** @typedef {{}} Kraksend_Ops_IdInputs */
+/** @typedef {{}} Kraksend_Ops_Outcome_RetryInputs */
+/** @typedef {{}} Kraksend_Ops_Outcome_PermanentInputs */
+/** @typedef {{}} Kraksend_Ops_Outcome_UnavailableInputs */
+/** @typedef {{}} Kraksend_Ops_Outcome_SkippedInputs */
+/** @typedef {{}} Kraksend_Ops_FailedInputs */
+/** @typedef {{}} Kraksend_Campaign_CloseInputs */
+/** @typedef {{}} Kraksend_Campaign_StatusInputs */
+/** @typedef {{}} Kraksend_Campaign_TitleInputs */
+/** @typedef {{}} Kraksend_Campaign_DescriptionInputs */
+/** @typedef {{}} Kraksend_Campaign_CreateInputs */
+/** @typedef {{}} Kraksend_Campaign_FromInputs */
+/** @typedef {{}} Kraksend_Campaign_SubjectInputs */
+/** @typedef {{}} Kraksend_Campaign_TextInputs */
+/** @typedef {{}} Kraksend_Campaign_ManageInputs */
+/** @typedef {{}} Kraksend_Campaign_ScheduleInputs */
+/** @typedef {{}} Kraksend_Campaign_Scheduled_ForInputs */
+/** @typedef {{}} Kraksend_Campaign_PauseInputs */
+/** @typedef {{}} Kraksend_Campaign_ResumeInputs */
+/** @typedef {{}} Kraksend_Campaign_CancelInputs */
+/** @typedef {{}} Kraksend_Campaign_Confirm_CancelInputs */
+/** @typedef {{}} Kraksend_Campaign_Cancel_DescriptionInputs */
+/** @typedef {{}} Kraksend_Campaign_EmptyInputs */
+/** @typedef {{}} Kraksend_Campaign_ReportingInputs */
+/** @typedef {{}} Kraksend_Campaign_DraftInputs */
+/** @typedef {{}} Kraksend_Campaign_ScheduledInputs */
+/** @typedef {{}} Kraksend_Campaign_RunningInputs */
+/** @typedef {{}} Kraksend_Campaign_PausedInputs */
+/** @typedef {{}} Kraksend_Campaign_CancelledInputs */
+/** @typedef {{}} Kraksend_Campaign_CompletedInputs */
+/** @typedef {{}} Kraksend_Campaign_AudienceInputs */
+/** @typedef {{}} Kraksend_Campaign_PendingInputs */
+/** @typedef {{}} Kraksend_Campaign_PublishedInputs */
+/** @typedef {{}} Kraksend_Campaign_SkippedInputs */
+/** @typedef {{}} Kraksend_Campaign_AcceptedInputs */
+/** @typedef {{}} Kraksend_Campaign_FailedInputs */
+/** @typedef {{}} Kraksend_Campaign_SuppressedInputs */
+/** @typedef {{}} Kraksend_Campaign_ConfirmedInputs */
+/** @typedef {{}} Kraksend_Campaign_Hard_BouncedInputs */
+/** @typedef {{}} Kraksend_Campaign_ComplainedInputs */
+/** @typedef {{}} Kraksend_Campaign_EnglishInputs */
+/** @typedef {{}} Kraksend_Campaign_FrenchInputs */
+/** @typedef {{}} Kraksend_Unsubscribe_TitleInputs */
+/** @typedef {{}} Kraksend_Unsubscribe_DescriptionInputs */
+/** @typedef {{}} Kraksend_Unsubscribe_InvalidInputs */
+/** @typedef {{}} Kraksend_Unsubscribe_UnavailableInputs */
+/** @typedef {{}} Kraksend_Unsubscribe_SuccessInputs */
+/** @typedef {{}} Kraksend_Contacts_TitleInputs */
+/** @typedef {{}} Kraksend_Contacts_DescriptionInputs */
+/** @typedef {{}} Kraksend_Contacts_CreateInputs */
+/** @typedef {{}} Kraksend_Contacts_NameInputs */
+/** @typedef {{}} Kraksend_Contacts_EmailInputs */
+/** @typedef {{}} Kraksend_Contacts_ConsentInputs */
+/** @typedef {{}} Kraksend_Contacts_UnknownInputs */
+/** @typedef {{}} Kraksend_Contacts_SubscribedInputs */
+/** @typedef {{}} Kraksend_Contacts_UnsubscribedInputs */
+/** @typedef {{}} Kraksend_Contacts_WithdrawInputs */
+/** @typedef {{}} Kraksend_Contacts_SaveInputs */
+/** @typedef {{}} Kraksend_Contacts_FailedInputs */
+/** @typedef {{}} Kraksend_Contacts_LoadingInputs */
+/** @typedef {{}} Kraksend_Contacts_EmptyInputs */
+/** @typedef {{}} Kraksend_Contacts_PreviousInputs */
+/** @typedef {{}} Kraksend_Contacts_NextInputs */
 /** @typedef {{}} Color_Picker_Preview_TitleInputs */
 /** @typedef {{}} Color_Picker_Preview_DescriptionInputs */
 /** @typedef {{}} Color_Picker_Preview_DisabledInputs */
+/** @typedef {{}} Notification_Unsubscribe_TitleInputs */
+/** @typedef {{}} Notification_Unsubscribe_DescriptionInputs */
+/** @typedef {{}} Notification_Unsubscribe_ActionInputs */
+/** @typedef {{}} Notification_Unsubscribe_SuccessInputs */
+/** @typedef {{}} Notification_Unsubscribe_InvalidInputs */
+/** @typedef {{}} Notification_Unsubscribe_UnavailableInputs */
+/** @typedef {{}} Notification_Unsubscribe_FooterInputs */
 /** @typedef {{}} Agent_Preview_Demo_DescriptionInputs */
 /** @typedef {{ scenario: NonNullable<unknown> }} Agent_Preview_Demo_PromptInputs */
 /** @typedef {{}} Agent_Preview_ChatInputs */
@@ -172,6 +354,2456 @@ import * as __fr from "./fr.js"
 /**
 * | output |
 * | --- |
+* | "Location picker" |
+*
+* @param {Map_Picker_Preview_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_picker_preview_title = /** @type {((inputs?: Map_Picker_Preview_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Picker_Preview_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_picker_preview_title(inputs)
+	return __fr.map_picker_preview_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Try the toolbar, radius choices and draft confirmation. Suggestions and IP/browser location actions use example data; no lookup or location permission is req..." |
+*
+* @param {Map_Picker_Preview_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_picker_preview_description = /** @type {((inputs?: Map_Picker_Preview_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Picker_Preview_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_picker_preview_description(inputs)
+	return __fr.map_picker_preview_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Google Maps browser key (optional)" |
+*
+* @param {Map_Picker_Preview_KeyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_picker_preview_key = /** @type {((inputs?: Map_Picker_Preview_KeyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Picker_Preview_KeyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_picker_preview_key(inputs)
+	return __fr.map_picker_preview_key(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "A referrer-restricted browser key" |
+*
+* @param {Map_Picker_Preview_Key_PlaceholderInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_picker_preview_key_placeholder = /** @type {((inputs?: Map_Picker_Preview_Key_PlaceholderInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Picker_Preview_Key_PlaceholderInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_picker_preview_key_placeholder(inputs)
+	return __fr.map_picker_preview_key_placeholder(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Choose a location" |
+*
+* @param {Map_Picker_Preview_OpenInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_picker_preview_open = /** @type {((inputs?: Map_Picker_Preview_OpenInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Picker_Preview_OpenInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_picker_preview_open(inputs)
+	return __fr.map_picker_preview_open(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Selected: {place} · {distance} km" |
+*
+* @param {Map_Picker_Preview_SelectedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_picker_preview_selected = /** @type {((inputs: Map_Picker_Preview_SelectedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Picker_Preview_SelectedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_picker_preview_selected(inputs)
+	return __fr.map_picker_preview_selected(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Step navigation" |
+*
+* @param {Stepper_Preview_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_title = /** @type {((inputs?: Stepper_Preview_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_title(inputs)
+	return __fr.stepper_preview_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Try the steps or use Previous and Continue. The host controls navigation; the stepper never saves a form." |
+*
+* @param {Stepper_Preview_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_description = /** @type {((inputs?: Stepper_Preview_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_description(inputs)
+	return __fr.stepper_preview_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Connect" |
+*
+* @param {Stepper_Preview_ConnectInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_connect = /** @type {((inputs?: Stepper_Preview_ConnectInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_ConnectInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_connect(inputs)
+	return __fr.stepper_preview_connect(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Configure" |
+*
+* @param {Stepper_Preview_ConfigureInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_configure = /** @type {((inputs?: Stepper_Preview_ConfigureInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_ConfigureInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_configure(inputs)
+	return __fr.stepper_preview_configure(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Verify" |
+*
+* @param {Stepper_Preview_VerifyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_verify = /** @type {((inputs?: Stepper_Preview_VerifyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_VerifyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_verify(inputs)
+	return __fr.stepper_preview_verify(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Your project supplies the content, validation and saving behavior for this step." |
+*
+* @param {Stepper_Preview_ContentInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_content = /** @type {((inputs?: Stepper_Preview_ContentInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_ContentInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_content(inputs)
+	return __fr.stepper_preview_content(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Previous" |
+*
+* @param {Stepper_Preview_PreviousInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_previous = /** @type {((inputs?: Stepper_Preview_PreviousInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_PreviousInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_previous(inputs)
+	return __fr.stepper_preview_previous(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Continue" |
+*
+* @param {Stepper_Preview_ContinueInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_continue = /** @type {((inputs?: Stepper_Preview_ContinueInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_ContinueInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_continue(inputs)
+	return __fr.stepper_preview_continue(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Start again" |
+*
+* @param {Stepper_Preview_RestartInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_preview_restart = /** @type {((inputs?: Stepper_Preview_RestartInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Preview_RestartInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_preview_restart(inputs)
+	return __fr.stepper_preview_restart(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Details" |
+*
+* @param {Stepper_Example_DetailsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_details = /** @type {((inputs?: Stepper_Example_DetailsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_DetailsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_details(inputs)
+	return __fr.stepper_example_details(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Review" |
+*
+* @param {Stepper_Example_ReviewInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_review = /** @type {((inputs?: Stepper_Example_ReviewInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_ReviewInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_review(inputs)
+	return __fr.stepper_example_review(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Done" |
+*
+* @param {Stepper_Example_DoneInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_done = /** @type {((inputs?: Stepper_Example_DoneInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_DoneInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_done(inputs)
+	return __fr.stepper_example_done(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "A form with review" |
+*
+* @param {Stepper_Example_Form_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_form_title = /** @type {((inputs?: Stepper_Example_Form_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_Form_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_form_title(inputs)
+	return __fr.stepper_example_form_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Enter a project name, review it, then confirm. Previous skips validation and keeps your draft. This demo does not save data." |
+*
+* @param {Stepper_Example_Form_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_form_description = /** @type {((inputs?: Stepper_Example_Form_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_Form_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_form_description(inputs)
+	return __fr.stepper_example_form_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Project name (required)" |
+*
+* @param {Stepper_Example_NameInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_name = /** @type {((inputs?: Stepper_Example_NameInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_NameInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_name(inputs)
+	return __fr.stepper_example_name(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Confirm" |
+*
+* @param {Stepper_Example_ConfirmInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_confirm = /** @type {((inputs?: Stepper_Example_ConfirmInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_ConfirmInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_confirm(inputs)
+	return __fr.stepper_example_confirm(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Review complete. Nothing was sent or saved; your draft stays available until you leave this page." |
+*
+* @param {Stepper_Example_FinishedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_finished = /** @type {((inputs?: Stepper_Example_FinishedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_FinishedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_finished(inputs)
+	return __fr.stepper_example_finished(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Read-only progress" |
+*
+* @param {Stepper_Example_Vertical_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_vertical_title = /** @type {((inputs?: Stepper_Example_Vertical_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_Vertical_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_vertical_title(inputs)
+	return __fr.stepper_example_vertical_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "A vertical layout with descriptions and explicit states, without navigation controls or numbered indicators." |
+*
+* @param {Stepper_Example_Vertical_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_vertical_description = /** @type {((inputs?: Stepper_Example_Vertical_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_Vertical_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_vertical_description(inputs)
+	return __fr.stepper_example_vertical_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Connection established" |
+*
+* @param {Stepper_Example_ConnectedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_connected = /** @type {((inputs?: Stepper_Example_ConnectedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_ConnectedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_connected(inputs)
+	return __fr.stepper_example_connected(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Configuration needs attention" |
+*
+* @param {Stepper_Example_AttentionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_attention = /** @type {((inputs?: Stepper_Example_AttentionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_AttentionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_attention(inputs)
+	return __fr.stepper_example_attention(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Waiting for configuration" |
+*
+* @param {Stepper_Example_WaitingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const stepper_example_waiting = /** @type {((inputs?: Stepper_Example_WaitingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Stepper_Example_WaitingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.stepper_example_waiting(inputs)
+	return __fr.stepper_example_waiting(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Staff email administration" |
+*
+* @param {Notifications_Staff_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_title = /** @type {((inputs?: Notifications_Staff_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_title(inputs)
+	return __fr.notifications_staff_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Read-only access to existing email deliveries within your authorized scopes. Acceptance is not confirmed delivery or reading." |
+*
+* @param {Notifications_Staff_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_description = /** @type {((inputs?: Notifications_Staff_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_description(inputs)
+	return __fr.notifications_staff_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Publication source" |
+*
+* @param {Notifications_Staff_SourceInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_source = /** @type {((inputs?: Notifications_Staff_SourceInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_SourceInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_source(inputs)
+	return __fr.notifications_staff_source(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "All authorized emails" |
+*
+* @param {Notifications_Staff_AllInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_all = /** @type {((inputs?: Notifications_Staff_AllInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_AllInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_all(inputs)
+	return __fr.notifications_staff_all(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Legacy contact publications" |
+*
+* @param {Notifications_Staff_ContactsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_contacts = /** @type {((inputs?: Notifications_Staff_ContactsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_ContactsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_contacts(inputs)
+	return __fr.notifications_staff_contacts(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Native publications" |
+*
+* @param {Notifications_Staff_EngineInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_engine = /** @type {((inputs?: Notifications_Staff_EngineInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_EngineInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_engine(inputs)
+	return __fr.notifications_staff_engine(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Recipient account" |
+*
+* @param {Notifications_Staff_AccountInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_account = /** @type {((inputs?: Notifications_Staff_AccountInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_AccountInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_account(inputs)
+	return __fr.notifications_staff_account(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Organization" |
+*
+* @param {Notifications_Staff_OrganizationInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_organization = /** @type {((inputs?: Notifications_Staff_OrganizationInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_OrganizationInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_organization(inputs)
+	return __fr.notifications_staff_organization(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Workspace" |
+*
+* @param {Notifications_Staff_WorkspaceInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_workspace = /** @type {((inputs?: Notifications_Staff_WorkspaceInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_WorkspaceInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_workspace(inputs)
+	return __fr.notifications_staff_workspace(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Template" |
+*
+* @param {Notifications_Staff_TemplateInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_template = /** @type {((inputs?: Notifications_Staff_TemplateInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_TemplateInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_template(inputs)
+	return __fr.notifications_staff_template(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Transactional" |
+*
+* @param {Notifications_Staff_TransactionalInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_transactional = /** @type {((inputs?: Notifications_Staff_TransactionalInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_TransactionalInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_transactional(inputs)
+	return __fr.notifications_staff_transactional(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Notification" |
+*
+* @param {Notifications_Staff_NotificationInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_notification = /** @type {((inputs?: Notifications_Staff_NotificationInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_NotificationInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_notification(inputs)
+	return __fr.notifications_staff_notification(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Marketing" |
+*
+* @param {Notifications_Staff_MarketingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_marketing = /** @type {((inputs?: Notifications_Staff_MarketingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_MarketingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_marketing(inputs)
+	return __fr.notifications_staff_marketing(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Event key" |
+*
+* @param {Notifications_Staff_EventInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_event = /** @type {((inputs?: Notifications_Staff_EventInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_EventInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_event(inputs)
+	return __fr.notifications_staff_event(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Authorized domain references" |
+*
+* @param {Notifications_Staff_ReferencesInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_references = /** @type {((inputs?: Notifications_Staff_ReferencesInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_ReferencesInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_references(inputs)
+	return __fr.notifications_staff_references(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Confirmation and bounce counts cover only deliveries with configured provider feedback. Unavailable feedback is not evidence of successful delivery or zero b..." |
+*
+* @param {Notifications_Staff_Feedback_NoticeInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_feedback_notice = /** @type {((inputs?: Notifications_Staff_Feedback_NoticeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_Feedback_NoticeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_feedback_notice(inputs)
+	return __fr.notifications_staff_feedback_notice(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Emails covered by feedback reconciliation" |
+*
+* @param {Notifications_Staff_Feedback_CoveredInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_feedback_covered = /** @type {((inputs?: Notifications_Staff_Feedback_CoveredInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_Feedback_CoveredInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_feedback_covered(inputs)
+	return __fr.notifications_staff_feedback_covered(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Emails without feedback coverage" |
+*
+* @param {Notifications_Staff_Feedback_UnavailableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notifications_staff_feedback_unavailable = /** @type {((inputs?: Notifications_Staff_Feedback_UnavailableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notifications_Staff_Feedback_UnavailableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notifications_staff_feedback_unavailable(inputs)
+	return __fr.notifications_staff_feedback_unavailable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Contact profile and consent history" |
+*
+* @param {Kraksend_Ops_Contact_HistoryInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_contact_history = /** @type {((inputs?: Kraksend_Ops_Contact_HistoryInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Contact_HistoryInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_contact_history(inputs)
+	return __fr.kraksend_ops_contact_history(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Consent source" |
+*
+* @param {Kraksend_Ops_SourceInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_source = /** @type {((inputs?: Kraksend_Ops_SourceInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_SourceInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_source(inputs)
+	return __fr.kraksend_ops_source(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Notice version" |
+*
+* @param {Kraksend_Ops_Notice_VersionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_notice_version = /** @type {((inputs?: Kraksend_Ops_Notice_VersionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Notice_VersionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_notice_version(inputs)
+	return __fr.kraksend_ops_notice_version(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Contact language" |
+*
+* @param {Kraksend_Ops_LocaleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_locale = /** @type {((inputs?: Kraksend_Ops_LocaleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_LocaleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_locale(inputs)
+	return __fr.kraksend_ops_locale(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Sending operations" |
+*
+* @param {Kraksend_Ops_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_title = /** @type {((inputs?: Kraksend_Ops_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_title(inputs)
+	return __fr.kraksend_ops_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Installation email activity, refreshed every 15 seconds. Dates use ISO timestamps with timezone; end is exclusive. Delivery statistics use publication time; ..." |
+*
+* @param {Kraksend_Ops_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_description = /** @type {((inputs?: Kraksend_Ops_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_description(inputs)
+	return __fr.kraksend_ops_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Overview" |
+*
+* @param {Kraksend_Ops_OverviewInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_overview = /** @type {((inputs?: Kraksend_Ops_OverviewInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_OverviewInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_overview(inputs)
+	return __fr.kraksend_ops_overview(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Delivery activity" |
+*
+* @param {Kraksend_Ops_ActivityInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_activity = /** @type {((inputs?: Kraksend_Ops_ActivityInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ActivityInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_activity(inputs)
+	return __fr.kraksend_ops_activity(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Bounces and feedback" |
+*
+* @param {Kraksend_Ops_FeedbackInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_feedback = /** @type {((inputs?: Kraksend_Ops_FeedbackInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_FeedbackInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_feedback(inputs)
+	return __fr.kraksend_ops_feedback(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Suppressions" |
+*
+* @param {Kraksend_Ops_SuppressionsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_suppressions = /** @type {((inputs?: Kraksend_Ops_SuppressionsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_SuppressionsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_suppressions(inputs)
+	return __fr.kraksend_ops_suppressions(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Suppression history" |
+*
+* @param {Kraksend_Ops_AuditInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_audit = /** @type {((inputs?: Kraksend_Ops_AuditInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_AuditInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_audit(inputs)
+	return __fr.kraksend_ops_audit(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Campaign recipients" |
+*
+* @param {Kraksend_Ops_RecipientsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_recipients = /** @type {((inputs?: Kraksend_Ops_RecipientsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_RecipientsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_recipients(inputs)
+	return __fr.kraksend_ops_recipients(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Refresh" |
+*
+* @param {Kraksend_Ops_RefreshInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_refresh = /** @type {((inputs?: Kraksend_Ops_RefreshInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_RefreshInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_refresh(inputs)
+	return __fr.kraksend_ops_refresh(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No matching records." |
+*
+* @param {Kraksend_Ops_EmptyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_empty = /** @type {((inputs?: Kraksend_Ops_EmptyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_EmptyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_empty(inputs)
+	return __fr.kraksend_ops_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Search records" |
+*
+* @param {Kraksend_Ops_SearchInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_search = /** @type {((inputs?: Kraksend_Ops_SearchInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_SearchInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_search(inputs)
+	return __fr.kraksend_ops_search(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "From (ISO timestamp, optional)" |
+*
+* @param {Kraksend_Ops_SinceInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_since = /** @type {((inputs?: Kraksend_Ops_SinceInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_SinceInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_since(inputs)
+	return __fr.kraksend_ops_since(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Until (ISO timestamp, optional)" |
+*
+* @param {Kraksend_Ops_UntilInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_until = /** @type {((inputs?: Kraksend_Ops_UntilInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_UntilInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_until(inputs)
+	return __fr.kraksend_ops_until(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Apply filters" |
+*
+* @param {Kraksend_Ops_ApplyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_apply = /** @type {((inputs?: Kraksend_Ops_ApplyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ApplyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_apply(inputs)
+	return __fr.kraksend_ops_apply(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "All" |
+*
+* @param {Kraksend_Ops_AllInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_all = /** @type {((inputs?: Kraksend_Ops_AllInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_AllInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_all(inputs)
+	return __fr.kraksend_ops_all(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Total publications" |
+*
+* @param {Kraksend_Ops_TotalInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_total = /** @type {((inputs?: Kraksend_Ops_TotalInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_TotalInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_total(inputs)
+	return __fr.kraksend_ops_total(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Queued" |
+*
+* @param {Kraksend_Ops_QueuedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_queued = /** @type {((inputs?: Kraksend_Ops_QueuedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_QueuedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_queued(inputs)
+	return __fr.kraksend_ops_queued(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Processing" |
+*
+* @param {Kraksend_Ops_ProcessingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_processing = /** @type {((inputs?: Kraksend_Ops_ProcessingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ProcessingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_processing(inputs)
+	return __fr.kraksend_ops_processing(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Retrying or deferred" |
+*
+* @param {Kraksend_Ops_RetryingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_retrying = /** @type {((inputs?: Kraksend_Ops_RetryingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_RetryingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_retrying(inputs)
+	return __fr.kraksend_ops_retrying(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Soft bounced" |
+*
+* @param {Kraksend_Ops_Soft_BouncedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_soft_bounced = /** @type {((inputs?: Kraksend_Ops_Soft_BouncedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Soft_BouncedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_soft_bounced(inputs)
+	return __fr.kraksend_ops_soft_bounced(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unmatched feedback events" |
+*
+* @param {Kraksend_Ops_Pending_FeedbackInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_pending_feedback = /** @type {((inputs?: Kraksend_Ops_Pending_FeedbackInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Pending_FeedbackInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_pending_feedback(inputs)
+	return __fr.kraksend_ops_pending_feedback(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Active suppression records" |
+*
+* @param {Kraksend_Ops_Active_SuppressionsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_active_suppressions = /** @type {((inputs?: Kraksend_Ops_Active_SuppressionsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Active_SuppressionsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_active_suppressions(inputs)
+	return __fr.kraksend_ops_active_suppressions(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Hard and soft bounces" |
+*
+* @param {Kraksend_Ops_BouncesInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_bounces = /** @type {((inputs?: Kraksend_Ops_BouncesInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_BouncesInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_bounces(inputs)
+	return __fr.kraksend_ops_bounces(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Campaign" |
+*
+* @param {Kraksend_Ops_CampaignInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_campaign = /** @type {((inputs?: Kraksend_Ops_CampaignInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_CampaignInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_campaign(inputs)
+	return __fr.kraksend_ops_campaign(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Campaign ID (optional for activity)" |
+*
+* @param {Kraksend_Ops_Campaign_IdInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_campaign_id = /** @type {((inputs?: Kraksend_Ops_Campaign_IdInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Campaign_IdInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_campaign_id(inputs)
+	return __fr.kraksend_ops_campaign_id(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Provider" |
+*
+* @param {Kraksend_Ops_ProviderInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_provider = /** @type {((inputs?: Kraksend_Ops_ProviderInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ProviderInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_provider(inputs)
+	return __fr.kraksend_ops_provider(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Provider message ID" |
+*
+* @param {Kraksend_Ops_Provider_Message_IdInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_provider_message_id = /** @type {((inputs?: Kraksend_Ops_Provider_Message_IdInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Provider_Message_IdInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_provider_message_id(inputs)
+	return __fr.kraksend_ops_provider_message_id(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Provider attempts" |
+*
+* @param {Kraksend_Ops_AttemptsInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_attempts = /** @type {((inputs?: Kraksend_Ops_AttemptsInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_AttemptsInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_attempts(inputs)
+	return __fr.kraksend_ops_attempts(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Created" |
+*
+* @param {Kraksend_Ops_CreatedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_created = /** @type {((inputs?: Kraksend_Ops_CreatedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_CreatedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_created(inputs)
+	return __fr.kraksend_ops_created(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Scheduled for" |
+*
+* @param {Kraksend_Ops_ScheduledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_scheduled = /** @type {((inputs?: Kraksend_Ops_ScheduledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ScheduledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_scheduled(inputs)
+	return __fr.kraksend_ops_scheduled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Updated" |
+*
+* @param {Kraksend_Ops_UpdatedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_updated = /** @type {((inputs?: Kraksend_Ops_UpdatedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_UpdatedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_updated(inputs)
+	return __fr.kraksend_ops_updated(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Reason / diagnostic" |
+*
+* @param {Kraksend_Ops_ReasonInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_reason = /** @type {((inputs?: Kraksend_Ops_ReasonInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ReasonInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_reason(inputs)
+	return __fr.kraksend_ops_reason(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "View delivery" |
+*
+* @param {Kraksend_Ops_InspectInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_inspect = /** @type {((inputs?: Kraksend_Ops_InspectInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_InspectInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_inspect(inputs)
+	return __fr.kraksend_ops_inspect(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Correlation" |
+*
+* @param {Kraksend_Ops_CorrelationInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_correlation = /** @type {((inputs?: Kraksend_Ops_CorrelationInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_CorrelationInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_correlation(inputs)
+	return __fr.kraksend_ops_correlation(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Pending" |
+*
+* @param {Kraksend_Ops_PendingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_pending = /** @type {((inputs?: Kraksend_Ops_PendingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_PendingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_pending(inputs)
+	return __fr.kraksend_ops_pending(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Applied" |
+*
+* @param {Kraksend_Ops_AppliedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_applied = /** @type {((inputs?: Kraksend_Ops_AppliedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_AppliedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_applied(inputs)
+	return __fr.kraksend_ops_applied(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Occurred" |
+*
+* @param {Kraksend_Ops_OccurredInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_occurred = /** @type {((inputs?: Kraksend_Ops_OccurredInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_OccurredInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_occurred(inputs)
+	return __fr.kraksend_ops_occurred(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Received" |
+*
+* @param {Kraksend_Ops_ReceivedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_received = /** @type {((inputs?: Kraksend_Ops_ReceivedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ReceivedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_received(inputs)
+	return __fr.kraksend_ops_received(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Last checked" |
+*
+* @param {Kraksend_Ops_CheckedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_checked = /** @type {((inputs?: Kraksend_Ops_CheckedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_CheckedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_checked(inputs)
+	return __fr.kraksend_ops_checked(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Provider event ID" |
+*
+* @param {Kraksend_Ops_Event_IdInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_event_id = /** @type {((inputs?: Kraksend_Ops_Event_IdInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Event_IdInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_event_id(inputs)
+	return __fr.kraksend_ops_event_id(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Delivery ID" |
+*
+* @param {Kraksend_Ops_Delivery_IdInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_delivery_id = /** @type {((inputs?: Kraksend_Ops_Delivery_IdInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Delivery_IdInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_delivery_id(inputs)
+	return __fr.kraksend_ops_delivery_id(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Contact ID" |
+*
+* @param {Kraksend_Ops_Contact_IdInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_contact_id = /** @type {((inputs?: Kraksend_Ops_Contact_IdInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Contact_IdInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_contact_id(inputs)
+	return __fr.kraksend_ops_contact_id(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Block email endpoint" |
+*
+* @param {Kraksend_Ops_Add_SuppressionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_add_suppression = /** @type {((inputs?: Kraksend_Ops_Add_SuppressionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Add_SuppressionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_add_suppression(inputs)
+	return __fr.kraksend_ops_add_suppression(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Remove suppression" |
+*
+* @param {Kraksend_Ops_Remove_SuppressionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_remove_suppression = /** @type {((inputs?: Kraksend_Ops_Remove_SuppressionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Remove_SuppressionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_remove_suppression(inputs)
+	return __fr.kraksend_ops_remove_suppression(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Blocks apply independently of consent, including transactional email. Removing a block does not subscribe a contact or resend messages. Review bounce/complai..." |
+*
+* @param {Kraksend_Ops_Suppression_WarningInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_suppression_warning = /** @type {((inputs?: Kraksend_Ops_Suppression_WarningInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Suppression_WarningInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_suppression_warning(inputs)
+	return __fr.kraksend_ops_suppression_warning(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Confirm change" |
+*
+* @param {Kraksend_Ops_ConfirmInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_confirm = /** @type {((inputs?: Kraksend_Ops_ConfirmInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ConfirmInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_confirm(inputs)
+	return __fr.kraksend_ops_confirm(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Active" |
+*
+* @param {Kraksend_Ops_ActiveInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_active = /** @type {((inputs?: Kraksend_Ops_ActiveInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ActiveInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_active(inputs)
+	return __fr.kraksend_ops_active(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Expired" |
+*
+* @param {Kraksend_Ops_ExpiredInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_expired = /** @type {((inputs?: Kraksend_Ops_ExpiredInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ExpiredInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_expired(inputs)
+	return __fr.kraksend_ops_expired(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Expires" |
+*
+* @param {Kraksend_Ops_ExpiresInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_expires = /** @type {((inputs?: Kraksend_Ops_ExpiresInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ExpiresInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_expires(inputs)
+	return __fr.kraksend_ops_expires(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Not set" |
+*
+* @param {Kraksend_Ops_NeverInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_never = /** @type {((inputs?: Kraksend_Ops_NeverInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_NeverInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_never(inputs)
+	return __fr.kraksend_ops_never(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Purpose" |
+*
+* @param {Kraksend_Ops_PurposeInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_purpose = /** @type {((inputs?: Kraksend_Ops_PurposeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_PurposeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_purpose(inputs)
+	return __fr.kraksend_ops_purpose(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Actor" |
+*
+* @param {Kraksend_Ops_ActorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_actor = /** @type {((inputs?: Kraksend_Ops_ActorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ActorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_actor(inputs)
+	return __fr.kraksend_ops_actor(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Action" |
+*
+* @param {Kraksend_Ops_ActionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_action = /** @type {((inputs?: Kraksend_Ops_ActionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_ActionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_action(inputs)
+	return __fr.kraksend_ops_action(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Blocked" |
+*
+* @param {Kraksend_Ops_AddInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_add = /** @type {((inputs?: Kraksend_Ops_AddInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_AddInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_add(inputs)
+	return __fr.kraksend_ops_add(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unblocked" |
+*
+* @param {Kraksend_Ops_RemoveInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_remove = /** @type {((inputs?: Kraksend_Ops_RemoveInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_RemoveInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_remove(inputs)
+	return __fr.kraksend_ops_remove(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Previous suppression reason" |
+*
+* @param {Kraksend_Ops_Previous_ReasonInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_previous_reason = /** @type {((inputs?: Kraksend_Ops_Previous_ReasonInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Previous_ReasonInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_previous_reason(inputs)
+	return __fr.kraksend_ops_previous_reason(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Audit request ID" |
+*
+* @param {Kraksend_Ops_Request_IdInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_request_id = /** @type {((inputs?: Kraksend_Ops_Request_IdInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Request_IdInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_request_id(inputs)
+	return __fr.kraksend_ops_request_id(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Open a campaign's recipients, or enter its campaign ID above, to inspect pending, published and skipped recipients." |
+*
+* @param {Kraksend_Ops_Recipients_HintInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_recipients_hint = /** @type {((inputs?: Kraksend_Ops_Recipients_HintInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Recipients_HintInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_recipients_hint(inputs)
+	return __fr.kraksend_ops_recipients_hint(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Queue generation" |
+*
+* @param {Kraksend_Ops_GenerationInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_generation = /** @type {((inputs?: Kraksend_Ops_GenerationInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_GenerationInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_generation(inputs)
+	return __fr.kraksend_ops_generation(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Outcome" |
+*
+* @param {Kraksend_Ops_OutcomeInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_outcome = /** @type {((inputs?: Kraksend_Ops_OutcomeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_OutcomeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_outcome(inputs)
+	return __fr.kraksend_ops_outcome(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Started" |
+*
+* @param {Kraksend_Ops_StartedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_started = /** @type {((inputs?: Kraksend_Ops_StartedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_StartedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_started(inputs)
+	return __fr.kraksend_ops_started(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Completed" |
+*
+* @param {Kraksend_Ops_CompletedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_completed = /** @type {((inputs?: Kraksend_Ops_CompletedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_CompletedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_completed(inputs)
+	return __fr.kraksend_ops_completed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "ID" |
+*
+* @param {Kraksend_Ops_IdInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_id = /** @type {((inputs?: Kraksend_Ops_IdInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_IdInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_id(inputs)
+	return __fr.kraksend_ops_id(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Retryable failure" |
+*
+* @param {Kraksend_Ops_Outcome_RetryInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_outcome_retry = /** @type {((inputs?: Kraksend_Ops_Outcome_RetryInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Outcome_RetryInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_outcome_retry(inputs)
+	return __fr.kraksend_ops_outcome_retry(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Permanent failure" |
+*
+* @param {Kraksend_Ops_Outcome_PermanentInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_outcome_permanent = /** @type {((inputs?: Kraksend_Ops_Outcome_PermanentInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Outcome_PermanentInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_outcome_permanent(inputs)
+	return __fr.kraksend_ops_outcome_permanent(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unavailable" |
+*
+* @param {Kraksend_Ops_Outcome_UnavailableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_outcome_unavailable = /** @type {((inputs?: Kraksend_Ops_Outcome_UnavailableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Outcome_UnavailableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_outcome_unavailable(inputs)
+	return __fr.kraksend_ops_outcome_unavailable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Skipped / deferred" |
+*
+* @param {Kraksend_Ops_Outcome_SkippedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_outcome_skipped = /** @type {((inputs?: Kraksend_Ops_Outcome_SkippedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_Outcome_SkippedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_outcome_skipped(inputs)
+	return __fr.kraksend_ops_outcome_skipped(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "The operation failed. Refresh and review the latest data before retrying; a suppression may have changed." |
+*
+* @param {Kraksend_Ops_FailedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_ops_failed = /** @type {((inputs?: Kraksend_Ops_FailedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Ops_FailedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_ops_failed(inputs)
+	return __fr.kraksend_ops_failed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Close" |
+*
+* @param {Kraksend_Campaign_CloseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_close = /** @type {((inputs?: Kraksend_Campaign_CloseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_CloseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_close(inputs)
+	return __fr.kraksend_campaign_close(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Status" |
+*
+* @param {Kraksend_Campaign_StatusInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_status = /** @type {((inputs?: Kraksend_Campaign_StatusInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_StatusInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_status(inputs)
+	return __fr.kraksend_campaign_status(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Campaigns" |
+*
+* @param {Kraksend_Campaign_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_title = /** @type {((inputs?: Kraksend_Campaign_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_title(inputs)
+	return __fr.kraksend_campaign_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Schedule bilingual email for a snapshot of subscribed contacts. Completed means publication finished, not delivery confirmed." |
+*
+* @param {Kraksend_Campaign_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_description = /** @type {((inputs?: Kraksend_Campaign_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_description(inputs)
+	return __fr.kraksend_campaign_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Create campaign" |
+*
+* @param {Kraksend_Campaign_CreateInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_create = /** @type {((inputs?: Kraksend_Campaign_CreateInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_CreateInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_create(inputs)
+	return __fr.kraksend_campaign_create(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Verified sender email" |
+*
+* @param {Kraksend_Campaign_FromInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_from = /** @type {((inputs?: Kraksend_Campaign_FromInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_FromInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_from(inputs)
+	return __fr.kraksend_campaign_from(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Subject" |
+*
+* @param {Kraksend_Campaign_SubjectInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_subject = /** @type {((inputs?: Kraksend_Campaign_SubjectInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_SubjectInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_subject(inputs)
+	return __fr.kraksend_campaign_subject(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Message" |
+*
+* @param {Kraksend_Campaign_TextInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_text = /** @type {((inputs?: Kraksend_Campaign_TextInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_TextInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_text(inputs)
+	return __fr.kraksend_campaign_text(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Manage" |
+*
+* @param {Kraksend_Campaign_ManageInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_manage = /** @type {((inputs?: Kraksend_Campaign_ManageInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_ManageInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_manage(inputs)
+	return __fr.kraksend_campaign_manage(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Schedule" |
+*
+* @param {Kraksend_Campaign_ScheduleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_schedule = /** @type {((inputs?: Kraksend_Campaign_ScheduleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_ScheduleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_schedule(inputs)
+	return __fr.kraksend_campaign_schedule(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Send at (ISO date with timezone)" |
+*
+* @param {Kraksend_Campaign_Scheduled_ForInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_scheduled_for = /** @type {((inputs?: Kraksend_Campaign_Scheduled_ForInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_Scheduled_ForInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_scheduled_for(inputs)
+	return __fr.kraksend_campaign_scheduled_for(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Pause" |
+*
+* @param {Kraksend_Campaign_PauseInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_pause = /** @type {((inputs?: Kraksend_Campaign_PauseInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_PauseInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_pause(inputs)
+	return __fr.kraksend_campaign_pause(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Resume" |
+*
+* @param {Kraksend_Campaign_ResumeInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_resume = /** @type {((inputs?: Kraksend_Campaign_ResumeInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_ResumeInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_resume(inputs)
+	return __fr.kraksend_campaign_resume(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Cancel campaign" |
+*
+* @param {Kraksend_Campaign_CancelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_cancel = /** @type {((inputs?: Kraksend_Campaign_CancelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_CancelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_cancel(inputs)
+	return __fr.kraksend_campaign_cancel(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Confirm cancellation" |
+*
+* @param {Kraksend_Campaign_Confirm_CancelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_confirm_cancel = /** @type {((inputs?: Kraksend_Campaign_Confirm_CancelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_Confirm_CancelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_confirm_cancel(inputs)
+	return __fr.kraksend_campaign_confirm_cancel(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Pending messages will be blocked. Messages already accepted by the provider cannot be recalled." |
+*
+* @param {Kraksend_Campaign_Cancel_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_cancel_description = /** @type {((inputs?: Kraksend_Campaign_Cancel_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_Cancel_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_cancel_description(inputs)
+	return __fr.kraksend_campaign_cancel_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No campaigns yet." |
+*
+* @param {Kraksend_Campaign_EmptyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_empty = /** @type {((inputs?: Kraksend_Campaign_EmptyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_EmptyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_empty(inputs)
+	return __fr.kraksend_campaign_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Delivery report" |
+*
+* @param {Kraksend_Campaign_ReportingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_reporting = /** @type {((inputs?: Kraksend_Campaign_ReportingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_ReportingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_reporting(inputs)
+	return __fr.kraksend_campaign_reporting(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Draft" |
+*
+* @param {Kraksend_Campaign_DraftInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_draft = /** @type {((inputs?: Kraksend_Campaign_DraftInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_DraftInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_draft(inputs)
+	return __fr.kraksend_campaign_draft(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Scheduled" |
+*
+* @param {Kraksend_Campaign_ScheduledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_scheduled = /** @type {((inputs?: Kraksend_Campaign_ScheduledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_ScheduledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_scheduled(inputs)
+	return __fr.kraksend_campaign_scheduled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Publishing" |
+*
+* @param {Kraksend_Campaign_RunningInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_running = /** @type {((inputs?: Kraksend_Campaign_RunningInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_RunningInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_running(inputs)
+	return __fr.kraksend_campaign_running(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Paused" |
+*
+* @param {Kraksend_Campaign_PausedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_paused = /** @type {((inputs?: Kraksend_Campaign_PausedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_PausedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_paused(inputs)
+	return __fr.kraksend_campaign_paused(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Cancelled" |
+*
+* @param {Kraksend_Campaign_CancelledInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_cancelled = /** @type {((inputs?: Kraksend_Campaign_CancelledInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_CancelledInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_cancelled(inputs)
+	return __fr.kraksend_campaign_cancelled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Publication completed" |
+*
+* @param {Kraksend_Campaign_CompletedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_completed = /** @type {((inputs?: Kraksend_Campaign_CompletedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_CompletedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_completed(inputs)
+	return __fr.kraksend_campaign_completed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Snapshot recipients" |
+*
+* @param {Kraksend_Campaign_AudienceInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_audience = /** @type {((inputs?: Kraksend_Campaign_AudienceInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_AudienceInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_audience(inputs)
+	return __fr.kraksend_campaign_audience(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Pending publication" |
+*
+* @param {Kraksend_Campaign_PendingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_pending = /** @type {((inputs?: Kraksend_Campaign_PendingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_PendingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_pending(inputs)
+	return __fr.kraksend_campaign_pending(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Published" |
+*
+* @param {Kraksend_Campaign_PublishedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_published = /** @type {((inputs?: Kraksend_Campaign_PublishedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_PublishedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_published(inputs)
+	return __fr.kraksend_campaign_published(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Skipped" |
+*
+* @param {Kraksend_Campaign_SkippedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_skipped = /** @type {((inputs?: Kraksend_Campaign_SkippedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_SkippedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_skipped(inputs)
+	return __fr.kraksend_campaign_skipped(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Provider accepted" |
+*
+* @param {Kraksend_Campaign_AcceptedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_accepted = /** @type {((inputs?: Kraksend_Campaign_AcceptedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_AcceptedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_accepted(inputs)
+	return __fr.kraksend_campaign_accepted(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Failed" |
+*
+* @param {Kraksend_Campaign_FailedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_failed = /** @type {((inputs?: Kraksend_Campaign_FailedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_FailedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_failed(inputs)
+	return __fr.kraksend_campaign_failed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Suppressed" |
+*
+* @param {Kraksend_Campaign_SuppressedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_suppressed = /** @type {((inputs?: Kraksend_Campaign_SuppressedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_SuppressedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_suppressed(inputs)
+	return __fr.kraksend_campaign_suppressed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Provider confirmed delivery" |
+*
+* @param {Kraksend_Campaign_ConfirmedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_confirmed = /** @type {((inputs?: Kraksend_Campaign_ConfirmedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_ConfirmedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_confirmed(inputs)
+	return __fr.kraksend_campaign_confirmed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Hard bounced" |
+*
+* @param {Kraksend_Campaign_Hard_BouncedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_hard_bounced = /** @type {((inputs?: Kraksend_Campaign_Hard_BouncedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_Hard_BouncedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_hard_bounced(inputs)
+	return __fr.kraksend_campaign_hard_bounced(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Complaints" |
+*
+* @param {Kraksend_Campaign_ComplainedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_complained = /** @type {((inputs?: Kraksend_Campaign_ComplainedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_ComplainedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_complained(inputs)
+	return __fr.kraksend_campaign_complained(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "English" |
+*
+* @param {Kraksend_Campaign_EnglishInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_english = /** @type {((inputs?: Kraksend_Campaign_EnglishInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_EnglishInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_english(inputs)
+	return __fr.kraksend_campaign_english(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "French" |
+*
+* @param {Kraksend_Campaign_FrenchInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_campaign_french = /** @type {((inputs?: Kraksend_Campaign_FrenchInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Campaign_FrenchInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_campaign_french(inputs)
+	return __fr.kraksend_campaign_french(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unsubscribe from optional email" |
+*
+* @param {Kraksend_Unsubscribe_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_unsubscribe_title = /** @type {((inputs?: Kraksend_Unsubscribe_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Unsubscribe_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_unsubscribe_title(inputs)
+	return __fr.kraksend_unsubscribe_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Stop optional email for this contact in this application. Essential emails, such as password resets, will continue." |
+*
+* @param {Kraksend_Unsubscribe_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_unsubscribe_description = /** @type {((inputs?: Kraksend_Unsubscribe_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Unsubscribe_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_unsubscribe_description(inputs)
+	return __fr.kraksend_unsubscribe_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "This unsubscribe link is invalid or has expired." |
+*
+* @param {Kraksend_Unsubscribe_InvalidInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_unsubscribe_invalid = /** @type {((inputs?: Kraksend_Unsubscribe_InvalidInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Unsubscribe_InvalidInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_unsubscribe_invalid(inputs)
+	return __fr.kraksend_unsubscribe_invalid(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "We could not save your choice. Please try again." |
+*
+* @param {Kraksend_Unsubscribe_UnavailableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_unsubscribe_unavailable = /** @type {((inputs?: Kraksend_Unsubscribe_UnavailableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Unsubscribe_UnavailableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_unsubscribe_unavailable(inputs)
+	return __fr.kraksend_unsubscribe_unavailable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "You have unsubscribed from optional email for this application." |
+*
+* @param {Kraksend_Unsubscribe_SuccessInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_unsubscribe_success = /** @type {((inputs?: Kraksend_Unsubscribe_SuccessInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Unsubscribe_SuccessInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_unsubscribe_success(inputs)
+	return __fr.kraksend_unsubscribe_success(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Notification contacts" |
+*
+* @param {Kraksend_Contacts_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_title = /** @type {((inputs?: Kraksend_Contacts_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_title(inputs)
+	return __fr.kraksend_contacts_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Manage recipients for this application. Creating a contact does not subscribe it to optional email." |
+*
+* @param {Kraksend_Contacts_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_description = /** @type {((inputs?: Kraksend_Contacts_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_description(inputs)
+	return __fr.kraksend_contacts_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Add contact" |
+*
+* @param {Kraksend_Contacts_CreateInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_create = /** @type {((inputs?: Kraksend_Contacts_CreateInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_CreateInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_create(inputs)
+	return __fr.kraksend_contacts_create(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Name" |
+*
+* @param {Kraksend_Contacts_NameInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_name = /** @type {((inputs?: Kraksend_Contacts_NameInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_NameInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_name(inputs)
+	return __fr.kraksend_contacts_name(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Email" |
+*
+* @param {Kraksend_Contacts_EmailInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_email = /** @type {((inputs?: Kraksend_Contacts_EmailInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_EmailInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_email(inputs)
+	return __fr.kraksend_contacts_email(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Optional email consent" |
+*
+* @param {Kraksend_Contacts_ConsentInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_consent = /** @type {((inputs?: Kraksend_Contacts_ConsentInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_ConsentInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_consent(inputs)
+	return __fr.kraksend_contacts_consent(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No consent recorded" |
+*
+* @param {Kraksend_Contacts_UnknownInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_unknown = /** @type {((inputs?: Kraksend_Contacts_UnknownInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_UnknownInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_unknown(inputs)
+	return __fr.kraksend_contacts_unknown(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Subscribed" |
+*
+* @param {Kraksend_Contacts_SubscribedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_subscribed = /** @type {((inputs?: Kraksend_Contacts_SubscribedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_SubscribedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_subscribed(inputs)
+	return __fr.kraksend_contacts_subscribed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unsubscribed" |
+*
+* @param {Kraksend_Contacts_UnsubscribedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_unsubscribed = /** @type {((inputs?: Kraksend_Contacts_UnsubscribedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_UnsubscribedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_unsubscribed(inputs)
+	return __fr.kraksend_contacts_unsubscribed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unsubscribe" |
+*
+* @param {Kraksend_Contacts_WithdrawInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_withdraw = /** @type {((inputs?: Kraksend_Contacts_WithdrawInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_WithdrawInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_withdraw(inputs)
+	return __fr.kraksend_contacts_withdraw(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Save contact" |
+*
+* @param {Kraksend_Contacts_SaveInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_save = /** @type {((inputs?: Kraksend_Contacts_SaveInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_SaveInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_save(inputs)
+	return __fr.kraksend_contacts_save(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "We could not complete this operation. Please try again." |
+*
+* @param {Kraksend_Contacts_FailedInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_failed = /** @type {((inputs?: Kraksend_Contacts_FailedInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_FailedInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_failed(inputs)
+	return __fr.kraksend_contacts_failed(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Loading contacts…" |
+*
+* @param {Kraksend_Contacts_LoadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_loading = /** @type {((inputs?: Kraksend_Contacts_LoadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_LoadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_loading(inputs)
+	return __fr.kraksend_contacts_loading(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "No contacts yet." |
+*
+* @param {Kraksend_Contacts_EmptyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_empty = /** @type {((inputs?: Kraksend_Contacts_EmptyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_EmptyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_empty(inputs)
+	return __fr.kraksend_contacts_empty(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Previous" |
+*
+* @param {Kraksend_Contacts_PreviousInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_previous = /** @type {((inputs?: Kraksend_Contacts_PreviousInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_PreviousInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_previous(inputs)
+	return __fr.kraksend_contacts_previous(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Next" |
+*
+* @param {Kraksend_Contacts_NextInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const kraksend_contacts_next = /** @type {((inputs?: Kraksend_Contacts_NextInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Kraksend_Contacts_NextInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.kraksend_contacts_next(inputs)
+	return __fr.kraksend_contacts_next(inputs)
+});
+/**
+* | output |
+* | --- |
 * | "Color Picker" |
 *
 * @param {Color_Picker_Preview_TitleInputs} inputs
@@ -210,6 +2842,104 @@ export const color_picker_preview_disabled = /** @type {((inputs?: Color_Picker_
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.color_picker_preview_disabled(inputs)
 	return __fr.color_picker_preview_disabled(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unsubscribe from email notifications" |
+*
+* @param {Notification_Unsubscribe_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_unsubscribe_title = /** @type {((inputs?: Notification_Unsubscribe_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Unsubscribe_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_unsubscribe_title(inputs)
+	return __fr.notification_unsubscribe_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Stop all optional notification emails for your account across all organizations and workspaces. Password resets and other essential emails will continue. In-..." |
+*
+* @param {Notification_Unsubscribe_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_unsubscribe_description = /** @type {((inputs?: Notification_Unsubscribe_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Unsubscribe_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_unsubscribe_description(inputs)
+	return __fr.notification_unsubscribe_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unsubscribe" |
+*
+* @param {Notification_Unsubscribe_ActionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_unsubscribe_action = /** @type {((inputs?: Notification_Unsubscribe_ActionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Unsubscribe_ActionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_unsubscribe_action(inputs)
+	return __fr.notification_unsubscribe_action(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "You have unsubscribed from optional email notifications." |
+*
+* @param {Notification_Unsubscribe_SuccessInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_unsubscribe_success = /** @type {((inputs?: Notification_Unsubscribe_SuccessInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Unsubscribe_SuccessInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_unsubscribe_success(inputs)
+	return __fr.notification_unsubscribe_success(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "This unsubscribe link is invalid or has expired. Use a link from a more recent email or manage notifications in your account." |
+*
+* @param {Notification_Unsubscribe_InvalidInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_unsubscribe_invalid = /** @type {((inputs?: Notification_Unsubscribe_InvalidInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Unsubscribe_InvalidInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_unsubscribe_invalid(inputs)
+	return __fr.notification_unsubscribe_invalid(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "We could not save your unsubscribe request. Please try again later." |
+*
+* @param {Notification_Unsubscribe_UnavailableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_unsubscribe_unavailable = /** @type {((inputs?: Notification_Unsubscribe_UnavailableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Unsubscribe_UnavailableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_unsubscribe_unavailable(inputs)
+	return __fr.notification_unsubscribe_unavailable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Unsubscribe from email notifications" |
+*
+* @param {Notification_Unsubscribe_FooterInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_unsubscribe_footer = /** @type {((inputs?: Notification_Unsubscribe_FooterInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Unsubscribe_FooterInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_unsubscribe_footer(inputs)
+	return __fr.notification_unsubscribe_footer(inputs)
 });
 /**
 * | output |
