@@ -4,6 +4,8 @@ import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
+import { makeEmailSubscriptions } from "./internal/email-subscriptions.js";
+import { DISPATCH_POLICY_REFERENCE_NAMESPACE } from "./policy.js";
 import {
   canonicalRecipientAddress,
   canonicalJsonString,
@@ -12,6 +14,12 @@ import {
   reminderFingerprint,
 } from "./internal/idempotency.js";
 import { selectPreference } from "./internal/policy.js";
+import {
+  PublicationRequest,
+  resolvePublication,
+} from "./internal/publication.js";
+import { makePublicationPolicy } from "./publication-policy.js";
+import { NotificationFeedbackChannels } from "./feedback.js";
 import {
   NotificationQueueService,
   notificationQueueLayer,
@@ -36,6 +44,8 @@ import {
   BulkInboxMutationInput,
   DeliveryMutationInput,
   EmailPayloadV1,
+  type EmailSubscription,
+  type EmailSubscriptionInput,
   InboxMutationInput,
   InboxNotification,
   ListDeliveriesInput,
@@ -53,7 +63,6 @@ import {
   NotificationSuppression,
   NotificationTransitionError,
   NotificationValidationError,
-  PublishInput,
   ResetSuppressionInput,
   ResetPreferenceInput,
   RescheduleReminderInput,
@@ -154,8 +163,14 @@ const replayPayload = (
 };
 
 export interface NotificationServiceContract {
+  readonly getEmailSubscription: (
+    input: EmailSubscriptionInput,
+  ) => Effect.Effect<EmailSubscription, NotificationServiceError>;
+  readonly unsubscribeEmail: (
+    input: EmailSubscriptionInput,
+  ) => Effect.Effect<EmailSubscription, NotificationServiceError>;
   readonly publish: (
-    input: PublishInputType,
+    input: PublicationRequest,
   ) => Effect.Effect<PublishResult, NotificationServiceError>;
   readonly listInbox: (
     input: ListInboxInputType,
@@ -253,6 +268,9 @@ const makeNotificationService = Effect.gen(function* () {
   const sql = (yield* SqlClient.SqlClient).withoutTransforms();
   const pg = yield* PgClient.PgClient;
   const queues = yield* NotificationQueueService;
+  const emailSubscriptions = makeEmailSubscriptions(sql);
+  const publicationPolicy = yield* makePublicationPolicy(sql, pg);
+  const feedbackChannels = yield* NotificationFeedbackChannels;
 
   const requireInbox = Effect.fn("NotificationService.requireInbox")(
     function* (input: {
@@ -340,8 +358,10 @@ const makeNotificationService = Effect.gen(function* () {
   );
 
   const publish = Effect.fn("NotificationService.publish")(
-    function* (rawInput: PublishInputType) {
-      const input = yield* decodeInput("publish", PublishInput, rawInput);
+    function* (rawInput: PublicationRequest) {
+      const input = resolvePublication(
+        yield* decodeInput("publish", PublicationRequest, rawInput),
+      );
       const now = yield* DateTime.nowAsDate;
       const inbox = input.inbox ?? null;
       const requestFingerprint = publicationFingerprint(input);
@@ -633,10 +653,15 @@ const makeNotificationService = Effect.gen(function* () {
                     : delivery.scheduledFor,
                 expiresAt: delivery.expiresAt,
                 maxAttempts: delivery.maxAttempts,
+                dispatchPolicy: references.find(
+                  ({ namespace }) =>
+                    namespace === DISPATCH_POLICY_REFERENCE_NAMESPACE,
+                )?.value,
                 references: references
                   .filter(
                     ({ namespace }) =>
-                      namespace !== PUBLICATION_REFERENCE_NAMESPACE,
+                      namespace !== PUBLICATION_REFERENCE_NAMESPACE &&
+                      namespace !== DISPATCH_POLICY_REFERENCE_NAMESPACE,
                   )
                   .map(({ namespace, value }) => ({ namespace, value })),
               });
@@ -725,7 +750,7 @@ const makeNotificationService = Effect.gen(function* () {
               input.idempotencyKey,
               intent.key,
             );
-            const scheduledFor = intent.scheduledFor ?? now;
+            let scheduledFor = intent.scheduledFor ?? now;
             const expiresAt = intent.expiresAt ?? null;
             const maxAttempts = intent.maxAttempts ?? 5;
             const recipientUserId = input.scope.recipientUserId;
@@ -734,8 +759,45 @@ const makeNotificationService = Effect.gen(function* () {
               intent.recipientAddress,
             );
 
+            const policyDecision =
+              intent.publication === undefined
+                ? undefined
+                : yield* publicationPolicy({
+                    scope: input.scope,
+                    eventKey: input.eventKey,
+                    channel: intent.channel,
+                    publication: intent.publication,
+                  }).pipe(
+                    Effect.catchTag(
+                      ["DispatchPolicyError", "SchemaError"],
+                      (cause) =>
+                        Effect.fail(
+                          new NotificationValidationError({
+                            operation: "publish.policy",
+                            message:
+                              "Publication policy could not be evaluated",
+                            cause,
+                          }),
+                        ),
+                    ),
+                  );
+            if (
+              policyDecision?._tag === "Defer" &&
+              policyDecision.until.getTime() <= now.getTime()
+            ) {
+              return yield* new NotificationValidationError({
+                operation: "publish.policy",
+                message: "Policy deferral must be in the future",
+              });
+            }
+            if (
+              policyDecision?._tag === "Defer" &&
+              policyDecision.until > scheduledFor
+            )
+              scheduledFor = policyDecision.until;
+
             const preference =
-              intent.purpose === "notification" && recipientUserId !== null
+              intent.purpose !== "transactional" && recipientUserId !== null
                 ? yield* findPreference({
                     scope: {
                       recipientUserId,
@@ -751,13 +813,23 @@ const makeNotificationService = Effect.gen(function* () {
               FROM notification_suppressions x
               WHERE ${wildcardScope(sql, "x", input.scope)}
                 AND x.channel = ${intent.channel}
-                AND (x.purpose IS NULL OR x.purpose = ${intent.purpose})
+                AND (x.purpose IS NULL OR x.purpose = ${intent.purpose}
+                  OR (x.purpose = 'notification' AND ${intent.purpose} = 'marketing'))
                 AND x.recipient_address = ${recipientAddress}
                 AND (x.expires_at IS NULL OR x.expires_at > ${now})
               LIMIT 1
             `;
+            const accountUnsubscribed =
+              intent.channel === "email" &&
+              intent.purpose !== "transactional" &&
+              recipientUserId !== null
+                ? yield* emailSubscriptions.isUnsubscribed({ recipientUserId })
+                : false;
             const suppressed =
-              preference?.enabled === false || endpointSuppressions.length > 0;
+              policyDecision?._tag === "Suppress" ||
+              accountUnsubscribed ||
+              preference?.enabled === false ||
+              endpointSuppressions.length > 0;
             const expired =
               expiresAt !== null && expiresAt.getTime() <= now.getTime();
             const status = suppressed
@@ -766,12 +838,18 @@ const makeNotificationService = Effect.gen(function* () {
                 ? "cancelled"
                 : "queued";
             const errorMessage = suppressed
-              ? preference?.enabled === false
-                ? "preference_disabled"
-                : "endpoint_suppressed"
+              ? policyDecision?._tag === "Suppress"
+                ? policyDecision.reason
+                : accountUnsubscribed
+                  ? "email_unsubscribed"
+                  : preference?.enabled === false
+                    ? "preference_disabled"
+                    : "endpoint_suppressed"
               : expired
                 ? "expired_before_enqueue"
-                : null;
+                : policyDecision?._tag === "Defer"
+                  ? policyDecision.reason
+                  : null;
 
             yield* sql`
               INSERT INTO notification_deliveries (
@@ -785,6 +863,8 @@ const makeNotificationService = Effect.gen(function* () {
                 event_version,
                 channel,
                 purpose,
+                publication_metadata,
+                feedback_expected,
                 template,
                 recipient_address,
                 recipient_name,
@@ -811,6 +891,8 @@ const makeNotificationService = Effect.gen(function* () {
                 ${input.eventVersion},
                 ${intent.channel},
                 ${intent.purpose},
+                ${intent.publication === undefined ? null : pg.json(intent.publication)},
+                ${intent.publication !== undefined && feedbackChannels.includes(intent.channel)},
                 ${intent.template},
                 ${recipientAddress},
                 ${intent.recipientName},
@@ -835,6 +917,14 @@ const makeNotificationService = Effect.gen(function* () {
                 value: input.idempotencyKey,
               },
               ...(intent.references ?? []),
+              ...(intent.dispatchPolicy === undefined
+                ? []
+                : [
+                    {
+                      namespace: DISPATCH_POLICY_REFERENCE_NAMESPACE,
+                      value: intent.dispatchPolicy,
+                    },
+                  ]),
             ];
             for (const reference of references) {
               yield* sql`
@@ -1297,6 +1387,7 @@ const makeNotificationService = Effect.gen(function* () {
       );
       const rows = yield* sql`
         INSERT INTO notification_suppressions (
+          scope_match,
           id,
           recipient_user_id,
           organization_id,
@@ -1308,6 +1399,7 @@ const makeNotificationService = Effect.gen(function* () {
           expires_at,
           created_at
         ) VALUES (
+          ${input.scopeMatch ?? "legacy"},
           ${id},
           ${input.scope.recipientUserId},
           ${input.scope.organizationId},
@@ -1325,7 +1417,8 @@ const makeNotificationService = Effect.gen(function* () {
           (COALESCE(workspace_id, '')),
           channel,
           (COALESCE(purpose, '')),
-          recipient_address
+          recipient_address,
+          scope_match
         ) DO UPDATE SET
           reason = EXCLUDED.reason,
           expires_at = EXCLUDED.expires_at
@@ -1364,6 +1457,7 @@ const makeNotificationService = Effect.gen(function* () {
           AND x.channel = ${input.channel}
           AND x.purpose IS NOT DISTINCT FROM ${input.purpose}
           AND x.recipient_address = ${recipientAddress}
+          AND x.scope_match = ${input.scopeMatch ?? "legacy"}
         RETURNING x.id
       `;
       return rows.length > 0;
@@ -1977,6 +2071,8 @@ const makeNotificationService = Effect.gen(function* () {
   );
 
   return {
+    getEmailSubscription: emailSubscriptions.get,
+    unsubscribeEmail: emailSubscriptions.unsubscribe,
     publish,
     listInbox,
     unreadCount,

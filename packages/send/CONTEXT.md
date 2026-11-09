@@ -1,0 +1,27 @@
+# KrakSend domain vocabulary
+
+- **Installation**: the communication workspace belonging to one host application and environment.
+- **Administrator**: an actor authorized by the host application to manage communications; not a KrakSend account.
+- **Contact**: a recipient profile independent of authentication identity.
+- **Endpoint**: a destination address belonging to a contact.
+- **Consent**: permission to send a class of communication through a channel.
+- **Consent event**: attributable historical evidence of a consent grant or withdrawal.
+- **Subscription**: the recipient's current choice about optional communications.
+- **Suppression**: a sending restriction independent of subscription choices.
+- **Transactional message**: communication necessary for a requested action or essential operation.
+- **Optional message**: an application notification or marketing communication requiring the applicable permission.
+- **Message**: one logical communication intended for a recipient.
+- **Delivery**: one channel and destination execution of a message.
+- **Attempt**: one execution attempt to process a delivery.
+- **Acceptance**: a provider's acknowledgment of a submission; not confirmation of recipient delivery or reading.
+- **Feedback event**: an authenticated provider fact about one message and recipient, recorded separately from acceptance and consent.
+- **Delivery confirmation**: provider evidence that a recipient's mail server accepted the email; not proof of reading or inbox placement.
+- **Permanent bounce**: provider evidence that the endpoint cannot receive the email; creates an endpoint suppression.
+- **Complaint**: provider evidence of an abuse/spam report; creates an endpoint suppression, not a consent grant or withdrawal.
+- **Pending feedback**: a retained provider fact that cannot yet be correlated to exactly one accepted KrakSend attempt.
+- **Campaign**: a broadcast with defined content, recipient selection, and timing.
+- **Audience**: an explicit collection of contacts.
+- **Segment**: recipient selection rules evaluated over contact information and subscription choices.
+- **Operations console**: installation-wide email visibility, distinct from accounts or a centrally hosted project dashboard.
+- **Suppression audit**: trusted-actor evidence of a manual block/removal; never a consent grant or a resend instruction.
+- **Reviewed suppression version**: opaque row-version evidence used to reject removal after an intervening provider update.

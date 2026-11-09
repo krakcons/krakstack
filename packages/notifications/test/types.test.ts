@@ -7,12 +7,19 @@ import type {
   ReminderHandler,
 } from "../src/runtime.js";
 import type { NotificationTransport } from "../src/transport.js";
+import type { EmailUnsubscribe } from "../src/unsubscribe.js";
 
 type Requirements<T> =
   T extends Effect.Effect<unknown, unknown, infer R> ? R : "not-an-effect";
 
 describe("built service interfaces", () => {
   it("leave no Effect environment on consumer methods", () => {
+    expectTypeOf<
+      Requirements<ReturnType<EmailUnsubscribe["Service"]["unsubscribe"]>>
+    >().toEqualTypeOf<never>();
+    expectTypeOf<
+      Requirements<ReturnType<NotificationServiceContract["unsubscribeEmail"]>>
+    >().toEqualTypeOf<never>();
     expectTypeOf<
       Requirements<ReturnType<NotificationServiceContract["publish"]>>
     >().toEqualTypeOf<never>();

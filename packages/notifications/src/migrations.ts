@@ -710,10 +710,61 @@ export const notificationMigrations = Migrator.fromRecord({
           FROM notification_delivery_correlations
           WHERE organization_id IS NOT NULL
           ON CONFLICT (delivery_id, namespace, value) DO NOTHING
-        $migration$;
+      $migration$;
       END
       $$
     `;
+  }),
+  "0008_add_account_email_unsubscribes": Effect.gen(function* () {
+    const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+    yield* sql`
+      CREATE TABLE IF NOT EXISTS notification_email_unsubscribes (
+        recipient_user_id TEXT PRIMARY KEY,
+        unsubscribed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        CHECK (length(recipient_user_id) > 0)
+      )
+    `;
+  }),
+  "0009_canonical_publication_policy": Effect.gen(function* () {
+    const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+    yield* sql`ALTER TABLE notification_deliveries ADD COLUMN IF NOT EXISTS publication_metadata JSONB NULL`;
+    yield* sql`ALTER TABLE notification_deliveries DROP CONSTRAINT IF EXISTS notification_deliveries_purpose_check`;
+    yield* sql`ALTER TABLE notification_deliveries ADD CONSTRAINT notification_deliveries_purpose_check
+      CHECK (purpose IN ('transactional', 'notification', 'marketing'))`;
+    yield* sql`ALTER TABLE notification_suppressions DROP CONSTRAINT IF EXISTS notification_suppressions_purpose_v2_check`;
+    yield* sql`ALTER TABLE notification_suppressions ADD CONSTRAINT notification_suppressions_purpose_v2_check
+      CHECK (purpose IS NULL OR purpose IN ('transactional', 'notification', 'marketing'))`;
+    yield* sql`CREATE TABLE IF NOT EXISTS notification_email_consent_events (
+      sequence BIGSERIAL PRIMARY KEY,
+      request_id TEXT NOT NULL UNIQUE,
+      subject_namespace TEXT NOT NULL,
+      subject_value TEXT NOT NULL,
+      recipient_address TEXT NOT NULL,
+      scope JSONB NOT NULL,
+      purpose TEXT NOT NULL CHECK (purpose IN ('notification', 'marketing')),
+      status TEXT NOT NULL CHECK (status IN ('granted', 'withdrawn')),
+      actor TEXT NOT NULL,
+      source TEXT NOT NULL,
+      notice_version TEXT NOT NULL,
+      request JSONB NOT NULL,
+      occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+    yield* sql`CREATE INDEX IF NOT EXISTS notification_email_consent_subject_idx ON notification_email_consent_events
+      (subject_namespace, subject_value, recipient_address, purpose, sequence DESC)`;
+  }),
+  "0010_explicit_suppression_matching": Effect.gen(function* () {
+    const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+    yield* sql`ALTER TABLE notification_suppressions ADD COLUMN IF NOT EXISTS scope_match TEXT NOT NULL DEFAULT 'legacy'
+      CHECK (scope_match IN ('legacy', 'exact', 'organization', 'installation'))`;
+    yield* sql`DROP INDEX IF EXISTS notification_suppressions_endpoint_purpose_v2_uidx`;
+    yield* sql`CREATE UNIQUE INDEX IF NOT EXISTS notification_suppressions_endpoint_purpose_v3_uidx ON notification_suppressions (
+      (COALESCE(recipient_user_id, '')), (COALESCE(organization_id, '')), (COALESCE(workspace_id, '')),
+      channel, (COALESCE(purpose, '')), recipient_address, scope_match
+    )`;
+  }),
+  "0011_publication_feedback_coverage": Effect.gen(function* () {
+    const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+    yield* sql`ALTER TABLE notification_deliveries ADD COLUMN IF NOT EXISTS feedback_expected BOOLEAN NOT NULL DEFAULT FALSE`;
   }),
 });
 

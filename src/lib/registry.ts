@@ -13,9 +13,7 @@ const RegistryItemMetaSchema = Schema.Struct({
   createdAt: Schema.optional(RegistryItemDateSchema),
   updatedAt: Schema.optional(RegistryItemDateSchema),
 }).annotate({ identifier: "RegistryItemMeta" });
-const decodeRegistryItemMeta = Schema.decodeUnknownOption(
-  RegistryItemMetaSchema,
-);
+const decodeRegistryItemMeta = Schema.decodeUnknownOption(RegistryItemMetaSchema);
 
 export type RegistryItem = (typeof registry.items)[number] & {
   docs?: string;
@@ -23,10 +21,7 @@ export type RegistryItem = (typeof registry.items)[number] & {
 
 export const registryItems: readonly RegistryItem[] = registry.items;
 
-export const isRegistryItemNew = (
-  item: { meta?: unknown },
-  now = new Date(),
-) => {
+export const isRegistryItemNew = (item: { meta?: unknown }, now = new Date()) => {
   const meta = decodeRegistryItemMeta(item.meta);
   if (Option.isNone(meta) || !meta.value.createdAt) return false;
 
@@ -75,9 +70,11 @@ export function getRegistryGroup(item: RegistryItem) {
       "error-component",
       "file-picker",
       "google-map",
+      "google-map-picker",
       "icon-input",
       "loading",
       "pagination",
+      "stepper",
       "virtualized-combobox",
     ].includes(item.name)
   ) {

@@ -1,11 +1,5 @@
 import { LocateFixed, Minus, Plus } from "lucide-react";
-import {
-  useEffect,
-  useEffectEvent,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
 import { Schema } from "effect";
 
 import { cn } from "@/lib/utils";
@@ -41,9 +35,7 @@ export type GoogleMapMessages = {
   showArea: string;
 };
 
-export type GoogleMapMessageTranslations = Partial<
-  Record<string, Partial<GoogleMapMessages>>
->;
+export type GoogleMapMessageTranslations = Partial<Record<string, Partial<GoogleMapMessages>>>;
 
 export type GoogleMapProps = {
   apiKey: string;
@@ -58,6 +50,7 @@ export type GoogleMapProps = {
   minZoom?: number | undefined;
   maxZoom?: number | undefined;
   className?: string | undefined;
+  controlsClassName?: string | undefined;
   messages?: GoogleMapMessageTranslations | undefined;
   locale?: string | undefined;
 };
@@ -114,15 +107,11 @@ type GoogleMapsEventListener = {
   remove: () => void;
 };
 
-type GoogleMapsEventTarget =
-  GoogleMapInstance | GoogleMarkerInstance | GoogleCircleInstance;
+type GoogleMapsEventTarget = GoogleMapInstance | GoogleMarkerInstance | GoogleCircleInstance;
 
 export type GoogleMapsApi = {
   maps: {
-    Map: new (
-      element: HTMLElement,
-      options: GoogleMapOptions,
-    ) => GoogleMapInstance;
+    Map: new (element: HTMLElement, options: GoogleMapOptions) => GoogleMapInstance;
     Marker: new (options: {
       icon?: string | undefined;
       map: GoogleMapInstance;
@@ -174,8 +163,7 @@ const defaultMessages = {
     mapLabel: "Carte Google",
     loading: "Chargement de la carte...",
     missingKeyTitle: "Carte indisponible",
-    missingKeyBody:
-      "Fournissez une clé d’API Google Maps pour afficher la carte.",
+    missingKeyBody: "Fournissez une clé d’API Google Maps pour afficher la carte.",
     errorTitle: "Carte indisponible",
     errorBody: "Impossible de charger Google Maps. Réessayez plus tard.",
     zoomIn: "Zoom avant",
@@ -184,21 +172,14 @@ const defaultMessages = {
   },
 } as const satisfies Record<"en" | "fr", GoogleMapMessages>;
 
-const googleMapMessages = (
-  locale: string,
-  translations?: GoogleMapMessageTranslations,
-) => ({
+const googleMapMessages = (locale: string, translations?: GoogleMapMessageTranslations) => ({
   ...(locale.startsWith("fr") ? defaultMessages.fr : defaultMessages.en),
   ...translations?.[locale.split("-")[0] ?? locale],
   ...translations?.[locale],
 });
 
-const isGoogleMapsReady = (
-  api: GoogleMapsApi | undefined,
-): api is GoogleMapsApi =>
-  Boolean(
-    api?.maps.Map && api.maps.Marker && api.maps.Circle && api.maps.event,
-  );
+const isGoogleMapsReady = (api: GoogleMapsApi | undefined): api is GoogleMapsApi =>
+  Boolean(api?.maps.Map && api.maps.Marker && api.maps.Circle && api.maps.event);
 
 const loadGoogleMaps = (apiKey: string) => {
   if (!globalThis.window || !globalThis.document) {
@@ -274,11 +255,7 @@ const createMapState = (loadState: LoadState, currentZoom: number) => {
   let snapshot = { loadState, currentZoom };
   const listeners = new Set<() => void>();
   const update = (next: typeof snapshot) => {
-    if (
-      next.loadState === snapshot.loadState &&
-      next.currentZoom === snapshot.currentZoom
-    )
-      return;
+    if (next.loadState === snapshot.loadState && next.currentZoom === snapshot.currentZoom) return;
     snapshot = next;
     for (const listener of listeners) listener();
   };
@@ -291,8 +268,7 @@ const createMapState = (loadState: LoadState, currentZoom: number) => {
       };
     },
     setLoadState: (loadState: LoadState) => update({ ...snapshot, loadState }),
-    setCurrentZoom: (currentZoom: number) =>
-      update({ ...snapshot, currentZoom }),
+    setCurrentZoom: (currentZoom: number) => update({ ...snapshot, currentZoom }),
   };
 };
 
@@ -309,6 +285,7 @@ export function GoogleMap({
   minZoom = 3,
   maxZoom = 20,
   className,
+  controlsClassName,
   messages: messageOverrides,
   locale: localeOverride,
 }: GoogleMapProps) {
@@ -333,9 +310,7 @@ export function GoogleMap({
   );
   const { setLoadState, setCurrentZoom } = mapState;
   const labels = googleMapMessages(locale, messageOverrides);
-  const markerOptions = Schema.is(
-    Schema.Struct({ icon: Schema.optional(Schema.String) }),
-  )(marker)
+  const markerOptions = Schema.is(Schema.Struct({ icon: Schema.optional(Schema.String) }))(marker)
     ? marker
     : undefined;
   const markerEnabled = marker === true || markerOptions !== undefined;
@@ -361,29 +336,19 @@ export function GoogleMap({
   };
   const fitSelection = useEffectEvent(showSelectedArea);
 
-  const initializeMap = useEffectEvent(
-    (api: GoogleMapsApi, element: HTMLElement) => {
-      const map = new api.maps.Map(
-        element,
-        mapOptions(
-          center,
-          zoom,
-          interactive,
-          normalizedMinZoom,
-          normalizedMaxZoom,
-        ),
-      );
-      apiRef.current = api;
-      mapRef.current = map;
-      zoomListenerRef.current = api.maps.event.addListener(
-        map,
-        "zoom_changed",
-        () => setCurrentZoom(map.getZoom() ?? zoom),
-      );
-      setCurrentZoom(clampZoom(zoom, normalizedMinZoom, normalizedMaxZoom));
-      setLoadState("ready");
-    },
-  );
+  const initializeMap = useEffectEvent((api: GoogleMapsApi, element: HTMLElement) => {
+    const map = new api.maps.Map(
+      element,
+      mapOptions(center, zoom, interactive, normalizedMinZoom, normalizedMaxZoom),
+    );
+    apiRef.current = api;
+    mapRef.current = map;
+    zoomListenerRef.current = api.maps.event.addListener(map, "zoom_changed", () =>
+      setCurrentZoom(map.getZoom() ?? zoom),
+    );
+    setCurrentZoom(clampZoom(zoom, normalizedMinZoom, normalizedMaxZoom));
+    setLoadState("ready");
+  });
 
   useEffect(() => {
     if (!normalizedApiKey) {
@@ -435,13 +400,7 @@ export function GoogleMap({
     const nextZoom = clampZoom(zoom, normalizedMinZoom, normalizedMaxZoom);
     try {
       map.setOptions(
-        mapOptions(
-          nextCenter,
-          nextZoom,
-          interactive,
-          normalizedMinZoom,
-          normalizedMaxZoom,
-        ),
+        mapOptions(nextCenter, nextZoom, interactive, normalizedMinZoom, normalizedMaxZoom),
       );
       map.setCenter(nextCenter);
       map.setZoom(nextZoom);
@@ -533,27 +492,33 @@ export function GoogleMap({
 
   useEffect(() => {
     const element = mapElementRef.current;
-    if (
-      loadState !== "ready" ||
-      !fitRadius ||
-      radiusMeters === undefined ||
-      !element
-    )
-      return;
-    fitSelection();
-    if (!globalThis.ResizeObserver) return;
+    if (loadState !== "ready" || !fitRadius || radiusMeters === undefined || !element) return;
+    let frame = 0;
+    const scheduleFit = () => {
+      cancelAnimationFrame(frame);
+      // Let Google paint updated overlay geometry before changing its projection.
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => fitSelection());
+      });
+    };
+    scheduleFit();
     let width = element.clientWidth;
     let height = element.clientHeight;
-    const observer = new ResizeObserver(() => {
-      const nextWidth = element.clientWidth;
-      const nextHeight = element.clientHeight;
-      if (nextWidth === width && nextHeight === height) return;
-      width = nextWidth;
-      height = nextHeight;
-      fitSelection();
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
+    const observer = globalThis.ResizeObserver
+      ? new ResizeObserver(() => {
+          const nextWidth = element.clientWidth;
+          const nextHeight = element.clientHeight;
+          if (nextWidth === width && nextHeight === height) return;
+          width = nextWidth;
+          height = nextHeight;
+          scheduleFit();
+        })
+      : undefined;
+    observer?.observe(element);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
   }, [
     loadState,
     fitRadius,
@@ -581,6 +546,7 @@ export function GoogleMap({
 
   return (
     <div
+      data-slot="google-map"
       className={cn(
         "bg-muted relative isolate min-h-64 min-w-0 overflow-hidden rounded-lg border",
         className,
@@ -588,15 +554,23 @@ export function GoogleMap({
     >
       <div
         ref={mapElementRef}
+        data-slot="google-map-canvas"
         className="h-full min-h-[inherit] w-full"
         role="region"
         aria-label={labels.mapLabel}
       />
       {loadState === "ready" && zoomControls ? (
-        <div className="bg-background/95 absolute top-3 right-3 z-10 overflow-hidden rounded-md border shadow-sm backdrop-blur">
+        <div
+          data-slot="google-map-controls"
+          className={cn(
+            "bg-background/95 absolute top-3 right-3 z-10 overflow-hidden rounded-md border shadow-sm backdrop-blur",
+            controlsClassName,
+          )}
+        >
           {fitRadius && radiusMeters !== undefined ? (
             <>
               <button
+                data-slot="google-map-control"
                 type="button"
                 onClick={showSelectedArea}
                 aria-label={labels.showArea}
@@ -609,6 +583,7 @@ export function GoogleMap({
             </>
           ) : null}
           <button
+            data-slot="google-map-control"
             type="button"
             className="text-foreground hover:bg-accent focus-visible:ring-ring relative flex size-11 items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50"
             disabled={currentZoom >= normalizedMaxZoom}
@@ -619,6 +594,7 @@ export function GoogleMap({
           </button>
           <div className="bg-border h-px" />
           <button
+            data-slot="google-map-control"
             type="button"
             className="text-foreground hover:bg-accent focus-visible:ring-ring relative flex size-11 items-center justify-center transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50"
             disabled={currentZoom <= normalizedMinZoom}
@@ -644,14 +620,10 @@ export function GoogleMap({
             role="alert"
           >
             <p className="text-sm font-semibold">
-              {loadState === "missing-key"
-                ? labels.missingKeyTitle
-                : labels.errorTitle}
+              {loadState === "missing-key" ? labels.missingKeyTitle : labels.errorTitle}
             </p>
             <p className="text-muted-foreground mt-2 text-xs">
-              {loadState === "missing-key"
-                ? labels.missingKeyBody
-                : labels.errorBody}
+              {loadState === "missing-key" ? labels.missingKeyBody : labels.errorBody}
             </p>
           </div>
         </div>

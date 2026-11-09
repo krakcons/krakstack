@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "PostgreSQL-backed Effect notification inbox, delivery, and reminder primitives.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",
@@ -12,11 +12,21 @@
   "files": [
     "dist",
     "README.md",
+    "ADMIN.md",
+    "PUBLICATION.md",
     "CHANGELOG.md"
   ],
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/index.js"
+    },
+    "./admin/*": {
+      "types": "./dist/admin/*.d.ts",
+      "import": "./dist/admin/*.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -32,6 +42,26 @@
     "./runtime": {
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js"
+    },
+    "./policy": {
+      "types": "./dist/policy.d.ts",
+      "import": "./dist/policy.js"
+    },
+    "./publication-policy": {
+      "types": "./dist/publication-policy.d.ts",
+      "import": "./dist/publication-policy.js"
+    },
+    "./consent": {
+      "types": "./dist/consent.d.ts",
+      "import": "./dist/consent.js"
+    },
+    "./integration": {
+      "types": "./dist/integration.d.ts",
+      "import": "./dist/integration.js"
+    },
+    "./feedback": {
+      "types": "./dist/feedback.d.ts",
+      "import": "./dist/feedback.js"
     },
     "./transport": {
       "types": "./dist/transport.d.ts",
@@ -65,6 +95,10 @@
       "types": "./dist/direct.d.ts",
       "import": "./dist/direct.js"
     },
+    "./unsubscribe": {
+      "types": "./dist/unsubscribe.d.ts",
+      "import": "./dist/unsubscribe.js"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js"
@@ -76,7 +110,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "check": "bun run typecheck && bun run test && bun run build",
-    "check:release": "bun -e 'if (!process.env.TEST_DATABASE_URL) { console.error(\"TEST_DATABASE_URL is required for notification release checks\"); process.exit(1); }' && bun run check",
+    "check:release": "bun -e 'if (!process.env.TEST_DATABASE_URL) { console.error(\"TEST_DATABASE_URL is required for notification release checks\"); process.exit(1); }' && bun run check && bun run --cwd ../send typecheck && bun run --cwd ../send test",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "prepack": "bun run check:release"

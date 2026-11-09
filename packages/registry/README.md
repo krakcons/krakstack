@@ -23,6 +23,14 @@ import { Speech } from "@krak-stack/registry/speech";
 
 Speech-to-text and text-to-speech use Cloudflare AI Gateway. See the [speech setup and API contract](https://krakstack.net/docs/speech); authentication and quotas stay application-owned. Schemas and the optional HTTP API contract are available from `@krak-stack/registry/speech/schema` and `@krak-stack/registry/speech/api`.
 
+For durable notifications, install `@krak-stack/notifications@0.3.0` for the Effect
+backend and optionally `@krak-stack/notifications-admin@0.1.0` for React admin views
+and Effect Atom helpers. The admin views reuse registry's generic tables and forms.
+Import notification administration exclusively from notifications-admin; registry
+does not export these screens or depend on either notification SDK. The admin SDK
+can use the published registry 0.2.2 primitives without a new registry release.
+Legacy engine exports remain unchanged and are not redirected to a new backend.
+
 For packaged UI components, include the Tailwind source in your application stylesheet:
 
 ```css

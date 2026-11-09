@@ -1,0 +1,133 @@
+---
+slug: stepper
+path: /docs/stepper
+title: Étapes
+description: Navigation modulaire pour les formulaires, la configuration et le suivi de progression.
+order: 5
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-07"
+updatedAt: "2026-11-07"
+---
+
+# Étapes
+
+Un stepper affiche la progression entre des étapes nommées. Ce n’est pas un slider : un curseur sert à choisir une valeur en déplaçant une poignée. L’exemple interactif ci-dessous présente des libellés compacts soulignés, ainsi que les transitions Précédent et Continuer.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/stepper
+```
+
+Après installation depuis le registre, importez depuis `@/components/ui/stepper`. L’export `@krak-stack/registry/stepper` est également disponible dans les versions du paquet qui le contiennent.
+
+## Navigation contrôlée
+
+```tsx
+import { Stepper } from "@/components/ui/stepper";
+
+const steps = [
+  { id: "connect", label: "Connexion", state: "completed" },
+  { id: "configure", label: "Configuration" },
+  {
+    id: "verify",
+    label: "Vérification",
+    disabled: true,
+    disabledReason: "Terminez la configuration",
+  },
+] satisfies Parameters<typeof Stepper>[0]["steps"];
+
+<Stepper
+  steps={steps}
+  currentStep="configure"
+  onStepSelect={(step) => requestNavigation(step.id)}
+  aria-label="Configuration du projet"
+/>;
+```
+
+La sélection demande une navigation, sans changer l’étape courante ni soumettre un formulaire. Modifiez `currentStep` après acceptation par l’application. Sans `onStepSelect`, la progression est en lecture seule. Les identifiants doivent être uniques et stables. Une liste vide ou un identifiant courant inconnu ne produit aucun affichage.
+
+Chaque étape accepte `label`, `description` et `icon` facultatifs, un `state` explicite (`upcoming`, `completed` ou `error`), ainsi que `disabled` et `disabledReason`. Une étape précédente n’est pas automatiquement terminée. Les boutons indisponibles restent accessibles avec `aria-disabled`, mais n’invoquent pas la sélection. Expliquez une restriction non évidente. Le rappel est une demande synchrone ; l’application gère les erreurs des opérations asynchrones.
+
+## Présentation et disposition
+
+Choisissez `variant="underline"` pour des libellés compacts et centrés avec un fin soulignement sous l’étape active, sans numéros, cercles ni coches. Les libellés passent à la ligne sur petit écran au lieu de s’étaler sur toute la largeur. Les étapes terminées restent discrètes, avec un texte accessible indiquant leur état. L’exemple utilise cette présentation.
+
+Les variantes `variant="labelled"` (par défaut) et `variant="segmented"` restent disponibles. L’orientation est `horizontal`, `vertical` ou `responsive` : numéros compacts sur petit écran et rail vertical avec libellés sur grand écran. Les segments conservent des libellés accessibles.
+
+Composez librement la navigation au-dessus du contenu ou dans votre propre grille. Personnalisez avec `className`, les couleurs du thème et les attributs `data-slot`, `data-variant`, `data-orientation`, `data-state` et `aria-current`. Aucun routeur, système de formulaires ou moteur d’animation n’est requis.
+
+## Exemples
+
+Les exemples interactifs présentent trois compositions avec la même API :
+
+- **Navigation compacte :** libellés centrés et soulignés, commandes Précédent/Continuer fixes et glissement directionnel facultatif.
+- **Un formulaire avec révision :** champ obligatoire, révision et confirmation explicite. Les étapes suivantes restent indisponibles jusqu’à ce que l’application avance. L’exemple conserve son brouillon dans l’état React et utilise la validation native des champs obligatoires ; Précédent est de type `button` et ne soumet jamais le formulaire. Aucun enregistrement serveur n’est simulé.
+- **Progression en lecture seule :** libellés verticaux, descriptions et états terminés/en erreur explicites, sans navigation interactive ni indicateurs numérotés.
+
+Pour une disposition verticale en lecture seule, omettez le rappel de sélection :
+
+```tsx
+<Stepper
+  variant="underline"
+  orientation="vertical"
+  currentStep="configure"
+  steps={[
+    {
+      id: "connect",
+      label: t.connect,
+      description: t.connected,
+      state: "completed",
+    },
+    {
+      id: "configure",
+      label: t.configure,
+      description: t.attention,
+      state: "error",
+    },
+    { id: "verify", label: t.verify, description: t.waiting },
+  ]}
+/>
+```
+
+Ici, `t` représente les libellés traduits de votre application. Préférez la composition avec vos formulaires et boutons existants à une API propre à un parcours. Pour une disposition côte à côte, placez la navigation et le contenu dans une grille CSS adaptative ; le stepper ne définit pas la structure de la page.
+
+Ces exemples s’inspirent du [stepper composable de ReUI](https://reui.io/docs/components/base/stepper) et des [dispositions de Shadcn Studio](https://shadcnstudio.com/docs/components/stepper?base=base), tout en conservant l’API contrôlée et les libellés compacts de KrakStack.
+
+## Formulaires et routes
+
+- Précédent et la navigation vers une étape antérieure ne doivent ni valider ni enregistrer le formulaire courant.
+- Continuer est un bouton de soumission appartenant à l’application : valider, enregistrer, puis avancer.
+- Affichez l’enregistrement jusqu’à la navigation effective. En cas d’échec, conservez les champs et affichez une erreur utile sans avancer.
+- L’application conserve les brouillons et décide quelles étapes sont accessibles. Le stepper n’assure ni persistance ni autorisation.
+- Avec un routeur, `onStepSelect` demande la navigation et `currentStep` suit la route effective. Gardez le conteneur de contenu monté dans la disposition commune.
+
+## Transitions facultatives
+
+```tsx
+import { StepperContent } from "@/components/ui/stepper";
+
+<StepperContent
+  step={currentStep}
+  direction={direction}
+  animate
+  focusTarget="h2"
+>
+  <h2 tabIndex={-1}>{title}</h2>
+  {content}
+</StepperContent>;
+```
+
+L’application fournit `direction="forward"`, `"backward"` ou `"none"`. L’animation est désactivée par défaut. En avançant, le panneau précédent sort à gauche pendant que le suivant entre par la droite ; le retour inverse ces deux directions. Les deux mouvements durent ensemble 500ms, avec une accélération et une décélération équilibrées, sans fondu. Le panneau sortant est une copie DOM inerte, masquée aux technologies d’assistance et capturée avant la mise à jour, pas un second formulaire React actif. Ses identifiants et noms de champs sont supprimés et ses champs désactivés ; la copie est retirée à la fin ou lors d’une interruption. Les rendus canvas et autres contenus non DOM ne sont pas capturés. Le conteneur extérieur reste fixe et masque le débordement horizontal. Placez les bordures et le fond sur un enfant de `StepperContent` pour déplacer les deux contours avec leur contenu. `none` supprime la transition. Le premier affichage n’est pas animé et les préférences de mouvement réduit sont respectées. Sans prise en charge du navigateur, le contenu change immédiatement.
+
+L’exemple garde Précédent et Continuer hors du panneau animé. Précédent apparaît immédiatement lorsqu’il est disponible, sans fondu. Un espace réservé le remplace lorsqu’il est absent, afin que Continuer reste en place. L’application reste responsable de la composition des actions.
+
+Ne donnez pas de clé changeante à `StepperContent` : gardez-le monté entre les étapes. Le formulaire à l’intérieur peut avoir sa propre clé. `focusTarget` place facultativement le focus sur un descendant correspondant lors d’un changement d’étape, sans défilement. Omettez-le si le routeur gère déjà le focus. Le conteneur ne conserve pas les brouillons et ne masque pas les panneaux inactifs.
+
+## Accessibilité et traduction
+
+Liste ordonnée dans une navigation nommée, une seule étape `aria-current="step"`, annonce discrète du nombre d’étapes et boutons natifs activés avec Entrée ou Espace. Ce n’est pas une liste d’onglets : Tab parcourt normalement les commandes. Les états terminés et en erreur ont des équivalents textuels. Donnez un titre au contenu et gérez le focus après navigation.
+
+Les valeurs EN/FR suivent `KrakstackProvider`. `locale` permet une sélection explicite. `messages` accepte des traductions par langue ou variante régionale pour `label`, `progress(current, total)`, `completed` et `error`. La variante exacte prime sur la langue de base, puis sur les valeurs intégrées. Les libellés et descriptions des étapes sont traduits par l’application.

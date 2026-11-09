@@ -1,0 +1,23 @@
+{
+  "name": "@krak-stack/notifications-admin-compat",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Private compatibility adapters and regression tests for notifications administration.",
+  "type": "module",
+  "scripts": {
+    "build": "bun run --cwd ../notifications build",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "bun run typecheck && bun run test && bun run build"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "4.1.0",
+    "@krak-stack/notifications": "workspace:*",
+    "@effect/sql-pg": "4.1.0",
+    "@effect/vitest": "4.1.0",
+    "@types/node": "^22.19.21",
+    "effect": "4.1.0",
+    "typescript": "7.0.1-rc",
+    "vitest": "^5.0.3"
+  }
+}

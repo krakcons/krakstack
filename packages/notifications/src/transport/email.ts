@@ -21,9 +21,18 @@ export const formatEmailRecipient = (recipient: EmailRecipientType): string =>
         .replaceAll("\\", "\\\\")
         .replaceAll('"', '\\"')}" <${recipient.address}>`;
 
+export const emailUnsubscribeHeaders = (email: EmailPayloadV1) =>
+  email.unsubscribeUrl === undefined
+    ? []
+    : [
+        { name: "List-Unsubscribe", value: `<${email.unsubscribeUrl}>` },
+        { name: "List-Unsubscribe-Post", value: "List-Unsubscribe=One-Click" },
+      ];
+
 export {
   EmailAddress,
   EmailDisplayName,
   EmailPayloadV1,
   EmailRecipient,
+  EmailUnsubscribeUrl,
 } from "../schema.js";

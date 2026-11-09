@@ -1,7 +1,7 @@
 ---
 slug: notifications
 path: /docs/notifications
-title: Notifications, email, and native push
+title: Notifications
 description: Configure durable notification delivery, APNs/FCM push, and direct authentication email with the KrakStack notifications package.
 order: 17
 locale: en
@@ -9,11 +9,13 @@ section: notifications
 type: how-to
 ---
 
-# Notifications, email, and native push
+# Notifications
 
 `@krak-stack/notifications` is the default backend for new durable notification systems. It combines package-owned PostgreSQL migrations and CRUD operations with an Effect `PersistedQueue`, delivery and reminder workers, a due-work scheduler, and optional SES or SMTP transports.
 
-The older shadcn registry items remain available for compatibility. They vendor editable source into an application, but they are not the recommended durable runtime.
+The backend stays Effect-only: it does not depend on React, TanStack or registry.
+For optional React screens, protected administrative APIs and Effect Atom helpers,
+see [Administration](/docs/notifications-administration).
 
 ## Responsibility matrix
 
@@ -29,12 +31,32 @@ The older shadcn registry items remain available for compatibility. They vendor 
 
 > Never accept a recipient, organization, or workspace identifier from the browser as trusted scope. Derive scope from the authenticated server context before calling the package.
 
-## Install the durable package
+## One publication model
 
-Install the package with the Effect PostgreSQL driver:
+Use `NotificationService.publish()` for external addresses, contact-associated
+recipients and account-linked recipients. A delivery's `recipient` snapshot and
+explicit `policy` are independent of its account/organization/workspace scope.
+Contacts require no login account; creating or linking one never grants consent.
+
+Transactional receipts, account security notices and consent-based newsletters use
+the same ledger and runtime. Marketing requires explicit scoped, address-bound
+consent; optional notifications respect applicable consent, account opt-out and
+preferences. Suppression wins over permission. The host owns message classification,
+trusted recipient resolution and authorization—not caller-supplied scope.
+
+The optional `/integration` adapter has separate publish, inspect, cancel and retry
+permissions plus mandatory host authorization. `/consent` records audited evidence;
+publication never creates it. Existing `queueEmail` calls remain deprecated
+compatibility translation, with stable queued IDs and policies. See the
+[canonical publication guide](https://github.com/krakcons/krakstack/blob/main/packages/notifications/PUBLICATION.md)
+for examples, transaction/replay contracts and the breaking-release retirement path.
+
+## Installation
+
+Install the backend with the Effect PostgreSQL driver:
 
 ```bash
-bun add @krak-stack/notifications@0.2.1 @effect/sql-pg@4.1.0 effect@4.1.0
+bun add @krak-stack/notifications@0.3.0 @effect/sql-pg@4.1.0 effect@4.1.0
 ```
 
 Install only the optional email provider used by the application:
@@ -108,7 +130,7 @@ Only one transport can be registered for a channel. Do not register SES and SMTP
 
 ## Run notifications from cron
 
-With notifications SDK 0.2.0 and Effect 4.1.0, call
+With notifications SDK 0.3.0 and Effect 4.1.0, call
 `NotificationRuntime.runBatch()` instead of keeping `notificationWorkersLayer`
 alive. Use the same SQL pool and transport registry. Acquire the migrated domain
 service before constructing the runtime; deployed jobs can use
@@ -179,7 +201,98 @@ const publishApplicationApproved = Effect.gen(function* () {
 
 One delivery row represents one recipient. The email adapter derives the destination from `recipientAddress` and `recipientName`; `EmailPayloadV1` deliberately has no `to`, `cc`, or `bcc`. Use one publication delivery per recipient.
 
-`purpose: "notification"` applies preferences and active endpoint suppressions. `purpose: "transactional"` bypasses preferences, but endpoint suppressions still apply. The application decides which events are legally or operationally transactional.
+`purpose: "notification"` applies preferences, account-wide email opt-outs, and active endpoint suppressions. `purpose: "transactional"` bypasses preferences and account email opt-outs, but endpoint suppressions still apply. The application decides which events are legally or operationally transactional.
+
+## Unsubscribe from optional emails
+
+The notifications SDK supports account-wide email unsubscribe through
+`@krak-stack/notifications/unsubscribe`. An opt-out stops all optional email
+notifications across event types, organizations, and workspaces, even when an
+event-specific preference is enabled. It follows the user account if its email
+address changes. Transactional emails, other channels, and in-app notifications
+remain unchanged.
+
+Compose the optional module with the migrated notification service and the same
+PostgreSQL pool used by the runtime:
+
+```ts
+import { Config, Effect, Layer } from "effect";
+import { NotificationService } from "@krak-stack/notifications";
+import { EmailUnsubscribe } from "@krak-stack/notifications/unsubscribe";
+
+const unsubscribeLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    return EmailUnsubscribe.makeLayer({
+      secret: yield* Config.Redacted("NOTIFICATION_UNSUBSCRIBE_SECRET"),
+      endpoint: yield* Config.NonEmptyString("NOTIFICATION_UNSUBSCRIBE_URL"),
+      audience: "my-app:production",
+    });
+  }),
+).pipe(Layer.provideMerge(NotificationService.layer));
+```
+
+Use a server-only, securely generated secret of at least 32 characters and an
+absolute HTTPS endpoint such as
+`https://app.example.com/notifications/unsubscribe`. Changing the secret
+invalidates existing links. The audience must identify this application and
+environment. Tokens expire after 180 days by default; configure `tokenTtlMillis`
+to cover scheduling delays and the supported lifetime of sent mail.
+
+Before rendering an optional account email, create a link for the trusted
+recipient:
+
+```ts
+const unsubscribeUrl =
+  yield *
+  EmailUnsubscribe.use((unsubscribe) =>
+    unsubscribe.createLink({ recipientUserId: user.id }),
+  );
+```
+
+Pass that URL and `m.notification_unsubscribe_footer({}, { locale: user.locale })`
+to the application's escaped text/HTML template renderer. Include the link in
+both footers and also persist `unsubscribeUrl` alongside `subject`, `text`, and
+`html` in the email payload. SES and SMTP then add `List-Unsubscribe` and
+`List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Existing payload version 1
+without the URL remains compatible. Reuse the original snapshot and link for
+idempotent replays. Do not add unsubscribe links to authentication or
+transactional mail.
+
+The [application route example](https://github.com/krakcons/krakstack/blob/main/src/agent-examples/notification/unsubscribe.tsx)
+provides an unhydrated English/French confirmation form and both public HTTP
+handlers. It is an integration example, not a live route on this documentation
+site. Replace workspace imports with the public SDK subpath when adopting it.
+
+- **GET** validates the token and shows confirmation, without writing anything.
+  Email link scanners must not cause unsubscribe actions.
+- **POST** accepts `List-Unsubscribe=One-Click` as URL-encoded or multipart form
+  data, then calls `EmailUnsubscribe.unsubscribe({ token })`. No login, cookies,
+  CAPTCHA, redirect, or additional confirmation is required.
+- Successful and repeated requests return 200/204. Invalid/expired tokens return
+  400; persistence or crypto failures return 503, not a false success.
+- Use only the signed token's recipient, never a separate browser-supplied user
+  ID or the current session. Exempt only these routes from session CSRF and
+  locale redirects; keep the rest of the application protected.
+- Configure DKIM to cover both unsubscribe headers and inspect a delivered
+  message to verify this. The mailbox provider decides whether to display its
+  native unsubscribe action.
+- Disable caching and referrer leakage, keep third-party scripts off the page,
+  bound request sizes, and redact tokens/URLs from access logs and telemetry.
+  Signed claims are encoded, not encrypted; forwarded links can unsubscribe the
+  original account.
+
+Authenticated settings handlers can call
+`NotificationService.unsubscribeEmail({ recipientUserId })` directly and inspect
+`getEmailSubscription({ recipientUserId })`. These operations require trusted,
+account-level authorization: organization roles alone do not authorize global
+consent changes. A null `unsubscribedAt` means there is no account opt-out, not
+that individual preferences or endpoint suppressions permit sending.
+
+The package checks account opt-outs at publication and immediately before
+dispatch, including scheduled and retrying work. Mail already being dispatched
+or accepted by a provider cannot be recalled. Direct dispatch still performs no
+consent lookup. Preferences and address suppressions remain separate; resetting
+them does not resubscribe an account. No public resubscribe token is provided.
 
 ## Configure SES or SMTP
 
@@ -317,6 +430,7 @@ tests use fake HTTP clients and never send live pushes.
 - `notification_suppressions`
 - `notification_reminders`
 - `notification_publications`
+- `notification_email_unsubscribes`
 - `krakstack_notification_migrations`
 
 Effect `PersistedQueue` owns `krakstack_notification_jobs` and `krakstack_notification_jobs_migrations`.
@@ -379,7 +493,7 @@ Direct mode has no persistence, retry scheduling, inbox record, delivery history
 
 ## Keep application APIs and UI scoped
 
-The package intentionally ships no HTTP group, handlers, atoms, routes, or UI. Wrap `NotificationService` methods in application APIs that derive the actor and scope from trusted authentication context. Return only records authorized for that scope, and invalidate the matching client query after mutations.
+For application inbox APIs, wrap `NotificationService` methods in handlers that derive the actor and scope from trusted authentication context. Return only records authorized for that scope, and invalidate the matching client query after mutations. The optional protected backend groups and React administration views are covered in [Administration](/docs/notifications-administration); they do not create application routes or confer authorization.
 
 For a source-installed UI, use the backend-neutral menu:
 
@@ -388,15 +502,6 @@ bunx shadcn@latest add @krak-stack/notification-menu
 ```
 
 `NotificationMenu` receives already-authorized records and reports IDs through controlled callbacks. The application maps package inbox records to the component, owns navigation, and supplies localized notification content and product branding.
-
-## Legacy source-vendored options
-
-- `service-notification` is a direct compatibility dispatcher for applications already using top-level channel messages. Its optional application store hook does not provide package migrations, a persisted queue, reconciliation, or workers.
-- `notification-channel-email-ses` is the matching legacy SES channel. New package users import `@krak-stack/notifications/transport/email-ses` instead.
-- `notification-persistence` installs the legacy three-table Drizzle definitions and codecs as editable application source. New durable applications should not install it; use `@krak-stack/notifications` and its migrations.
-- `notification-menu` remains a supported, backend-neutral presentation component.
-
-Do not compose the legacy dispatcher or application-owned worker with the new package runtime for the same event. Choose one delivery owner during migration to avoid duplicate sends.
 
 ## Production checklist
 
@@ -413,6 +518,5 @@ Do not compose the legacy dispatcher or application-owned worker with the new pa
 ## Related references
 
 - [Notification menu](/docs/notification-menu)
-- [Notification service compatibility item](/docs/service-notification)
-- [Legacy Amazon SES notification channel](/docs/notification-channel-email-ses)
+- [Administration](/docs/notifications-administration)
 - [Package README](https://github.com/krakcons/krakstack/tree/main/packages/notifications#readme)

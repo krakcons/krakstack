@@ -4,6 +4,7 @@ import { Digest } from "effect/crypto";
 import { Effect, Option, Schema } from "effect";
 
 import type { PublishInput, ScheduleReminderInput } from "../schema.js";
+import type { ResolvedPublication } from "./publication.js";
 
 type Json = Schema.Json;
 
@@ -63,9 +64,13 @@ export const deliveryIdempotencyKey = (
   deliveryKey: string,
 ): string => JSON.stringify([publicationKey, deliveryKey]);
 
-export const publicationFingerprint = (input: PublishInput): string => {
+export const publicationFingerprint = (input: ResolvedPublication): string => {
   const request: Json = {
-    version: 1,
+    version: input.deliveries.some(
+      (delivery) => delivery.publication !== undefined,
+    )
+      ? 2
+      : 1,
     idempotencyKey: input.idempotencyKey,
     scope: input.scope,
     eventKey: input.eventKey,
@@ -82,23 +87,32 @@ export const publicationFingerprint = (input: PublishInput): string => {
           },
     deliveries: [...input.deliveries]
       .sort((left, right) => compareStrings(left.key, right.key))
-      .map((delivery) => ({
-        key: delivery.key,
-        channel: delivery.channel,
-        purpose: delivery.purpose,
-        template: delivery.template,
-        recipientAddress: canonicalRecipientAddress(
-          delivery.channel,
-          delivery.recipientAddress,
-        ),
-        recipientName: delivery.recipientName,
-        payloadVersion: delivery.payloadVersion,
-        payload: delivery.payload,
-        scheduledFor: delivery.scheduledFor?.toISOString() ?? null,
-        expiresAt: delivery.expiresAt?.toISOString() ?? null,
-        maxAttempts: delivery.maxAttempts ?? 5,
-        references: canonicalReferences(delivery.references),
-      })),
+      .map((delivery) => {
+        const snapshot = {
+          key: delivery.key,
+          channel: delivery.channel,
+          purpose: delivery.purpose,
+          template: delivery.template,
+          recipientAddress: canonicalRecipientAddress(
+            delivery.channel,
+            delivery.recipientAddress,
+          ),
+          recipientName: delivery.recipientName,
+          payloadVersion: delivery.payloadVersion,
+          payload: delivery.payload,
+          scheduledFor: delivery.scheduledFor?.toISOString() ?? null,
+          expiresAt: delivery.expiresAt?.toISOString() ?? null,
+          maxAttempts: delivery.maxAttempts ?? 5,
+          references: canonicalReferences(delivery.references),
+        };
+        const publicationSnapshot =
+          delivery.publication === undefined
+            ? snapshot
+            : { ...snapshot, publication: delivery.publication };
+        return delivery.dispatchPolicy === undefined
+          ? publicationSnapshot
+          : { ...publicationSnapshot, dispatchPolicy: delivery.dispatchPolicy };
+      }),
   };
   return sha256(request);
 };

@@ -4,11 +4,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
-import {
-  GoogleMap,
-  type GoogleMapPoint,
-  type GoogleMapsApi,
-} from "./google-map";
+import { GoogleMap, type GoogleMapPoint, type GoogleMapsApi } from "./google-map";
 
 type MockMapOptions = {
   center: GoogleMapPoint;
@@ -90,12 +86,7 @@ describe("GoogleMap", () => {
       setCenter = vi.fn((_center: GoogleMapPoint) => undefined);
       setMap = vi.fn((_map: MockMapReference | null) => undefined);
       setOptions = vi.fn(
-        (
-          _options: Omit<
-            MockCircleOptions,
-            "center" | "clickable" | "map" | "radius"
-          >,
-        ) => undefined,
+        (_options: Omit<MockCircleOptions, "center" | "clickable" | "map" | "radius">) => undefined,
       );
       setRadius = vi.fn((_radius: number) => undefined);
 
@@ -110,12 +101,10 @@ describe("GoogleMap", () => {
         Marker: MockMarker,
         Circle: MockCircle,
         event: {
-          addListener: vi.fn(
-            (...[, , handler]: Parameters<MockAddListener>) => {
-              onZoomChanged = handler;
-              return { remove: vi.fn() };
-            },
-          ),
+          addListener: vi.fn((...[, , handler]: Parameters<MockAddListener>) => {
+            onZoomChanged = handler;
+            return { remove: vi.fn() };
+          }),
           clearInstanceListeners: vi.fn(),
         },
       },
@@ -130,6 +119,7 @@ describe("GoogleMap", () => {
         radius={{ radiusMeters: 1_000 }}
         zoom={8}
         locale="en"
+        controlsClassName="rounded-xl bg-card"
       />,
     );
 
@@ -138,16 +128,20 @@ describe("GoogleMap", () => {
       expect(markers).toHaveLength(1);
       expect(circles).toHaveLength(1);
       expect(screen.getByRole("button", { name: "Zoom in" })).toBeDefined();
+      expect(document.querySelector('[data-slot="google-map-controls"]')?.className).toContain(
+        "rounded-xl",
+      );
+      expect(screen.getByRole("button", { name: "Zoom in" }).getAttribute("data-slot")).toBe(
+        "google-map-control",
+      );
+      expect(document.querySelector('[data-slot="google-map-canvas"]')).not.toBeNull();
     });
 
     act(() => {
       maps[0]!.zoom = 20;
       onZoomChanged?.();
     });
-    expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Zoom in" })
-        .disabled,
-    ).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Zoom in" }).disabled).toBe(true);
 
     rerender(
       <GoogleMap
@@ -168,9 +162,7 @@ describe("GoogleMap", () => {
         lat: 3,
         lng: 4,
       });
-      expect(markers[0]?.setIcon).toHaveBeenLastCalledWith(
-        "/updated-marker.svg",
-      );
+      expect(markers[0]?.setIcon).toHaveBeenLastCalledWith("/updated-marker.svg");
       expect(circles[0]?.setCenter).toHaveBeenLastCalledWith({
         lat: 3,
         lng: 4,
@@ -192,10 +184,21 @@ describe("GoogleMap", () => {
       resize = () => this.callback([], this);
     }
     vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextFrame = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.set(++nextFrame, callback);
+      return nextFrame;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (frame: number) => frames.delete(frame));
+    const paint = () =>
+      act(() => {
+        const callbacks = [...frames.values()];
+        frames.clear();
+        callbacks.forEach((callback) => callback(0));
+      });
     let width = 0;
-    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(
-      () => width,
-    );
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => width);
     vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(300);
     rerender(
       <GoogleMap
@@ -210,6 +213,10 @@ describe("GoogleMap", () => {
     expect(maps[0]?.fitBounds).not.toHaveBeenCalled();
     width = 320;
     act(() => observers[0]?.resize());
+    expect(maps[0]?.fitBounds).not.toHaveBeenCalled();
+    paint();
+    expect(maps[0]?.fitBounds).not.toHaveBeenCalled();
+    paint();
     expect(maps[0]?.fitBounds).toHaveBeenLastCalledWith(
       { north: 2, south: 0, east: 3, west: 1 },
       40,
@@ -219,10 +226,10 @@ describe("GoogleMap", () => {
     expect(maps[0]?.fitBounds.mock.calls.length).toBe(fitCount);
     width = 640;
     act(() => observers[0]?.resize());
+    paint();
+    paint();
     expect(maps[0]?.fitBounds.mock.calls.length).toBe((fitCount ?? 0) + 1);
-    act(() =>
-      screen.getByRole("button", { name: "Show selected area" }).click(),
-    );
+    act(() => screen.getByRole("button", { name: "Show selected area" }).click());
     expect(maps[0]?.fitBounds.mock.calls.length).toBe((fitCount ?? 0) + 2);
     maps[0]?.setZoom.mockClear();
     const callsBeforeStyleChange = maps[0]?.fitBounds.mock.calls.length;
@@ -248,15 +255,37 @@ describe("GoogleMap", () => {
         radius={{ radiusMeters: 4000 }}
       />,
     );
-    expect(maps[0]?.fitBounds.mock.calls.length).toBe(
-      (callsBeforeStyleChange ?? 0) + 1,
-    );
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe(callsBeforeStyleChange);
     expect(circles[0]?.setRadius).toHaveBeenLastCalledWith(4000);
-    rerender(<GoogleMap apiKey="" center={{ lat: 3, lng: 4 }} zoom={10} />);
-    expect(screen.getByRole("alert").textContent).toContain("Map unavailable");
+    paint();
     rerender(
-      <GoogleMap apiKey="test-key" center={{ lat: 3, lng: 4 }} zoom={12} />,
+      <GoogleMap
+        apiKey="test-key"
+        center={{ lat: 3, lng: 4 }}
+        zoom={10}
+        fitRadius
+        fitPadding={40}
+        radius={{ radiusMeters: 1000 }}
+      />,
     );
+    paint();
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe(callsBeforeStyleChange);
+    paint();
+    expect(maps[0]?.fitBounds.mock.calls.length).toBe((callsBeforeStyleChange ?? 0) + 1);
+    expect(circles[0]?.setRadius).toHaveBeenLastCalledWith(1000);
+    rerender(
+      <GoogleMap
+        apiKey="test-key"
+        center={{ lat: 3, lng: 4 }}
+        zoom={10}
+        fitRadius
+        radius={{ radiusMeters: 2000 }}
+      />,
+    );
+    rerender(<GoogleMap apiKey="" center={{ lat: 3, lng: 4 }} zoom={10} />);
+    expect(frames.size).toBe(0);
+    expect(screen.getByRole("alert").textContent).toContain("Map unavailable");
+    rerender(<GoogleMap apiKey="test-key" center={{ lat: 3, lng: 4 }} zoom={12} />);
     await waitFor(() => expect(maps).toHaveLength(2));
     expect(screen.queryByRole("alert")).toBeNull();
     expect(maps[1]?.zoom).toBe(12);
