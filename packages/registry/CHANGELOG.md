@@ -1,5 +1,13 @@
 # @krak-stack/registry
 
+## 0.6.0
+
+### Minor Changes
+
+- 5c9f4c2: Add Async Action Button, Unsaved Changes Guard, Danger Confirmation, Editable Text, Presence Transition, Auto Height, Animated List, and Animated Number as standalone components with bilingual documentation and reduced-motion-aware previews.
+
+  Animated List includes controlled vertical drag reordering and accessible keyboard handles.
+
 ## 0.5.0
 
 ### Minor Changes
