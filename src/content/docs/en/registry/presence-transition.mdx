@@ -1,0 +1,49 @@
+---
+slug: presence-transition
+path: /docs/presence-transition
+title: Presence Transition
+description: Animate conditional content without hiding the initial server-rendered UI.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Presence Transition
+
+A small Motion wrapper for entering and exiting content. Closed content unmounts after its exit; it becomes inert and hidden from assistive technology immediately.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/presence-transition
+```
+
+## Usage
+
+```tsx
+import { PresenceTransition } from "@/components/ui/presence-transition";
+
+<PresenceTransition open={showDetails}>
+  <div>Additional details</div>
+</PresenceTransition>;
+```
+
+Package import: `@krak-stack/registry/presence-transition`. Motion is a runtime dependency; no CSS import or animation provider is needed.
+
+## API reference
+
+| Prop        | Type         | Default                  |
+| ----------- | ------------ | ------------------------ |
+| `open`      | `boolean`    | Required                 |
+| `children`  | `ReactNode`  | Content                  |
+| `duration`  | Milliseconds | `180`                    |
+| `className` | `string`     | Animated wrapper classes |
+
+Initial open content renders fully visible on the server. Later openings fade and move four pixels; exits reverse that motion. Interrupted exits can be reopened without waiting for a timer. Reduced-motion preferences disable transitions.
+
+## Accessibility and integration
+
+This is not an accordion, disclosure, dialog or focus manager. The host owns trigger semantics (`aria-expanded` and `aria-controls`) and must move focus to an appropriate place before closing focused content. Keep the trigger outside the animated subtree. Hidden content is unmounted, so persist drafts outside it when needed. Avoid stacking it around primitives that already implement presence animations. Children inherit the wrapper’s opacity and transform during transitions; do not wrap fixed-position overlays.

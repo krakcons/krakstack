@@ -1,0 +1,52 @@
+---
+slug: animated-number
+path: /docs/animated-number
+title: Animated Number
+description: Animate localized numeric targets without streaming intermediate values to assistive technology.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Animated Number
+
+A numeric transition formatted by Intl.NumberFormat. The first server render shows the actual target, not zero; subsequent target changes animate from the displayed value.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/animated-number
+```
+
+## Usage
+
+```tsx
+import { AnimatedNumber } from "@/components/ui/animated-number";
+
+<AnimatedNumber
+  value={total}
+  format={{ style: "currency", currency: "EUR" }}
+  className="text-3xl font-semibold tabular-nums"
+/>;
+```
+
+Package import: `@krak-stack/registry/animated-number`. Motion is a runtime dependency. No stylesheet or provider is needed for animation; locale follows KrakstackProvider when present.
+
+## API reference
+
+| Prop        | Type                       | Default                 |
+| ----------- | -------------------------- | ----------------------- |
+| `value`     | `number`                   | Required target         |
+| `duration`  | Milliseconds               | `350`                   |
+| `format`    | `Intl.NumberFormatOptions` | Intl defaults           |
+| `locale`    | Locale identifier          | Provider; `en` fallback |
+| `className` | `string`                   | Wrapper classes         |
+
+Use `format` for currency, percentages, grouping and decimal places. Rapid updates interrupt the previous transition. Reduced motion or zero duration applies the target immediately. Non-finite values are formatted without interpolation. Supply valid Intl locales and options; validate untrusted configuration at the application boundary.
+
+## Accessibility and integration
+
+A screen-reader-only value contains the localized final target. The moving visual value is `aria-hidden`, avoiding intermediate announcements. The component does not create a live region; add one only when the business event warrants an announcement. Supply surrounding context such as “Total revenue.” Motion is presentation, not calculation: retain authoritative financial values and rounding rules in the domain layer. Do not use interpolated numbers to communicate actual task progress.

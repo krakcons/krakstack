@@ -1,0 +1,59 @@
+---
+slug: danger-confirmation
+path: /docs/danger-confirmation
+title: Confirmation destructive
+description: Confirmez les actions destructives avec un texte exact facultatif et un retour asynchrone sûr.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Confirmation destructive
+
+Une boîte d’alerte contrôlée composant la primitive existante et le bouton d’action asynchrone. Elle ne ferme qu’après une réussite et conserve les erreurs visibles.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/danger-confirmation
+```
+
+## Utilisation
+
+```tsx
+import { DangerConfirmation } from "@/components/ui/danger-confirmation";
+
+<DangerConfirmation
+  open={open}
+  onOpenChange={setOpen}
+  title="Supprimer l’espace ?"
+  description="Cette action est irréversible."
+  confirmation={workspace.name}
+  onConfirm={deleteWorkspace}
+/>;
+```
+
+Import du paquet : `@krak-stack/registry/danger-confirmation`. Omettez `confirmation` pour confirmer sans saisie.
+
+## Référence
+
+| Propriété              | Type                                   | Valeur par défaut              |
+| ---------------------- | -------------------------------------- | ------------------------------ |
+| `open`, `onOpenChange` | `boolean`, `(open: boolean) => void`   | Obligatoires                   |
+| `title`, `description` | `ReactNode`                            | Obligatoires                   |
+| `confirmation`         | `string` exact, sensible à la casse    | Aucun texte                    |
+| `onConfirm`            | `() => Promise<void>`                  | Obligatoire                    |
+| `locale`, `messages`   | Langue et libellés partiels par langue | Fournisseur ; anglais/français |
+
+Clés : `confirm`, `cancel`, `typeToConfirm`, `pending`, `error`. Le texte n’est ni nettoyé ni normalisé. Une réouverture l’efface. Pendant le travail, la saisie, l’annulation et Échap sont bloqués. L’application ne doit pas forcer la fermeture ou remplacer la boîte pendant l’opération.
+
+## Accessibilité
+
+La boîte fournit titre, description, confinement du focus et libellé de saisie. Gardez le titre et la description non interactifs. Le déclencheur appartient à l’application : restituez-lui le focus dans `onOpenChange` ou choisissez une destination logique s’il a lui-même été supprimé.
+
+## Intégration
+
+Validez les droits et les données sur le serveur. La confirmation n’est qu’une précaution d’interface. Gardez la boîte liée à une seule entité ; fermez-la avant de changer de cible. L’application gère annulation, délais, idempotence et échecs partiels. Un rejet ne prouve pas l’absence d’effets. Adaptez les libellés pour les actions autres que la suppression.

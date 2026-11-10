@@ -1,0 +1,50 @@
+---
+slug: auto-height
+path: /docs/auto-height
+title: Auto Height
+description: Animate measured content height without hardcoded expanded dimensions.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Auto Height
+
+Animate a container when its content grows or shrinks. ResizeObserver measures an inner flow-root, avoiding an observation loop on the animated outer container.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/auto-height
+```
+
+## Usage
+
+```tsx
+import { AutoHeight } from "@/components/ui/auto-height";
+
+<AutoHeight className="rounded-lg border" contentClassName="p-4">
+  <p>Summary</p>
+  {expanded ? <p>Additional content</p> : null}
+</AutoHeight>;
+```
+
+Package import: `@krak-stack/registry/auto-height`. Motion is installed automatically by the registry. No stylesheet or provider is needed.
+
+## API reference
+
+| Prop               | Type         | Default                |
+| ------------------ | ------------ | ---------------------- |
+| `children`         | `ReactNode`  | Content                |
+| `duration`         | Milliseconds | `200`                  |
+| `className`        | `string`     | Outer classes          |
+| `contentClassName` | `string`     | Measured inner classes |
+
+The server and browsers without ResizeObserver render natural height. Content changes, image loads and text reflow update measurements. Reduced-motion users receive immediate height changes. Keep padding on the inner element; avoid fixed-height, height transitions or percentage-height rules on either wrapper.
+
+## Accessibility and integration
+
+Content stays mounted and accessible throughout resizing. This component does not implement disclosure semantics or hide content. The outer container clips overflow; provide inner padding for focus rings and render popovers through portals. Avoid large constantly resizing or virtualized content, where layout animation can be expensive. Use Presence Transition separately when content must unmount.

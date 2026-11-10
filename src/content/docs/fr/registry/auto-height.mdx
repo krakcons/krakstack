@@ -1,0 +1,50 @@
+---
+slug: auto-height
+path: /docs/auto-height
+title: Hauteur animée
+description: Animez la hauteur mesurée sans dimension développée codée en dur.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Hauteur animée
+
+Animez un conteneur lorsque son contenu grandit ou rétrécit. ResizeObserver mesure un élément interne flow-root, sans observer le conteneur externe animé et provoquer une boucle.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/auto-height
+```
+
+## Utilisation
+
+```tsx
+import { AutoHeight } from "@/components/ui/auto-height";
+
+<AutoHeight className="rounded-lg border" contentClassName="p-4">
+  <p>Résumé</p>
+  {expanded ? <p>Contenu complémentaire</p> : null}
+</AutoHeight>;
+```
+
+Import du paquet : `@krak-stack/registry/auto-height`. Le registre installe Motion automatiquement. Aucun import CSS ni fournisseur n’est nécessaire.
+
+## Référence
+
+| Propriété          | Type          | Valeur par défaut         |
+| ------------------ | ------------- | ------------------------- |
+| `children`         | `ReactNode`   | Contenu                   |
+| `duration`         | Millisecondes | `200`                     |
+| `className`        | `string`      | Classes externes          |
+| `contentClassName` | `string`      | Classes internes mesurées |
+
+Le serveur et les navigateurs sans ResizeObserver utilisent la hauteur naturelle. Les changements de contenu, les images et les retours à la ligne actualisent la mesure. La réduction des mouvements applique les nouvelles hauteurs immédiatement. Placez les espacements internes sur le contenu ; évitez les hauteurs fixes, les transitions de hauteur et les hauteurs en pourcentage sur les conteneurs.
+
+## Accessibilité et intégration
+
+Le contenu reste monté et accessible pendant le redimensionnement. Ce composant ne fournit pas la sémantique d’une section dépliable et ne masque rien. Le conteneur coupe les débordements ; prévoyez de l’espace pour les indicateurs de focus et utilisez des portails pour les fenêtres contextuelles. Évitez les contenus volumineux, virtualisés ou constamment redimensionnés. Utilisez séparément la transition de présence pour démonter le contenu.

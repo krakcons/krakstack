@@ -1,0 +1,49 @@
+---
+slug: presence-transition
+path: /docs/presence-transition
+title: Transition de présence
+description: Animez le contenu conditionnel sans masquer le rendu serveur initial.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Transition de présence
+
+Une petite composition Motion pour l’apparition et la disparition de contenu. À la fermeture, il devient immédiatement inerte et masqué aux technologies d’assistance, puis est démonté après la transition.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/presence-transition
+```
+
+## Utilisation
+
+```tsx
+import { PresenceTransition } from "@/components/ui/presence-transition";
+
+<PresenceTransition open={showDetails}>
+  <div>Informations complémentaires</div>
+</PresenceTransition>;
+```
+
+Import du paquet : `@krak-stack/registry/presence-transition`. Motion est une dépendance d’exécution ; aucun import CSS ni fournisseur d’animation n’est nécessaire.
+
+## Référence
+
+| Propriété   | Type          | Valeur par défaut          |
+| ----------- | ------------- | -------------------------- |
+| `open`      | `boolean`     | Obligatoire                |
+| `children`  | `ReactNode`   | Contenu                    |
+| `duration`  | Millisecondes | `180`                      |
+| `className` | `string`      | Classes du conteneur animé |
+
+Le contenu initialement ouvert est visible sur le serveur. Les ouvertures suivantes combinent fondu et déplacement de quatre pixels ; la fermeture inverse ce mouvement. Une sortie interrompue peut être rouverte sans attendre un délai. La préférence de réduction des mouvements désactive les transitions.
+
+## Accessibilité et intégration
+
+Ce composant n’est ni un accordéon, ni une boîte de dialogue, ni un gestionnaire de focus. L’application gère `aria-expanded`, `aria-controls` et le déplacement du focus avant de fermer un contenu actif. Gardez le déclencheur hors de la zone animée. Le démontage efface l’état local : conservez les brouillons à l’extérieur si nécessaire. Évitez de l’ajouter aux primitives qui animent déjà leur présence. L’opacité et la transformation s’appliquent aux enfants ; n’y placez pas de superposition à position fixe.

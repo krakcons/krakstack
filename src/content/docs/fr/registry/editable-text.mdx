@@ -1,0 +1,59 @@
+---
+slug: editable-text
+path: /docs/editable-text
+title: Texte modifiable
+description: Modifiez un texte en ligne avec raccourcis clavier et reprise après un échec.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Texte modifiable
+
+Un éditeur sur une ligne séparant le brouillon de la valeur de référence. Entrée enregistre, Échap annule et la perte du focus ne valide jamais silencieusement.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/editable-text
+```
+
+## Utilisation
+
+```tsx
+import { EditableText } from "@/components/ui/editable-text";
+
+<EditableText
+  value={project.name}
+  label="Nom du projet"
+  onSave={async (name) => {
+    await updateProject({ name });
+  }}
+/>;
+```
+
+Import du paquet : `@krak-stack/registry/editable-text`. `updateProject` doit réconcilier la propriété `value` avant de résoudre sa promesse. Privilégiez l’atome de mutation optimiste existant avec restauration en cas d’échec plutôt qu’un second stockage d’entités dans l’éditeur.
+
+## Référence
+
+| Propriété            | Type                                   | Valeur par défaut              |
+| -------------------- | -------------------------------------- | ------------------------------ |
+| `value`, `label`     | `string`                               | Obligatoires                   |
+| `onSave`             | `(value: string) => Promise<void>`     | Obligatoire                    |
+| `disabled`           | `boolean`                              | `false`                        |
+| `maxLength`          | `number`                               | —                              |
+| `className`          | `string`                               | Classes du conteneur           |
+| `locale`, `messages` | Langue et libellés partiels par langue | Fournisseur ; anglais/français |
+
+Clés : `edit`, `save`, `cancel`, `empty`, `pending`, `error`. Le brouillon est transmis sans nettoyage. Une valeur inchangée ne peut pas être enregistrée. Un échec conserve la saisie et propose une reprise. Les actualisations ne remplacent pas un brouillon actif ; utilisez une `key` d’entité pour changer de cible.
+
+## Accessibilité
+
+L’ouverture sélectionne le texte et place le focus dans la saisie. La fermeture restitue le focus au déclencheur. Le libellé visible nomme le champ. La composition IME ne déclenche pas les raccourcis Entrée/Échap. Les boutons ne soumettent pas un formulaire parent. Le travail en cours bloque modification et annulation ; la perte du focus n’enregistre pas.
+
+## Intégration
+
+Validez avec Effect Schema avant la persistance et sur le serveur. `maxLength` est une aide du navigateur. L’application gère conflits, droits et erreurs métier. Rejetez la promesse pour conserver le brouillon et fournissez un message traduit sûr dans `messages.error`. Les exceptions brutes ne sont jamais affichées. Ce composant n’édite ni secrets ni texte riche.

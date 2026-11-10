@@ -41,6 +41,78 @@ const registryPreviews: Readonly<
   Record<string, LazyExoticComponent<ComponentType> | undefined>
 > = Object.fromEntries([
   [
+    "async-action-button",
+    lazy(() =>
+      import("@/components/registry-previews/async-action-button-preview").then(
+        ({ AsyncActionButtonPreview }) => ({
+          default: AsyncActionButtonPreview,
+        }),
+      ),
+    ),
+  ],
+  [
+    "unsaved-changes-guard",
+    lazy(() =>
+      import("@/components/registry-previews/unsaved-changes-guard-preview").then(
+        ({ UnsavedChangesGuardPreview }) => ({
+          default: UnsavedChangesGuardPreview,
+        }),
+      ),
+    ),
+  ],
+  [
+    "danger-confirmation",
+    lazy(() =>
+      import("@/components/registry-previews/danger-confirmation-preview").then(
+        ({ DangerConfirmationPreview }) => ({
+          default: DangerConfirmationPreview,
+        }),
+      ),
+    ),
+  ],
+  [
+    "editable-text",
+    lazy(() =>
+      import("@/components/registry-previews/editable-text-preview").then(
+        ({ EditableTextPreview }) => ({ default: EditableTextPreview }),
+      ),
+    ),
+  ],
+  [
+    "presence-transition",
+    lazy(() =>
+      import("@/components/registry-previews/presence-transition-preview").then(
+        ({ PresenceTransitionPreview }) => ({
+          default: PresenceTransitionPreview,
+        }),
+      ),
+    ),
+  ],
+  [
+    "auto-height",
+    lazy(() =>
+      import("@/components/registry-previews/auto-height-preview").then(
+        ({ AutoHeightPreview }) => ({ default: AutoHeightPreview }),
+      ),
+    ),
+  ],
+  [
+    "animated-list",
+    lazy(() =>
+      import("@/components/registry-previews/animated-list-preview").then(
+        ({ AnimatedListPreview }) => ({ default: AnimatedListPreview }),
+      ),
+    ),
+  ],
+  [
+    "animated-number",
+    lazy(() =>
+      import("@/components/registry-previews/animated-number-preview").then(
+        ({ AnimatedNumberPreview }) => ({ default: AnimatedNumberPreview }),
+      ),
+    ),
+  ],
+  [
     "app-switcher",
     lazy(() =>
       import("@/components/registry-previews/app-switcher-preview").then(

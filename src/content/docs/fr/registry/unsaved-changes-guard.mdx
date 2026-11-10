@@ -1,0 +1,51 @@
+---
+slug: unsaved-changes-guard
+path: /docs/unsaved-changes-guard
+title: Protection des modifications
+description: Confirmez la sortie des formulaires modifiés avec TanStack Router.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Protection des modifications
+
+Un blocage TanStack Router avec boîte de confirmation traduite et protection facultative contre la fermeture. L’application fournit l’état modifié ; le composant n’enregistre et n’efface rien.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/unsaved-changes-guard
+```
+
+## Utilisation
+
+```tsx
+import { UnsavedChangesGuard } from "@/components/ui/unsaved-changes-guard";
+
+<UnsavedChangesGuard dirty={draft !== savedValue} />;
+```
+
+Import du paquet : `@krak-stack/registry/unsaved-changes-guard`. Montez une seule instance par route d’édition dans un fournisseur TanStack Router. Utilisez `Link` ou la navigation du routeur pour la confirmation personnalisée.
+
+## Référence
+
+| Propriété             | Type                                   | Valeur par défaut              |
+| --------------------- | -------------------------------------- | ------------------------------ |
+| `dirty`               | `boolean`                              | Obligatoire                    |
+| `enabled`             | `boolean`                              | `true`                         |
+| `protectBeforeUnload` | `boolean`                              | `true`                         |
+| `locale`, `messages`  | Langue et libellés partiels par langue | Fournisseur ; anglais/français |
+
+Clés : `title`, `description`, `stay`, `leave`. Continuer la modification ou Échap annule la navigation bloquée. Quitter la page reprend la navigation initiale, y compris celle de l’historique. Un formulaire inchangé ou une protection désactivée ne demande rien.
+
+## Accessibilité
+
+La boîte d’alerte fournit une description, contient le focus et propose une annulation sûre. Le navigateur choisit le texte et le comportement des demandes de fermeture ; les traductions ne concernent que la boîte interne.
+
+## Intégration et limites
+
+Effacez l’état modifié uniquement après une réussite et avant la navigation. Désactivez la protection pour une redirection imposée par l’application. Évitez les protections concurrentes. Les liens de document utilisent la demande native, pas la boîte du routeur. Les navigateurs peuvent supprimer la demande sans interaction préalable et ne pas l’émettre à l’arrêt d’un processus mobile. Cette protection ne remplace pas un stockage durable des brouillons et ne garantit pas l’absence de perte ; conservez les brouillons importants séparément.

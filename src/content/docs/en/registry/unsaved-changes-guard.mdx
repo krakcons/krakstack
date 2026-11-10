@@ -1,0 +1,51 @@
+---
+slug: unsaved-changes-guard
+path: /docs/unsaved-changes-guard
+title: Unsaved Changes Guard
+description: Confirm navigation away from dirty forms using TanStack Router.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Unsaved Changes Guard
+
+A TanStack Router blocker with a localized alert dialog and optional native browser-close protection. The host supplies dirty state; this component never saves or discards data itself.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/unsaved-changes-guard
+```
+
+## Usage
+
+```tsx
+import { UnsavedChangesGuard } from "@/components/ui/unsaved-changes-guard";
+
+<UnsavedChangesGuard dirty={draft !== savedValue} />;
+```
+
+Package import: `@krak-stack/registry/unsaved-changes-guard`. Mount once per editing route, inside a TanStack Router provider. Use Router `Link` or router navigation for the custom confirmation flow.
+
+## API reference
+
+| Prop                  | Type                                   | Default                  |
+| --------------------- | -------------------------------------- | ------------------------ |
+| `dirty`               | `boolean`                              | Required                 |
+| `enabled`             | `boolean`                              | `true`                   |
+| `protectBeforeUnload` | `boolean`                              | `true`                   |
+| `locale`, `messages`  | Locale and partial locale-keyed labels | Provider; English/French |
+
+Message keys: `title`, `description`, `stay`, `leave`. Keep editing or Escape resets the blocked navigation. Leave page proceeds with the original navigation, including history navigation. Clean or disabled guards do not prompt.
+
+## Accessibility
+
+The alert dialog supplies a named description, focus containment and a safe cancel action. Browser-close prompts use browser-owned wording and behavior; custom translations apply only to the in-app dialog.
+
+## Integration and limitations
+
+Clear dirty state only after a successful save and before navigating away. Disable the guard when a host-owned redirect must bypass it. Avoid multiple competing guards. Plain document links use native beforeunload behavior rather than the custom router dialog. Browsers may suppress unload prompts without prior user interaction and may not fire them on mobile process termination. This guard is not durable draft storage or a guarantee against data loss; persist important drafts separately.

@@ -1,0 +1,82 @@
+---
+slug: animated-list
+path: /docs/animated-list
+title: Animated List
+description: Animate insertion, removal and reordering while preserving keyed child state.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Animated List
+
+A semantic unordered list with Motion presence and position transitions. Enable controlled vertical drag reordering with `onReorder`. The host supplies the items and owns all mutations. This is not cross-list dragging, pagination or virtualization.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/animated-list
+```
+
+## Usage
+
+```tsx
+import { AnimatedList } from "@/components/ui/animated-list";
+
+<AnimatedList
+  items={tasks}
+  getKey={(task) => task.id}
+  label="Tasks"
+  itemClassName="rounded-lg border p-3"
+>
+  {(task) => <span>{task.title}</span>}
+</AnimatedList>;
+```
+
+Package import: `@krak-stack/registry/animated-list`. Motion is a runtime dependency. No stylesheet or provider is needed.
+
+## Drag and keyboard reordering
+
+```tsx
+<AnimatedList
+  items={tasks}
+  getKey={(task) => task.id}
+  getItemLabel={(task) => task.title}
+  onReorder={setTasks}
+  label="Tasks"
+  itemClassName="flex items-center gap-3 rounded-lg border bg-background p-3"
+>
+  {(task) => <span>{task.title}</span>}
+</AnimatedList>
+```
+
+Drag the grip with a mouse or touch. Focus a grip and press Arrow Up/Down to move one position, or Home/End to move to an edge. Handles do not submit forms. Only the handle starts a drag, so item buttons, text selection and inputs keep their normal behavior. Without `onReorder`, no handles are rendered.
+
+Dragging stays inside the list, with 12 pixels of vertical wiggle room beyond its edges. Set `dragOverflow={0}` for strict containment or supply another non-negative pixel allowance. The allowance is fixed, not an elastic stretch that grows with pointer distance.
+
+## API reference
+
+`dragOverflow?: number` defaults to `12` pixels and applies only to pointer dragging. Keyboard reordering always stays within the list.
+
+| Prop                         | Type                                   | Default                             |
+| ---------------------------- | -------------------------------------- | ----------------------------------- |
+| `items`                      | `readonly T[]`                         | Required                            |
+| `getKey`                     | `(item: T) => string`                  | Required stable unique identity     |
+| `children`                   | `(item: T) => ReactNode`               | Required item renderer              |
+| `duration`                   | Milliseconds                           | `180`                               |
+| `className`, `itemClassName` | `string`                               | List/item classes                   |
+| `label`                      | `string`                               | Optional accessible list name       |
+| `onReorder`                  | `(items: T[]) => void`                 | Off; enables vertical reordering    |
+| `getItemLabel`               | `(item: T) => string`                  | Stable key; supply a readable label |
+| `locale`, `messages`         | Locale and partial locale-keyed labels | Provider; English/French            |
+
+Initial items render visible on the server. New and removed items fade; retained items animate position changes. Exiting items remain in flow until their exit finishes. Reduced-motion users receive immediate changes. Never use array indexes, random IDs or changing titles as keys.
+
+Reordering emits a new array; update the controlled `items` immediately. Stable keys, rather than object references, identify dragged items. The host owns persistence, rollback and authorization. The component never writes to a server. Keep the callback attached throughout a reorder session; changing between static and reorderable modes remounts item content. Message keys are `reorder`, `instructions` and `position(label, position, total)`.
+
+## Accessibility and integration
+
+The component renders `ul` and `li`; return item contents, not another `li`. Handles have localized names and keyboard instructions. Accepted keyboard positions and drag-end positions are announced in a status region. Removed items immediately become inert and hidden from assistive technology. Move focus to the next logical control before removing a focused item. Keep persistent drafts outside removed items. Prefer virtualization for large datasets and do not use this component for table rows or multi-column sorting. In scroll containers, use Motion’s layout-scroll integration on the scrolling ancestor when needed.

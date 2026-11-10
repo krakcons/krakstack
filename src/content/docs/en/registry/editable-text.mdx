@@ -1,0 +1,59 @@
+---
+slug: editable-text
+path: /docs/editable-text
+title: Editable Text
+description: Edit a string inline with keyboard shortcuts and recoverable save failures.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Editable Text
+
+A single-line editor that keeps drafts separate from authoritative values. Enter saves, Escape cancels, and blur never silently commits.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/editable-text
+```
+
+## Usage
+
+```tsx
+import { EditableText } from "@/components/ui/editable-text";
+
+<EditableText
+  value={project.name}
+  label="Project name"
+  onSave={async (name) => {
+    await updateProject({ name });
+  }}
+/>;
+```
+
+Package import: `@krak-stack/registry/editable-text`. `updateProject` must reconcile the authoritative `value` before its promise resolves. Prefer your existing optimistic mutation atom with rollback rather than inventing a second entity store inside the editor.
+
+## API reference
+
+| Prop                 | Type                                   | Default                  |
+| -------------------- | -------------------------------------- | ------------------------ |
+| `value`, `label`     | `string`                               | Required                 |
+| `onSave`             | `(value: string) => Promise<void>`     | Required                 |
+| `disabled`           | `boolean`                              | `false`                  |
+| `maxLength`          | `number`                               | —                        |
+| `className`          | `string`                               | Wrapper classes          |
+| `locale`, `messages` | Locale and partial locale-keyed labels | Provider; English/French |
+
+Message keys: `edit`, `save`, `cancel`, `empty`, `pending`, `error`. The exact draft is submitted without trimming. Unchanged drafts cannot be saved. Rejected saves retain the draft and expose an explicit retry. External refreshes do not overwrite an active draft; changing entities should remount the editor with an entity `key`.
+
+## Accessibility
+
+Editing focuses and selects the input. Saving or cancelling restores focus to the display trigger. The visible input label names the field. IME composition does not trigger Enter/Escape shortcuts. Buttons do not submit a surrounding form. Pending disables edits and cancellation; blur is not a save action.
+
+## Integration
+
+Validate with Effect Schema before persistence and again on the server. `maxLength` is only a browser convenience. The host owns conflict detection, authorization and validation messages. Reject to keep the draft, and provide safe localized `messages.error` text; raw exceptions are never displayed. Do not use this component to edit secrets or rich text.

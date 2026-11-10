@@ -1,0 +1,52 @@
+---
+slug: animated-number
+path: /docs/animated-number
+title: Nombre animé
+description: Animez des valeurs traduites sans annoncer les valeurs intermédiaires aux technologies d’assistance.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Nombre animé
+
+Une transition numérique formatée avec Intl.NumberFormat. Le premier rendu serveur affiche la vraie valeur cible, pas zéro ; les changements suivants partent de la valeur affichée.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/animated-number
+```
+
+## Utilisation
+
+```tsx
+import { AnimatedNumber } from "@/components/ui/animated-number";
+
+<AnimatedNumber
+  value={total}
+  format={{ style: "currency", currency: "EUR" }}
+  className="text-3xl font-semibold tabular-nums"
+/>;
+```
+
+Import du paquet : `@krak-stack/registry/animated-number`. Motion est une dépendance d’exécution. Aucun import CSS ni fournisseur n’est nécessaire pour l’animation ; la langue suit KrakstackProvider lorsqu’il est présent.
+
+## Référence
+
+| Propriété   | Type                       | Valeur par défaut        |
+| ----------- | -------------------------- | ------------------------ |
+| `value`     | `number`                   | Cible obligatoire        |
+| `duration`  | Millisecondes              | `350`                    |
+| `format`    | `Intl.NumberFormatOptions` | Valeurs Intl             |
+| `locale`    | Identifiant de langue      | Fournisseur ; repli `en` |
+| `className` | `string`                   | Classes du conteneur     |
+
+Utilisez `format` pour devises, pourcentages, groupement et décimales. Les mises à jour rapides interrompent la transition précédente. La réduction des mouvements ou une durée nulle applique immédiatement la cible. Les valeurs non finies sont formatées sans interpolation. Fournissez des langues et options Intl valides ; validez les configurations non fiables à la frontière de l’application.
+
+## Accessibilité et intégration
+
+Une valeur réservée aux lecteurs d’écran contient la cible finale traduite. La valeur visuelle animée est `aria-hidden` pour éviter les annonces intermédiaires. Le composant ne crée pas de région dynamique ; ajoutez-en une seulement si l’événement métier le justifie. Fournissez un contexte tel que « Revenu total ». L’animation ne calcule rien : conservez les montants et règles d’arrondi dans le domaine. N’utilisez pas des nombres interpolés pour indiquer une progression réelle.

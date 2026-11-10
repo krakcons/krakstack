@@ -1,0 +1,55 @@
+---
+slug: async-action-button
+path: /docs/async-action-button
+title: Bouton d’action asynchrone
+description: Lancez une action explicite avec protection contre les doubles clics et retour accessible.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Bouton d’action asynchrone
+
+Un bouton avec états en cours, réussi et échoué. Le rendu ne lance aucun travail. Un verrou synchrone empêche une seconde activation avant la mise à jour de React.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/async-action-button
+```
+
+## Utilisation
+
+```tsx
+import { AsyncActionButton } from "@/components/ui/async-action-button";
+
+<AsyncActionButton onAction={saveChanges}>
+  Enregistrer les modifications
+</AsyncActionButton>;
+```
+
+Import du paquet : `@krak-stack/registry/async-action-button`. `saveChanges` retourne `Promise<void>` et rejette en cas d’échec. Pour Effect, utilisez `Effect.runPromise` à la frontière de l’application.
+
+## Référence
+
+| Propriété            | Type                                   | Valeur par défaut              |
+| -------------------- | -------------------------------------- | ------------------------------ |
+| `onAction`           | `() => Promise<void>`                  | Obligatoire                    |
+| `onPendingChange`    | `(pending: boolean) => void`           | —                              |
+| `children`           | `ReactNode`                            | Libellé initial                |
+| `disabled`           | `boolean`                              | `false`                        |
+| `locale`, `messages` | Langue et libellés partiels par langue | Fournisseur ; anglais/français |
+| Apparence du bouton  | `variant`, `size`, `className`, etc.   | Transmise                      |
+
+Clés : `pending`, `success`, `retry`, `error`. La langue exacte est prioritaire sur la langue de base. Une action réussie peut être relancée. La reprise est explicite, jamais automatique. Fournissez un libellé visible plutôt qu’une simple icône.
+
+## Accessibilité
+
+Bouton natif ne soumettant pas les formulaires. L’état en cours désactive l’activation et expose `aria-busy`. Une région de statut persistante annonce les résultats. L’animation respecte la réduction des mouvements. Les erreurs utilisent un texte sûr, jamais les détails bruts d’une exception.
+
+## Intégration
+
+L’application gère validation, persistance, annulation et idempotence. Le verrou couvre cette instance montée, pas les autres onglets ou remontages. Le démontage n’annule pas le travail. Les notifications de début et fin restent appariées, même après démontage. Vérifiez le résultat serveur avant de reprendre une action non idempotente. Conservez le bouton de soumission existant pour les formulaires qui gèrent déjà cet état.

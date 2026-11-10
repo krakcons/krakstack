@@ -1,0 +1,59 @@
+---
+slug: danger-confirmation
+path: /docs/danger-confirmation
+title: Danger Confirmation
+description: Confirm destructive actions with an optional exact phrase and safe async feedback.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Danger Confirmation
+
+A controlled alert dialog built on the existing primitive and Async Action Button. It closes only after successful confirmation and keeps failures visible.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/danger-confirmation
+```
+
+## Usage
+
+```tsx
+import { DangerConfirmation } from "@/components/ui/danger-confirmation";
+
+<DangerConfirmation
+  open={open}
+  onOpenChange={setOpen}
+  title="Delete workspace?"
+  description="This action cannot be undone."
+  confirmation={workspace.name}
+  onConfirm={deleteWorkspace}
+/>;
+```
+
+Package import: `@krak-stack/registry/danger-confirmation`. Omit `confirmation` for a standard confirmation without typing.
+
+## API reference
+
+| Prop                   | Type                                   | Default                  |
+| ---------------------- | -------------------------------------- | ------------------------ |
+| `open`, `onOpenChange` | `boolean`, `(open: boolean) => void`   | Required                 |
+| `title`, `description` | `ReactNode`                            | Required                 |
+| `confirmation`         | Exact case-sensitive `string`          | No phrase                |
+| `onConfirm`            | `() => Promise<void>`                  | Required                 |
+| `locale`, `messages`   | Locale and partial locale-keyed labels | Provider; English/French |
+
+Message keys: `confirm`, `cancel`, `typeToConfirm`, `pending`, `error`. Confirmation text is not trimmed or normalized. Reopening clears it. Pending blocks typing, cancellation and Escape dismissal; the host must not forcibly close or replace the dialog while work is running.
+
+## Accessibility
+
+The dialog supplies a title, description, focus containment and an associated input label. Keep title and description noninteractive. The external trigger belongs to the host: restore focus to it from your `onOpenChange` handler when closing, or move focus to the next logical place if the deleted entity included that trigger.
+
+## Integration
+
+Authorize and validate on the server. Confirmation is only a UI safeguard. Keep the dialog scoped to one entity; close before changing the target. The host owns cancellation, timeouts, idempotency and partial-failure recovery. A rejection does not prove that no side effects occurred. Override action labels for destructive operations other than deletion.

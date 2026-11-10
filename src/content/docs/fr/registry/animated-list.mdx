@@ -1,0 +1,82 @@
+---
+slug: animated-list
+path: /docs/animated-list
+title: Liste animée
+description: Animez l’ajout, le retrait et le réordonnancement tout en préservant l’état des éléments.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Liste animée
+
+Une liste sémantique non ordonnée avec transitions Motion de présence et de position. Activez le réordonnancement vertical contrôlé avec `onReorder`. L’application fournit les éléments et gère les mutations. Ce composant ne gère ni les déplacements entre listes, ni la pagination, ni la virtualisation.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/animated-list
+```
+
+## Utilisation
+
+```tsx
+import { AnimatedList } from "@/components/ui/animated-list";
+
+<AnimatedList
+  items={tasks}
+  getKey={(task) => task.id}
+  label="Tâches"
+  itemClassName="rounded-lg border p-3"
+>
+  {(task) => <span>{task.title}</span>}
+</AnimatedList>;
+```
+
+Import du paquet : `@krak-stack/registry/animated-list`. Motion est une dépendance d’exécution. Aucun import CSS ni fournisseur n’est nécessaire.
+
+## Réordonnancement à la souris et au clavier
+
+```tsx
+<AnimatedList
+  items={tasks}
+  getKey={(task) => task.id}
+  getItemLabel={(task) => task.title}
+  onReorder={setTasks}
+  label="Tâches"
+  itemClassName="flex items-center gap-3 rounded-lg border bg-background p-3"
+>
+  {(task) => <span>{task.title}</span>}
+</AnimatedList>
+```
+
+Faites glisser la poignée à la souris ou au toucher. Placez-y le focus et utilisez les flèches haut/bas pour déplacer d’une position, ou Début/Fin pour atteindre une extrémité. Les poignées ne soumettent pas les formulaires. Seule la poignée lance un déplacement ; les boutons, la sélection de texte et les saisies restent utilisables. Sans `onReorder`, aucune poignée n’apparaît.
+
+Le déplacement reste dans la liste, avec une marge verticale de 12 pixels au-delà de ses bords. Utilisez `dragOverflow={0}` pour un confinement strict ou fournissez une autre marge positive en pixels. Cette marge est fixe, sans étirement élastique dépendant de la distance du pointeur.
+
+## Référence
+
+`dragOverflow?: number` vaut `12` pixels par défaut et concerne uniquement le glissement. Le réordonnancement clavier reste toujours dans la liste.
+
+| Propriété                    | Type                                   | Valeur par défaut                               |
+| ---------------------------- | -------------------------------------- | ----------------------------------------------- |
+| `items`                      | `readonly T[]`                         | Obligatoire                                     |
+| `getKey`                     | `(item: T) => string`                  | Identité unique et stable obligatoire           |
+| `children`                   | `(item: T) => ReactNode`               | Rendu obligatoire                               |
+| `duration`                   | Millisecondes                          | `180`                                           |
+| `className`, `itemClassName` | `string`                               | Classes de liste/d’élément                      |
+| `label`                      | `string`                               | Nom accessible facultatif                       |
+| `onReorder`                  | `(items: T[]) => void`                 | Désactivé ; active le réordonnancement vertical |
+| `getItemLabel`               | `(item: T) => string`                  | Clé stable ; fournissez un libellé lisible      |
+| `locale`, `messages`         | Langue et libellés partiels par langue | Fournisseur ; anglais/français                  |
+
+Les éléments initiaux sont visibles sur le serveur. Les ajouts et retraits utilisent un fondu ; les autres éléments animent leur déplacement. Les sorties restent dans le flux jusqu’à la fin. La réduction des mouvements applique les changements immédiatement. N’utilisez jamais les index, identifiants aléatoires ou titres modifiables comme clés.
+
+Le réordonnancement émet un nouveau tableau ; actualisez immédiatement `items`. Les clés stables identifient les éléments, pas les références d’objets. L’application gère persistance, restauration et droits. Le composant n’écrit jamais sur un serveur. Gardez le rappel actif pendant le déplacement ; passer du mode statique au mode réordonnable remonte le contenu des éléments. Clés de messages : `reorder`, `instructions` et `position(label, position, total)`.
+
+## Accessibilité et intégration
+
+Le composant produit `ul` et `li` ; retournez le contenu de l’élément, pas un second `li`. Les poignées ont des noms traduits et des instructions clavier. Les positions acceptées au clavier et les positions de fin de glissement sont annoncées dans une région de statut. Les éléments retirés deviennent immédiatement inertes et masqués aux technologies d’assistance. Déplacez le focus avant de retirer un élément actif. Conservez les brouillons persistants à l’extérieur. Privilégiez la virtualisation pour les grandes listes ; ne l’utilisez pas pour des lignes de tableau ou un tri multicolonne. Dans un conteneur défilant, utilisez si nécessaire l’intégration Motion de mesure du défilement sur l’ancêtre concerné.

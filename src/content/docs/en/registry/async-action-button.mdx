@@ -1,0 +1,53 @@
+---
+slug: async-action-button
+path: /docs/async-action-button
+title: Async Action Button
+description: Run an explicit async action with duplicate-click protection and accessible feedback.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Async Action Button
+
+An action button with pending, success and failure states. Rendering never starts work. A synchronous lock prevents repeat activation before React updates the button.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/async-action-button
+```
+
+## Usage
+
+```tsx
+import { AsyncActionButton } from "@/components/ui/async-action-button";
+
+<AsyncActionButton onAction={saveChanges}>Save changes</AsyncActionButton>;
+```
+
+Package import: `@krak-stack/registry/async-action-button`. `saveChanges` returns `Promise<void>` and rejects on failure. For Effect programs, bridge with `Effect.runPromise` at the application boundary.
+
+## API reference
+
+| Prop                    | Type                                   | Default                  |
+| ----------------------- | -------------------------------------- | ------------------------ |
+| `onAction`              | `() => Promise<void>`                  | Required                 |
+| `onPendingChange`       | `(pending: boolean) => void`           | —                        |
+| `children`              | `ReactNode`                            | Initial label            |
+| `disabled`              | `boolean`                              | `false`                  |
+| `locale`, `messages`    | Locale and partial locale-keyed labels | Provider; English/French |
+| Button appearance props | `variant`, `size`, `className`, etc.   | Forwarded                |
+
+Message keys: `pending`, `success`, `retry`, `error`. Exact-locale overrides take precedence over base-language overrides. Successful actions may be activated again. Retry is explicit, never automatic. Use a descriptive visible label rather than an icon-only button.
+
+## Accessibility
+
+Always a non-submit native button. Pending disables activation and sets `aria-busy`. A persistent status region announces progress and results. The spinner respects reduced motion. Errors render safe application-owned copy, never raw exception details.
+
+## Integration
+
+The host owns validation, persistence, cancellation and idempotency. The lock covers this mounted instance, not multiple tabs, other buttons or remounts. Unmounting does not cancel work. Pending notifications are paired when work settles, even after unmounting. Never retry a non-idempotent action without checking its server outcome. For forms that already own submission state, keep using their existing submit button instead of nesting a second state machine.
