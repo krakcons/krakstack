@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.2.2",
+  "version": "0.4.0",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -192,13 +192,9 @@
       "types": "./dist/components/ui/form.d.ts",
       "import": "./dist/components/ui/form.js"
     },
-    "./google-map": {
-      "types": "./dist/components/ui/google-map.d.ts",
-      "import": "./dist/components/ui/google-map.js"
-    },
-    "./google-map-picker": {
-      "types": "./dist/components/ui/google-map-picker.d.ts",
-      "import": "./dist/components/ui/google-map-picker.js"
+    "./map-menu": {
+      "types": "./dist/components/ui/map-menu.d.ts",
+      "import": "./dist/components/ui/map-menu.js"
     },
     "./icon-input": {
       "types": "./dist/components/ui/icon-input.d.ts",

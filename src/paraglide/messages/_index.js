@@ -4,6 +4,10 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
 /** @typedef {{}} Map_Picker_Preview_TitleInputs */
 /** @typedef {{}} Map_Picker_Preview_DescriptionInputs */
+/** @typedef {{}} Map_Menu_Preview_PointInputs */
+/** @typedef {{ place: NonNullable<unknown> }} Map_Menu_Preview_Selected_PointInputs */
+/** @typedef {{}} Map_Menu_Preview_Inline_TitleInputs */
+/** @typedef {{}} Map_Menu_Preview_Inline_DescriptionInputs */
 /** @typedef {{}} Map_Picker_Preview_KeyInputs */
 /** @typedef {{}} Map_Picker_Preview_Key_PlaceholderInputs */
 /** @typedef {{}} Map_Picker_Preview_OpenInputs */
@@ -354,7 +358,7 @@ import * as __fr from "./fr.js"
 /**
 * | output |
 * | --- |
-* | "Location picker" |
+* | "Map menu" |
 *
 * @param {Map_Picker_Preview_TitleInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
@@ -368,7 +372,7 @@ export const map_picker_preview_title = /** @type {((inputs?: Map_Picker_Preview
 /**
 * | output |
 * | --- |
-* | "Try the toolbar, radius choices and draft confirmation. Suggestions and IP/browser location actions use example data; no lookup or location permission is req..." |
+* | "Try radius selection or pinpoint-only selection and draft confirmation. Suggestions and IP/browser location actions use example data; no lookup or location p..." |
 *
 * @param {Map_Picker_Preview_DescriptionInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
@@ -378,6 +382,62 @@ export const map_picker_preview_description = /** @type {((inputs?: Map_Picker_P
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.map_picker_preview_description(inputs)
 	return __fr.map_picker_preview_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Choose a pinpoint" |
+*
+* @param {Map_Menu_Preview_PointInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_menu_preview_point = /** @type {((inputs?: Map_Menu_Preview_PointInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Menu_Preview_PointInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_menu_preview_point(inputs)
+	return __fr.map_menu_preview_point(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Selected: {place}" |
+*
+* @param {Map_Menu_Preview_Selected_PointInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_menu_preview_selected_point = /** @type {((inputs: Map_Menu_Preview_Selected_PointInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Menu_Preview_Selected_PointInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_menu_preview_selected_point(inputs)
+	return __fr.map_menu_preview_selected_point(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Inline location selection" |
+*
+* @param {Map_Menu_Preview_Inline_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_menu_preview_inline_title = /** @type {((inputs?: Map_Menu_Preview_Inline_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Menu_Preview_Inline_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_menu_preview_inline_title(inputs)
+	return __fr.map_menu_preview_inline_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Search above the map without opening a dialog. Red pins and address details match the popup. Confirm to save this example selection, or Cancel to restore it...." |
+*
+* @param {Map_Menu_Preview_Inline_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const map_menu_preview_inline_description = /** @type {((inputs?: Map_Menu_Preview_Inline_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Map_Menu_Preview_Inline_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.map_menu_preview_inline_description(inputs)
+	return __fr.map_menu_preview_inline_description(inputs)
 });
 /**
 * | output |

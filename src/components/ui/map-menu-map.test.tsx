@@ -4,7 +4,8 @@ import { describe, expect, it } from "@effect/vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
-import { GoogleMap, type GoogleMapPoint, type GoogleMapsApi } from "./google-map";
+import { MapMenuMap as GoogleMap, type GoogleMapPoint, type GoogleMapsApi } from "./map-menu-map";
+import { MapMenu, MapMenuMode, MapMenuPresentation, type MapMenuLocation } from "./map-menu";
 
 type MockMapOptions = {
   center: GoogleMapPoint;
@@ -40,7 +41,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("GoogleMap", () => {
+describe("MapMenu internal renderer", () => {
   it("shows a localized error when the API key is missing", () => {
     render(<GoogleMap apiKey="" center={{ lat: 1, lng: 2 }} zoom={8} />);
 
@@ -74,7 +75,7 @@ describe("GoogleMap", () => {
       setMap = vi.fn((_map: MockMapReference | null) => undefined);
       setPosition = vi.fn((_position: GoogleMapPoint) => undefined);
 
-      constructor(_options: MockMarkerOptions) {
+      constructor(readonly options: MockMarkerOptions) {
         markers.push(this);
       }
     }
@@ -128,13 +129,13 @@ describe("GoogleMap", () => {
       expect(markers).toHaveLength(1);
       expect(circles).toHaveLength(1);
       expect(screen.getByRole("button", { name: "Zoom in" })).toBeDefined();
-      expect(document.querySelector('[data-slot="google-map-controls"]')?.className).toContain(
+      expect(document.querySelector('[data-slot="map-menu-controls"]')?.className).toContain(
         "rounded-xl",
       );
       expect(screen.getByRole("button", { name: "Zoom in" }).getAttribute("data-slot")).toBe(
-        "google-map-control",
+        "map-menu-control",
       );
-      expect(document.querySelector('[data-slot="google-map-canvas"]')).not.toBeNull();
+      expect(document.querySelector('[data-slot="map-menu-canvas"]')).not.toBeNull();
     });
 
     act(() => {
@@ -291,5 +292,63 @@ describe("GoogleMap", () => {
     expect(maps[1]?.zoom).toBe(12);
     cleanup();
     expect(observers[0]?.disconnect).toHaveBeenCalled();
+
+    // Exercise the public menu against the same Google API, not a mocked renderer.
+    const location: MapMenuLocation = {
+      id: "selected",
+      label: "Selected place",
+      center: { lat: 3, lng: 4 },
+    };
+    const common = {
+      apiKey: "test-key",
+      input: location.label,
+      onInputChange: vi.fn(),
+      selectedLocation: location,
+      suggestions: [],
+      onSelectLocation: vi.fn(),
+      onConfirm: vi.fn(),
+    };
+    const circleCount = circles.length;
+    const markerCount = markers.length;
+    const menu = render(
+      <MapMenu {...common} open onOpenChange={vi.fn()} mode={MapMenuMode.Point} />,
+    );
+    await waitFor(() => expect(markers).toHaveLength(markerCount + 1));
+    expect(circles).toHaveLength(circleCount);
+    expect(maps.at(-1)?.setZoom).toHaveBeenLastCalledWith(15);
+    expect(screen.queryByRole("button", { name: "Show selected area" })).toBeNull();
+
+    menu.rerender(
+      <MapMenu
+        {...common}
+        open
+        onOpenChange={vi.fn()}
+        mode={MapMenuMode.Radius}
+        radiusKm={20}
+        onRadiusChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(circles).toHaveLength(circleCount + 1));
+    expect(screen.getByRole("button", { name: "Show selected area" })).toBeDefined();
+    const radiusCircle = circles.at(-1);
+    menu.rerender(<MapMenu {...common} open onOpenChange={vi.fn()} mode={MapMenuMode.Point} />);
+    await waitFor(() => expect(radiusCircle?.setMap).toHaveBeenLastCalledWith(null));
+    expect(screen.queryByRole("button", { name: "Show selected area" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Search within" })).toBeNull();
+    expect(maps).toHaveLength(3);
+    menu.rerender(
+      <MapMenu
+        {...common}
+        presentation={MapMenuPresentation.Inline}
+        onCancel={vi.fn()}
+        mode={MapMenuMode.Point}
+      />,
+    );
+    await waitFor(() => expect(maps).toHaveLength(4));
+    expect(markers.at(-1)?.options.icon).toContain(encodeURIComponent('fill="#f56476"'));
+    expect(circles).toHaveLength(circleCount + 1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("group", { name: "Choose your location" })).toBeDefined();
+    expect(maps.at(-1)?.setZoom).toHaveBeenLastCalledWith(15);
   });
 });

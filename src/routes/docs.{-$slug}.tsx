@@ -22,16 +22,15 @@ import { TrackingNotice } from "@/services/events/client/tracking-notice";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from "react";
 
-const googleMapPreview = lazy(() =>
-  import("@/components/registry-previews/google-map-picker-preview").then(
-    ({ GoogleMapPickerPreview }) => ({ default: GoogleMapPickerPreview }),
-  ),
+const mapMenuPreview = lazy(() =>
+  import("@/components/registry-previews/map-menu-preview").then(({ MapMenuPreview }) => ({
+    default: MapMenuPreview,
+  })),
 );
 
 const registryPreviews: Readonly<Record<string, LazyExoticComponent<ComponentType> | undefined>> =
   Object.fromEntries([
-    ["google-map", googleMapPreview],
-    ["google-map-picker", googleMapPreview],
+    ["map-menu", mapMenuPreview],
     [
       "stepper",
       lazy(() =>

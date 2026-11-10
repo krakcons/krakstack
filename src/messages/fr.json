@@ -1,6 +1,10 @@
 {
-  "map_picker_preview_title": "Sélecteur de lieu",
-  "map_picker_preview_description": "Essayez la barre d’outils, les rayons et la confirmation des modifications. Les suggestions et les actions de localisation IP/navigateur utilisent des exemples ; aucune recherche ni autorisation de localisation n’est demandée. Ajoutez une clé de navigateur facultative pour afficher la carte Google.",
+  "map_picker_preview_title": "Menu de carte",
+  "map_picker_preview_description": "Essayez la sélection par rayon ou par épingle et la confirmation des modifications. Les suggestions et les actions de localisation IP/navigateur utilisent des exemples ; aucune recherche ni autorisation de localisation n’est demandée. Ajoutez une clé de navigateur facultative pour afficher la carte Google.",
+  "map_menu_preview_point": "Choisir une épingle",
+  "map_menu_preview_selected_point": "Sélection : {place}",
+  "map_menu_preview_inline_title": "Sélection du lieu dans la page",
+  "map_menu_preview_inline_description": "Recherchez au-dessus de la carte sans ouvrir de fenêtre. Les épingles rouges et les détails d’adresse reprennent la présentation de la fenêtre. Confirmez pour enregistrer ce lieu d’exemple ou annulez pour le rétablir. Les suggestions et la localisation utilisent des données simulées.",
   "map_picker_preview_key": "Clé de navigateur Google Maps (facultative)",
   "map_picker_preview_key_placeholder": "Une clé de navigateur avec restriction de référent",
   "map_picker_preview_open": "Choisir un lieu",
