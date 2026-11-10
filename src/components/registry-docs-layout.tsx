@@ -4,6 +4,7 @@ import { LocaleSwitcher } from "@krak-stack/registry/locale-switcher";
 import { ThemeSwitcher, useTheme } from "@krak-stack/registry/theme-switcher";
 import { DocsLayout, type DocsCatalog } from "@krak-stack/registry/docs";
 import { getLocale, setLocale } from "@/paraglide/runtime";
+import "./registry-docs.css";
 
 export const RegistryDocsLayout = ({
   children,
@@ -16,24 +17,26 @@ export const RegistryDocsLayout = ({
   const locale = getLocale();
 
   return (
-    <DocsLayout
-      docs={docs}
-      locale={locale}
-      sidebarCollapsible="offcanvas"
-      headerActions={
-        <>
-          <ThemeSwitcher value={theme} onChange={setTheme} />
-          <LocaleSwitcher
-            onLocaleChange={(nextLocale) => {
-              if (nextLocale === "en" || nextLocale === "fr") {
-                void setLocale(nextLocale);
-              }
-            }}
-          />
-        </>
-      }
-    >
-      {children}
-    </DocsLayout>
+    <div className="registry-docs">
+      <DocsLayout
+        docs={docs}
+        locale={locale}
+        sidebarCollapsible="offcanvas"
+        headerActions={
+          <>
+            <ThemeSwitcher value={theme} onChange={setTheme} />
+            <LocaleSwitcher
+              onLocaleChange={(nextLocale) => {
+                if (nextLocale === "en" || nextLocale === "fr") {
+                  void setLocale(nextLocale);
+                }
+              }}
+            />
+          </>
+        }
+      >
+        {children}
+      </DocsLayout>
+    </div>
   );
 };

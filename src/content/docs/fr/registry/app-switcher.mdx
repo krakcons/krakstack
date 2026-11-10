@@ -1,0 +1,92 @@
+---
+slug: app-switcher
+path: /docs/app-switcher
+title: Sélecteur d’application
+description: Naviguez entre les applications à l’aide d’un menu accessible au clavier.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Sélecteur d’application
+
+Un menu d’applications avec icônes, descriptions, badges et indication de l’application actuelle. Adapté du sélecteur partagé de Kokobi, sans destinations propres au produit ni dépendance à l’authentification.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/app-switcher
+```
+
+## Utilisation
+
+```tsx
+import { AppSwitcher } from "@/components/ui/app-switcher";
+
+<AppSwitcher
+  currentApp="learning"
+  items={[
+    {
+      id: "learning",
+      label: "Apprentissage",
+      href: "https://learning.example.org",
+    },
+    { id: "courses", label: "Cours", href: "https://courses.example.org" },
+  ]}
+/>;
+```
+
+Avec le paquet, importez depuis `@krak-stack/registry/app-switcher`.
+
+## Exemples
+
+### Descriptions et disponibilité
+
+```tsx
+<AppSwitcher
+  items={[
+    {
+      id: "courses",
+      label: "Cours",
+      href: "/courses",
+      description: "Créer du contenu",
+      icon: <BookOpen />,
+      badge: <Badge>Bêta</Badge>,
+    },
+    {
+      id: "simulator",
+      label: "Simulateur",
+      href: "/simulator",
+      disabled: true,
+    },
+  ]}
+/>
+```
+
+Importez `BookOpen` depuis `lucide-react` et `Badge` depuis votre primitive installée. Les éléments désactivés n’exposent pas de destination.
+
+## Référence
+
+| Propriété    | Type                         | Valeur par défaut     |
+| ------------ | ---------------------------- | --------------------- |
+| `items`      | `readonly AppSwitcherItem[]` | Obligatoire           |
+| `currentApp` | `string`                     | —                     |
+| `disabled`   | `boolean`                    | `false`               |
+| `className`  | `string`                     | —                     |
+| `locale`     | `string`                     | Langue du fournisseur |
+| `messages`   | Libellés partiels par langue | Anglais/français      |
+
+Chaque élément exige un `id` unique, un `label` et un `href` de confiance. Champs facultatifs : `description`, `icon`, `badge` et `disabled`. Clés de messages : `label`, `current` et `empty`.
+
+## Accessibilité
+
+Le déclencheur ne soumet pas les formulaires. Le menu Base UI gère le clavier, Échap et le retour du focus. Les éléments sont des liens natifs ; l’élément actif expose `aria-current="page"`. Les icônes sont décoratives. Les badges ne doivent pas contenir de contrôles interactifs.
+
+## Intégration
+
+L’application fournit les entrées autorisées et les URL de confiance. Ce composant ne crée pas de session, ne contrôle pas les droits et ne change pas d’organisation. Chaque destination doit autoriser l’accès indépendamment.
+
+Les libellés suivent `KrakstackProvider`. `locale` est prioritaire. `messages` utilise la langue exacte, puis la langue de base, puis les valeurs intégrées.

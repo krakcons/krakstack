@@ -1,0 +1,81 @@
+---
+slug: upload-attachment
+path: /docs/upload-attachment
+title: Pièce jointe en téléversement
+description: Affichez la progression, le traitement et les erreurs sans gérer le transport.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Pièce jointe en téléversement
+
+Un état de téléversement contrôlé, adapté de la présentation des envois présignés de Kokobi. Il compose la primitive de pièce jointe existante sans la modifier. Son affichage ne lance aucune requête.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/upload-attachment
+```
+
+## Utilisation
+
+```tsx
+import { UploadAttachment } from "@/components/ui/upload-attachment";
+
+<UploadAttachment
+  name="rapport.pdf"
+  state={{ status: "uploading", progress: 42 }}
+  onCancel={cancelUpload}
+/>;
+```
+
+Import du paquet : `@krak-stack/registry/upload-attachment`.
+
+## Exemples
+
+### Traitement et reprise
+
+```tsx
+<UploadAttachment name="rapport.pdf" state={{ status: "processing" }} />
+
+<UploadAttachment name="rapport.pdf"
+  state={{ status: "error", message: "Échec du traitement. Réessayez." }}
+  onRetry={retryProcessing} onRemove={removeAttachment} />
+```
+
+### Progression indéterminée
+
+```tsx
+<UploadAttachment name="rapport.pdf" state={{ status: "uploading" }} />
+```
+
+Omettez la progression si le transport ne peut pas la mesurer. N’inventez pas de pourcentage.
+
+## Référence
+
+| Propriété                         | Type                         | Valeur par défaut     |
+| --------------------------------- | ---------------------------- | --------------------- |
+| `name`                            | `string`                     | Obligatoire           |
+| `state`                           | `UploadAttachmentState`      | Obligatoire           |
+| `description`                     | `string`                     | —                     |
+| `onCancel`, `onRetry`, `onRemove` | `() => void`                 | Action masquée        |
+| `disabled`                        | `boolean`                    | `false`               |
+| `className`                       | `string`                     | —                     |
+| `locale`                          | `string`                     | Langue du fournisseur |
+| `messages`                        | Libellés partiels par langue | Anglais/français      |
+
+États : `idle`, `uploading` (`progress` facultatif de 0 à 100), `processing`, `done`, `cancelled` ou `error` (`message` sûr obligatoire). Les pourcentages finis sont bornés. Une progression absente ou non finie est indéterminée.
+
+Annuler apparaît pendant l’envoi ou le traitement. Réessayer apparaît après une erreur ou une annulation. Retirer apparaît uniquement au repos. Les rappels demandent une action ; l’application fournit le nouvel état.
+
+## Accessibilité
+
+Un élément progress natif expose la progression. Les transitions sont annoncées par un statut ; les erreurs par une alerte. Les noms d’actions incluent le nom du fichier. Les boutons ne soumettent pas les formulaires. L’animation respecte la réduction des mouvements.
+
+## Intégration
+
+L’application gère validation, présignature, finalisation authentifiée, progression réelle, interruption, concurrence et sécurité des reprises. Un envoi à 100 % ne signifie pas un traitement terminé : passez à `processing`, puis à `done` après finalisation. En cas d’échec de finalisation, reprenez cette étape plutôt que de renvoyer le fichier. N’exposez pas d’URL signées ni d’identifiants dans les descriptions ou erreurs.

@@ -1,0 +1,83 @@
+---
+slug: app-switcher
+path: /docs/app-switcher
+title: App Switcher
+description: Navigate between applications with a keyboard-accessible menu.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# App Switcher
+
+An application menu with icons, descriptions, badges and a current-app indicator. Adapted from Kokobi’s shared product switcher, without product-specific destinations or authentication dependencies.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/app-switcher
+```
+
+## Usage
+
+```tsx
+import { AppSwitcher } from "@/components/ui/app-switcher";
+
+<AppSwitcher
+  currentApp="learning"
+  items={[
+    { id: "learning", label: "Learning", href: "https://learning.example.org" },
+    { id: "courses", label: "Courses", href: "https://courses.example.org" },
+  ]}
+/>;
+```
+
+Package consumers import from `@krak-stack/registry/app-switcher` instead.
+
+## Examples
+
+### Descriptions and availability
+
+```tsx
+<AppSwitcher
+  items={[
+    {
+      id: "courses",
+      label: "Courses",
+      href: "/courses",
+      description: "Author content",
+      icon: <BookOpen />,
+      badge: <Badge>Beta</Badge>,
+    },
+    { id: "simulator", label: "Simulator", href: "/simulator", disabled: true },
+  ]}
+/>
+```
+
+Import `BookOpen` from `lucide-react` and `Badge` from your installed badge primitive. Disabled items do not expose a destination.
+
+## API reference
+
+| Prop         | Type                         | Default                 |
+| ------------ | ---------------------------- | ----------------------- |
+| `items`      | `readonly AppSwitcherItem[]` | Required                |
+| `currentApp` | `string`                     | —                       |
+| `disabled`   | `boolean`                    | `false`                 |
+| `className`  | `string`                     | —                       |
+| `locale`     | `string`                     | Provider locale         |
+| `messages`   | Locale-keyed partial labels  | English/French defaults |
+
+Each item requires a unique `id`, `label` and trusted `href`. Optional fields are `description`, `icon`, `badge` and `disabled`. Message keys are `label`, `current` and `empty`.
+
+## Accessibility
+
+The trigger is a non-submit button. The Base UI menu supplies keyboard navigation, Escape dismissal and focus restoration. Items are native links; the active item exposes `aria-current="page"`. Icons are decorative. Badge content should not contain interactive controls.
+
+## Integration
+
+The application supplies authorized entries and trusted URLs. This component does not establish a session, enforce access, or switch an organization. Destination applications must authorize access independently.
+
+English and French labels follow `KrakstackProvider`. An explicit `locale` takes precedence. `messages` resolves exact locale, then base language, then built-in defaults.

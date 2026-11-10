@@ -1,0 +1,84 @@
+---
+slug: bulk-list-input
+path: /docs/bulk-list-input
+title: Saisie de liste
+description: Saisissez plusieurs valeurs sans perdre le texte inachevé.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Saisie de liste
+
+Un éditeur multiligne contrôlé avec sélection de fichiers facultative. Extrait du parcours d’invitation de Kokobi. Conservez le texte brut pendant la saisie ; découpez-le pour un aperçu ou une soumission validée.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/bulk-list-input
+```
+
+## Utilisation
+
+```tsx
+import { useState } from "react";
+import { BulkListInput, parseBulkList } from "@/components/ui/bulk-list-input";
+
+const Recipients = () => {
+  const [text, setText] = useState("");
+  const preview = parseBulkList(text, {
+    normalize: (value) => value.toLowerCase(),
+  });
+  return (
+    <BulkListInput
+      aria-label="Destinataires"
+      value={text}
+      onValueChange={setText}
+    />
+  );
+};
+```
+
+Utilisez `preview.items` et `preview.duplicates` pour votre résumé. Import du paquet : `@krak-stack/registry/bulk-list-input`.
+
+## Exemples
+
+### Déléguer l’import de fichiers
+
+```tsx
+<BulkListInput
+  aria-label="Destinataires"
+  value={text}
+  onValueChange={setText}
+  files={{
+    accept: ".csv,.txt",
+    label: "Importer une liste",
+    onSelect: previewImport,
+  }}
+/>
+```
+
+L’application lit, valide et prévisualise les fichiers avant de modifier le brouillon. `accept` est une indication au navigateur, pas une validation. Le dépôt utilise le même rappel. `readOnly`, `disabled` ou `files.disabled` bloquent la sélection.
+
+## Référence
+
+| Propriété                      | Type                                                | Valeur par défaut |
+| ------------------------------ | --------------------------------------------------- | ----------------- |
+| `value`                        | `string`                                            | Obligatoire       |
+| `onValueChange`                | `(text: string) => void`                            | Obligatoire       |
+| `label`                        | `ReactNode`                                         | —                 |
+| `files`                        | `{ accept, label, onSelect, multiple?, disabled? }` | Désactivé         |
+| Propriétés natives du textarea | `id`, `name`, `rows`, `required`, `readOnly`, etc.  | Transmises        |
+
+`parseBulkList(text, { separator?, normalize? })` retourne `{ items: string[], duplicates: number }`. Il retire les espaces externes, ignore les entrées vides et conserve la première graphie de chaque clé normalisée. Séparateurs par défaut : virgules et sauts de ligne. Le texte source n’est jamais modifié.
+
+## Accessibilité
+
+Associez un libellé visible à l’`id` du textarea ou fournissez `aria-label`. Le bouton d’import ne soumet pas le formulaire. Les libellés et erreurs traduits appartiennent à l’application.
+
+## Intégration
+
+Ce découpage n’est ni un analyseur CSV ni une validation d’adresses courriel. Les virgules entre guillemets ne sont pas prises en charge. Validez avec Effect Schema à la soumission et sur le serveur. Décodage, limites, colonnes et autorisation restent dans l’application.

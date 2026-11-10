@@ -1,0 +1,80 @@
+---
+slug: bulk-list-input
+path: /docs/bulk-list-input
+title: Bulk List Input
+description: Enter many values without losing unfinished text.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Bulk List Input
+
+A controlled multiline editor with optional file selection. Extracted from Kokobi’s invitation workflow. Keep raw text while editing; tokenize only when useful for a preview or validated submission.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/bulk-list-input
+```
+
+## Usage
+
+```tsx
+import { useState } from "react";
+import { BulkListInput, parseBulkList } from "@/components/ui/bulk-list-input";
+
+const Recipients = () => {
+  const [text, setText] = useState("");
+  const preview = parseBulkList(text, {
+    normalize: (value) => value.toLowerCase(),
+  });
+  return (
+    <BulkListInput
+      aria-label="Recipients"
+      value={text}
+      onValueChange={setText}
+    />
+  );
+};
+```
+
+Use `preview.items` and `preview.duplicates` for your own summary. Package import: `@krak-stack/registry/bulk-list-input`.
+
+## Examples
+
+### Delegate file imports
+
+```tsx
+<BulkListInput
+  aria-label="Recipients"
+  value={text}
+  onValueChange={setText}
+  files={{ accept: ".csv,.txt", label: "Import list", onSelect: previewImport }}
+/>
+```
+
+The host reads, validates and previews files before changing the draft. `accept` is a browser hint, not file validation. Dropped files use the same callback. `readOnly`, `disabled` or `files.disabled` block selection.
+
+## API reference
+
+| Prop                  | Type                                                | Default   |
+| --------------------- | --------------------------------------------------- | --------- |
+| `value`               | `string`                                            | Required  |
+| `onValueChange`       | `(text: string) => void`                            | Required  |
+| `label`               | `ReactNode`                                         | —         |
+| `files`               | `{ accept, label, onSelect, multiple?, disabled? }` | Off       |
+| Native textarea props | `id`, `name`, `rows`, `required`, `readOnly`, etc.  | Forwarded |
+
+`parseBulkList(text, { separator?, normalize? })` returns `{ items: string[], duplicates: number }`. It trims entries, ignores blanks and keeps the first spelling of each normalized key. Default separators are commas and line breaks. Input text is never changed by the helper.
+
+## Accessibility
+
+Associate a visible label using the textarea’s `id`, or supply `aria-label`. The import button does not submit a surrounding form. Supply localized application-owned labels and validation feedback.
+
+## Integration
+
+This is tokenization, not CSV parsing or email validation. Quoted commas are not supported. Validate values with Effect Schema at submission and again on the server. File decoding, size limits, column mapping and import authorization remain application-owned.

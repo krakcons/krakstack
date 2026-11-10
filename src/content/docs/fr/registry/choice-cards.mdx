@@ -1,0 +1,94 @@
+---
+slug: choice-cards
+path: /docs/choice-cards
+title: Cartes de choix
+description: Sélectionnez une ou plusieurs options avec des contrôles natifs présentés en cartes.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Cartes de choix
+
+Des cartes radio et cases à cocher contrôlées, adaptées des profils et parcours d’accueil de VolunteerConnector. Les textes et illustrations restent propres à l’application.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/choice-cards
+```
+
+## Utilisation
+
+```tsx
+import { useState } from "react";
+import { ChoiceCards } from "@/components/ui/choice-cards";
+
+const Channel = () => {
+  const [value, setValue] = useState<string | null>(null);
+  return (
+    <ChoiceCards
+      mode="single"
+      name="channel"
+      label="Canal principal"
+      options={[
+        { value: "email", label: "Courriel" },
+        { value: "app", label: "Messages dans l’application" },
+      ]}
+      value={value}
+      onValueChange={setValue}
+      required
+    />
+  );
+};
+```
+
+Import du paquet : `@krak-stack/registry/choice-cards`.
+
+## Exemples
+
+### Plusieurs sélections
+
+```tsx
+const [values, setValues] = useState<string[]>([]);
+
+<ChoiceCards
+  mode="multiple"
+  name="channels"
+  label="Canaux"
+  options={options}
+  value={values}
+  onValueChange={setValues}
+  description="Choisissez les options pertinentes."
+  error={validationMessage}
+/>;
+```
+
+Les options acceptent `description`, une `icon` décorative et `disabled`. `className` configure la grille, par exemple `"sm:grid-cols-3"`.
+
+## Référence
+
+| Propriété                  | Type                                                                         | Valeur par défaut |
+| -------------------------- | ---------------------------------------------------------------------------- | ----------------- |
+| `mode`                     | `"single"` ou `"multiple"`                                                   | Obligatoire       |
+| `name`, `label`, `options` | Nom du champ, légende, options                                               | Obligatoires      |
+| `value`                    | Simple : `string \| null` ; multiple : `readonly string[]`                   | Obligatoire       |
+| `onValueChange`            | Simple : `(value: string) => void` ; multiple : `(values: string[]) => void` | Obligatoire       |
+| `required`                 | `boolean`, mode simple uniquement                                            | `false`           |
+| `description`, `error`     | `ReactNode`                                                                  | —                 |
+| `disabled`                 | `boolean`                                                                    | `false`           |
+| `className`                | Classes de la grille                                                         | —                 |
+| `onBlur`                   | `() => void`, à la sortie du groupe                                          | —                 |
+
+Chaque option exige une `value` unique et un `label`. Le composant propose des changements sans les enregistrer.
+
+## Accessibilité
+
+Un fieldset et une légende natifs nomment le groupe. Les boutons radio conservent la navigation par flèches ; les cases restent indépendantes. Descriptions et erreurs sont associées aux contrôles. La désactivation utilise le fieldset natif. N’insérez pas de lien ni de bouton dans les libellés.
+
+## Intégration
+
+Les champs sont soumis avec `name` et la `value` de chaque option. Plusieurs valeurs sélectionnées partagent le même nom. Validez les limites de sélection avec un schéma Effect et affichez son message avec `error` ; `required` sur chaque case imposerait toutes les options. L’application fournit les textes traduits.

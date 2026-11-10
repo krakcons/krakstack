@@ -1,0 +1,94 @@
+---
+slug: choice-cards
+path: /docs/choice-cards
+title: Choice Cards
+description: Select one or more options using accessible native inputs presented as cards.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Choice Cards
+
+Controlled radio and checkbox cards adapted from VolunteerConnector’s profile and onboarding fields. Product copy and artwork stay application-owned.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/choice-cards
+```
+
+## Usage
+
+```tsx
+import { useState } from "react";
+import { ChoiceCards } from "@/components/ui/choice-cards";
+
+const Channel = () => {
+  const [value, setValue] = useState<string | null>(null);
+  return (
+    <ChoiceCards
+      mode="single"
+      name="channel"
+      label="Primary channel"
+      options={[
+        { value: "email", label: "Email" },
+        { value: "app", label: "In-app messages" },
+      ]}
+      value={value}
+      onValueChange={setValue}
+      required
+    />
+  );
+};
+```
+
+Package import: `@krak-stack/registry/choice-cards`.
+
+## Examples
+
+### Multiple selections
+
+```tsx
+const [values, setValues] = useState<string[]>([]);
+
+<ChoiceCards
+  mode="multiple"
+  name="channels"
+  label="Channels"
+  options={options}
+  value={values}
+  onValueChange={setValues}
+  description="Choose any that apply."
+  error={validationMessage}
+/>;
+```
+
+Options may include `description`, decorative `icon` and `disabled`. `className` styles the card grid, for example `"sm:grid-cols-3"`.
+
+## API reference
+
+| Prop                       | Type                                                                      | Default  |
+| -------------------------- | ------------------------------------------------------------------------- | -------- |
+| `mode`                     | `"single"` or `"multiple"`                                                | Required |
+| `name`, `label`, `options` | Form name, group legend, options                                          | Required |
+| `value`                    | Single: `string \| null`; multiple: `readonly string[]`                   | Required |
+| `onValueChange`            | Single: `(value: string) => void`; multiple: `(values: string[]) => void` | Required |
+| `required`                 | `boolean`, single mode only                                               | `false`  |
+| `description`, `error`     | `ReactNode`                                                               | —        |
+| `disabled`                 | `boolean`                                                                 | `false`  |
+| `className`                | Card-grid classes                                                         | —        |
+| `onBlur`                   | `() => void`, when focus leaves the group                                 | —        |
+
+Each option has a unique `value` and `label`. Values remain controlled; the component emits requested changes without persisting them.
+
+## Accessibility
+
+A native fieldset and legend name the group. Radio buttons retain browser arrow-key behavior; checkboxes retain independent selection. Descriptions and errors are associated with inputs. Disabled groups use native fieldset behavior. Do not put links or buttons inside option labels.
+
+## Integration
+
+Inputs serialize using `name` and each option’s `value`. Multiple selected values share the same name. Enforce minimum/maximum selections through an Effect schema and display its message with `error`; native checkbox `required` would incorrectly require each option. Labels are supplied in the application locale.

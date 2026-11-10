@@ -1,0 +1,81 @@
+---
+slug: upload-attachment
+path: /docs/upload-attachment
+title: Upload Attachment
+description: Present upload progress, processing and recoverable failures without owning transport.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Upload Attachment
+
+A controlled upload-status item adapted from Kokobi’s presigned upload presentation. It composes the existing attachment primitive without modifying it. Rendering never starts a request.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/upload-attachment
+```
+
+## Usage
+
+```tsx
+import { UploadAttachment } from "@/components/ui/upload-attachment";
+
+<UploadAttachment
+  name="report.pdf"
+  state={{ status: "uploading", progress: 42 }}
+  onCancel={cancelUpload}
+/>;
+```
+
+Package import: `@krak-stack/registry/upload-attachment`.
+
+## Examples
+
+### Processing and retry
+
+```tsx
+<UploadAttachment name="report.pdf" state={{ status: "processing" }} />
+
+<UploadAttachment name="report.pdf"
+  state={{ status: "error", message: "Processing failed. Try again." }}
+  onRetry={retryProcessing} onRemove={removeAttachment} />
+```
+
+### Indeterminate progress
+
+```tsx
+<UploadAttachment name="report.pdf" state={{ status: "uploading" }} />
+```
+
+Omit progress when the transport cannot measure it. Never invent a percentage.
+
+## API reference
+
+| Prop                              | Type                        | Default                 |
+| --------------------------------- | --------------------------- | ----------------------- |
+| `name`                            | `string`                    | Required                |
+| `state`                           | `UploadAttachmentState`     | Required                |
+| `description`                     | `string`                    | —                       |
+| `onCancel`, `onRetry`, `onRemove` | `() => void`                | Action hidden           |
+| `disabled`                        | `boolean`                   | `false`                 |
+| `className`                       | `string`                    | —                       |
+| `locale`                          | `string`                    | Provider locale         |
+| `messages`                        | Locale-keyed partial labels | English/French defaults |
+
+States: `idle`, `uploading` (optional `progress` from 0–100), `processing`, `done`, `cancelled`, or `error` (required safe `message`). Finite percentages are clamped. Non-finite or absent progress is indeterminate.
+
+Cancel is offered during uploading/processing. Retry is offered after error/cancellation. Remove is offered only when not busy. Callbacks request an action; the host supplies the next state.
+
+## Accessibility
+
+A native progress element exposes determinate or indeterminate progress. State transitions use a status announcement; failures use an alert. Action names include the file name. Buttons do not submit forms. Spinner motion respects reduced-motion preferences.
+
+## Integration
+
+The host owns file validation, presigning, authenticated finalization, transport progress, aborting requests, concurrency and retry safety. A 100% upload is not successful processing: set `processing` until finalization completes, then `done`. After finalization failure, retry finalization rather than blindly uploading again. Keep signed URLs and credentials out of descriptions and error messages.
