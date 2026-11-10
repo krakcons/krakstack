@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "unsaved-changes-guard",
+  "title": "Unsaved Changes Guard",
+  "description": "TanStack Router navigation confirmation with optional native browser-close protection for dirty forms.",
+  "dependencies": ["react", "@tanstack/react-router@^1.170.41"],
+  "registryDependencies": ["@krak-stack/krakstack-provider", "alert-dialog"],
+  "files": [
+    {
+      "path": "src/components/ui/unsaved-changes-guard.tsx",
+      "content": "import { useBlocker } from \"@tanstack/react-router\";\nimport {\n  AlertDialog,\n  AlertDialogAction,\n  AlertDialogCancel,\n  AlertDialogContent,\n  AlertDialogDescription,\n  AlertDialogFooter,\n  AlertDialogHeader,\n  AlertDialogTitle,\n} from \"@/components/ui/alert-dialog\";\nimport { useKrakstackLocale } from \"@/components/ui/krakstack-provider\";\n\nexport type UnsavedChangesGuardMessages = {\n  title: string;\n  description: string;\n  stay: string;\n  leave: string;\n};\nexport type UnsavedChangesGuardProps = {\n  dirty: boolean;\n  enabled?: boolean;\n  protectBeforeUnload?: boolean;\n  locale?: string;\n  messages?: Partial<Record<string, Partial<UnsavedChangesGuardMessages>>>;\n};\nconst labels = {\n  en: {\n    title: \"Leave without saving?\",\n    description:\n      \"You have unsaved changes. Leaving this page will discard them.\",\n    stay: \"Keep editing\",\n    leave: \"Leave page\",\n  },\n  fr: {\n    title: \"Quitter sans enregistrer ?\",\n    description:\n      \"Des modifications n’ont pas été enregistrées. Elles seront perdues si vous quittez cette page.\",\n    stay: \"Continuer la modification\",\n    leave: \"Quitter la page\",\n  },\n};\n\n/** Mount once per editing route, inside a TanStack Router provider. */\nexport const UnsavedChangesGuard = ({\n  dirty,\n  enabled = true,\n  protectBeforeUnload = true,\n  locale: override,\n  messages,\n}: UnsavedChangesGuardProps) => {\n  const locale = useKrakstackLocale(override);\n  const copy = {\n    ...(locale.startsWith(\"fr\") ? labels.fr : labels.en),\n    ...messages?.[locale.split(\"-\")[0] ?? locale],\n    ...messages?.[locale],\n  };\n  const blocker = useBlocker({\n    shouldBlockFn: () => dirty && enabled,\n    enableBeforeUnload: dirty && enabled && protectBeforeUnload,\n    withResolver: true,\n  });\n  return (\n    <AlertDialog\n      open={blocker.status === \"blocked\"}\n      onOpenChange={(open) => {\n        if (!open) blocker.reset?.();\n      }}\n    >\n      <AlertDialogContent>\n        <AlertDialogHeader>\n          <AlertDialogTitle>{copy.title}</AlertDialogTitle>\n          <AlertDialogDescription>{copy.description}</AlertDialogDescription>\n        </AlertDialogHeader>\n        <AlertDialogFooter>\n          <AlertDialogCancel type=\"button\">{copy.stay}</AlertDialogCancel>\n          <AlertDialogAction\n            type=\"button\"\n            variant=\"destructive\"\n            onClick={() => blocker.proceed?.()}\n          >\n            {copy.leave}\n          </AlertDialogAction>\n        </AlertDialogFooter>\n      </AlertDialogContent>\n    </AlertDialog>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/unsaved-changes-guard.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-10",
+    "updatedAt": "2026-11-10"
+  },
+  "docs": "## Overview\n\nMount inside TanStack Router to protect unsaved edits. The host owns dirty state and saving; browsers own beforeunload prompt wording. See /docs/unsaved-changes-guard for usage and limitations.",
+  "type": "registry:component"
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-number",
+  "title": "Animated Number",
+  "description": "Localized numeric transitions with SSR target values and stable assistive-technology output.",
+  "dependencies": ["react", "motion@^14.12.0"],
+  "registryDependencies": ["@krak-stack/krakstack-provider"],
+  "files": [
+    {
+      "path": "src/components/ui/animated-number.tsx",
+      "content": "import {\n  animate,\n  motion,\n  useMotionValue,\n  useReducedMotion,\n  useTransform,\n} from \"motion/react\";\nimport { useEffect, useMemo } from \"react\";\nimport { useKrakstackLocale } from \"@/components/ui/krakstack-provider\";\n\nexport type AnimatedNumberProps = {\n  value: number;\n  duration?: number;\n  format?: Intl.NumberFormatOptions;\n  locale?: string;\n  className?: string;\n};\n\n/** Assistive technology receives the target, not a stream of intermediate values. */\nexport const AnimatedNumber = ({\n  value,\n  duration = 350,\n  format,\n  locale: override,\n  className,\n}: AnimatedNumberProps) => {\n  const locale = useKrakstackLocale(override);\n  const formatter = useMemo(\n    () => new Intl.NumberFormat(locale, format),\n    [locale, format],\n  );\n  const displayed = useMotionValue(value);\n  const text = useTransform(() => formatter.format(displayed.get()));\n  const reduced = useReducedMotion();\n  useEffect(() => {\n    if (\n      reduced !== false ||\n      duration <= 0 ||\n      !Number.isFinite(value) ||\n      !Number.isFinite(displayed.get())\n    ) {\n      displayed.set(value);\n      return;\n    }\n    const controls = animate(displayed, value, {\n      duration: duration / 1000,\n      ease: \"easeOut\",\n    });\n    return () => controls.stop();\n  }, [displayed, duration, reduced, value]);\n  return (\n    <span data-slot=\"animated-number\" className={className}>\n      <span className=\"sr-only\">{formatter.format(value)}</span>\n      <motion.span aria-hidden=\"true\">{text}</motion.span>\n    </span>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/animated-number.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-10",
+    "updatedAt": "2026-11-10"
+  },
+  "docs": "## Overview\n\nAnimate numeric targets with Intl.NumberFormat. Assistive technology receives the final number, not intermediate frames. English/French locales follow KrakstackProvider. See /docs/animated-number.",
+  "type": "registry:component"
+}

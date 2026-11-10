@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "auto-height",
+  "title": "Auto Height",
+  "description": "Content-driven height transitions using ResizeObserver with SSR and reduced-motion fallbacks.",
+  "dependencies": ["react", "motion@^14.12.0"],
+  "files": [
+    {
+      "path": "src/components/ui/auto-height.tsx",
+      "content": "import { motion, useReducedMotion } from \"motion/react\";\nimport { useEffect, useRef, useState, type ReactNode } from \"react\";\n\nexport type AutoHeightProps = {\n  children: ReactNode;\n  duration?: number;\n  className?: string;\n  contentClassName?: string;\n};\n\n/** Measures content, not the animated container. SSR and observer-less browsers stay auto-sized. */\nexport const AutoHeight = ({\n  children,\n  duration = 200,\n  className,\n  contentClassName,\n}: AutoHeightProps) => {\n  const content = useRef<HTMLDivElement>(null);\n  const [height, setHeight] = useState<number>();\n  const reduced = useReducedMotion();\n  useEffect(() => {\n    const element = content.current;\n    if (!element || !globalThis.ResizeObserver) return;\n    const observer = new ResizeObserver(() => {\n      // Hidden tab panes have no layout box; zero is not their content height.\n      if (element.getClientRects().length === 0) return;\n      setHeight(element.getBoundingClientRect().height);\n    });\n    observer.observe(element);\n    return () => observer.disconnect();\n  }, []);\n  return (\n    <motion.div\n      data-slot=\"auto-height\"\n      className={className}\n      initial={false}\n      animate={{ height: height ?? \"auto\" }}\n      transition={{\n        duration: reduced !== false ? 0 : Math.max(0, duration) / 1000,\n      }}\n      style={{ overflow: \"clip\", boxSizing: \"content-box\" }}\n    >\n      <div\n        ref={content}\n        className={contentClassName}\n        style={{ display: \"flow-root\" }}\n      >\n        {children}\n      </div>\n    </motion.div>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/auto-height.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-10",
+    "updatedAt": "2026-11-10"
+  },
+  "docs": "## Overview\n\nAnimate changing content height without hardcoded measurements. Uses ResizeObserver and Motion; server output and observer-less browsers remain auto-sized. See /docs/auto-height.",
+  "type": "registry:component"
+}

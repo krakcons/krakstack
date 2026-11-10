@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "danger-confirmation",
+  "title": "Danger Confirmation",
+  "description": "A destructive-action dialog with optional exact-text confirmation, async feedback and pending dismissal protection.",
+  "dependencies": ["react"],
+  "registryDependencies": [
+    "@krak-stack/async-action-button",
+    "@krak-stack/krakstack-provider",
+    "alert-dialog",
+    "input",
+    "label"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/danger-confirmation.tsx",
+      "content": "import { useId, useState, type ReactNode } from \"react\";\nimport {\n  AlertDialog,\n  AlertDialogCancel,\n  AlertDialogContent,\n  AlertDialogDescription,\n  AlertDialogFooter,\n  AlertDialogHeader,\n  AlertDialogTitle,\n} from \"@/components/ui/alert-dialog\";\nimport { AsyncActionButton } from \"@/components/ui/async-action-button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { useKrakstackLocale } from \"@/components/ui/krakstack-provider\";\n\nexport type DangerConfirmationMessages = {\n  confirm: string;\n  cancel: string;\n  typeToConfirm: string;\n  pending: string;\n  error: string;\n};\nexport type DangerConfirmationProps = {\n  open: boolean;\n  onOpenChange: (open: boolean) => void;\n  title: ReactNode;\n  description: ReactNode;\n  confirmation?: string;\n  onConfirm: () => Promise<void>;\n  locale?: string;\n  messages?: Partial<Record<string, Partial<DangerConfirmationMessages>>>;\n};\n\nconst labels = {\n  en: {\n    confirm: \"Confirm deletion\",\n    cancel: \"Cancel\",\n    typeToConfirm: \"Type the following text to confirm\",\n    pending: \"Deleting…\",\n    error:\n      \"Could not complete the action. Check its status before trying again.\",\n  },\n  fr: {\n    confirm: \"Confirmer la suppression\",\n    cancel: \"Annuler\",\n    typeToConfirm: \"Saisissez le texte suivant pour confirmer\",\n    pending: \"Suppression…\",\n    error:\n      \"Impossible de terminer l’action. Vérifiez son état avant de réessayer.\",\n  },\n};\n\n/** Confirmation is a UI safeguard, never an authorization boundary. */\nexport const DangerConfirmation = (props: DangerConfirmationProps) => {\n  const locale = useKrakstackLocale(props.locale);\n  const copy = {\n    ...(locale.startsWith(\"fr\") ? labels.fr : labels.en),\n    ...props.messages?.[locale.split(\"-\")[0] ?? locale],\n    ...props.messages?.[locale],\n  };\n  const [pending, setPending] = useState(false);\n  return (\n    <AlertDialog\n      open={props.open}\n      onOpenChange={(open) => {\n        if (!pending) props.onOpenChange(open);\n      }}\n    >\n      <AlertDialogContent>\n        <DangerConfirmationBody\n          key={props.open ? \"open\" : \"closed\"}\n          {...props}\n          locale={locale}\n          copy={copy}\n          pending={pending}\n          onPendingChange={setPending}\n        />\n      </AlertDialogContent>\n    </AlertDialog>\n  );\n};\n\nconst DangerConfirmationBody = ({\n  title,\n  description,\n  confirmation,\n  onConfirm,\n  onOpenChange,\n  locale,\n  copy,\n  pending,\n  onPendingChange,\n}: DangerConfirmationProps & {\n  copy: DangerConfirmationMessages;\n  pending: boolean;\n  onPendingChange: (pending: boolean) => void;\n}) => {\n  const id = useId();\n  const [text, setText] = useState(\"\");\n  return (\n    <>\n      <AlertDialogHeader>\n        <AlertDialogTitle>{title}</AlertDialogTitle>\n        <AlertDialogDescription>{description}</AlertDialogDescription>\n      </AlertDialogHeader>\n      {confirmation !== undefined ? (\n        <div className=\"grid gap-2\">\n          <Label htmlFor={id}>{copy.typeToConfirm}</Label>\n          <code id={`${id}-phrase`} className=\"text-sm break-all\">\n            {confirmation}\n          </code>\n          <Input\n            id={id}\n            aria-describedby={`${id}-phrase`}\n            value={text}\n            onChange={(event) => setText(event.target.value)}\n            disabled={pending}\n            autoComplete=\"off\"\n            spellCheck={false}\n          />\n        </div>\n      ) : null}\n      <AlertDialogFooter>\n        <AlertDialogCancel type=\"button\" disabled={pending}>\n          {copy.cancel}\n        </AlertDialogCancel>\n        <AsyncActionButton\n          variant=\"destructive\"\n          disabled={confirmation !== undefined && text !== confirmation}\n          locale={locale}\n          messages={{\n            [locale ?? \"en\"]: {\n              pending: copy.pending,\n              retry: copy.confirm,\n              error: copy.error,\n            },\n          }}\n          onPendingChange={onPendingChange}\n          onAction={async () => {\n            await onConfirm();\n            onOpenChange(false);\n          }}\n        >\n          {copy.confirm}\n        </AsyncActionButton>\n      </AlertDialogFooter>\n    </>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/danger-confirmation.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-10",
+    "updatedAt": "2026-11-10"
+  },
+  "docs": "## Overview\n\nConfirm a host-owned destructive action, optionally requiring an exact phrase. Keeps failures visible and blocks dismissal while pending. Confirmation is not authorization. See /docs/danger-confirmation.",
+  "type": "registry:component"
+}

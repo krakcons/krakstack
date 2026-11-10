@@ -11,6 +11,14 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/ui/async-action-button.tsx",
+    "../../src/components/ui/unsaved-changes-guard.tsx",
+    "../../src/components/ui/danger-confirmation.tsx",
+    "../../src/components/ui/editable-text.tsx",
+    "../../src/components/ui/presence-transition.tsx",
+    "../../src/components/ui/auto-height.tsx",
+    "../../src/components/ui/animated-list.tsx",
+    "../../src/components/ui/animated-number.tsx",
     "../../src/components/ui/app-switcher.tsx",
     "../../src/components/ui/secret-value.tsx",
     "../../src/components/ui/bulk-list-input.tsx",

@@ -66,6 +66,14 @@ export function getRegistryGroup(item: RegistryItem) {
   if (
     [
       "copy-button",
+      "async-action-button",
+      "unsaved-changes-guard",
+      "danger-confirmation",
+      "editable-text",
+      "presence-transition",
+      "auto-height",
+      "animated-list",
+      "animated-number",
       "app-switcher",
       "secret-value",
       "bulk-list-input",

@@ -4,6 +4,155 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "async-action-button",
+      "type": "registry:component",
+      "title": "Async Action Button",
+      "description": "An explicit async action with pending, success, safe failure feedback and duplicate-click protection.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nRun a host-owned async action with immediate duplicate-click protection, accessible feedback and explicit retry. See /docs/async-action-button for usage, API and integration guidance.",
+      "files": [
+        {
+          "path": "src/components/ui/async-action-button.tsx",
+          "type": "registry:component",
+          "target": "components/ui/async-action-button.tsx"
+        }
+      ],
+      "registryDependencies": ["@krak-stack/krakstack-provider", "button"],
+      "dependencies": ["react", "lucide-react"]
+    },
+    {
+      "name": "unsaved-changes-guard",
+      "type": "registry:component",
+      "title": "Unsaved Changes Guard",
+      "description": "TanStack Router navigation confirmation with optional native browser-close protection for dirty forms.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nMount inside TanStack Router to protect unsaved edits. The host owns dirty state and saving; browsers own beforeunload prompt wording. See /docs/unsaved-changes-guard for usage and limitations.",
+      "files": [
+        {
+          "path": "src/components/ui/unsaved-changes-guard.tsx",
+          "type": "registry:component",
+          "target": "components/ui/unsaved-changes-guard.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "alert-dialog"
+      ],
+      "dependencies": ["react", "@tanstack/react-router@^1.170.41"]
+    },
+    {
+      "name": "danger-confirmation",
+      "type": "registry:component",
+      "title": "Danger Confirmation",
+      "description": "A destructive-action dialog with optional exact-text confirmation, async feedback and pending dismissal protection.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nConfirm a host-owned destructive action, optionally requiring an exact phrase. Keeps failures visible and blocks dismissal while pending. Confirmation is not authorization. See /docs/danger-confirmation.",
+      "files": [
+        {
+          "path": "src/components/ui/danger-confirmation.tsx",
+          "type": "registry:component",
+          "target": "components/ui/danger-confirmation.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/async-action-button",
+        "@krak-stack/krakstack-provider",
+        "alert-dialog",
+        "input",
+        "label"
+      ],
+      "dependencies": ["react"]
+    },
+    {
+      "name": "editable-text",
+      "type": "registry:component",
+      "title": "Editable Text",
+      "description": "Inline text editing with explicit save/cancel, keyboard support, focus restoration and preserved failed drafts.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nEdit a controlled string with host-owned async validation and persistence. Enter saves, Escape cancels, and failed saves retain the draft. See /docs/editable-text for API and integration guidance.",
+      "files": [
+        {
+          "path": "src/components/ui/editable-text.tsx",
+          "type": "registry:component",
+          "target": "components/ui/editable-text.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/async-action-button",
+        "@krak-stack/krakstack-provider",
+        "button",
+        "input",
+        "label"
+      ],
+      "dependencies": ["react", "lucide-react"]
+    },
+    {
+      "name": "presence-transition",
+      "type": "registry:component",
+      "title": "Presence Transition",
+      "description": "SSR-safe enter/exit motion that makes exiting content inert and respects reduced-motion preferences.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nA small Motion wrapper for conditional content with reliable exit unmounting. Initial server content remains visible and exits become inert. See /docs/presence-transition.",
+      "files": [
+        {
+          "path": "src/components/ui/presence-transition.tsx",
+          "type": "registry:component",
+          "target": "components/ui/presence-transition.tsx"
+        }
+      ],
+      "dependencies": ["react", "motion@^14.12.0"]
+    },
+    {
+      "name": "auto-height",
+      "type": "registry:component",
+      "title": "Auto Height",
+      "description": "Content-driven height transitions using ResizeObserver with SSR and reduced-motion fallbacks.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nAnimate changing content height without hardcoded measurements. Uses ResizeObserver and Motion; server output and observer-less browsers remain auto-sized. See /docs/auto-height.",
+      "files": [
+        {
+          "path": "src/components/ui/auto-height.tsx",
+          "type": "registry:component",
+          "target": "components/ui/auto-height.tsx"
+        }
+      ],
+      "dependencies": ["react", "motion@^14.12.0"]
+    },
+    {
+      "name": "animated-list",
+      "type": "registry:component",
+      "title": "Animated List",
+      "description": "A keyed semantic list with insertion, removal, controlled drag reordering and keyboard-accessible handles.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nAnimate a small list using stable entity keys. Supply onReorder to enable vertical drag handles and keyboard reordering. The host owns the order and persistence; removed items become inert during exit. This is not virtualization or cross-list dragging. See /docs/animated-list.",
+      "files": [
+        {
+          "path": "src/components/ui/animated-list.tsx",
+          "type": "registry:component",
+          "target": "components/ui/animated-list.tsx"
+        }
+      ],
+      "registryDependencies": ["@krak-stack/krakstack-provider"],
+      "dependencies": ["react", "lucide-react", "motion@^14.12.0"]
+    },
+    {
+      "name": "animated-number",
+      "type": "registry:component",
+      "title": "Animated Number",
+      "description": "Localized numeric transitions with SSR target values and stable assistive-technology output.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nAnimate numeric targets with Intl.NumberFormat. Assistive technology receives the final number, not intermediate frames. English/French locales follow KrakstackProvider. See /docs/animated-number.",
+      "files": [
+        {
+          "path": "src/components/ui/animated-number.tsx",
+          "type": "registry:component",
+          "target": "components/ui/animated-number.tsx"
+        }
+      ],
+      "registryDependencies": ["@krak-stack/krakstack-provider"],
+      "dependencies": ["react", "motion@^14.12.0"]
+    },
+    {
       "name": "app-switcher",
       "type": "registry:component",
       "title": "App Switcher",

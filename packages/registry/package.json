@@ -17,6 +17,38 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./async-action-button": {
+      "types": "./dist/components/ui/async-action-button.d.ts",
+      "import": "./dist/components/ui/async-action-button.js"
+    },
+    "./unsaved-changes-guard": {
+      "types": "./dist/components/ui/unsaved-changes-guard.d.ts",
+      "import": "./dist/components/ui/unsaved-changes-guard.js"
+    },
+    "./danger-confirmation": {
+      "types": "./dist/components/ui/danger-confirmation.d.ts",
+      "import": "./dist/components/ui/danger-confirmation.js"
+    },
+    "./editable-text": {
+      "types": "./dist/components/ui/editable-text.d.ts",
+      "import": "./dist/components/ui/editable-text.js"
+    },
+    "./presence-transition": {
+      "types": "./dist/components/ui/presence-transition.d.ts",
+      "import": "./dist/components/ui/presence-transition.js"
+    },
+    "./auto-height": {
+      "types": "./dist/components/ui/auto-height.d.ts",
+      "import": "./dist/components/ui/auto-height.js"
+    },
+    "./animated-list": {
+      "types": "./dist/components/ui/animated-list.d.ts",
+      "import": "./dist/components/ui/animated-list.js"
+    },
+    "./animated-number": {
+      "types": "./dist/components/ui/animated-number.d.ts",
+      "import": "./dist/components/ui/animated-number.js"
+    },
     "./app-switcher": {
       "types": "./dist/components/ui/app-switcher.d.ts",
       "import": "./dist/components/ui/app-switcher.js"
@@ -330,6 +362,7 @@
   "dependencies": {
     "@oxlint/plugins": "1.78.0",
     "bowser": "^2.14.1",
+    "motion": "^14.12.0",
     "react-colorful": "^5.8.1",
     "web-vitals": "^5.1.0"
   },

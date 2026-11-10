@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "async-action-button",
+  "title": "Async Action Button",
+  "description": "An explicit async action with pending, success, safe failure feedback and duplicate-click protection.",
+  "dependencies": ["react", "lucide-react"],
+  "registryDependencies": ["@krak-stack/krakstack-provider", "button"],
+  "files": [
+    {
+      "path": "src/components/ui/async-action-button.tsx",
+      "content": "import { Check, LoaderCircle, RotateCcw } from \"lucide-react\";\nimport { useEffect, useRef, useState, type ComponentProps } from \"react\";\n\nimport { Button } from \"@/components/ui/button\";\nimport { useKrakstackLocale } from \"@/components/ui/krakstack-provider\";\n\nexport type AsyncActionButtonMessages = {\n  pending: string;\n  success: string;\n  retry: string;\n  error: string;\n};\n\nexport type AsyncActionButtonProps = Omit<\n  ComponentProps<typeof Button>,\n  \"onClick\" | \"type\" | \"render\" | \"nativeButton\" | \"aria-busy\"\n> & {\n  onAction: () => Promise<void>;\n  onPendingChange?: (pending: boolean) => void;\n  locale?: string;\n  messages?: Partial<Record<string, Partial<AsyncActionButtonMessages>>>;\n};\n\nconst labels = {\n  en: {\n    pending: \"Working…\",\n    success: \"Completed\",\n    retry: \"Try again\",\n    error: \"The action failed. Please try again.\",\n  },\n  fr: {\n    pending: \"En cours…\",\n    success: \"Terminé\",\n    retry: \"Réessayer\",\n    error: \"L’action a échoué. Veuillez réessayer.\",\n  },\n};\n\n/** Runs only on activation. Failures stay local; raw error details are never rendered. */\nexport const AsyncActionButton = ({\n  onAction,\n  onPendingChange,\n  children,\n  disabled,\n  locale: override,\n  messages,\n  ...props\n}: AsyncActionButtonProps) => {\n  const locale = useKrakstackLocale(override);\n  const copy = {\n    ...(locale.startsWith(\"fr\") ? labels.fr : labels.en),\n    ...messages?.[locale.split(\"-\")[0] ?? locale],\n    ...messages?.[locale],\n  };\n  const [status, setStatus] = useState<\n    \"idle\" | \"pending\" | \"success\" | \"error\"\n  >(\"idle\");\n  const locked = useRef(false);\n  const mounted = useRef(false);\n  useEffect(() => {\n    mounted.current = true;\n    return () => {\n      mounted.current = false;\n    };\n  }, []);\n\n  const run = async () => {\n    if (locked.current || disabled) return;\n    locked.current = true;\n    setStatus(\"pending\");\n    onPendingChange?.(true);\n    try {\n      await onAction();\n      if (mounted.current) setStatus(\"success\");\n    } catch {\n      if (mounted.current) setStatus(\"error\");\n    } finally {\n      locked.current = false;\n      onPendingChange?.(false);\n    }\n  };\n\n  return (\n    <span\n      data-slot=\"async-action-button\"\n      className=\"inline-flex min-w-0 flex-col items-start gap-2\"\n    >\n      <Button\n        {...props}\n        type=\"button\"\n        disabled={disabled || status === \"pending\"}\n        aria-busy={status === \"pending\"}\n        onClick={() => {\n          void run();\n        }}\n      >\n        {status === \"pending\" ? (\n          <LoaderCircle\n            aria-hidden=\"true\"\n            className=\"motion-safe:animate-spin\"\n          />\n        ) : status === \"success\" ? (\n          <Check aria-hidden=\"true\" />\n        ) : status === \"error\" ? (\n          <RotateCcw aria-hidden=\"true\" />\n        ) : null}\n        {status === \"pending\"\n          ? copy.pending\n          : status === \"success\"\n            ? copy.success\n            : status === \"error\"\n              ? copy.retry\n              : children}\n      </Button>\n      <span\n        data-slot=\"async-action-feedback\"\n        role=\"status\"\n        className={status === \"error\" ? \"text-destructive text-sm\" : \"sr-only\"}\n      >\n        {status === \"error\"\n          ? copy.error\n          : status === \"success\"\n            ? copy.success\n            : status === \"pending\"\n              ? copy.pending\n              : \"\"}\n      </span>\n    </span>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/async-action-button.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-10",
+    "updatedAt": "2026-11-10"
+  },
+  "docs": "## Overview\n\nRun a host-owned async action with immediate duplicate-click protection, accessible feedback and explicit retry. See /docs/async-action-button for usage, API and integration guidance.",
+  "type": "registry:component"
+}
