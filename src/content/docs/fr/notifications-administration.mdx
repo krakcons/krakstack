@@ -31,7 +31,7 @@ d'administration publique et aucun n'accorde de droit par lui-même.
 Pour l'administration web, ajoutez le package d'interface facultatif au backend :
 
 ```bash
-bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.2.2
+bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.2.0 @krak-stack/registry@0.2.2
 ```
 
 Installez ses dépendances homologues React, Effect Atom, plateforme navigateur Effect, TanStack, Base UI et icônes
@@ -66,6 +66,30 @@ et `/deliveries`. Fournissez les données, l'état de tableau, les callbacks et 
 messages anglais/français avec Paraglide côté hôte. Partagez le
 `KrakstackProvider` du registre pour la langue et les valeurs par défaut.
 Les sélecteurs de langue doivent afficher `English` et `Français` dans les deux langues.
+
+## Présentation des tableaux et des références
+
+La version 0.2.0 ajoute `NotificationPresentationProvider` depuis
+`@krak-stack/notifications-admin/presentation`. Entourez les vues de livraison et
+d'opérations pour réutiliser les styles de tableau de votre application et
+afficher les noms des objets plutôt que leurs références internes. Sans provider,
+le tableau du registre et l'affichage des références restent inchangés.
+
+```tsx
+<NotificationPresentationProvider
+  Table={ApplicationNotificationTable}
+  renderReference={(kind, id) => <RecordReference kind={kind} id={id} />}
+>
+  <NotificationDeliveries {...deliveryProps} />
+</NotificationPresentationProvider>
+```
+
+`Table` utilise l'interface DataTable du registre, avec son état contrôlé, sa
+pagination, ses filtres et ses actions. L'adaptateur hôte peut personnaliser les
+colonnes et les exports. `renderReference` reçoit le type et l'identifiant d'une
+référence ; l'hôte gère la recherche de noms, les états de chargement et les liens
+autorisés. Ces hooks ne modifient ni les données ni les autorisations. Conservez
+les identifiants dans les requêtes et callbacks, même si l'interface affiche des noms.
 
 ## Configuration du backend protégé
 

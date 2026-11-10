@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications-admin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Optional React administration screens and Effect Atom helpers for KrakStack notifications.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",
@@ -9,17 +9,21 @@
     "url": "git+https://github.com/krakcons/krakstack.git",
     "directory": "packages/notifications-admin"
   },
-  "type": "module",
-  "sideEffects": [
-    "./tailwind.css"
-  ],
   "files": [
     "dist",
     "tailwind.css",
     "README.md",
     "CHANGELOG.md"
   ],
+  "type": "module",
+  "sideEffects": [
+    "./tailwind.css"
+  ],
   "exports": {
+    "./presentation": {
+      "types": "./dist/presentation.d.ts",
+      "import": "./dist/presentation.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -62,11 +66,11 @@
     "cn": "^0.3.0"
   },
   "peerDependencies": {
-    "@krak-stack/notifications": "^0.3.0",
-    "@krak-stack/registry": "^0.2.2",
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
     "@effect/platform-browser": "^4.1.0",
+    "@krak-stack/notifications": "^0.3.0",
+    "@krak-stack/registry": "^0.2.2",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-virtual": "^3.14.5",

@@ -1,5 +1,11 @@
 # @krak-stack/notifications-admin
 
+## 0.2.0
+
+### Minor Changes
+
+- Add an optional NotificationPresentationProvider for host-owned table defaults and named inspection references. Delivery and operations screens retain their existing controlled data, actions, authorization boundaries and backwards-compatible default rendering.
+
 ## 0.1.0
 
 ### Minor Changes

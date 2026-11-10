@@ -8,6 +8,7 @@ import {
   NotificationDeliveries,
 } from "@krak-stack/notifications-admin/operations";
 import { NotificationDeliveries as Deliveries } from "@krak-stack/notifications-admin/deliveries";
+import { NotificationPresentationProvider } from "@krak-stack/notifications-admin/presentation";
 import {
   makeNotificationContactAtoms,
   makeSendContactAtoms,
@@ -20,6 +21,9 @@ import {
 describe("notification admin package exports", () => {
   it("preserves one implementation across direct, root and existing named exports", () => {
     expect(admin.NotificationContacts).toBe(NotificationContacts);
+    expect(admin.NotificationPresentationProvider).toBe(
+      NotificationPresentationProvider,
+    );
     expect(admin.NotificationCampaigns).toBe(NotificationCampaigns);
     expect(admin.NotificationOperations).toBe(NotificationOperations);
     expect(admin.NotificationDeliveries).toBe(Deliveries);

@@ -127,7 +127,7 @@
     },
     "packages/notifications-admin": {
       "name": "@krak-stack/notifications-admin",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "class-variance-authority": "^0.7.1",
         "cn": "^0.3.0",

@@ -8,7 +8,7 @@ TanStack or registry dependency.
 ## Install
 
 ```sh
-bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.2.2
+bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.2.0 @krak-stack/registry@0.2.2
 ```
 
 Install the React, Effect, Effect Atom, Effect browser platform, TanStack, Base UI and icon peer dependencies
@@ -47,6 +47,14 @@ The root entry point exports the controlled views and their prop/message types.
 factories. The existing `Send*` names remain aliases for compatibility.
 
 ## Host integration
+
+Hosts can wrap delivery and operations views with `NotificationPresentationProvider`
+from `@krak-stack/notifications-admin/presentation`. Supply `Table` (the registry
+DataTable interface) to share application table defaults, columns and safe exports.
+Optional `renderReference(kind, id)` resolves inspection references to host-owned
+names or links. These hooks are useful to both product admin workspaces and
+embedded sending consoles. They contain no product labels, record lookups,
+authentication or policy. Default rendering remains backwards compatible.
 
 - Protect the page with the host's existing authentication and authorization.
   These components confer no permissions and create no routes.

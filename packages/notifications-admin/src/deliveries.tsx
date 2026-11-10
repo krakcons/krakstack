@@ -1,6 +1,5 @@
 import type * as S from "@krak-stack/notifications/admin/delivery.schema";
 import {
-  DataTable,
   type DataTableColDef,
   type DataTablePublicState,
 } from "@krak-stack/registry/data-table";
@@ -13,6 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { SendOperationsMessages } from "./operations.js";
+import {
+  NotificationTable as DataTable,
+  NotificationReference,
+} from "./presentation.js";
 
 export interface NotificationDeliveryMessages {
   readonly common: SendOperationsMessages;
@@ -225,12 +228,40 @@ export const NotificationDeliveries = (p: NotificationDeliveriesProps) => {
             <>
               <dl className="grid gap-2 break-all sm:grid-cols-2">
                 {[
-                  [c.id, delivery.id],
+                  [
+                    c.id,
+                    <NotificationReference
+                      key="delivery"
+                      kind="delivery"
+                      id={delivery.id}
+                    />,
+                  ],
                   [m.source, m.sources[delivery.source]],
                   [c.email, delivery.recipientAddress],
-                  [m.recipientUserId, delivery.recipientUserId],
-                  [m.organizationId, delivery.organizationId],
-                  [m.workspaceId, delivery.workspaceId],
+                  [
+                    m.recipientUserId,
+                    <NotificationReference
+                      key="account"
+                      kind="account"
+                      id={delivery.recipientUserId}
+                    />,
+                  ],
+                  [
+                    m.organizationId,
+                    <NotificationReference
+                      key="organization"
+                      kind="organization"
+                      id={delivery.organizationId}
+                    />,
+                  ],
+                  [
+                    m.workspaceId,
+                    <NotificationReference
+                      key="workspace"
+                      kind="workspace"
+                      id={delivery.workspaceId}
+                    />,
+                  ],
                   [m.eventKey, delivery.eventKey],
                   [m.template, delivery.template],
                   [c.purpose, m.purposes[delivery.purpose]],
@@ -242,8 +273,8 @@ export const NotificationDeliveries = (p: NotificationDeliveriesProps) => {
                     c.attempts,
                     `${delivery.attempts} / ${delivery.maxAttempts}`,
                   ],
-                ].map(([label, value]) => (
-                  <div key={label}>
+                ].map(([label, value], index) => (
+                  <div key={index}>
                     <dt className="font-semibold">{label}</dt>
                     <dd>{value ?? "—"}</dd>
                   </div>
@@ -270,7 +301,12 @@ export const NotificationDeliveries = (p: NotificationDeliveriesProps) => {
                 {p.inspection?.references.map((ref) => (
                   <div key={`${ref.namespace}:${ref.value}`}>
                     <dt>{ref.namespace}</dt>
-                    <dd>{ref.value}</dd>
+                    <dd>
+                      <NotificationReference
+                        kind={ref.namespace}
+                        id={ref.value}
+                      />
+                    </dd>
                   </div>
                 ))}
               </dl>

@@ -7,10 +7,7 @@ export type {
 import { Effect, Schema } from "effect";
 import * as S from "@krak-stack/notifications/admin/operations.schema";
 import { Button } from "@/components/ui/button";
-import {
-  DataTable,
-  type DataTableColDef,
-} from "@krak-stack/registry/data-table";
+import { type DataTableColDef } from "@krak-stack/registry/data-table";
 import type {
   DataTableProps,
   DataTablePublicState,
@@ -23,6 +20,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAppForm } from "@krak-stack/registry/form";
+import {
+  NotificationTable as DataTable,
+  NotificationReference,
+} from "./presentation.js";
 
 export { SendOperationsAdmin as NotificationOperations };
 export type {
@@ -538,7 +539,10 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
       headerName: m.status,
       cellRenderer: ({ data }) => m.recipientStatuses[data.status],
       filterOptions: Object.entries(m.recipientStatuses).map(
-        ([value, label]) => ({ value, label }),
+        ([value, label]) => ({
+          value,
+          label,
+        }),
       ),
     },
     { field: "reason", headerName: m.reason },
@@ -689,8 +693,22 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
               )}
               <dl className="grid gap-2 break-all sm:grid-cols-2">
                 {[
-                  [m.id, delivery.id],
-                  [m.contactId, delivery.contactId],
+                  [
+                    m.id,
+                    <NotificationReference
+                      key="delivery"
+                      kind="delivery"
+                      id={delivery.id}
+                    />,
+                  ],
+                  [
+                    m.contactId,
+                    <NotificationReference
+                      key="contact"
+                      kind="contact"
+                      id={delivery.contactId}
+                    />,
+                  ],
                   [m.email, delivery.email],
                   [m.subject, delivery.subject],
                   [m.status, m.statuses[delivery.status]],
@@ -707,8 +725,8 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
                   [m.scheduled, date(delivery.scheduledFor)],
                   [m.updated, date(delivery.updatedAt)],
                   [m.accepted, date(delivery.sentAt)],
-                ].map(([label, value]) => (
-                  <div key={label}>
+                ].map(([label, value], index) => (
+                  <div key={index}>
                     <dt className="font-semibold">{label}</dt>
                     <dd>{value ?? "—"}</dd>
                   </div>

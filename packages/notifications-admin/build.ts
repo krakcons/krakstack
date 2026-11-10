@@ -55,6 +55,7 @@ const result = await Bun.build({
     "operations.tsx",
     "deliveries.tsx",
     "atoms.ts",
+    "presentation.tsx",
   ].map((entry) => resolve(root, "src", entry)),
   outdir: output,
   naming: "[name].js",

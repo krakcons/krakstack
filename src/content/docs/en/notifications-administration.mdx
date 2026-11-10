@@ -30,7 +30,7 @@ package creates a public admin route or grants access by itself.
 For web administration, add the optional UI package alongside the backend:
 
 ```bash
-bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.1.0 @krak-stack/registry@0.2.2
+bun add @krak-stack/notifications@0.3.0 @krak-stack/notifications-admin@0.2.0 @krak-stack/registry@0.2.2
 ```
 
 Install its React, Effect Atom, Effect browser platform, TanStack, Base UI and icon peer dependencies listed
@@ -64,6 +64,30 @@ The screens are also available from `/contacts`, `/campaigns`, `/operations` and
 messages through the host's Paraglide integration. Share the registry
 `KrakstackProvider` for locale and component defaults. Language switchers should
 display `English` and `Français` in either locale.
+
+## Host table and record presentation
+
+Version 0.2.0 adds `NotificationPresentationProvider` from
+`@krak-stack/notifications-admin/presentation`. Wrap delivery and operations views
+to reuse your application's table styles and resolve internal references into
+record names. The default registry table and reference rendering remain unchanged
+when no provider is present.
+
+```tsx
+<NotificationPresentationProvider
+  Table={ApplicationNotificationTable}
+  renderReference={(kind, id) => <RecordReference kind={kind} id={id} />}
+>
+  <NotificationDeliveries {...deliveryProps} />
+</NotificationPresentationProvider>
+```
+
+`Table` accepts the registry DataTable interface, including controlled state,
+pagination, filters and actions. A host adapter may customize columns, export
+labels and safe export scope. `renderReference` receives a reference kind and ID;
+the host owns name lookup, loading/unavailable states and authorized record links.
+Neither hook changes data or grants permissions. Keep IDs intact in requests and
+mutation callbacks even when the UI displays names.
 
 ## Protected backend setup
 
