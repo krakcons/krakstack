@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.5.0
+
+### Minor Changes
+
+- b3cb799: Add App Switcher, Secret Value, Bulk List Input, Choice Cards, and Upload Attachment as standalone components with package exports and English/French documentation.
+
 ## 0.4.0
 
 ### Minor Changes
