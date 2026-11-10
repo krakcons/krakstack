@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "app-switcher",
+  "title": "App Switcher",
+  "description": "A keyboard-accessible menu for navigating between applications with icons, descriptions, badges and current-app indication.",
+  "dependencies": ["react", "lucide-react"],
+  "registryDependencies": [
+    "@krak-stack/krakstack-provider",
+    "button",
+    "dropdown-menu"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/app-switcher.tsx",
+      "content": "import { Check, Grid2X2 } from \"lucide-react\";\nimport type { ReactNode } from \"react\";\n\nimport { Button } from \"@/components/ui/button\";\nimport {\n  DropdownMenu,\n  DropdownMenuContent,\n  DropdownMenuGroup,\n  DropdownMenuItem,\n  DropdownMenuLabel,\n  DropdownMenuTrigger,\n} from \"@/components/ui/dropdown-menu\";\nimport { useKrakstackLocale } from \"@/components/ui/krakstack-provider\";\n\nexport type AppSwitcherItem = {\n  id: string;\n  label: string;\n  href: string;\n  description?: string;\n  icon?: ReactNode;\n  badge?: ReactNode;\n  disabled?: boolean;\n};\n\nexport type AppSwitcherMessages = {\n  label: string;\n  current: string;\n  empty: string;\n};\nexport type AppSwitcherProps = {\n  items: readonly AppSwitcherItem[];\n  currentApp?: string;\n  disabled?: boolean;\n  className?: string;\n  locale?: string;\n  messages?: Partial<Record<string, Partial<AppSwitcherMessages>>>;\n};\n\nconst labels = {\n  en: {\n    label: \"Switch application\",\n    current: \"Current application\",\n    empty: \"No applications available\",\n  },\n  fr: {\n    label: \"Changer d’application\",\n    current: \"Application actuelle\",\n    empty: \"Aucune application disponible\",\n  },\n};\n\n/** Navigation only: the host supplies trusted destinations and available apps. */\nexport const AppSwitcher = ({\n  items,\n  currentApp,\n  disabled,\n  className,\n  locale: override,\n  messages,\n}: AppSwitcherProps) => {\n  const locale = useKrakstackLocale(override);\n  const copy = {\n    ...(locale.startsWith(\"fr\") ? labels.fr : labels.en),\n    ...messages?.[locale.split(\"-\")[0] ?? locale],\n    ...messages?.[locale],\n  };\n  return (\n    <DropdownMenu>\n      <DropdownMenuTrigger\n        render={\n          <Button\n            type=\"button\"\n            variant=\"outline\"\n            size=\"icon\"\n            className={className}\n            disabled={disabled}\n            aria-label={copy.label}\n          />\n        }\n      >\n        <Grid2X2 aria-hidden=\"true\" />\n      </DropdownMenuTrigger>\n      <DropdownMenuContent\n        align=\"end\"\n        className=\"w-80 max-w-[calc(100vw-2rem)]\"\n      >\n        <DropdownMenuGroup>\n          <DropdownMenuLabel>{copy.label}</DropdownMenuLabel>\n          {items.length === 0 ? (\n            <p className=\"text-muted-foreground px-2 py-3 text-sm\">\n              {copy.empty}\n            </p>\n          ) : null}\n          {items.map((item) => (\n            <DropdownMenuItem\n              key={item.id}\n              disabled={item.disabled}\n              render={\n                <a\n                  href={item.disabled ? undefined : item.href}\n                  aria-current={item.id === currentApp ? \"page\" : undefined}\n                />\n              }\n              className=\"gap-3 py-3\"\n            >\n              {item.icon ? (\n                <span\n                  aria-hidden=\"true\"\n                  className=\"flex size-9 shrink-0 items-center justify-center rounded-md border\"\n                >\n                  {item.icon}\n                </span>\n              ) : null}\n              <span className=\"flex min-w-0 flex-1 flex-col gap-1\">\n                <span className=\"flex items-center gap-2\">\n                  <span className=\"truncate font-medium\">{item.label}</span>\n                  {item.badge}\n                </span>\n                {item.description ? (\n                  <span className=\"text-muted-foreground text-xs\">\n                    {item.description}\n                  </span>\n                ) : null}\n              </span>\n              {item.id === currentApp ? (\n                <>\n                  <Check aria-hidden=\"true\" />\n                  <span className=\"sr-only\">{copy.current}</span>\n                </>\n              ) : null}\n            </DropdownMenuItem>\n          ))}\n        </DropdownMenuGroup>\n      </DropdownMenuContent>\n    </DropdownMenu>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/app-switcher.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-10",
+    "updatedAt": "2026-11-10"
+  },
+  "docs": "## Overview\n\nA configurable application navigation menu extracted from Kokobi. Supply trusted app destinations; the component does not switch organizations or manage authentication. See /docs/app-switcher for installation, examples, API reference and accessibility guidance.",
+  "type": "registry:component"
+}

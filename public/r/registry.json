@@ -4,6 +4,102 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "app-switcher",
+      "type": "registry:component",
+      "title": "App Switcher",
+      "description": "A keyboard-accessible menu for navigating between applications with icons, descriptions, badges and current-app indication.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nA configurable application navigation menu extracted from Kokobi. Supply trusted app destinations; the component does not switch organizations or manage authentication. See /docs/app-switcher for installation, examples, API reference and accessibility guidance.",
+      "files": [
+        {
+          "path": "src/components/ui/app-switcher.tsx",
+          "type": "registry:component",
+          "target": "components/ui/app-switcher.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "button",
+        "dropdown-menu"
+      ],
+      "dependencies": ["react", "lucide-react"]
+    },
+    {
+      "name": "secret-value",
+      "type": "registry:component",
+      "title": "Secret Value",
+      "description": "A masked value with explicit reveal, optional auto-hide and accessible clipboard actions.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nDisplay a masked string with explicit reveal and copy actions. Extracted from Kokobi. Masking is presentation, not security: only supply values the current viewer is authorized to receive. See /docs/secret-value for installation, examples, API reference and accessibility guidance.",
+      "files": [
+        {
+          "path": "src/components/ui/secret-value.tsx",
+          "type": "registry:component",
+          "target": "components/ui/secret-value.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/copy-button",
+        "button"
+      ],
+      "dependencies": ["react", "lucide-react"]
+    },
+    {
+      "name": "bulk-list-input",
+      "type": "registry:component",
+      "title": "Bulk List Input",
+      "description": "A controlled multiline list input that preserves unfinished text, with optional file selection and explicit tokenization helpers.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nPaste or type a list without losing unfinished entries. Optional file selection delegates parsing to the host. parseBulkList splits comma/newline text and deduplicates using optional normalization; it is not a CSV parser or domain validator. Extracted from Kokobi. See /docs/bulk-list-input for examples and API reference.",
+      "files": [
+        {
+          "path": "src/components/ui/bulk-list-input.tsx",
+          "type": "registry:component",
+          "target": "components/ui/bulk-list-input.tsx"
+        }
+      ],
+      "registryDependencies": ["button", "textarea"],
+      "dependencies": ["react", "lucide-react"]
+    },
+    {
+      "name": "choice-cards",
+      "type": "registry:component",
+      "title": "Choice Cards",
+      "description": "Controlled single- or multiple-selection cards backed by native form inputs, with icons, descriptions and group errors.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nPresent radio or checkbox choices as cards while retaining native keyboard and form semantics. Supply labels and descriptions in the application locale. Extracted from VolunteerConnector. See /docs/choice-cards for installation, examples, API reference and accessibility guidance.",
+      "files": [
+        {
+          "path": "src/components/ui/choice-cards.tsx",
+          "type": "registry:component",
+          "target": "components/ui/choice-cards.tsx"
+        }
+      ],
+      "dependencies": ["react"]
+    },
+    {
+      "name": "upload-attachment",
+      "type": "registry:component",
+      "title": "Upload Attachment",
+      "description": "A controlled attachment showing upload progress, processing, failure, cancellation and state-appropriate retry actions.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "## Overview\n\nUpload status presentation extracted from Kokobi. The host owns transport, real progress, cancellation, retry and finalization; rendering does not start a request. A completed upload and completed processing are separate states. See /docs/upload-attachment for examples, API reference and integration guidance.",
+      "files": [
+        {
+          "path": "src/components/ui/upload-attachment.tsx",
+          "type": "registry:component",
+          "target": "components/ui/upload-attachment.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "attachment",
+        "button"
+      ],
+      "dependencies": ["react", "lucide-react"]
+    },
+    {
       "name": "stepper",
       "type": "registry:component",
       "title": "Stepper",

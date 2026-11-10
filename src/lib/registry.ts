@@ -66,6 +66,11 @@ export function getRegistryGroup(item: RegistryItem) {
   if (
     [
       "copy-button",
+      "app-switcher",
+      "secret-value",
+      "bulk-list-input",
+      "choice-cards",
+      "upload-attachment",
       "color-picker",
       "error-component",
       "file-picker",

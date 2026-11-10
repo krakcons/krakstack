@@ -11,6 +11,11 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/ui/app-switcher.tsx",
+    "../../src/components/ui/secret-value.tsx",
+    "../../src/components/ui/bulk-list-input.tsx",
+    "../../src/components/ui/choice-cards.tsx",
+    "../../src/components/ui/upload-attachment.tsx",
     "../../src/services/webhooks/client/delivery-table.tsx",
     "../../src/services/webhooks/http-client.ts",
     "../../src/services/webhooks/index.ts",

@@ -17,6 +17,26 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./app-switcher": {
+      "types": "./dist/components/ui/app-switcher.d.ts",
+      "import": "./dist/components/ui/app-switcher.js"
+    },
+    "./secret-value": {
+      "types": "./dist/components/ui/secret-value.d.ts",
+      "import": "./dist/components/ui/secret-value.js"
+    },
+    "./bulk-list-input": {
+      "types": "./dist/components/ui/bulk-list-input.d.ts",
+      "import": "./dist/components/ui/bulk-list-input.js"
+    },
+    "./choice-cards": {
+      "types": "./dist/components/ui/choice-cards.d.ts",
+      "import": "./dist/components/ui/choice-cards.js"
+    },
+    "./upload-attachment": {
+      "types": "./dist/components/ui/upload-attachment.d.ts",
+      "import": "./dist/components/ui/upload-attachment.js"
+    },
     "./webhooks/client": {
       "types": "./dist/services/webhooks/client/delivery-table.d.ts",
       "import": "./dist/services/webhooks/client/delivery-table.js"
