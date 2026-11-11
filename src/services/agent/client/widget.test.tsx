@@ -69,6 +69,25 @@ const renderWidget = () => {
 };
 
 describe("AgentWidget references", () => {
+  it.each(["Hello", "@Course"])(
+    "preserves native typing keys with input %s",
+    (value) => {
+      const input = renderWidget();
+      fireEvent.change(input, {
+        target: { value, selectionStart: value.length },
+      });
+
+      expect(fireEvent.keyDown(input, { key: " " })).toBe(true);
+      expect(fireEvent.keyUp(input, { key: " " })).toBe(true);
+      expect(fireEvent.keyDown(input, { key: "Enter", shiftKey: true })).toBe(
+        true,
+      );
+      expect(screen.queryByText("References") !== null).toBe(
+        value.startsWith("@"),
+      );
+    },
+  );
+
   it("inserts a reference at the caret without replacing trailing text", async () => {
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
       return window.setTimeout(() => callback(0), 0);

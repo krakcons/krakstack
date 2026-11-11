@@ -986,6 +986,9 @@ export function AgentWidget<Resource = never>({
                   <PopoverTrigger
                     id={referenceInputId}
                     nativeButton={false}
+                    // Keep textarea keys from activating the trigger as a button.
+                    onKeyDown={(event) => event.preventBaseUIHandler()}
+                    onKeyUp={(event) => event.preventBaseUIHandler()}
                     render={
                       <InputGroupTextarea
                         ref={inputRef}
