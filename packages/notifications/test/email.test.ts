@@ -60,6 +60,7 @@ describe("email payload v1", () => {
       const html = "<main>Exact HTML</main>";
       const decoded = yield* decodeEmailPayloadV1({
         from: "sender@example.com",
+        fromName: "Équipe française",
         replyTo: "reply@example.com",
         subject: "Rendered subject",
         text,
@@ -69,6 +70,7 @@ describe("email payload v1", () => {
       expect(decoded.text).toBe(text);
       expect(decoded.html).toBe(html);
       expect(decoded.replyTo).toBe("reply@example.com");
+      expect(decoded.fromName).toBe("Équipe française");
     }),
   );
 
@@ -80,6 +82,24 @@ describe("email payload v1", () => {
       });
 
       expect(decoded.html).toBeUndefined();
+    }),
+  );
+
+  it.effect("rejects empty sender names and sender-name header injection", () =>
+    Effect.gen(function* () {
+      for (const fromName of [
+        "",
+        "Team\r\nBcc: attacker@example.com",
+        "Team\nInjected",
+        "Team\rInjected",
+      ]) {
+        const result = yield* decodeEmailPayloadV1({
+          fromName,
+          subject: "Subject",
+          text: "Body",
+        }).pipe(Effect.exit);
+        expect(result._tag).toBe("Failure");
+      }
     }),
   );
 

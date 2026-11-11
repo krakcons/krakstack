@@ -170,6 +170,29 @@ maintenance cutover, not a mixed-RC/stable rolling deployment. Effect owns the q
 upgrade from `completed` to `state`; old and new runtime processes must not share
 the upgraded queue concurrently. No notification ledger reset is needed.
 
+## Notification menu
+
+```tsx
+import { NotificationMenu } from "@krak-stack/notifications/client";
+
+<NotificationMenu
+  notifications={notifications}
+  onArchive={archiveNotifications}
+/>;
+```
+
+The optional client entry point re-exports the shared registry menu. Install
+`@krak-stack/registry` and its React UI peers, and include
+`@krak-stack/registry/tailwind.css` in your Tailwind stylesheet. Server-only
+consumers do not need these UI dependencies. Import browser schemas from
+`@krak-stack/notifications/schema`, not the server entry point.
+
+Le point d'entrée client facultatif réexporte le menu partagé du registre.
+Installez `@krak-stack/registry` et ses dépendances React, puis importez
+`@krak-stack/registry/tailwind.css` dans votre feuille Tailwind. Les applications
+serveur seules n'ont pas besoin de ces dépendances d'interface. Dans le navigateur,
+importez les schémas depuis `@krak-stack/notifications/schema`.
+
 ## Email Adapters
 
 Publisher code can validate and persist rendered email without installing or
@@ -180,11 +203,25 @@ import { Schema } from "effect";
 import { EmailPayloadV1 } from "@krak-stack/notifications/transport/email";
 
 const payload = Schema.decodeUnknownSync(EmailPayloadV1)({
+  from: "noreply@example.com",
+  fromName: "Équipe formation",
   subject: "Application received",
   text: "Your rendered text body.",
   html: "<p>Your rendered HTML body.</p>",
 });
 ```
+
+Keep `from` as a bare email address. Optional `fromName` supplies the sender
+display name, including Unicode names. It also works when the sender address
+comes from the adapter's environment configuration. SES MIME-encodes the name;
+SMTP passes it as a structured mailbox to Nodemailer. Empty names and names
+containing CR/LF are rejected. Omitting `fromName` preserves address-only sending.
+
+Conservez une adresse seule dans `from`. Le champ facultatif `fromName` définit
+le nom d'expéditeur, y compris les noms Unicode, même si l'adresse provient de la
+configuration du transport. SES encode le nom au format MIME ; SMTP transmet
+une adresse structurée à Nodemailer. Les noms vides ou contenant CR/LF sont
+refusés. Sans `fromName`, seule l'adresse est utilisée.
 
 For durable SES delivery, provide the adapter registry to the runtime. The SES
 Layer reads `SES_REGION`, `SES_ACCESS_KEY_ID`, `SES_SECRET_ACCESS_KEY`, and the

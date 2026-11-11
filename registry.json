@@ -805,7 +805,7 @@
       "description": "A backend-neutral notification popover with English/French defaults, arbitrary locale packs, unread state, and inbox/archive views.",
       "meta": {
         "createdAt": "2026-08-17",
-        "updatedAt": "2026-09-28"
+        "updatedAt": "2026-11-11"
       },
       "type": "registry:block",
       "docs": "## Overview\n\n`notification-menu` provides backend-neutral notification presentation and interactions. It can present inbox records from the recommended `@krak-stack/notifications` package or from an application-owned compatibility store. The component itself never fetches, persists, or authorizes records.\n\nThe consumer owns trusted user and tenant scope, HTTP and atom integration, mutations, invalidation, navigation, localized notification content, and branding. The component receives already-authorized notifications and reports IDs to `onMarkRead` and `onArchive`. English and French menu chrome is built in. Pass `locale` explicitly and add any language through the locale-keyed `messages` map.\n\n## Usage\n\n```tsx\nimport { NotificationMenu } from \"@/services/notification/client\";\n\n<NotificationMenu\n  locale={locale}\n  messages={{ es: { archiveAll: \"Archivar todo\" } }}\n  notifications={notifications}\n  onMarkRead={(notificationIds) => client.markRead({ notificationIds })}\n  onArchive={(notificationIds) => client.archive({ notificationIds })}\n  onNavigate={(notification) => navigate({ href: notification.href })}\n/>\n```\n\nMap durable package inbox records to `NotificationItem` only after the server has enforced recipient, organization, and workspace scope. Each item accepts `id`, `title`, optional `description`, `createdAt`, `timestampLabel`, `href`, `readAt`, and `archivedAt`. Opening the menu marks unread inbox IDs as read by default; set `markReadOnOpen={false}` to disable this behavior.\n\nUse `renderItem` for custom item content and `renderTrigger` for custom trigger presentation. Never pass browser-supplied scope directly to backend list or mutation operations.",
@@ -828,6 +828,7 @@
         "empty",
         "popover",
         "scroll-area",
+        "separator",
         "skeleton",
         "tabs"
       ],

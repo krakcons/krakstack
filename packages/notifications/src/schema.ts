@@ -666,6 +666,7 @@ export const EmailRecipient = Schema.Struct({
 
 const EmailPayloadV1Fields = Schema.Struct({
   from: Schema.optional(EmailAddress),
+  fromName: Schema.optional(EmailDisplayName),
   replyTo: Schema.optional(EmailAddress),
   subject: Schema.NonEmptyString,
   text: Schema.optional(Schema.NonEmptyString),

@@ -6,7 +6,7 @@ import {
   Inbox,
   TriangleAlert,
 } from "lucide-react";
-import { type ReactElement, type ReactNode, useState } from "react";
+import { Fragment, type ReactElement, type ReactNode, useState } from "react";
 import { Schema } from "effect";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -199,11 +200,11 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
       <PopoverContent
         align="end"
         className={cn(
-          "max-h-[min(32rem,80svh)] w-96 max-w-[calc(100vw-1rem)] gap-0 p-0",
+          "max-h-[min(32rem,80svh,var(--available-height))] w-96 max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0",
           className,
         )}
       >
-        <PopoverHeader className="border-b px-4 py-3">
+        <PopoverHeader className="shrink-0 border-b px-4 py-3">
           <PopoverTitle>{labels.notifications}</PopoverTitle>
         </PopoverHeader>
         <Tabs
@@ -211,24 +212,28 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
           onValueChange={(value) =>
             setTab(value === "archive" ? "archive" : "inbox")
           }
-          className="min-h-0 gap-0"
+          className="min-h-0 min-w-0 flex-1 gap-0"
         >
-          <div className="flex items-center gap-2 border-b p-2">
-            <TabsList className="grid flex-1 grid-cols-2">
-              <TabsTrigger value="inbox">
+          <div className="flex shrink-0 flex-col gap-2 border-b p-2">
+            <TabsList className="grid w-full min-w-0 grid-cols-2">
+              <TabsTrigger className="min-w-0" value="inbox">
                 <Inbox data-icon="inline-start" />
-                {labels.inbox}
+                <span className="truncate">{labels.inbox}</span>
                 {inbox.length > 0 ? (
-                  <Badge variant="secondary">{inbox.length}</Badge>
+                  <Badge className="shrink-0 tabular-nums" variant="secondary">
+                    {inbox.length}
+                  </Badge>
                 ) : null}
               </TabsTrigger>
-              <TabsTrigger value="archive">
+              <TabsTrigger className="min-w-0" value="archive">
                 <ArchiveRestore data-icon="inline-start" />
-                {labels.archived}
+                <span className="truncate">{labels.archived}</span>
               </TabsTrigger>
             </TabsList>
             {tab === "inbox" && inbox.length > 0 && onArchive ? (
               <ArchiveButton
+                showLabel
+                className="w-full"
                 label={labels.archiveAll}
                 notificationIds={inbox.map((notification) => notification.id)}
                 onArchive={onArchive}
@@ -275,7 +280,7 @@ export function NotificationMenuTrigger({
       }
       className={cn(
         buttonVariants({ variant: "outline", size: "icon" }),
-        "relative rounded-full",
+        "relative",
       )}
       type="button"
     >
@@ -342,18 +347,20 @@ export function NotificationList<ActionResult>({
   }
 
   return (
-    <ScrollArea className="h-[min(24rem,60svh)]">
-      <div className="flex flex-col gap-1 p-2">
-        {notifications.map((notification) => (
-          <NotificationListItem
-            key={notification.id}
-            labels={labels}
-            locale={locale}
-            notification={notification}
-            onArchive={onArchive}
-            onNavigate={onNavigate}
-            renderItem={renderItem}
-          />
+    <ScrollArea className="h-[min(24rem,60svh)] min-h-0 min-w-0 flex-1">
+      <div className="flex min-w-0 flex-col">
+        {notifications.map((notification, index) => (
+          <Fragment key={notification.id}>
+            {index > 0 ? <Separator /> : null}
+            <NotificationListItem
+              labels={labels}
+              locale={locale}
+              notification={notification}
+              onArchive={onArchive}
+              onNavigate={onNavigate}
+              renderItem={renderItem}
+            />
+          </Fragment>
         ))}
       </div>
     </ScrollArea>
@@ -386,56 +393,61 @@ export function NotificationListItem<ActionResult>({
       window.location.assign(notification.href);
     }
   };
+  const content = renderItem?.(notification) ?? (
+    <span className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="flex min-w-0 items-start gap-2">
+        {unread ? (
+          <span
+            aria-hidden="true"
+            className="bg-primary mt-1.5 size-2 shrink-0 rounded-full"
+          />
+        ) : null}
+        <span className="min-w-0 flex-1 font-medium">{notification.title}</span>
+      </span>
+      {notification.description ? (
+        <span className="text-muted-foreground line-clamp-2 text-xs font-normal">
+          {notification.description}
+        </span>
+      ) : null}
+      {notification.timestampLabel || notification.createdAt ? (
+        <span className="text-muted-foreground text-xs font-normal">
+          {notification.timestampLabel ??
+            formatNotificationDate(notification.createdAt, locale)}
+        </span>
+      ) : null}
+    </span>
+  );
 
   return (
     <div
       className={cn(
-        "group flex min-w-0 items-start gap-1 rounded-lg",
+        "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start py-2",
         unread && "bg-muted/70",
       )}
       data-unread={unread || undefined}
     >
-      <Button
-        className="h-auto min-w-0 flex-1 justify-start px-3 py-2.5 text-left whitespace-normal"
-        disabled={!notification.href && !onNavigate}
-        onClick={selectNotification}
-        type="button"
-        variant="ghost"
-      >
-        {renderItem?.(notification) ?? (
-          <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex min-w-0 items-start gap-2">
-              {unread ? (
-                <span
-                  aria-hidden="true"
-                  className="bg-primary mt-1.5 size-2 shrink-0 rounded-full"
-                />
-              ) : null}
-              <span className="min-w-0 flex-1 font-medium">
-                {notification.title}
-              </span>
-            </span>
-            {notification.description ? (
-              <span className="text-muted-foreground line-clamp-2 text-xs font-normal">
-                {notification.description}
-              </span>
-            ) : null}
-            {notification.timestampLabel || notification.createdAt ? (
-              <span className="text-muted-foreground text-xs font-normal">
-                {notification.timestampLabel ??
-                  formatNotificationDate(notification.createdAt, locale)}
-              </span>
-            ) : null}
-          </span>
-        )}
-      </Button>
+      {notification.href || onNavigate ? (
+        <Button
+          className="h-auto w-full min-w-0 justify-start px-3 py-2.5 text-left [overflow-wrap:anywhere] whitespace-normal"
+          onClick={selectNotification}
+          type="button"
+          variant="ghost"
+        >
+          {content}
+        </Button>
+      ) : (
+        <div className="flex min-w-0 px-3 py-2.5 [overflow-wrap:anywhere]">
+          {content}
+        </div>
+      )}
       {!notification.archivedAt && onArchive ? (
-        <ArchiveButton
-          className="mt-2 mr-2 shrink-0"
-          label={labels.archiveItem(notificationTitle(notification))}
-          notificationIds={[notification.id]}
-          onArchive={onArchive}
-        />
+        <div className="pt-2 pr-2">
+          <ArchiveButton
+            label={labels.archiveItem(notificationTitle(notification))}
+            notificationIds={[notification.id]}
+            onArchive={onArchive}
+          />
+        </div>
       ) : null}
     </div>
   );
@@ -454,8 +466,8 @@ export function NotificationEmpty({
     <Empty className="min-h-48 p-6">
       <EmptyHeader>
         <EmptyMedia variant="icon">{icon}</EmptyMedia>
-        <EmptyTitle className="text-base">{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
+        <EmptyTitle className="text-sm">{title}</EmptyTitle>
+        <EmptyDescription className="text-xs">{description}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
@@ -464,11 +476,13 @@ export function NotificationEmpty({
 function ArchiveButton<ActionResult>({
   className,
   label,
+  showLabel = false,
   notificationIds,
   onArchive,
 }: {
   className?: string | undefined;
   label: string;
+  showLabel?: boolean;
   notificationIds: readonly string[];
   onArchive: NotificationAction<ActionResult>;
 }) {
@@ -488,12 +502,13 @@ function ArchiveButton<ActionResult>({
       className={className}
       disabled={pending}
       onClick={() => void archiveNotifications()}
-      size="icon-sm"
+      size={showLabel ? "sm" : "icon-sm"}
       title={label}
       type="button"
-      variant="ghost"
+      variant={showLabel ? "outline" : "ghost"}
     >
-      <Archive />
+      <Archive data-icon={showLabel ? "inline-start" : undefined} />
+      {showLabel ? label : null}
     </Button>
   );
 }

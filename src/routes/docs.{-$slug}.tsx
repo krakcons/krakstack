@@ -284,6 +284,14 @@ const registryPreviews: Readonly<
     ),
   ],
   [
+    "notification-menu",
+    lazy(() =>
+      import("@/components/registry-previews/notification-menu-preview").then(
+        ({ NotificationMenuPreview }) => ({ default: NotificationMenuPreview }),
+      ),
+    ),
+  ],
+  [
     "icon-input",
     lazy(() =>
       import("@/components/registry-previews/icon-input-preview").then(

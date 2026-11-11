@@ -71,6 +71,15 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} New_Components_Upload_ErrorInputs */
 /** @typedef {{}} New_Components_Upload_FailureInputs */
 /** @typedef {{}} New_Components_Upload_HelpInputs */
+/** @typedef {{}} Notification_Menu_Preview_TitleInputs */
+/** @typedef {{}} Notification_Menu_Preview_DescriptionInputs */
+/** @typedef {{}} Notification_Menu_Preview_ResetInputs */
+/** @typedef {{}} Notification_Menu_Preview_Course_TitleInputs */
+/** @typedef {{}} Notification_Menu_Preview_Course_DescriptionInputs */
+/** @typedef {{}} Notification_Menu_Preview_Collection_TitleInputs */
+/** @typedef {{}} Notification_Menu_Preview_Collection_DescriptionInputs */
+/** @typedef {{}} Notification_Menu_Preview_Export_TitleInputs */
+/** @typedef {{}} Notification_Menu_Preview_Export_DescriptionInputs */
 /** @typedef {{}} Map_Picker_Preview_TitleInputs */
 /** @typedef {{}} Map_Picker_Preview_DescriptionInputs */
 /** @typedef {{}} Map_Menu_Preview_PointInputs */
@@ -1389,6 +1398,132 @@ export const new_components_upload_help = /** @type {((inputs?: New_Components_U
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.new_components_upload_help(inputs)
 	return __fr.new_components_upload_help(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Interactive notification menu" |
+*
+* @param {Notification_Menu_Preview_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_title = /** @type {((inputs?: Notification_Menu_Preview_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_title(inputs)
+	return __fr.notification_menu_preview_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Open the bell to mark notifications as read. Archive one notification or the entire inbox, then switch to Archived. Reset the demo to try again. These exampl..." |
+*
+* @param {Notification_Menu_Preview_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_description = /** @type {((inputs?: Notification_Menu_Preview_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_description(inputs)
+	return __fr.notification_menu_preview_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Reset demo" |
+*
+* @param {Notification_Menu_Preview_ResetInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_reset = /** @type {((inputs?: Notification_Menu_Preview_ResetInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_ResetInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_reset(inputs)
+	return __fr.notification_menu_preview_reset(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Course invitation: Building accessible and inclusive learning experiences" |
+*
+* @param {Notification_Menu_Preview_Course_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_course_title = /** @type {((inputs?: Notification_Menu_Preview_Course_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Course_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_course_title(inputs)
+	return __fr.notification_menu_preview_course_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Your team invited you to a new course. This longer example shows how notification content wraps inside the card without pushing its archive action outside th..." |
+*
+* @param {Notification_Menu_Preview_Course_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_course_description = /** @type {((inputs?: Notification_Menu_Preview_Course_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Course_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_course_description(inputs)
+	return __fr.notification_menu_preview_course_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Collection invitation" |
+*
+* @param {Notification_Menu_Preview_Collection_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_collection_title = /** @type {((inputs?: Notification_Menu_Preview_Collection_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Collection_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_collection_title(inputs)
+	return __fr.notification_menu_preview_collection_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Explore your team's onboarding collection and choose your next course." |
+*
+* @param {Notification_Menu_Preview_Collection_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_collection_description = /** @type {((inputs?: Notification_Menu_Preview_Collection_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Collection_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_collection_description(inputs)
+	return __fr.notification_menu_preview_collection_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Your export is ready" |
+*
+* @param {Notification_Menu_Preview_Export_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_export_title = /** @type {((inputs?: Notification_Menu_Preview_Export_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Export_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_export_title(inputs)
+	return __fr.notification_menu_preview_export_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "This notification was already archived. Archived items remain available in the Archived tab." |
+*
+* @param {Notification_Menu_Preview_Export_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_export_description = /** @type {((inputs?: Notification_Menu_Preview_Export_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Export_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_export_description(inputs)
+	return __fr.notification_menu_preview_export_description(inputs)
 });
 /**
 * | output |

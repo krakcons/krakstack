@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { Buffer } from "node:buffer";
 
 import {
   sesEmailRequest,
@@ -11,6 +12,49 @@ import {
 } from "../src/transport/email.js";
 
 describe("email adapter requests", () => {
+  it.effect(
+    "preserves sender display names in SES and SMTP, including UTF-8 word boundaries",
+    () =>
+      Effect.gen(function* () {
+        const recipient = yield* decodeEmailRecipient({
+          address: "recipient@example.com",
+          name: null,
+        });
+        for (const fromName of [
+          "Kokobi Learning",
+          'Équipe "formation" \\ <bonjour@example.com>',
+          "Équipe 🎓 française ".repeat(20),
+        ]) {
+          const email = yield* decodeEmailPayloadV1({
+            fromName,
+            subject: "Subject",
+            text: "Body",
+          });
+          // The resolved address can also come from NOTIFICATION_EMAIL_FROM.
+          const request = { email, recipient, from: "sender@example.com" };
+          const sender = sesEmailRequest(request).FromEmailAddress!;
+          expect(sender.endsWith(" <sender@example.com>")).toBe(true);
+          const words = sender
+            .slice(0, -" <sender@example.com>".length)
+            .split(" ");
+          const decoded = words
+            .map((word) => {
+              expect(word).toMatch(/^=\?UTF-8\?B\?[A-Za-z0-9+/=]+\?=$/);
+              expect(word.length).toBeLessThanOrEqual(75);
+              return new TextDecoder("utf-8", { fatal: true }).decode(
+                Buffer.from(word.slice(10, -2), "base64"),
+              );
+            })
+            .join("");
+          expect(decoded).toBe(fromName);
+          expect(smtpEmailRequest(request).from).toEqual({
+            address: "sender@example.com",
+            name: fromName,
+          });
+        }
+      }),
+  );
+
   it.effect(
     "maps validated unsubscribe headers into the real SES and SMTP request builders",
     () =>
