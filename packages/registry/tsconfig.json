@@ -11,6 +11,8 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/ui/cron-expression-editor.tsx",
+    "../../src/components/ui/phone-number-input.tsx",
     "../../src/components/ui/image-crop-editor.tsx",
     "../../src/components/ui/timezone-select.tsx",
     "../../src/components/ui/async-action-button.tsx",

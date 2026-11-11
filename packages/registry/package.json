@@ -17,6 +17,14 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./cron-expression-editor": {
+      "types": "./dist/components/ui/cron-expression-editor.d.ts",
+      "import": "./dist/components/ui/cron-expression-editor.js"
+    },
+    "./phone-number-input": {
+      "types": "./dist/components/ui/phone-number-input.d.ts",
+      "import": "./dist/components/ui/phone-number-input.js"
+    },
     "./image-crop-editor": {
       "types": "./dist/components/ui/image-crop-editor.d.ts",
       "import": "./dist/components/ui/image-crop-editor.js"
@@ -370,6 +378,8 @@
   "dependencies": {
     "@oxlint/plugins": "1.78.0",
     "bowser": "^2.14.1",
+    "cron-parser": "^5.10.4",
+    "libphonenumber-js": "^1.13.16",
     "motion": "^14.12.0",
     "react-colorful": "^5.8.1",
     "web-vitals": "^5.1.0"

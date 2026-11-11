@@ -4,6 +4,48 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "cron-expression-editor",
+      "type": "registry:component",
+      "title": "Cron Expression Editor",
+      "description": "Type five-field cron expressions with restricted syntax, automatic spacing, field validation and timezone-aware next runs.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "files": [
+        {
+          "path": "src/components/ui/cron-expression-editor.tsx",
+          "type": "registry:component",
+          "target": "components/ui/cron-expression-editor.tsx"
+        },
+        {
+          "path": "src/components/ui/cron-expression-editor.schema.ts",
+          "type": "registry:component",
+          "target": "components/ui/cron-expression-editor.schema.ts"
+        }
+      ],
+      "registryDependencies": ["@krak-stack/krakstack-provider", "input"],
+      "dependencies": ["react", "effect", "cron-parser@^5.10.4"]
+    },
+    {
+      "name": "phone-number-input",
+      "type": "registry:component",
+      "title": "Phone Number Input",
+      "description": "Searchable country selection, protected calling codes and phone validation with E.164 and separate extension output.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "files": [
+        {
+          "path": "src/components/ui/phone-number-input.tsx",
+          "type": "registry:component",
+          "target": "components/ui/phone-number-input.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/virtualized-combobox",
+        "input",
+        "button"
+      ],
+      "dependencies": ["react", "lucide-react", "libphonenumber-js@^1.13.16"]
+    },
+    {
       "name": "image-crop-editor",
       "type": "registry:component",
       "title": "Image Crop Editor",
