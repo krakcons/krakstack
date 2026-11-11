@@ -4,6 +4,53 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "image-crop-editor",
+      "type": "registry:component",
+      "title": "Image Crop Editor",
+      "description": "Crop, zoom, position and rotate images with accessible controls and bounded PNG export.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "See /docs/image-crop-editor for controlled cropping, cross-origin image requirements and PNG export.",
+      "files": [
+        {
+          "path": "src/components/ui/image-crop-editor.tsx",
+          "type": "registry:component",
+          "target": "components/ui/image-crop-editor.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/async-action-button",
+        "button"
+      ],
+      "dependencies": ["react"]
+    },
+    {
+      "name": "timezone-select",
+      "type": "registry:component",
+      "title": "Timezone Select",
+      "description": "Search time zones with a code-configured continent, defaulting to North America, local times, UTC offsets and browser-time comparison.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "docs": "See /docs/timezone-select for searchable time zones, daylight-saving-aware offsets and local-time comparisons.",
+      "files": [
+        {
+          "path": "src/components/ui/timezone-select.tsx",
+          "type": "registry:component",
+          "target": "components/ui/timezone-select.tsx"
+        },
+        {
+          "path": "src/components/ui/timezone-select.schema.ts",
+          "type": "registry:component",
+          "target": "components/ui/timezone-select.schema.ts"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/virtualized-combobox",
+        "button"
+      ],
+      "dependencies": ["react", "effect"]
+    },
+    {
       "name": "async-action-button",
       "type": "registry:component",
       "title": "Async Action Button",

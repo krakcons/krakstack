@@ -17,6 +17,14 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./image-crop-editor": {
+      "types": "./dist/components/ui/image-crop-editor.d.ts",
+      "import": "./dist/components/ui/image-crop-editor.js"
+    },
+    "./timezone-select": {
+      "types": "./dist/components/ui/timezone-select.d.ts",
+      "import": "./dist/components/ui/timezone-select.js"
+    },
     "./async-action-button": {
       "types": "./dist/components/ui/async-action-button.d.ts",
       "import": "./dist/components/ui/async-action-button.js"

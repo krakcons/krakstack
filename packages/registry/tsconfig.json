@@ -11,6 +11,8 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/ui/image-crop-editor.tsx",
+    "../../src/components/ui/timezone-select.tsx",
     "../../src/components/ui/async-action-button.tsx",
     "../../src/components/ui/unsaved-changes-guard.tsx",
     "../../src/components/ui/danger-confirmation.tsx",

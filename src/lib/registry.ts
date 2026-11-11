@@ -66,6 +66,8 @@ export function getRegistryGroup(item: RegistryItem) {
   if (
     [
       "copy-button",
+      "image-crop-editor",
+      "timezone-select",
       "async-action-button",
       "unsaved-changes-guard",
       "danger-confirmation",
