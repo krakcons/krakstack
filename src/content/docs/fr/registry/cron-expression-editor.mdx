@@ -1,0 +1,55 @@
+---
+slug: cron-expression-editor
+path: /docs/cron-expression-editor
+title: Éditeur d’expression cron
+description: Modifier des règles récurrentes et prévisualiser les exécutions selon le fuseau.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Éditeur d’expression cron
+
+Un champ cron contrôlé et compact avec espacement automatique, syntaxe restreinte et validation par champ. Saisissez directement l’expression, sans menus déroulants. L’application conserve la planification, les autorisations, la persistance et l’exécution des tâches.
+
+Les trois boutons d’exemple de cette page appartiennent **uniquement à la documentation**, en dehors du composant réutilisable. L’application peut composer ses propres raccourcis si nécessaire.
+
+**Prochaines exécutions** reste dans le composant sous une forme repliable et compacte : la première date figure à côté du libellé. Développez la section pour voir les cinq exécutions et le fuseau. Sous le champ, seul l’ordre des éléments apparaît, sans légende syntaxique dense.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/cron-expression-editor
+```
+
+Export : `@krak-stack/registry/cron-expression-editor`. Utilise `cron-parser` pour l’analyse et les changements d’heure.
+
+## Utilisation
+
+```tsx
+<CronExpressionEditor
+  value={expression}
+  onValueChange={setExpression}
+  timeZone="America/Toronto"
+  referenceTime={referenceTime}
+  locale="fr"
+  name="cron"
+/>;
+```
+
+Fournissez une `Date` explicite et stable dans `referenceTime`, idéalement issue du chargeur de l’application. Les exécutions sont strictement postérieures à cet instant. Modifiez-le pour actualiser la prévisualisation ; le composant ne possède pas d’horloge. `timeZone` est un identifiant IANA explicite. Composez Timezone Select à l’extérieur si l’utilisateur peut le modifier. `label`, `disabled` et `name` sont facultatifs.
+
+## Sémantique
+
+Saisissez des chiffres et `*`, `/`, `-`, `,`, avec des espaces entre les cinq champs. Les espaces répétés ou collés sont normalisés sans déplacer le curseur en fin de texte. Les lettres, ponctuations non prises en charge, sixièmes champs, opérateurs incorrects et valeurs hors limites sont refusés, sans conversion silencieuse. La minute `61`, l’heure `24` et le pas `*/0` sont refusés. La saisie et le collage utilisent la même validation Effect Schema.
+
+Le champ actif peut être incomplet : `*/` peut devenir `*/15` et `5-1` peut devenir `5-15`. Un champ incomplet doit être terminé avant de passer au suivant. Les opérateurs peuvent être modifiés au milieu de l’expression sans perdre la position du curseur. Effacez tout pour recommencer. `name` soumet le brouillon ; l’application doit refuser les brouillons incomplets avant persistance. `CronDraftSchema` valide la saisie en cours, pas une règle complète faisant autorité. `formatCronDraft(text, cursor?)` expose cette politique et renvoie `null` si la modification est refusée.
+
+Les champs sont la minute (0–59), l’heure (0–23), le jour du mois (1–31), le mois (1–12) et le jour de la semaine (0–7, dimanche 0 ou 7). Les listes, plages et pas suivent cron-parser. Le champ accepte uniquement les mois et jours numériques. Les expressions avancées fournies par l’application peuvent être prévisualisées, mais doivent être remplacées par une syntaxe numérique ou un préréglage avant modification. Les macros et expressions à six champs sont refusées. Les dates impossibles produisent une erreur de prévisualisation. Les contraintes de jour du mois et de la semaine utilisent le OU standard. La liste décrit des instants concrets, sans garantir la compatibilité avec tout ordonnanceur.
+
+Les tâches quotidiennes suivent le décalage local. Les heures absentes ou répétées suivent la politique de cron-parser. Utilisez la même sémantique côté serveur et validez les règles à la frontière. Les bases de fuseaux peuvent varier entre environnements. Les expressions, fuseaux, dates invalides et règles sans prochaine exécution trouvée affichent une erreur sans modifier la valeur. Les erreurs internes du parseur ne sont pas exposées.
+
+`getCronPreview(expression, timeZone, referenceTime, count?)` renvoie des dates ou `null`. `count` vaut cinq par défaut et accepte les entiers de 1 à 20. Traduisez les libellés de l’application avec Paraglide. Les contrôles intégrés suivent le fournisseur ou la prop `locale` en anglais/français.

@@ -41,6 +41,24 @@ const registryPreviews: Readonly<
   Record<string, LazyExoticComponent<ComponentType> | undefined>
 > = Object.fromEntries([
   [
+    "cron-expression-editor",
+    lazy(() =>
+      import("@/components/registry-previews/cron-expression-editor-preview").then(
+        ({ CronExpressionEditorPreview }) => ({
+          default: CronExpressionEditorPreview,
+        }),
+      ),
+    ),
+  ],
+  [
+    "phone-number-input",
+    lazy(() =>
+      import("@/components/registry-previews/phone-number-input-preview").then(
+        ({ PhoneNumberInputPreview }) => ({ default: PhoneNumberInputPreview }),
+      ),
+    ),
+  ],
+  [
     "image-crop-editor",
     lazy(() =>
       import("@/components/registry-previews/image-crop-editor-preview").then(

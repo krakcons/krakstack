@@ -1,0 +1,57 @@
+---
+slug: cron-expression-editor
+path: /docs/cron-expression-editor
+title: Cron Expression Editor
+description: Edit recurring job rules with timezone-aware next-run previews.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Cron Expression Editor
+
+A compact, controlled five-field cron input with automatic spacing, syntax restrictions and per-field validation. Type expressions directly rather than using dropdowns. Scheduling, authorization, persistence and job execution remain application-owned.
+
+The three schedule buttons in this page’s preview are **docs-only examples**, outside the reusable component. Compose your own shortcuts in the host application if needed.
+
+**Next runs** stays in the component as a compact disclosure: the first run appears beside the label, and expanding it shows all five runs and the time zone. The input itself only shows the field order, not a dense syntax legend.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/cron-expression-editor
+```
+
+Package export: `@krak-stack/registry/cron-expression-editor`. Uses `cron-parser` for parsing and daylight-saving behavior, not a hand-written scheduler.
+
+## Usage
+
+```tsx
+import { CronExpressionEditor } from "@krak-stack/registry/cron-expression-editor";
+
+<CronExpressionEditor
+  value={expression}
+  onValueChange={setExpression}
+  timeZone="America/Toronto"
+  referenceTime={referenceTime}
+  locale="en"
+  name="cron"
+/>;
+```
+
+Pass an explicit, stable `Date` as `referenceTime`, ideally supplied by the host loader. Next runs are strictly after this instant. Change it intentionally to refresh the preview; the component does not own a clock. `timeZone` is an explicit IANA identifier; compose Timezone Select outside the editor when users can change it. `label`, `disabled` and `name` are optional.
+
+## Expression semantics
+
+Type digits and `*`, `/`, `-`, `,`, with spaces between the five fields. Repeated spaces and pasted whitespace normalize to single spaces without losing the caret position. Letters, unsupported punctuation, sixth fields, invalid operator combinations and out-of-range values are rejected rather than silently clamped or reinterpreted. For example, minute `61`, hour `24` and step `*/0` cannot be entered. Both keyboard entry and pasted text use the same Effect Schema validation.
+
+An active field can remain unfinished while typing: `*/` can become `*/15`, and `5-1` can become `5-15`. You cannot move to a new field while the previous one is incomplete. Editing operators in the middle of an existing expression works without moving the caret to the end. Clear all text to start again. `name` submits the typed draft; the host must reject incomplete drafts before saving. `CronDraftSchema` validates editable drafts, not authoritative complete schedules. `formatCronDraft(text, cursor?)` exposes the formatting and restriction policy and returns `null` for a rejected edit.
+
+The fields are minute (0–59), hour (0–23), day of month (1–31), month (1–12) and day of week (0–7, Sunday 0 or 7). Lists, ranges and steps follow cron-parser. The typed input intentionally uses numeric month/weekdays only; host-supplied named or advanced expressions can still be previewed but must be replaced with numeric syntax or a preset before editing. Six-field expressions and macros are rejected. Impossible calendar dates still show a next-run error. Day-of-month/day-of-week combinations use standard OR semantics. The next-run list explains actual instants rather than promising scheduler compatibility.
+
+Daily local runs follow offset changes. Missing and repeated wall-clock times follow cron-parser’s DST policy; use the same semantics in your server scheduler and validate stored rules again at the boundary. Time-zone database versions can differ between runtimes. Invalid expressions, zones, reference dates and schedules without a discoverable next run show an error without changing the controlled value. No raw parser errors are exposed.
+
+`getCronPreview(expression, timeZone, referenceTime, count?)` returns dates or `null`; `count` defaults to five and must be an integer from 1 to 20. Localize host labels with Paraglide. Built-in controls follow the provider locale or the explicit English/French `locale` prop.

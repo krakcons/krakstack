@@ -2,6 +2,10 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Cron_Example_HourlyInputs */
+/** @typedef {{}} Cron_Example_DailyInputs */
+/** @typedef {{}} Cron_Example_WeekdaysInputs */
+/** @typedef {{}} Cron_Examples_HelpInputs */
 /** @typedef {{}} New_Components_TimezoneInputs */
 /** @typedef {{}} New_Components_Timezone_HelpInputs */
 /** @typedef {{}} New_Components_CropInputs */
@@ -420,6 +424,62 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Every hour" |
+*
+* @param {Cron_Example_HourlyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const cron_example_hourly = /** @type {((inputs?: Cron_Example_HourlyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Cron_Example_HourlyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.cron_example_hourly(inputs)
+	return __fr.cron_example_hourly(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Daily at 09:00" |
+*
+* @param {Cron_Example_DailyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const cron_example_daily = /** @type {((inputs?: Cron_Example_DailyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Cron_Example_DailyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.cron_example_daily(inputs)
+	return __fr.cron_example_daily(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Weekdays at 09:00" |
+*
+* @param {Cron_Example_WeekdaysInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const cron_example_weekdays = /** @type {((inputs?: Cron_Example_WeekdaysInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Cron_Example_WeekdaysInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.cron_example_weekdays(inputs)
+	return __fr.cron_example_weekdays(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Try an example schedule. These buttons are part of this demo only." |
+*
+* @param {Cron_Examples_HelpInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const cron_examples_help = /** @type {((inputs?: Cron_Examples_HelpInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Cron_Examples_HelpInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.cron_examples_help(inputs)
+	return __fr.cron_examples_help(inputs)
+});
 /**
 * | output |
 * | --- |

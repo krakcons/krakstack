@@ -1,0 +1,52 @@
+---
+slug: phone-number-input
+path: /docs/phone-number-input
+title: Phone Number Input
+description: Validate international numbers and keep extensions separate from E.164.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Phone Number Input
+
+A country-aware controlled telephone field with a compact, searchable country picker. The calling code (such as **+1**) lives outside the editable number and cannot be deleted. Uses the full `libphonenumber-js/max` metadata for validation, with no autocomplete service, network request or verification workflow.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/phone-number-input
+```
+
+Package export: `@krak-stack/registry/phone-number-input`.
+
+## Usage
+
+```tsx
+<PhoneNumberInput
+  value={draft}
+  country={country}
+  onCountryChange={setCountry}
+  onValueChange={(text, details) => {
+    setDraft(text);
+    setPhone(details);
+  }}
+  countries={["CA", "US", "FR"]}
+  locale="en"
+/>;
+```
+
+`country` is a controlled ISO country code for interpreting national numbers. The picker reuses Virtualized Combobox, searches localized country names, ISO codes and calling codes, and never offers a clear action. The optional `countries` catalog defaults to all supported countries; the selected country stays available even outside that list. Choosing a new country invokes `onCountryChange`, replaces the calling code while preserving the editable national portion, and invokes `onValueChange` with recalculated details. Clearing the national field emits an empty string but leaves the prefix visible. Pasting a full international number is supported; a valid detected country updates the picker when available in the catalog.
+
+## Normalization
+
+`onValueChange(text, details)` emits the combined international draft, including the protected calling code, while only its national portion is editable. The field accepts digit keystrokes only; punctuation is inserted automatically as you type, such as `(416) 555-0123` in Canada or `06 12 34 56 78` in France. Backspace and Delete work through formatting characters, and caret position follows the edited digits. Pasted text is cleaned to digits; full international numbers are recognized. The numeric mobile keyboard is requested.
+
+`details` is `null` unless the number is valid, otherwise `{ e164, extension, country }`. Extensions are separate from E.164 and the main field: pass `withExtension` to expose a separate numeric extension field. Existing extensions are shown there automatically. Pasted valid numbers with extensions populate it rather than adding extension digits to the main number. The detected country can be `null` for non-geographic numbers. Blur normalizes the combined draft without changing the national display mask. Read-only fields do not reformat and their country picker is disabled.
+
+`normalizePhoneNumber(text, country)` provides the same strict normalization without extracting a number from surrounding prose. A valid numbering-plan shape does not prove assignment, reachability or ownership. Verification, messaging consent and persistence remain application-owned. Keep metadata updated as numbering plans change.
+
+Standard input props, `label` and provider/explicit `locale` are supported. Country names use `Intl.DisplayNames`. A `name` submits the combined draft through a hidden input, not necessarily E.164; submit validated canonical details explicitly and validate again on the server. Host labels should use Paraglide.

@@ -1,0 +1,52 @@
+---
+slug: phone-number-input
+path: /docs/phone-number-input
+title: Champ de téléphone
+description: Valider les numéros internationaux et séparer le poste du format E.164.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Champ de téléphone
+
+Un champ contrôlé avec un sélecteur de pays compact et recherchable. L’indicatif (par exemple **+1**) reste en dehors du numéro modifiable et ne peut pas être effacé. Utilise les métadonnées complètes de `libphonenumber-js/max`, sans service distant, requête réseau ni procédure de vérification.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/phone-number-input
+```
+
+Export : `@krak-stack/registry/phone-number-input`.
+
+## Utilisation
+
+```tsx
+<PhoneNumberInput
+  value={draft}
+  country={country}
+  onCountryChange={setCountry}
+  onValueChange={(text, details) => {
+    setDraft(text);
+    setPhone(details);
+  }}
+  countries={["CA", "US", "FR"]}
+  locale="fr"
+/>;
+```
+
+`country` est un code ISO contrôlé. Le sélecteur réutilise Virtualized Combobox et recherche les noms traduits, codes ISO et indicatifs, sans action d’effacement. `countries` contient tous les pays par défaut ; le pays sélectionné reste disponible même hors de cette liste. Un changement de pays déclenche `onCountryChange`, remplace l’indicatif en conservant la partie nationale et déclenche `onValueChange` avec les détails recalculés. Effacer le champ national émet un texte vide mais conserve l’indicatif visible. Coller un numéro international complet est permis ; un pays valide détecté actualise le sélecteur s’il appartient au catalogue.
+
+## Normalisation
+
+`onValueChange(text, details)` émet le brouillon international complet, avec l’indicatif protégé, tandis que seule la partie nationale est modifiable. Le champ accepte uniquement les chiffres au clavier. La ponctuation est ajoutée pendant la saisie : `(416) 555-0123` au Canada ou `06 12 34 56 78` en France. Retour arrière et Supprimer traversent les caractères de formatage ; le curseur suit les chiffres modifiés. Le texte collé est nettoyé et les numéros internationaux complets sont reconnus. Le clavier numérique mobile est demandé.
+
+`details` vaut `null` si le numéro est invalide, sinon `{ e164, extension, country }`. Le poste est séparé d’E.164 et du champ principal : `withExtension` affiche un champ numérique distinct. Les postes existants y apparaissent automatiquement. Coller un numéro valide avec poste remplit ce champ sans ajouter les chiffres du poste au numéro principal. Le pays détecté peut être `null` pour les numéros non géographiques. La perte de focus normalise le brouillon complet sans changer le masque national. Un champ en lecture seule n’est pas reformaté et son sélecteur de pays est désactivé.
+
+`normalizePhoneNumber(text, country)` applique la même normalisation stricte sans extraire de numéro d’un texte libre. La validité du format ne prouve ni l’attribution, ni la disponibilité, ni la propriété. L’application conserve la vérification, le consentement et la persistance. Maintenez les métadonnées à jour.
+
+Les props habituelles, `label` et la locale du fournisseur ou explicite sont acceptées. Les pays utilisent `Intl.DisplayNames`. `name` soumet le brouillon complet via un champ caché, pas nécessairement E.164 : soumettez les détails canoniques explicitement et validez à nouveau côté serveur. Traduisez les libellés de l’application avec Paraglide.

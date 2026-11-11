@@ -1,4 +1,8 @@
 {
+  "cron_example_hourly": "Every hour",
+  "cron_example_daily": "Daily at 09:00",
+  "cron_example_weekdays": "Weekdays at 09:00",
+  "cron_examples_help": "Try an example schedule. These buttons are part of this demo only.",
   "new_components_timezone": "Preferred time zone",
   "new_components_timezone_help": "This example shows North American time zones. Developers can configure another continent or all zones in code. Search a city, name or UTC offset; local times account for daylight saving and are compared with your browser’s time zone.",
   "new_components_crop": "Crop example image",

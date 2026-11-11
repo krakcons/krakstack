@@ -1,4 +1,8 @@
 {
+  "cron_example_hourly": "Chaque heure",
+  "cron_example_daily": "Chaque jour à 9 h",
+  "cron_example_weekdays": "En semaine à 9 h",
+  "cron_examples_help": "Essayez un exemple. Ces boutons appartiennent uniquement à cette démonstration.",
   "new_components_timezone": "Fuseau horaire préféré",
   "new_components_timezone_help": "Cet exemple affiche les fuseaux d’Amérique du Nord. Le développeur peut configurer un autre continent ou tous les fuseaux dans le code. Recherchez une ville, un nom ou un décalage UTC ; les heures tiennent compte de l’heure d’été et sont comparées au fuseau du navigateur.",
   "new_components_crop": "Recadrer l’image d’exemple",
