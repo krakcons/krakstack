@@ -420,28 +420,22 @@ export function NotificationListItem<ActionResult>({
 
   return (
     <div
-      className={cn(
-        "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start py-2",
-        unread && "bg-muted/70",
-      )}
+      className={cn("group relative min-w-0", unread && "bg-muted/70")}
       data-unread={unread || undefined}
     >
-      {notification.href || onNavigate ? (
-        <Button
-          className="h-auto w-full min-w-0 justify-start px-3 py-2.5 text-left [overflow-wrap:anywhere] whitespace-normal"
-          onClick={selectNotification}
-          type="button"
-          variant="ghost"
-        >
-          {content}
-        </Button>
-      ) : (
-        <div className="flex min-w-0 px-3 py-2.5 [overflow-wrap:anywhere]">
-          {content}
-        </div>
-      )}
+      <Button
+        className={cn(
+          "h-auto w-full min-w-0 cursor-pointer justify-start rounded-none border-0 px-3 py-4 text-left [overflow-wrap:anywhere] whitespace-normal",
+          !notification.archivedAt && onArchive && "pr-14",
+        )}
+        onClick={selectNotification}
+        type="button"
+        variant="ghost"
+      >
+        {content}
+      </Button>
       {!notification.archivedAt && onArchive ? (
-        <div className="pt-2 pr-2">
+        <div className="absolute top-3 right-2">
           <ArchiveButton
             label={labels.archiveItem(notificationTitle(notification))}
             notificationIds={[notification.id]}
