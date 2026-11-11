@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.7.0
+
+### Minor Changes
+
+- 8d543bf: Add Image Crop Editor and Timezone Select as standalone components with English/French guides and interactive previews. Timezone Select composes the existing Virtualized Combobox with a code-only continent prop (North America by default), local times, UTC offsets and browser-time comparisons. Existing registry entries remain unchanged.
+
 ## 0.6.0
 
 ### Minor Changes
