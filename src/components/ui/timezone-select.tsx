@@ -1,5 +1,6 @@
 import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 import {
   VirtualizedCombobox,
@@ -59,6 +60,7 @@ export type TimezoneSelectProps = {
   name?: string;
   disabled?: boolean;
   className?: string;
+  contentClassName?: string;
   locale?: string;
   messages?: Partial<Record<string, Partial<TimezoneSelectMessages>>>;
 };
@@ -349,6 +351,7 @@ export const TimezoneSelect = ({
   name,
   disabled,
   className,
+  contentClassName,
   locale: override,
   messages,
 }: TimezoneSelectProps) => {
@@ -439,7 +442,7 @@ export const TimezoneSelect = ({
     return minutes > 0 ? copy.ahead(duration) : copy.behind(duration);
   };
   return (
-    <div className={className}>
+    <div data-slot="timezone-select" className={className}>
       <div className="grid min-w-0 grid-cols-1 gap-3">
         <label htmlFor={id} className="text-sm font-medium">
           {label ?? copy.label}
@@ -450,7 +453,7 @@ export const TimezoneSelect = ({
           triggerId={id}
           // Let the existing virtualizer measure wrapped, multiline options
           // instead of fixing their boxes to its single-line height estimate.
-          contentClassName="[&_[role=option]]:h-auto!"
+          contentClassName={cn("[&_[role=option]]:h-auto!", contentClassName)}
           disabled={disabled}
           locale={locale}
           value={selected}
@@ -499,7 +502,10 @@ export const TimezoneSelect = ({
           </p>
         )}
         {selected?.data && (
-          <dl className="grid gap-1 rounded-lg border p-3 text-sm">
+          <dl
+            data-slot="timezone-details"
+            className="grid gap-1 rounded-lg border p-3 text-sm"
+          >
             <dt className="text-muted-foreground">{copy.selectedTime}</dt>
             <dd className="wrap-anywhere">
               {selected.data.time} · {selected.data.date} ·{" "}
@@ -509,7 +515,7 @@ export const TimezoneSelect = ({
           </dl>
         )}
         {comparisonTimeZone !== null && (
-          <div className="grid gap-2 text-sm">
+          <div data-slot="timezone-comparison" className="grid gap-2 text-sm">
             {baseline ? (
               <p className="text-muted-foreground wrap-anywhere">
                 {comparisonTimeZone === undefined

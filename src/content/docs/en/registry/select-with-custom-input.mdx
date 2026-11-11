@@ -1,0 +1,63 @@
+---
+slug: select-with-custom-input
+path: /docs/select-with-custom-input
+title: Select With Custom Input
+description: Reveal a labeled text field for options such as Other while keeping identifiers separate from answers.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Select With Custom Input
+
+A styled dropdown that reveals a text field when a designated option is selected. Reuses the existing Select and Input primitives. The application supplies every option; there is no built-in gender taxonomy. Gender is only the optional, local example on this page. Collect sensitive personal information only when needed and provide an appropriate non-disclosure option.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/select-with-custom-input
+```
+
+Package export: `@krak-stack/registry/select-with-custom-input`.
+
+## Usage
+
+```tsx
+const [choice, setChoice] = useState<SelectWithCustomInputValue | null>(null);
+
+<SelectWithCustomInput
+  label={m.contact_reason()}
+  name="reason"
+  value={choice}
+  onValueChange={setChoice}
+  options={[
+    { value: "support", label: m.support() },
+    {
+      value: "other",
+      label: m.other(),
+      input: {
+        label: m.describe_reason(),
+        required: true,
+        maxLength: 200,
+      },
+    },
+  ]}
+/>;
+```
+
+## Values and custom fields
+
+The controlled value is `null` or `{ option: string, customValue?: string }`. Identifiers remain separate from free text. An option's `input` config enables its field and requires a visible `label`; it can also specify `placeholder`, `required` and `maxLength`. Any number of options may have a custom field; only the selected option's field is rendered. Duplicate option identifiers are not supported.
+
+Choosing a custom option emits `{ option, customValue: "" }` and moves focus to its field when the dropdown closes. Typing emits the same identifier with the current text. Choosing a different option discards the old custom answer; returning starts empty. Re-selecting the current option does not erase its answer. External controlled values can restore a saved answer.
+
+`name` submits the option identifier. The visible custom field submits under `customName`, defaulting to `${name}Custom`; hidden custom fields are unmounted and do not submit stale answers. `required` applies to the selection, while `input.required` applies to the custom field. `disabled` prevents interaction and submission; `readOnly` prevents editing while preserving submitted values. The host owns validation and must validate both the option and its custom text on the server.
+
+## Localization and styling
+
+Localize `label`, option labels, custom labels, `description`, `error` and any placeholder through the host's Paraglide messages. Provider/explicit `locale` supplies the English/French fallback placeholder. `error` is associated with both controls and announced as an alert.
+
+`className` targets the wrapper. `triggerClassName`, `contentClassName` and `inputClassName` target the trigger, portaled dropdown and custom field. Slots are `select-with-custom-input`, `select-with-custom-input-label`, `select-with-custom-input-field`, `select-with-custom-input-description` and `select-with-custom-input-error`. The primitives retain their slots and add `data-component="select-with-custom-input-trigger"`, `select-with-custom-input-content` and `select-with-custom-input-text`. Wrapper `data-state` is `preset` or `custom`. See [Component styling](/docs/component-styling) for general guidance.

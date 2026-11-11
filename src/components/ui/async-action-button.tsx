@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ComponentProps } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
+import { cn } from "@/lib/utils";
 
 export type AsyncActionButtonMessages = {
   pending: string;
@@ -17,6 +18,7 @@ export type AsyncActionButtonProps = Omit<
 > & {
   onAction: () => Promise<void>;
   onPendingChange?: (pending: boolean) => void;
+  containerClassName?: string;
   locale?: string;
   messages?: Partial<Record<string, Partial<AsyncActionButtonMessages>>>;
 };
@@ -44,6 +46,7 @@ export const AsyncActionButton = ({
   disabled,
   locale: override,
   messages,
+  containerClassName,
   ...props
 }: AsyncActionButtonProps) => {
   const locale = useKrakstackLocale(override);
@@ -83,7 +86,11 @@ export const AsyncActionButton = ({
   return (
     <span
       data-slot="async-action-button"
-      className="inline-flex min-w-0 flex-col items-start gap-2"
+      data-state={status}
+      className={cn(
+        "inline-flex min-w-0 flex-col items-start gap-2",
+        containerClassName,
+      )}
     >
       <Button
         {...props}

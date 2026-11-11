@@ -1,0 +1,55 @@
+---
+slug: date-picker
+path: /docs/date-picker
+title: Date Picker
+description: Pick or type a calendar date without introducing a time or time zone.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Date Picker
+
+A controlled date field with a styled calendar popover, keyboard entry, clearing and inclusive date bounds. Uses the installed shadcn Calendar and React Day Picker. This is a single calendar date, not a timestamp, date range or time picker.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/date-picker
+```
+
+Package export: `@krak-stack/registry/date-picker`.
+
+## Usage
+
+```tsx
+const [date, setDate] = useState("");
+
+<DatePicker
+  value={date}
+  onValueChange={setDate}
+  label={m.preferred_date()}
+  name="preferredDate"
+  min="2026-01-01"
+  max="2027-12-31"
+/>;
+```
+
+`value` is a `YYYY-MM-DD` string, or an empty/incomplete draft during editing. Calendar selection emits that exact date format and closes the popup. Typing preserves the draft and marks impossible or out-of-range dates invalid rather than silently normalizing them. `min` and `max` are inclusive; invalid or reversed bounds disable the calendar and report a configuration error. Use `required` for an empty-value constraint. `clearable` defaults to `true`; read-only controls remain submitted but cannot be changed or cleared.
+
+## Date-only validation
+
+`DateOnlySchema` is an Effect schema that checks the format, actual calendar day and leap years, with years 0001–9999. `parseDateOnly(text)` returns a UTC-midnight `Date` or `undefined`, and `getDatePickerState({ value, min, max })` returns `empty`, `valid`, `invalid`, `out-of-range` or `invalid-range`. Validate the submitted string and application-specific bounds again on the server.
+
+UTC is used internally for calendar arithmetic and rendering so the stored day does not shift with the browser's zone. Keep the value as a date-only string; do not convert it to a local timestamp to persist it. If your domain needs an instant, choose its time and time zone separately.
+
+The named text input submits the current draft. Invalid drafts participate in native form validation through custom validity; `aria-invalid` and associated feedback expose the error accessibly. Native validation is a convenience, never a server validation boundary.
+
+## Localization and styling
+
+Provider or explicit `locale` selects English/French calendar labels, weekday order and feedback. Entry stays ISO date-only in both languages. `messages` accepts locale-keyed overrides for `label`, `open`, `clear`, `invalid`, `outOfRange` and `invalidRange`. Supply application labels and `description` with Paraglide.
+
+`className` styles the wrapper; `inputClassName`, `contentClassName`, `calendarClassName` and React Day Picker's typed `calendarClassNames` style individual parts, including the portaled panel. Wrapper slots are `date-picker`, `date-picker-label`, `date-picker-controls`, `date-picker-description` and `date-picker-error`. Primitive parts retain their existing slots and add `data-component="date-picker-input"`, `date-picker-trigger`, `date-picker-content` and `date-picker-clear`. The wrapper's `data-state` matches the validation state. See [Component styling](/docs/component-styling) for general guidance.

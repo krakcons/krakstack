@@ -1,0 +1,140 @@
+---
+slug: toast
+path: /docs/toast
+title: Toast
+description: Accessible transient notifications with actions, progress updates and configurable placement.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Toast
+
+Brief, application-owned feedback for saves, failures and background work. Built on the already-installed Base UI Toast primitives; no Sonner dependency, extra theme provider or custom timer store is required. This is transient feedback, not the persisted Notification Menu or an authorization boundary.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/toast
+```
+
+Package import: `@krak-stack/registry/toast`.
+
+## Usage
+
+Mount the provider **once** around the application, inside KrakstackProvider when using its locale. It includes the toast viewport and portal. Do not mount a provider per button.
+
+```tsx
+import { ToastProvider, useToast } from "@krak-stack/registry/toast";
+import { m } from "@/paraglide/messages";
+
+const SaveFeedback = () => {
+  const toast = useToast();
+  return (
+    <button
+      onClick={() => toast.add({ title: m.changes_saved(), type: "success" })}
+    >
+      {m.show_feedback()}
+    </button>
+  );
+};
+
+<ToastProvider position="bottom-right">
+  <SaveFeedback />
+</ToastProvider>;
+```
+
+The page’s sample controls and simulated export are documentation helpers, not part of the reusable component. Toasts use the application’s existing light/dark color tokens.
+
+## Provider options
+
+| Prop           | Default           | Purpose                                                                                        |
+| -------------- | ----------------- | ---------------------------------------------------------------------------------------------- |
+| `position`     | `bottom-right`    | `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center` or `bottom-right`        |
+| `timeout`      | `5000`            | Auto-dismiss delay in milliseconds; `0` keeps the toast until explicitly closed                |
+| `limit`        | `3`               | Maximum visible toasts; excess toasts are hidden and made inert by Base UI                     |
+| `toastManager` | Provider-owned    | Optional manager for calls outside React                                                       |
+| `locale`       | KrakstackProvider | English/French accessible labels                                                               |
+| `messages`     | Built-in copy     | Locale-keyed overrides for `notifications` and `dismiss`                                       |
+| `classNames`   | Default styles    | Typed overrides for viewport, toast, content, icon, body, title, description, action and close |
+
+Keep limits small and positive. The viewport fits narrow screens and scrolls when content exceeds the available height. Separate providers deliberately isolate state; sharing one external manager between multiple providers broadcasts to all of them, so avoid doing that accidentally.
+
+## Styling
+
+Use `classNames` to customize individual parts without changing the application's global theme:
+
+```tsx
+<ToastProvider
+  classNames={{
+    viewport: "w-[28rem]",
+    toast: "rounded-xl border-2 data-[type=success]:border-emerald-500",
+    title: "text-base",
+    description: "text-foreground/80",
+    action: "text-primary",
+    close: "rounded-full",
+  }}
+>
+  {children}
+</ToastProvider>
+```
+
+`ToastClassNames` accepts `viewport`, `toast`, `content`, `icon`, `body`, `title`, `description`, `action` and `close`. Classes apply only to that provider's notifications, including those added through its external manager.
+
+For plain CSS, the corresponding `data-slot` values are `toast-viewport`, `toast`, `toast-content`, `toast-icon`, `toast-body`, `toast-title`, `toast-description`, `toast-action` and `toast-close`. The toast exposes `data-type`; the viewport exposes `data-position`. The viewport renders in a portal, so wrapper descendant selectors do not reach it. Scrollbars are hidden to prevent animation flashes; overflowing stacks remain scrollable.
+
+See [Component styling](/docs/component-styling) for shared theming and customization principles.
+
+## Add, update and close
+
+`useToast()` returns Base UI’s manager API: `add`, `update`, `close`, `promise` and `toasts`.
+
+```tsx
+const id = toast.add({
+  title: m.export_preparing(),
+  type: "loading",
+  timeout: 0,
+});
+
+toast.update(id, { title: m.export_ready(), type: "success", timeout: 5000 });
+toast.close(id);
+// toast.close() closes every toast in this provider.
+```
+
+Use `type="success"`, `error`, `warning`, `info` or `loading` for the built-in icons; custom types use the info icon. Supply `title` for an accessible name and optional `description` for detail. Host content supports React nodes; plain strings render as text, never HTML. Reusing an explicit `id` updates the same toast and refreshes its dismissal timer instead of creating duplicates.
+
+## Actions and promises
+
+Actions remain host-owned and do not automatically dismiss the toast. Close it explicitly after the action succeeds. Do not put the only way to recover important data in a short-lived toast.
+
+```tsx
+toast.add({
+  id: "undo-delete",
+  title: m.item_removed(),
+  timeout: 0,
+  actionProps: {
+    children: m.undo(),
+    onClick: () => {
+      restoreItem();
+      toast.close("undo-delete");
+    },
+  },
+});
+
+await toast.promise(saveChanges(), {
+  loading: { title: m.saving() },
+  success: { title: m.changes_saved() },
+  error: { title: m.save_failed() },
+});
+```
+
+The promise helper updates one toast from loading to success/error. It does not replace the caller’s error handling: handle the returned promise as you would the original operation. Prefer the object form with `title`; Base UI treats string shorthand as description text. Never display raw backend exceptions, tokens or personal data in an error toast.
+
+## Outside React and accessibility
+
+Create a manager with `createToastManager()` and pass that exact instance to `toastManager`; call its `add`, `update`, `close` or `promise` methods from client-side integrations. Emit only after the provider is mounted; this is not a persistent delivery queue. Do not emit notifications during SSR or share cross-user server state.
+
+Base UI owns polite announcements, timeout pausing on hover/focus or window blur, keyboard access, Escape dismissal and swipe dismissal. Press **F6** to focus notifications. `priority: "high"` requests an urgent announcement; use it sparingly. Controls remain keyboard accessible and animations respect reduced motion. Localize titles, descriptions and actions with the host’s Paraglide messages; provider copy only covers the viewport and dismiss labels.

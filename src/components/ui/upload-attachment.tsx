@@ -104,6 +104,7 @@ export const UploadAttachment = ({
   const status = state.status === "error" ? state.message : copy[state.status];
   return (
     <Attachment
+      data-component="upload-attachment"
       state={state.status === "cancelled" ? "idle" : state.status}
       className={className}
       aria-labelledby={`${id}-name`}
@@ -128,6 +129,7 @@ export const UploadAttachment = ({
           <AttachmentDescription>{description}</AttachmentDescription>
         ) : null}
         <p
+          data-slot="upload-attachment-status"
           role={state.status === "error" ? "alert" : "status"}
           className="text-muted-foreground mt-1 text-xs"
         >
@@ -135,6 +137,7 @@ export const UploadAttachment = ({
         </p>
         {state.status === "uploading" ? (
           <progress
+            data-slot="upload-attachment-progress"
             className="accent-primary mt-2 h-1.5 w-full"
             aria-label={`${copy.uploading}: ${name}`}
             max={100}

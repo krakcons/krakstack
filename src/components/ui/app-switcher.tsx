@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
+import { cn } from "@/lib/utils";
 
 export type AppSwitcherItem = {
   id: string;
@@ -32,6 +33,7 @@ export type AppSwitcherProps = {
   currentApp?: string;
   disabled?: boolean;
   className?: string;
+  contentClassName?: string;
   locale?: string;
   messages?: Partial<Record<string, Partial<AppSwitcherMessages>>>;
 };
@@ -55,6 +57,7 @@ export const AppSwitcher = ({
   currentApp,
   disabled,
   className,
+  contentClassName,
   locale: override,
   messages,
 }: AppSwitcherProps) => {
@@ -69,6 +72,7 @@ export const AppSwitcher = ({
       <DropdownMenuTrigger
         render={
           <Button
+            data-component="app-switcher"
             type="button"
             variant="outline"
             size="icon"
@@ -81,8 +85,9 @@ export const AppSwitcher = ({
         <Grid2X2 aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
+        data-component="app-switcher-content"
         align="end"
-        className="w-80 max-w-[calc(100vw-2rem)]"
+        className={cn("w-80 max-w-[calc(100vw-2rem)]", contentClassName)}
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel>{copy.label}</DropdownMenuLabel>
@@ -93,6 +98,7 @@ export const AppSwitcher = ({
           ) : null}
           {items.map((item) => (
             <DropdownMenuItem
+              data-component="app-switcher-item"
               key={item.id}
               disabled={item.disabled}
               render={

@@ -41,6 +41,32 @@ const registryPreviews: Readonly<
   Record<string, LazyExoticComponent<ComponentType> | undefined>
 > = Object.fromEntries([
   [
+    "date-picker",
+    lazy(() =>
+      import("@/components/registry-previews/date-picker-preview").then(
+        ({ DatePickerPreview }) => ({ default: DatePickerPreview }),
+      ),
+    ),
+  ],
+  [
+    "select-with-custom-input",
+    lazy(() =>
+      import("@/components/registry-previews/select-with-custom-input-preview").then(
+        ({ SelectWithCustomInputPreview }) => ({
+          default: SelectWithCustomInputPreview,
+        }),
+      ),
+    ),
+  ],
+  [
+    "toast",
+    lazy(() =>
+      import("@/components/registry-previews/toast-preview").then(
+        ({ ToastPreview }) => ({ default: ToastPreview }),
+      ),
+    ),
+  ],
+  [
     "cron-expression-editor",
     lazy(() =>
       import("@/components/registry-previews/cron-expression-editor-preview").then(

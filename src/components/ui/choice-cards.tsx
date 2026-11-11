@@ -18,6 +18,7 @@ type ChoiceCardsBaseProps = {
   options: readonly ChoiceCardOption[];
   disabled?: boolean;
   className?: string;
+  containerClassName?: string;
   onBlur?: () => void;
 };
 
@@ -49,24 +50,41 @@ export const ChoiceCards = (props: ChoiceCardsProps) => {
       .join(" ") || undefined;
   return (
     <fieldset
+      data-slot="choice-cards"
       disabled={props.disabled}
       aria-describedby={describedBy}
       aria-invalid={props.error ? true : undefined}
-      className="min-w-0 space-y-3"
+      className={cn("min-w-0 space-y-3", props.containerClassName)}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget))
           props.onBlur?.();
       }}
     >
-      <legend className="text-sm font-medium">{props.label}</legend>
+      <legend data-slot="choice-cards-label" className="text-sm font-medium">
+        {props.label}
+      </legend>
       {props.description ? (
         <p id={`${id}-description`} className="text-muted-foreground text-sm">
           {props.description}
         </p>
       ) : null}
-      <div className={cn("grid gap-3 sm:grid-cols-2", props.className)}>
+      <div
+        data-slot="choice-cards-grid"
+        className={cn("grid gap-3 sm:grid-cols-2", props.className)}
+      >
         {props.options.map((option) => (
           <label
+            data-slot="choice-card"
+            data-state={
+              (
+                props.mode === "single"
+                  ? props.value === option.value
+                  : props.value.includes(option.value)
+              )
+                ? "checked"
+                : "unchecked"
+            }
+            data-disabled={props.disabled || option.disabled || undefined}
             key={option.value}
             className="bg-card has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-ring flex cursor-pointer items-start gap-3 rounded-lg border p-4 text-sm transition-colors has-focus-visible:ring-2 has-disabled:cursor-not-allowed has-disabled:opacity-50"
           >

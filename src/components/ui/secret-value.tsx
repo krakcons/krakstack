@@ -63,14 +63,21 @@ export const SecretValue = ({
   }, [revealed, autoHideDelay, value]);
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-2", className)}>
+    <div
+      data-slot="secret-value"
+      data-state={revealed ? "revealed" : "hidden"}
+      data-disabled={disabled || undefined}
+      className={cn("flex min-w-0 items-center gap-2", className)}
+    >
       <code
+        data-slot="secret-value-content"
         className="min-w-0 flex-1 text-sm break-all"
         aria-label={revealed ? undefined : `${label}: ${copy.hidden}`}
       >
         {revealed ? value : <span aria-hidden="true">••••••••</span>}
       </code>
       <Button
+        data-component="secret-value-toggle"
         type="button"
         size="icon-sm"
         variant="ghost"
@@ -83,6 +90,7 @@ export const SecretValue = ({
       </Button>
       {copyable ? (
         <CopyButton
+          data-component="secret-value-copy"
           type="button"
           value={value}
           valueDescription={label}

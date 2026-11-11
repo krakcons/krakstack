@@ -3,6 +3,7 @@ import { useRef, type ComponentProps, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export type BulkListResult = { items: string[]; duplicates: number };
 
@@ -32,6 +33,7 @@ export type BulkListInputProps = Omit<
   value: string;
   onValueChange: (value: string) => void;
   label?: ReactNode;
+  containerClassName?: string;
   files?: {
     accept: string;
     label: string;
@@ -48,13 +50,15 @@ export const BulkListInput = ({
   files,
   disabled,
   readOnly,
+  containerClassName,
   ...props
 }: BulkListInputProps) => {
   const input = useRef<HTMLInputElement>(null);
   const filesDisabled = disabled || readOnly || files?.disabled;
   return (
     <div
-      className="flex min-w-0 flex-col gap-3"
+      data-slot="bulk-list-input"
+      className={cn("flex min-w-0 flex-col gap-3", containerClassName)}
       onDragOver={(event) => {
         if (files && event.dataTransfer.types.includes("Files"))
           event.preventDefault();
@@ -67,7 +71,10 @@ export const BulkListInput = ({
       }}
     >
       {label || files ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          data-slot="bulk-list-header"
+          className="flex flex-wrap items-center justify-between gap-2"
+        >
           {label}
           {files ? (
             <>
@@ -86,6 +93,7 @@ export const BulkListInput = ({
                 }}
               />
               <Button
+                data-component="bulk-list-upload"
                 type="button"
                 variant="outline"
                 size="sm"
@@ -101,6 +109,7 @@ export const BulkListInput = ({
       ) : null}
       <Textarea
         {...props}
+        data-component="bulk-list-textarea"
         value={value}
         disabled={disabled}
         readOnly={readOnly}

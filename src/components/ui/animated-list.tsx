@@ -98,6 +98,7 @@ export const AnimatedList = <T,>({
     return (
       <>
         <Reorder.Group
+          data-slot="animated-list"
           ref={container}
           as="ul"
           axis="y"
@@ -159,7 +160,11 @@ export const AnimatedList = <T,>({
     );
 
   return (
-    <ul className={cn("grid gap-3", className)} aria-label={label}>
+    <ul
+      data-slot="animated-list"
+      className={cn("grid gap-3", className)}
+      aria-label={label}
+    >
       <AnimatePresence initial={false}>
         {items.map((item) => (
           <AnimatedListItem
@@ -205,6 +210,7 @@ const ReorderableListItem = ({
   const controls = useDragControls();
   return (
     <Reorder.Item
+      data-slot="animated-list-item"
       as="li"
       value={value}
       dragListener={false}
@@ -231,6 +237,7 @@ const ReorderableListItem = ({
       onDragEnd={onDragEnd}
     >
       <button
+        data-slot="animated-list-handle"
         type="button"
         disabled={disabled || !present}
         aria-label={handleLabel}
@@ -274,6 +281,7 @@ const AnimatedListItem = ({
   const reduced = useReducedMotion();
   return (
     <motion.li
+      data-slot="animated-list-item"
       layout={reduced === false ? "position" : false}
       className={className}
       inert={!present}

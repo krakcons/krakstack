@@ -10,12 +10,6 @@ export const SecretValuePreview = () => (
       label={m.new_components_example_key()}
       autoHideDelay={5000}
     />
-    <SecretValue
-      locale={getLocale()}
-      value="example_disabled_value"
-      label={m.new_components_disabled_key()}
-      disabled
-    />
     <p className="text-muted-foreground text-sm">
       {m.new_components_secret_help()}
     </p>

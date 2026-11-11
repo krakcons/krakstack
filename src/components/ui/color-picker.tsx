@@ -15,6 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
+import { cn } from "@/lib/utils";
 
 const HexColor = Schema.String.check(
   Schema.isPattern(/^#?(?:[\da-f]{3}|[\da-f]{6})$/i),
@@ -68,6 +69,7 @@ export type ColorPickerProps = Omit<
   onValueChange?: (value: string) => void;
   locale?: string;
   messages?: ColorPickerMessageTranslations;
+  contentClassName?: string;
 };
 
 // react-colorful does not expose its internal slider labels as props. Keep this
@@ -136,6 +138,7 @@ export const ColorPicker = ({
   locale: localeOverride,
   messages,
   className,
+  contentClassName,
   disabled,
   readOnly,
   onBlur,
@@ -174,7 +177,11 @@ export const ColorPicker = ({
 
   return (
     <Popover open={open && !disabled && !readOnly} onOpenChange={setOpen}>
-      <InputGroup className={className} data-disabled={disabled || undefined}>
+      <InputGroup
+        data-component="color-picker"
+        className={className}
+        data-disabled={disabled || undefined}
+      >
         <InputGroupInput
           {...inputProps}
           type="text"
@@ -226,8 +233,12 @@ export const ColorPicker = ({
         </InputGroupAddon>
       </InputGroup>
       <PopoverContent
+        data-component="color-picker-content"
         align="end"
-        className="w-64 max-w-[calc(100vw-2rem)] gap-3 p-3"
+        className={cn(
+          "w-64 max-w-[calc(100vw-2rem)] gap-3 p-3",
+          contentClassName,
+        )}
       >
         <PopoverTitle className="sr-only">{copy.open}</PopoverTitle>
         <ColorPanel

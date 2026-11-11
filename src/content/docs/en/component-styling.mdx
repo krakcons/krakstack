@@ -1,0 +1,56 @@
+---
+slug: component-styling
+path: /docs/component-styling
+title: Component styling
+description: Use theme tokens, class overrides and stable selectors to make components fit your application.
+order: 4
+locale: en
+section: getting-started
+type: concept
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Component styling
+
+KrakStack components provide a starting appearance, not a separate design system you must adopt. They use your application's theme and accept local overrides. Start with shared tokens for a consistent look, then customize individual components where the design calls for it.
+
+## Start with the theme
+
+Semantic tokens such as `background`, `foreground`, `primary`, `muted`, `border` and `ring` keep colors consistent across controls and light/dark modes. Change the corresponding CSS variables in your application's theme to adjust the shared palette rather than overriding every component separately.
+
+Prefer semantic utilities such as `bg-muted` and `text-foreground` when an element should follow the theme. Use explicit colors when they carry a deliberate product meaning.
+
+## Apply local overrides
+
+Use `className` for a one-off change to spacing, size, typography or appearance. It accepts Tailwind utilities and ordinary CSS class names. Where classes are merged with `cn`, conflicting utilities from the caller take precedence within the same variant.
+
+For composed controls, check which element receives the prop: `className` may target the control rather than its wrapper. Additional props such as `containerClassName`, `contentClassName` or a typed `classNames` map let you address other parts when supported. The component's reference page and prop types define the available hooks; they are not identical for every component.
+
+Keep application-specific combinations in your own wrappers or stylesheets. This avoids repeating the same overrides throughout the application without changing the reusable component's defaults.
+
+## Target named parts and states
+
+Use documented `data-slot` selectors for internal parts instead of depending on tag names, child indexes or generated class names. Composed controls may also expose `data-component`, identifying the higher-level part while retaining the underlying primitive's existing slot.
+
+Scope selectors to an application class so a local customization does not affect every instance:
+
+```css
+.account-panel [data-slot="input"] {
+  border-radius: 0.75rem;
+}
+```
+
+For interactive styling, prefer native states such as `:disabled`, `:focus-visible`, `aria-expanded` and `aria-invalid`. Use documented `data-state` or other data attributes for states that do not have a native equivalent. State names and part selectors belong in each component's reference documentation.
+
+## Style portaled content directly
+
+Menus, popovers and dialogs can render outside their trigger's DOM subtree. A descendant selector on the trigger's wrapper will not reach that content. Apply classes through the component's panel/content hook, or place a scoped class directly on the portaled part.
+
+The same applies to theme overrides: a CSS variable set only on a local wrapper does not automatically reach a portal rendered elsewhere. Put shared theme variables on a common ancestor, or apply the local theme to the portaled content too.
+
+## Preserve behavior and accessibility
+
+Customization should change presentation without removing the safeguards that make a control usable. Preserve visible keyboard focus, sufficient contrast, disabled/error states, responsive bounds and access to overflowing content. Respect reduced-motion preferences and leave hidden or inert content out of the interaction flow.
+
+If the design needs different structure or behavior rather than different styling, compose the exposed primitives or adapt the installed registry source instead of relying on increasingly fragile CSS overrides.

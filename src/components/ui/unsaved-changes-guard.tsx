@@ -23,6 +23,7 @@ export type UnsavedChangesGuardProps = {
   protectBeforeUnload?: boolean;
   locale?: string;
   messages?: Partial<Record<string, Partial<UnsavedChangesGuardMessages>>>;
+  className?: string;
 };
 const labels = {
   en: {
@@ -48,6 +49,7 @@ export const UnsavedChangesGuard = ({
   protectBeforeUnload = true,
   locale: override,
   messages,
+  className,
 }: UnsavedChangesGuardProps) => {
   const locale = useKrakstackLocale(override);
   const copy = {
@@ -67,7 +69,10 @@ export const UnsavedChangesGuard = ({
         if (!open) blocker.reset?.();
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent
+        data-component="unsaved-changes-guard"
+        className={className}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>{copy.title}</AlertDialogTitle>
           <AlertDialogDescription>{copy.description}</AlertDialogDescription>

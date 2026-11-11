@@ -11,6 +11,9 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/ui/date-picker.tsx",
+    "../../src/components/ui/select-with-custom-input.tsx",
+    "../../src/components/ui/toast.tsx",
     "../../src/components/ui/cron-expression-editor.tsx",
     "../../src/components/ui/phone-number-input.tsx",
     "../../src/components/ui/image-crop-editor.tsx",

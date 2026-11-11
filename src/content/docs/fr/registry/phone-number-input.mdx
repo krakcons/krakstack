@@ -8,7 +8,7 @@ locale: fr
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-11"
 ---
 
 # Champ de téléphone
@@ -36,12 +36,14 @@ Export : `@krak-stack/registry/phone-number-input`.
   }}
   countries={["CA", "US", "FR"]}
   locale="fr"
-/>;
+/>
 ```
 
 `country` est un code ISO contrôlé. Le sélecteur réutilise Virtualized Combobox et recherche les noms traduits, codes ISO et indicatifs, sans action d’effacement. `countries` contient tous les pays par défaut ; le pays sélectionné reste disponible même hors de cette liste. Un changement de pays déclenche `onCountryChange`, remplace l’indicatif en conservant la partie nationale et déclenche `onValueChange` avec les détails recalculés. Effacer le champ national émet un texte vide mais conserve l’indicatif visible. Coller un numéro international complet est permis ; un pays valide détecté actualise le sélecteur s’il appartient au catalogue.
 
 ## Normalisation
+
+La recommandation UIT-T E.164 limite le numéro à **15 chiffres, indicatif du pays compris**, hors formatage et poste. Les saisies, collages et changements de pays dépassant cette limite sont refusés sans tronquer le brouillon existant. Les préfixes nationaux sont normalisés avant le comptage. Ce plafond ne remplace pas la validation propre à chaque pays.
 
 `onValueChange(text, details)` émet le brouillon international complet, avec l’indicatif protégé, tandis que seule la partie nationale est modifiable. Le champ accepte uniquement les chiffres au clavier. La ponctuation est ajoutée pendant la saisie : `(416) 555-0123` au Canada ou `06 12 34 56 78` en France. Retour arrière et Supprimer traversent les caractères de formatage ; le curseur suit les chiffres modifiés. Le texte collé est nettoyé et les numéros internationaux complets sont reconnus. Le clavier numérique mobile est demandé.
 

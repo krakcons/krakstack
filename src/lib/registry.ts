@@ -71,6 +71,9 @@ export function getRegistryGroup(item: RegistryItem) {
   if (
     [
       "copy-button",
+      "date-picker",
+      "select-with-custom-input",
+      "toast",
       "cron-expression-editor",
       "phone-number-input",
       "image-crop-editor",

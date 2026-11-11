@@ -98,6 +98,20 @@ for (const locale of ["en", "fr"]) {
     await expect(country).toContainText("CA");
     await expect(country).toContainText("+1");
     await expect(input).toHaveValue("(416) 555-0123");
+    // The country calling code counts toward E.164's 15-digit ceiling.
+    await input.fill("23456789012345");
+    const atLimit = await input.inputValue();
+    await input.press("6");
+    await expect(input).toHaveValue(atLimit);
+    await input.fill("+3323456789012345");
+    await expect(input).toHaveValue(atLimit);
+    await country.click();
+    await page
+      .getByPlaceholder(french ? "Rechercher..." : "Search...", { exact: true })
+      .fill("France");
+    await page.getByRole("option", { name: /France/ }).click();
+    await expect(country).toContainText("CA");
+    await expect(input).toHaveValue(atLimit);
     await expect
       .poll(() =>
         page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),

@@ -1,0 +1,56 @@
+---
+slug: component-styling
+path: /docs/component-styling
+title: Personnalisation des composants
+description: Utiliser les variables de thème, les classes et les sélecteurs stables pour adapter les composants à votre application.
+order: 4
+locale: fr
+section: getting-started
+type: concept
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Personnalisation des composants
+
+Les composants KrakStack proposent une apparence initiale, pas un système de design distinct à adopter. Ils utilisent le thème de votre application et acceptent des surcharges locales. Commencez par les variables partagées pour obtenir une apparence cohérente, puis personnalisez certains composants selon les besoins du design.
+
+## Commencer par le thème
+
+Les variables sémantiques comme `background`, `foreground`, `primary`, `muted`, `border` et `ring` assurent la cohérence des couleurs entre les contrôles et les modes clair/sombre. Modifiez les variables CSS correspondantes dans le thème de l’application plutôt que de surcharger chaque composant séparément.
+
+Préférez les utilitaires sémantiques comme `bg-muted` et `text-foreground` lorsqu’un élément doit suivre le thème. Réservez les couleurs explicites à une intention propre au produit.
+
+## Appliquer des surcharges locales
+
+Utilisez `className` pour modifier ponctuellement l’espacement, la taille, la typographie ou l’apparence. Cette prop accepte les utilitaires Tailwind et les classes CSS classiques. Lorsque les classes sont fusionnées avec `cn`, les utilitaires de l’appelant ont priorité en cas de conflit au sein d’une même variante.
+
+Pour les contrôles composés, vérifiez l’élément ciblé : `className` peut s’appliquer au contrôle plutôt qu’à son conteneur. Des props supplémentaires comme `containerClassName`, `contentClassName` ou un objet typé `classNames` permettent de cibler d’autres parties lorsqu’elles sont disponibles. La page de référence et les types du composant définissent les possibilités ; elles ne sont pas identiques pour tous les composants.
+
+Regroupez les combinaisons propres à l’application dans vos propres composants ou feuilles de style. Vous évitez ainsi de répéter les mêmes surcharges sans modifier les styles par défaut du composant réutilisable.
+
+## Cibler les parties nommées et les états
+
+Utilisez les sélecteurs `data-slot` documentés pour les parties internes, plutôt que les balises, les indices d’enfants ou les noms de classes générés. Les contrôles composés peuvent aussi exposer `data-component`, qui identifie la partie de niveau supérieur tout en conservant le slot de la primitive sous-jacente.
+
+Limitez les sélecteurs à une classe de l’application afin qu’une personnalisation locale ne touche pas toutes les instances :
+
+```css
+.account-panel [data-slot="input"] {
+  border-radius: 0.75rem;
+}
+```
+
+Pour les styles interactifs, préférez les états natifs comme `:disabled`, `:focus-visible`, `aria-expanded` et `aria-invalid`. Utilisez les attributs documentés `data-state` ou autres lorsqu’il n’existe pas d’équivalent natif. Les noms des états et les sélecteurs des parties ont leur place dans la documentation de référence de chaque composant.
+
+## Personnaliser directement le contenu en portail
+
+Les menus, popovers et boîtes de dialogue peuvent être rendus hors de l’arbre DOM de leur déclencheur. Un sélecteur descendant du conteneur ne les atteindra pas. Transmettez les classes par la prop dédiée au panneau/contenu, ou appliquez une classe propre à la partie en portail.
+
+Cela vaut aussi pour le thème : une variable CSS définie uniquement sur un conteneur local ne s’applique pas automatiquement à un portail rendu ailleurs. Placez les variables partagées sur un ancêtre commun ou appliquez également le thème local au contenu en portail.
+
+## Préserver le comportement et l’accessibilité
+
+La personnalisation doit modifier la présentation sans retirer les garanties d’utilisation. Conservez le focus clavier visible, un contraste suffisant, les états désactivés et d’erreur, les limites adaptatives et l’accès au contenu débordant. Respectez la réduction des mouvements et gardez les contenus cachés ou inertes hors du parcours interactif.
+
+Si le design exige une autre structure ou un autre comportement, composez les primitives exposées ou adaptez le code source installé depuis le registre, plutôt que d’accumuler des surcharges CSS fragiles.

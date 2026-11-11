@@ -102,6 +102,7 @@ function AppSidebar({ collapsible, footer, groups, header }: AppSidebarProps) {
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
+                        className="h-auto min-h-8"
                         onClick={closeMobileSidebar}
                         render={render}
                         tooltip={item.label()}

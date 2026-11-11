@@ -67,7 +67,11 @@ export const EditableText = ({
     wasEditing.current = editing;
   }, [editing]);
   return (
-    <div className={className}>
+    <div
+      data-slot="editable-text"
+      data-state={editing ? "editing" : "idle"}
+      className={className}
+    >
       {editing ? (
         <EditableTextEditor
           value={value}
@@ -81,6 +85,7 @@ export const EditableText = ({
         />
       ) : (
         <Button
+          data-component="editable-text-trigger"
           ref={trigger}
           type="button"
           variant="ghost"
@@ -118,6 +123,7 @@ const EditableTextEditor = ({
   }, []);
   return (
     <div
+      data-slot="editable-text-editor"
       className="grid gap-3"
       onKeyDown={(event) => {
         if (event.nativeEvent.isComposing) return;
@@ -130,6 +136,7 @@ const EditableTextEditor = ({
     >
       <Label htmlFor={id}>{label}</Label>
       <Input
+        data-component="editable-text-input"
         ref={input}
         id={id}
         value={draft}

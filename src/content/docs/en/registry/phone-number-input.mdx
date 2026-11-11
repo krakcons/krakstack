@@ -8,7 +8,7 @@ locale: en
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-11"
 ---
 
 # Phone Number Input
@@ -36,12 +36,14 @@ Package export: `@krak-stack/registry/phone-number-input`.
   }}
   countries={["CA", "US", "FR"]}
   locale="en"
-/>;
+/>
 ```
 
 `country` is a controlled ISO country code for interpreting national numbers. The picker reuses Virtualized Combobox, searches localized country names, ISO codes and calling codes, and never offers a clear action. The optional `countries` catalog defaults to all supported countries; the selected country stays available even outside that list. Choosing a new country invokes `onCountryChange`, replaces the calling code while preserving the editable national portion, and invokes `onValueChange` with recalculated details. Clearing the national field emits an empty string but leaves the prefix visible. Pasting a full international number is supported; a valid detected country updates the picker when available in the catalog.
 
 ## Normalization
+
+ITU-T E.164 limits the number to **15 digits including the country calling code**, excluding formatting and extensions. Typing, pastes and country changes that would exceed this limit are rejected without truncating the existing draft. National trunk prefixes are normalized before counting. This upper bound does not replace country-specific number validation.
 
 `onValueChange(text, details)` emits the combined international draft, including the protected calling code, while only its national portion is editable. The field accepts digit keystrokes only; punctuation is inserted automatically as you type, such as `(416) 555-0123` in Canada or `06 12 34 56 78` in France. Backspace and Delete work through formatting characters, and caret position follows the edited digits. Pasted text is cleaned to digits; full international numbers are recognized. The numeric mobile keyboard is requested.
 

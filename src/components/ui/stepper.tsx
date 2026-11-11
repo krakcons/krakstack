@@ -94,6 +94,7 @@ export const Stepper = ({
         {labels.progress(currentIndex + 1, steps.length)}
       </p>
       <ol
+        data-slot="stepper-list"
         className={cn(
           "flex gap-2",
           variant === "underline" && "flex-wrap gap-x-6 gap-y-1",
@@ -111,6 +112,7 @@ export const Stepper = ({
             <>
               {variant === "segmented" ? (
                 <span
+                  data-slot="stepper-indicator"
                   aria-hidden="true"
                   className={cn(
                     "bg-muted block h-1.5 w-full rounded-full motion-safe:transition-colors motion-safe:duration-150",
@@ -121,6 +123,7 @@ export const Stepper = ({
                 />
               ) : variant === "labelled" ? (
                 <span
+                  data-slot="stepper-indicator"
                   aria-hidden="true"
                   className={cn(
                     "flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-medium motion-safe:transition-colors motion-safe:duration-150 [&_svg]:size-4",
@@ -149,9 +152,14 @@ export const Stepper = ({
                     "sr-only lg:not-sr-only",
                 )}
               >
-                <span className="block">{step.label}</span>
+                <span data-slot="stepper-label" className="block">
+                  {step.label}
+                </span>
                 {step.description ? (
-                  <span className="text-muted-foreground block text-xs font-normal">
+                  <span
+                    data-slot="stepper-description"
+                    className="text-muted-foreground block text-xs font-normal"
+                  >
                     {step.description}
                   </span>
                 ) : null}
@@ -181,12 +189,14 @@ export const Stepper = ({
           );
           return (
             <li
+              data-slot="stepper-item"
               key={step.id}
               data-state={state}
               className={cn("min-w-0", variant !== "underline" && "flex-1")}
             >
               {onStepSelect ? (
                 <button
+                  data-slot="stepper-trigger"
                   type="button"
                   aria-current={active ? "step" : undefined}
                   aria-disabled={step.disabled || undefined}
@@ -203,6 +213,7 @@ export const Stepper = ({
                 </button>
               ) : (
                 <div
+                  data-slot="stepper-trigger"
                   aria-current={active ? "step" : undefined}
                   className={itemClassName}
                 >

@@ -11,6 +11,8 @@ import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 import { Button } from "@/components/ui/button";
 import { VirtualizedCombobox } from "@/components/ui/virtualized-combobox";
 import { ChevronsUpDown } from "lucide-react";
+import { fitsE164DigitLimit } from "./phone-number-input.schema";
+import { cn } from "@/lib/utils";
 
 export type PhoneNumberDetails = {
   e164: string;
@@ -25,7 +27,7 @@ export const normalizePhoneNumber = (
     defaultCountry: country,
     extract: false,
   });
-  return phone?.isValid()
+  return phone?.isValid() && fitsE164DigitLimit(value, country)
     ? {
         e164: phone.number,
         extension: phone.ext ?? null,
@@ -45,6 +47,8 @@ export type PhoneNumberInputProps = Omit<
   locale?: string;
   label?: string;
   withExtension?: boolean;
+  containerClassName?: string;
+  contentClassName?: string;
 };
 export const PhoneNumberInput = ({
   value,
@@ -59,6 +63,9 @@ export const PhoneNumberInput = ({
   name,
   withExtension = false,
   onKeyDown,
+  className,
+  containerClassName,
+  contentClassName,
   ...props
 }: PhoneNumberInputProps) => {
   const generatedId = useId();
@@ -114,6 +121,10 @@ export const PhoneNumberInput = ({
     const next = digits
       ? `+${callingCode} ${digits}${nextExtension ? ` ext. ${nextExtension}` : ""}`
       : "";
+    if (!fitsE164DigitLimit(next, country)) {
+      pendingCaret.current = null;
+      return;
+    }
     onValueChange(next, normalizePhoneNumber(next, country));
   };
   const countryLabel = french ? "Pays du numéro" : "Phone country";
@@ -122,8 +133,15 @@ export const PhoneNumberInput = ({
     label: `${names.of(code)} (${code}) +${getCountryCallingCode(code)}`,
   }));
   return (
-    <div className="grid gap-2">
-      <label htmlFor={inputId} className="text-sm font-medium">
+    <div
+      data-slot="phone-number-input"
+      className={cn("grid gap-2", containerClassName)}
+    >
+      <label
+        data-slot="phone-number-label"
+        htmlFor={inputId}
+        className="text-sm font-medium"
+      >
         {label ?? (french ? "Numéro de téléphone" : "Phone number")}
       </label>
       {name ? (
@@ -134,7 +152,7 @@ export const PhoneNumberInput = ({
           disabled={props.disabled}
         />
       ) : null}
-      <div className="flex min-w-0 gap-2">
+      <div data-slot="phone-number-controls" className="flex min-w-0 gap-2">
         <VirtualizedCombobox
           ariaLabel={countryLabel}
           locale={language}
@@ -144,7 +162,10 @@ export const PhoneNumberInput = ({
           emptyLabel={
             french ? "Aucun pays correspondant." : "No matching countries."
           }
-          contentClassName="w-72! max-w-[calc(100vw-2rem)]!"
+          contentClassName={cn(
+            "w-72! max-w-[calc(100vw-2rem)]!",
+            contentClassName,
+          )}
           disabled={props.disabled || props.readOnly}
           trigger={
             <Button
@@ -165,20 +186,22 @@ export const PhoneNumberInput = ({
           onValueChange={(item) => {
             const selected = options.find((option) => option === item?.value);
             if (!selected || selected === country) return;
-            onCountryChange(selected);
             const next = nationalDigits
               ? `+${getCountryCallingCode(selected)} ${nationalDigits}${extension ? ` ext. ${extension}` : ""}`
               : "";
+            if (!fitsE164DigitLimit(next, selected)) return;
+            onCountryChange(selected);
             onValueChange(next, normalizePhoneNumber(next, selected));
           }}
         />
         <Input
           {...props}
+          data-component="phone-number-national"
           id={inputId}
           type="tel"
           inputMode="numeric"
           autoComplete={props.autoComplete ?? "tel-national"}
-          className="min-w-0 flex-1"
+          className={cn("min-w-0 flex-1", className)}
           value={nationalValue}
           aria-invalid={Boolean(value) && !valid}
           aria-describedby={`${inputId}-status ${props["aria-describedby"] ?? ""}`}
@@ -205,6 +228,7 @@ export const PhoneNumberInput = ({
               : digits
                 ? `${international ? "+" : `+${callingCode} `}${digits}`
                 : "";
+            if (!fitsE164DigitLimit(next, country)) return;
             const details = normalizePhoneNumber(next, country);
             if (
               international &&
@@ -275,7 +299,10 @@ export const PhoneNumberInput = ({
         />
       </div>
       {withExtension || extension ? (
-        <div className="grid max-w-32 gap-1.5">
+        <div
+          data-slot="phone-number-extension"
+          className="grid max-w-32 gap-1.5"
+        >
           <label
             htmlFor={`${inputId}-extension`}
             className="text-muted-foreground text-xs"
@@ -298,7 +325,11 @@ export const PhoneNumberInput = ({
           />
         </div>
       ) : null}
-      <p id={`${inputId}-status`} className="text-muted-foreground text-xs">
+      <p
+        data-slot="phone-number-status"
+        id={`${inputId}-status`}
+        className="text-muted-foreground text-xs"
+      >
         {valid
           ? `${valid.e164}${valid.extension ? ` ext. ${valid.extension}` : ""}`
           : french

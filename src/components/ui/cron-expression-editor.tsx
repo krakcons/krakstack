@@ -4,6 +4,7 @@ import { CronExpressionParser } from "cron-parser";
 import { Input } from "@/components/ui/input";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 import { formatCronDraft } from "./cron-expression-editor.schema";
+import { cn } from "@/lib/utils";
 export {
   CronDraftSchema,
   formatCronDraft,
@@ -47,6 +48,8 @@ export type CronExpressionEditorProps = {
   label?: string;
   name?: string;
   disabled?: boolean;
+  className?: string;
+  inputClassName?: string;
 };
 export const CronExpressionEditor = ({
   value,
@@ -57,6 +60,8 @@ export const CronExpressionEditor = ({
   label,
   name,
   disabled,
+  className,
+  inputClassName,
 }: CronExpressionEditorProps) => {
   const id = useId();
   const language = useKrakstackLocale(locale);
@@ -74,11 +79,19 @@ export const CronExpressionEditor = ({
   });
   const firstRun = dates?.[0];
   return (
-    <div className="grid min-w-0 gap-2">
-      <label htmlFor={id} className="text-sm font-medium">
+    <div
+      data-slot="cron-expression-editor"
+      className={cn("grid min-w-0 gap-2", className)}
+    >
+      <label
+        data-slot="cron-label"
+        htmlFor={id}
+        className="text-sm font-medium"
+      >
         {label ?? (french ? "Expression cron" : "Cron expression")}
       </label>
       <Input
+        data-component="cron-input"
         id={id}
         name={name}
         value={value}
@@ -87,7 +100,7 @@ export const CronExpressionEditor = ({
         autoCapitalize="off"
         spellCheck={false}
         placeholder="*/15 9 * * 1-5"
-        className="font-mono tracking-wide"
+        className={cn("font-mono tracking-wide", inputClassName)}
         aria-invalid={!dates}
         aria-describedby={`${id}-help`}
         onKeyDown={(event) => {
@@ -113,14 +126,24 @@ export const CronExpressionEditor = ({
           onValueChange(next);
         }}
       />
-      <p id={`${id}-help`} className="text-muted-foreground text-xs">
+      <p
+        data-slot="cron-help"
+        id={`${id}-help`}
+        className="text-muted-foreground text-xs"
+      >
         {french
           ? "Minute · heure · jour du mois · mois · jour de la semaine"
           : "Minute · hour · day of month · month · day of week"}
       </p>
       {dates && firstRun ? (
-        <details className="text-muted-foreground min-w-0 text-xs">
-          <summary className="cursor-pointer rounded-sm outline-offset-4">
+        <details
+          data-slot="cron-preview"
+          className="text-muted-foreground min-w-0 text-xs"
+        >
+          <summary
+            data-slot="cron-summary"
+            className="cursor-pointer rounded-sm outline-offset-4"
+          >
             <span className="text-foreground font-medium">
               {french ? "Prochaines exécutions" : "Next runs"}
             </span>
@@ -138,7 +161,7 @@ export const CronExpressionEditor = ({
             <span>+{dates.length - 1}</span>
           </summary>
           <p className="mt-2 break-all">{timeZone}</p>
-          <ol className="mt-1 grid gap-1">
+          <ol data-slot="cron-runs" className="mt-1 grid gap-1">
             {dates.map((date) => (
               <li key={date.toISOString()}>
                 <time dateTime={date.toISOString()}>
@@ -153,7 +176,11 @@ export const CronExpressionEditor = ({
           </ol>
         </details>
       ) : (
-        <p role="status" className="text-destructive text-sm">
+        <p
+          data-slot="cron-error"
+          role="status"
+          className="text-destructive text-sm"
+        >
           {french
             ? "Complétez les cinq champs. Si la règle est complète, vérifiez le fuseau, la date et les prochaines exécutions possibles."
             : "Complete all five fields. If the rule is complete, check the time zone, reference date and possible next runs."}

@@ -5,6 +5,10 @@ import { afterEach, vi } from "vitest";
 import { useState } from "react";
 import { PhoneNumberInput, normalizePhoneNumber } from "./phone-number-input";
 import {
+  fitsE164DigitLimit,
+  getPhoneNumberDigits,
+} from "./phone-number-input.schema";
+import {
   CronExpressionEditor,
   getCronPreview,
   formatCronDraft,
@@ -29,6 +33,38 @@ const PhoneHarness = ({ initial = "" }: { initial?: string }) => {
   );
 };
 describe("phone input", () => {
+  it("accepts the fifteenth digit without accepting a sixteenth", () => {
+    render(<PhoneHarness initial="+1 2345678901234" />);
+    const input = screen.getByLabelText<HTMLInputElement>("Phone number");
+    fireEvent.change(input, { target: { value: "23456789012345" } });
+    expect(input.value.replace(/\D/g, "")).toBe("23456789012345");
+    fireEvent.change(input, { target: { value: "234567890123456" } });
+    expect(input.value.replace(/\D/g, "")).toBe("23456789012345");
+  });
+  it("counts calling codes of different lengths and excludes extensions", () => {
+    for (const prefix of ["+1", "+33", "+358"]) {
+      const atLimit = `${prefix}${"2".repeat(16 - prefix.length)}`;
+      expect(fitsE164DigitLimit(atLimit, "CA"), atLimit).toBe(true);
+      expect(fitsE164DigitLimit(`${atLimit}2`, "CA"), atLimit).toBe(false);
+      expect(fitsE164DigitLimit(`${atLimit} ext. 123456`, "CA"), atLimit).toBe(
+        true,
+      );
+    }
+    expect(getPhoneNumberDigits("06 12 34 56 78", "FR")).toBe("33612345678");
+    expect(getPhoneNumberDigits("+33 06 12 34 56 78", "FR")).toBe(
+      "33612345678",
+    );
+    expect(fitsE164DigitLimit("", "CA")).toBe(true);
+  });
+  it("rejects national and international edits beyond 15 digits including the calling code", () => {
+    render(<PhoneHarness initial="+1 23456789012345" />);
+    const input = screen.getByLabelText<HTMLInputElement>("Phone number");
+    const before = input.value;
+    fireEvent.change(input, { target: { value: "234567890123456" } });
+    expect(input.value).toBe(before);
+    fireEvent.change(input, { target: { value: "+3323456789012345" } });
+    expect(input.value).toBe(before);
+  });
   it("formats national digits immediately and removes letters from edits", () => {
     render(<PhoneHarness />);
     const input = screen.getByLabelText("Phone number");

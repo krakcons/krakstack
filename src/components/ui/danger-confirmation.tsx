@@ -29,6 +29,7 @@ export type DangerConfirmationProps = {
   onConfirm: () => Promise<void>;
   locale?: string;
   messages?: Partial<Record<string, Partial<DangerConfirmationMessages>>>;
+  className?: string;
 };
 
 const labels = {
@@ -66,7 +67,10 @@ export const DangerConfirmation = (props: DangerConfirmationProps) => {
         if (!pending) props.onOpenChange(open);
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent
+        data-component="danger-confirmation"
+        className={props.className}
+      >
         <DangerConfirmationBody
           key={props.open ? "open" : "closed"}
           {...props}

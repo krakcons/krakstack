@@ -1,0 +1,63 @@
+---
+slug: select-with-custom-input
+path: /docs/select-with-custom-input
+title: Sélecteur avec saisie personnalisée
+description: Afficher un champ pour les options comme Autre en séparant identifiants et réponses libres.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Sélecteur avec saisie personnalisée
+
+Une liste déroulante stylisée qui révèle un champ texte pour certaines options. Réutilise les primitives Select et Input existantes. L’application fournit toutes les options ; aucune liste de genres n’est intégrée. Le genre sert uniquement d’exemple facultatif et local sur cette page. Ne collectez des informations personnelles sensibles que si nécessaire et proposez une option permettant de ne pas répondre.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/select-with-custom-input
+```
+
+Export : `@krak-stack/registry/select-with-custom-input`.
+
+## Utilisation
+
+```tsx
+const [choice, setChoice] = useState<SelectWithCustomInputValue | null>(null);
+
+<SelectWithCustomInput
+  label={m.contact_reason()}
+  name="reason"
+  value={choice}
+  onValueChange={setChoice}
+  options={[
+    { value: "support", label: m.support() },
+    {
+      value: "other",
+      label: m.other(),
+      input: {
+        label: m.describe_reason(),
+        required: true,
+        maxLength: 200,
+      },
+    },
+  ]}
+/>;
+```
+
+## Valeurs et champs personnalisés
+
+La valeur contrôlée est `null` ou `{ option: string, customValue?: string }`. L’identifiant reste distinct du texte libre. La configuration `input` d’une option active son champ et exige un `label` visible ; elle accepte aussi `placeholder`, `required` et `maxLength`. Plusieurs options peuvent proposer un champ ; seul celui de l’option sélectionnée est rendu. Les identifiants dupliqués ne sont pas pris en charge.
+
+Choisir une option personnalisée émet `{ option, customValue: "" }` et place le focus sur son champ après fermeture de la liste. La saisie émet le même identifiant avec le texte courant. Changer d’option abandonne l’ancienne réponse libre ; revenir affiche un champ vide. Sélectionner à nouveau l’option courante n’efface pas sa réponse. Une valeur contrôlée externe peut restaurer une réponse enregistrée.
+
+`name` soumet l’identifiant. Le champ personnalisé visible utilise `customName`, par défaut `${name}Custom` ; les champs cachés sont démontés et ne soumettent pas d’anciennes réponses. `required` concerne le choix ; `input.required` concerne le texte libre. `disabled` empêche interaction et soumission ; `readOnly` interdit les modifications sans retirer les valeurs soumises. L’application possède la validation et doit vérifier option et texte sur le serveur.
+
+## Langue et personnalisation
+
+Traduisez `label`, les options, les libellés personnalisés, `description`, `error` et les placeholders avec Paraglide. La locale du fournisseur ou explicite fournit le placeholder anglais/français par défaut. `error` est associé aux deux contrôles et annoncé comme alerte.
+
+`className` cible le conteneur. `triggerClassName`, `contentClassName` et `inputClassName` ciblent le déclencheur, la liste en portail et le champ personnalisé. Les slots sont `select-with-custom-input`, `select-with-custom-input-label`, `select-with-custom-input-field`, `select-with-custom-input-description` et `select-with-custom-input-error`. Les primitives conservent leurs slots et ajoutent `data-component="select-with-custom-input-trigger"`, `select-with-custom-input-content` et `select-with-custom-input-text`. `data-state` du conteneur vaut `preset` ou `custom`. Consultez [Personnalisation des composants](/docs/component-styling) pour les principes généraux.

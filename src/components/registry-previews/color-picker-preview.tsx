@@ -27,12 +27,6 @@ export const ColorPickerPreview = () => {
           value={color}
           onValueChange={setColor}
         />
-        <ColorPicker
-          className="max-w-64"
-          defaultValue="#A855F7"
-          disabled
-          aria-label={m.color_picker_preview_disabled()}
-        />
       </CardContent>
     </Card>
   );

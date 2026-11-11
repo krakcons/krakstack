@@ -154,7 +154,7 @@ const ImageCropSession = ({
     : undefined;
   const locked = disabled || pending;
   return (
-    <div className={className}>
+    <div data-slot="image-crop-editor" className={className}>
       <img
         key={src}
         ref={attachImage}
@@ -176,6 +176,7 @@ const ImageCropSession = ({
       <div className="grid min-w-0 gap-4">
         {crop && size ? (
           <svg
+            data-slot="image-crop-preview"
             role="img"
             aria-label={label}
             viewBox={`${crop.x} ${crop.y} ${crop.width} ${crop.height}`}
@@ -246,8 +247,17 @@ const ImageCropSession = ({
             {failed ? copy.loadError : copy.loading}
           </p>
         )}
-        <p className="text-muted-foreground text-sm">{copy.help}</p>
-        <fieldset disabled={locked || !crop} className="grid min-w-0 gap-3">
+        <p
+          data-slot="image-crop-help"
+          className="text-muted-foreground text-sm"
+        >
+          {copy.help}
+        </p>
+        <fieldset
+          data-slot="image-crop-controls"
+          disabled={locked || !crop}
+          className="grid min-w-0 gap-3"
+        >
           {(["zoom", "x", "y"] as const).map((key) => (
             <label key={key} className="grid gap-1 text-sm">
               <span>
@@ -258,6 +268,8 @@ const ImageCropSession = ({
                     : copy.vertical}
               </span>
               <input
+                data-slot="image-crop-slider"
+                data-control={key}
                 type="range"
                 min={key === "zoom" ? 1 : 0}
                 max={key === "zoom" ? 4 : 100}
@@ -273,7 +285,7 @@ const ImageCropSession = ({
               />
             </label>
           ))}
-          <div className="flex flex-wrap gap-2">
+          <div data-slot="image-crop-actions" className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"

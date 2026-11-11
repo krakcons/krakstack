@@ -4,11 +4,79 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "date-picker",
+      "type": "registry:component",
+      "title": "Date Picker",
+      "description": "A localized calendar and typed date-only input with range constraints, clearing and accessible validation.",
+      "meta": { "createdAt": "2026-11-11", "updatedAt": "2026-11-11" },
+      "files": [
+        {
+          "path": "src/components/ui/date-picker.tsx",
+          "type": "registry:component",
+          "target": "components/ui/date-picker.tsx"
+        },
+        {
+          "path": "src/components/ui/date-picker.schema.ts",
+          "type": "registry:component",
+          "target": "components/ui/date-picker.schema.ts"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "calendar",
+        "popover",
+        "input",
+        "button"
+      ],
+      "dependencies": [
+        "react",
+        "effect",
+        "react-day-picker@^10.0.2",
+        "lucide-react"
+      ]
+    },
+    {
+      "name": "select-with-custom-input",
+      "type": "registry:component",
+      "title": "Select With Custom Input",
+      "description": "A styled select that reveals a labeled text field for designated options, keeping option identifiers separate from custom answers.",
+      "meta": { "createdAt": "2026-11-11", "updatedAt": "2026-11-11" },
+      "files": [
+        {
+          "path": "src/components/ui/select-with-custom-input.tsx",
+          "type": "registry:component",
+          "target": "components/ui/select-with-custom-input.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "select",
+        "input"
+      ],
+      "dependencies": ["react"]
+    },
+    {
+      "name": "toast",
+      "type": "registry:component",
+      "title": "Toast",
+      "description": "Accessible transient notifications with actions, promise updates, scoped managers and configurable placement.",
+      "meta": { "createdAt": "2026-11-11", "updatedAt": "2026-11-11" },
+      "files": [
+        {
+          "path": "src/components/ui/toast.tsx",
+          "type": "registry:component",
+          "target": "components/ui/toast.tsx"
+        }
+      ],
+      "registryDependencies": ["@krak-stack/krakstack-provider"],
+      "dependencies": ["@base-ui/react@^1.5.0", "react", "lucide-react"]
+    },
+    {
       "name": "cron-expression-editor",
       "type": "registry:component",
       "title": "Cron Expression Editor",
       "description": "Type five-field cron expressions with restricted syntax, automatic spacing, field validation and timezone-aware next runs.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "files": [
         {
           "path": "src/components/ui/cron-expression-editor.tsx",
@@ -29,12 +97,17 @@
       "type": "registry:component",
       "title": "Phone Number Input",
       "description": "Searchable country selection, protected calling codes and phone validation with E.164 and separate extension output.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "files": [
         {
           "path": "src/components/ui/phone-number-input.tsx",
           "type": "registry:component",
           "target": "components/ui/phone-number-input.tsx"
+        },
+        {
+          "path": "src/components/ui/phone-number-input.schema.ts",
+          "type": "registry:component",
+          "target": "components/ui/phone-number-input.schema.ts"
         }
       ],
       "registryDependencies": [
@@ -43,14 +116,19 @@
         "input",
         "button"
       ],
-      "dependencies": ["react", "lucide-react", "libphonenumber-js@^1.13.16"]
+      "dependencies": [
+        "react",
+        "effect",
+        "lucide-react",
+        "libphonenumber-js@^1.13.16"
+      ]
     },
     {
       "name": "image-crop-editor",
       "type": "registry:component",
       "title": "Image Crop Editor",
       "description": "Crop, zoom, position and rotate images with accessible controls and bounded PNG export.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "See /docs/image-crop-editor for controlled cropping, cross-origin image requirements and PNG export.",
       "files": [
         {
@@ -71,7 +149,7 @@
       "type": "registry:component",
       "title": "Timezone Select",
       "description": "Search time zones with a code-configured continent, defaulting to North America, local times, UTC offsets and browser-time comparison.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "See /docs/timezone-select for searchable time zones, daylight-saving-aware offsets and local-time comparisons.",
       "files": [
         {
@@ -97,7 +175,7 @@
       "type": "registry:component",
       "title": "Async Action Button",
       "description": "An explicit async action with pending, success, safe failure feedback and duplicate-click protection.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nRun a host-owned async action with immediate duplicate-click protection, accessible feedback and explicit retry. See /docs/async-action-button for usage, API and integration guidance.",
       "files": [
         {
@@ -114,7 +192,7 @@
       "type": "registry:component",
       "title": "Unsaved Changes Guard",
       "description": "TanStack Router navigation confirmation with optional native browser-close protection for dirty forms.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nMount inside TanStack Router to protect unsaved edits. The host owns dirty state and saving; browsers own beforeunload prompt wording. See /docs/unsaved-changes-guard for usage and limitations.",
       "files": [
         {
@@ -134,7 +212,7 @@
       "type": "registry:component",
       "title": "Danger Confirmation",
       "description": "A destructive-action dialog with optional exact-text confirmation, async feedback and pending dismissal protection.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nConfirm a host-owned destructive action, optionally requiring an exact phrase. Keeps failures visible and blocks dismissal while pending. Confirmation is not authorization. See /docs/danger-confirmation.",
       "files": [
         {
@@ -157,7 +235,7 @@
       "type": "registry:component",
       "title": "Editable Text",
       "description": "Inline text editing with explicit save/cancel, keyboard support, focus restoration and preserved failed drafts.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nEdit a controlled string with host-owned async validation and persistence. Enter saves, Escape cancels, and failed saves retain the draft. See /docs/editable-text for API and integration guidance.",
       "files": [
         {
@@ -212,7 +290,7 @@
       "type": "registry:component",
       "title": "Animated List",
       "description": "A keyed semantic list with insertion, removal, controlled drag reordering and keyboard-accessible handles.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nAnimate a small list using stable entity keys. Supply onReorder to enable vertical drag handles and keyboard reordering. The host owns the order and persistence; removed items become inert during exit. This is not virtualization or cross-list dragging. See /docs/animated-list.",
       "files": [
         {
@@ -246,7 +324,7 @@
       "type": "registry:component",
       "title": "App Switcher",
       "description": "A keyboard-accessible menu for navigating between applications with icons, descriptions, badges and current-app indication.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nA configurable application navigation menu extracted from Kokobi. Supply trusted app destinations; the component does not switch organizations or manage authentication. See /docs/app-switcher for installation, examples, API reference and accessibility guidance.",
       "files": [
         {
@@ -267,7 +345,7 @@
       "type": "registry:component",
       "title": "Secret Value",
       "description": "A masked value with explicit reveal, optional auto-hide and accessible clipboard actions.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nDisplay a masked string with explicit reveal and copy actions. Extracted from Kokobi. Masking is presentation, not security: only supply values the current viewer is authorized to receive. See /docs/secret-value for installation, examples, API reference and accessibility guidance.",
       "files": [
         {
@@ -288,7 +366,7 @@
       "type": "registry:component",
       "title": "Bulk List Input",
       "description": "A controlled multiline list input that preserves unfinished text, with optional file selection and explicit tokenization helpers.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nPaste or type a list without losing unfinished entries. Optional file selection delegates parsing to the host. parseBulkList splits comma/newline text and deduplicates using optional normalization; it is not a CSV parser or domain validator. Extracted from Kokobi. See /docs/bulk-list-input for examples and API reference.",
       "files": [
         {
@@ -305,7 +383,7 @@
       "type": "registry:component",
       "title": "Choice Cards",
       "description": "Controlled single- or multiple-selection cards backed by native form inputs, with icons, descriptions and group errors.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nPresent radio or checkbox choices as cards while retaining native keyboard and form semantics. Supply labels and descriptions in the application locale. Extracted from VolunteerConnector. See /docs/choice-cards for installation, examples, API reference and accessibility guidance.",
       "files": [
         {
@@ -321,7 +399,7 @@
       "type": "registry:component",
       "title": "Upload Attachment",
       "description": "A controlled attachment showing upload progress, processing, failure, cancellation and state-appropriate retry actions.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
       "docs": "## Overview\n\nUpload status presentation extracted from Kokobi. The host owns transport, real progress, cancellation, retry and finalization; rendering does not start a request. A completed upload and completed processing are separate states. See /docs/upload-attachment for examples, API reference and integration guidance.",
       "files": [
         {
@@ -344,7 +422,7 @@
       "description": "Controlled, domain-neutral step navigation with underline, labelled or segmented progress and optional gentle content transitions.",
       "meta": {
         "createdAt": "2026-11-07",
-        "updatedAt": "2026-11-07"
+        "updatedAt": "2026-11-11"
       },
       "docs": "## Stepper\n\nInstall with `bunx shadcn@latest add @krak-stack/stepper`. Import `Stepper` and optional `StepperContent` from `@/components/ui/stepper` or the package export `@krak-stack/registry/stepper`.\n\nPass `steps`, `currentStep` and optionally `onStepSelect`. Selection only requests navigation: the host owns routing, saving, validation, completion and available steps. Previous navigation should not submit the form. Completion is explicit, never inferred from position.\n\nUse variant=\"underline\" for compact centered labels and an active underline without circles or numbers. Labelled and segmented progress remain available with horizontal, vertical or responsive orientation. Without a selection callback, progress is read-only. English/French defaults follow KrakstackProvider; locale and message overrides support other languages.\n\nStepperContent accepts the committed step ID, an explicit forward/backward direction, optional animate and optional focusTarget selector. Keep it mounted across step changes. Forward navigation slides the old panel left and the new panel in from the right; backward navigation reverses both. The paired slide takes 500ms with balanced easing inside a stationary clipped viewport, with no fade. The outgoing panel is an inert DOM copy, not a live React form; canvas content is not captured. Put outlines inside StepperContent so both move with their content. Animation is opt-in, skips initial render, respects reduced motion and never blocks navigation. Host code owns drafts and Back/Continue buttons. See /docs/stepper for integration examples and the live preview.",
       "files": [
@@ -364,7 +442,7 @@
       "description": "A HEX input with a live swatch and an accessible color-selection popover.",
       "meta": {
         "createdAt": "2026-11-05",
-        "updatedAt": "2026-11-06"
+        "updatedAt": "2026-11-11"
       },
       "docs": "## Overview\n\n`ColorPicker` combines a HEX input with a clickable swatch. The swatch opens a color square and hue slider, with mouse, touch and arrow-key support. Solid colors only; no opacity.\n\n## Usage\n\n```tsx\nimport { ColorPicker } from \"@/components/ui/color-picker\";\n\n<ColorPicker value={color} onValueChange={setColor} />\n<ColorPicker defaultValue=\"#A855F7\" />\n```\n\nThe SDK export is `@krak-stack/registry/color-picker`. Accepted input is three or six HEX digits, with an optional `#`. Callbacks emit uppercase `#RRGGBB` values. Incomplete text stays editable; blur, Enter or Escape restores the last valid color. External value changes reset stale drafts.\n\nPass standard input props such as `id`, `name`, `aria-label`, `aria-describedby`, `disabled` and `readOnly`. `className` styles the input group. `disabled` and `readOnly` also prevent opening the picker.\n\nEnglish and French defaults follow `KrakstackProvider`. Use `locale` for an explicit override and `messages` for exact-locale or base-language message overrides, with English as the final fallback.",
       "files": [
@@ -1635,7 +1713,7 @@
       "title": "Sidebar Layout",
       "description": "A sidebar-based layout with configurable navigation groups, a brand header, header action slot, and page header component.",
       "meta": {
-        "updatedAt": "2026-10-16"
+        "updatedAt": "2026-11-11"
       },
       "docs": "## Overview\n\n`sidebar-layout` provides a sidebar-based layout for applications using TanStack Router. It includes a configurable sidebar with an optional header slot and navigation groups, a page header component with optional badge, description, and actions, and an optional top-bar action slot. Apps own product-specific controls such as organization switchers, locale switchers, and user buttons by passing them to `headerActions`.\n\n## Features\n\n- Configurable sidebar with `sidebarHeader` slot and grouped navigation\n- Active link detection via TanStack Router\n- Collapsible icon sidebar with `SidebarProvider`\n- `SidebarPageHeader` with optional badge, description, and actions\n- Optional `headerActions` slot for app-owned top-bar controls\n- Uses `Outlet` or `children` for content rendering\n\n## Usage\n\n```tsx\nimport { SidebarLayout, SidebarPageHeader, type NavGroup } from \"@/components/ui/sidebar-layout\";\nimport { AppBrand } from \"@/components/ui/app-brand\";\nimport { LocaleSwitcher } from \"@/components/ui/locale-switcher\";\nimport { LayoutDashboard, Users, Blocks } from \"lucide-react\";\n\nconst groups: NavGroup[] = [\n  {\n    label: () => \"Navigation\",\n    items: [\n      { label: () => \"Dashboard\", href: \"/admin\", exact: true, icon: LayoutDashboard },\n      { label: () => \"Users\", href: \"/admin/users\", icon: Users },\n    ],\n  },\n];\n\n<SidebarLayout\n  sidebarHeader={\n    <AppBrand\n      label=\"My App\"\n      subtitle=\"Admin Panel\"\n      icon={Blocks}\n      variant=\"sidebar\"\n      href=\"/admin\"\n    />\n  }\n  headerActions={\n    <>\n      <YourSearch />\n      <LocaleSwitcher />\n    </>\n  }\n  groups={groups}\n/>\n```\n\n## Active Navigation\n\nSection links highlight their nested routes by default. Set `exact: true` on overview or index links such as `/admin` so they do not remain highlighted throughout the application. Matching uses TanStack Router's `Link` with `activeOptions`; search parameters do not affect highlighting and external links never become active. Multiple ancestor links can be active unless their overview entries use exact matching.\n\nLink to the section index, for example `/admin/customizations/pages`, and let its index route redirect to the default child. This keeps the link destination and matching path aligned without an `activeHref` override or local package patch.\n\nLes liens de section restent actifs sur leurs routes imbriquées. Utilisez `exact: true` pour les pages de vue d'ensemble afin qu'elles ne restent pas actives sur toutes les sous-pages. Les paramètres de recherche ne modifient pas la sélection et les liens externes ne deviennent jamais actifs.\n\nFor pages with custom content:\n\n```tsx\n<SidebarLayout\n  sidebarHeader={<AppBrand label=\"My App\" subtitle=\"Admin Panel\" icon={Blocks} variant=\"sidebar\" href=\"/admin\" />}\n  groups={groups}\n>\n  <SidebarPageHeader title=\"Users\" description=\"Manage users\" />\n</SidebarLayout>\n```",
       "files": [

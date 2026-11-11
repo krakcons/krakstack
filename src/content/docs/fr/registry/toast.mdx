@@ -1,0 +1,140 @@
+---
+slug: toast
+path: /docs/toast
+title: Toast
+description: Notifications temporaires accessibles avec actions, progression et position configurable.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Toast
+
+Un retour bref pour les enregistrements, erreurs et tâches en arrière-plan. Utilise les primitives Toast de Base UI déjà installées, sans Sonner, nouveau fournisseur de thème ni gestionnaire de délais personnalisé. Ce retour temporaire ne remplace pas Notification Menu et ses notifications persistantes, ni les autorisations.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/toast
+```
+
+Import du package : `@krak-stack/registry/toast`.
+
+## Utilisation
+
+Montez le fournisseur **une seule fois** autour de l’application, à l’intérieur de KrakstackProvider pour en reprendre la langue. Il contient déjà la zone des notifications et son portail. Ne créez pas un fournisseur par bouton.
+
+```tsx
+import { ToastProvider, useToast } from "@krak-stack/registry/toast";
+import { m } from "@/paraglide/messages";
+
+const SaveFeedback = () => {
+  const toast = useToast();
+  return (
+    <button
+      onClick={() => toast.add({ title: m.changes_saved(), type: "success" })}
+    >
+      {m.show_feedback()}
+    </button>
+  );
+};
+
+<ToastProvider position="bottom-right">
+  <SaveFeedback />
+</ToastProvider>;
+```
+
+Les contrôles d’exemple et l’export simulé de cette page appartiennent uniquement à la documentation. Les notifications utilisent les couleurs claires/sombres de l’application.
+
+## Options du fournisseur
+
+| Prop           | Défaut                | Rôle                                                                                              |
+| -------------- | --------------------- | ------------------------------------------------------------------------------------------------- |
+| `position`     | `bottom-right`        | `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center` ou `bottom-right`           |
+| `timeout`      | `5000`                | Délai de fermeture en millisecondes ; `0` conserve la notification jusqu’à sa fermeture explicite |
+| `limit`        | `3`                   | Nombre maximal visible ; Base UI rend les notifications excédentaires cachées et inertes          |
+| `toastManager` | Propre au fournisseur | Gestionnaire facultatif pour les appels hors React                                                |
+| `locale`       | KrakstackProvider     | Libellés accessibles anglais/français                                                             |
+| `messages`     | Textes intégrés       | Surcharges par langue de `notifications` et `dismiss`                                             |
+| `classNames`   | Styles intégrés       | Surcharges typées de viewport, toast, content, icon, body, title, description, action et close    |
+
+Choisissez une limite positive et modeste. La zone s’adapte aux petits écrans et défile si le contenu dépasse la hauteur disponible. Des fournisseurs distincts isolent volontairement leur état. Un même gestionnaire externe partagé entre plusieurs fournisseurs diffuse vers chacun : évitez ce partage accidentel.
+
+## Personnalisation
+
+Utilisez `classNames` pour personnaliser les parties sans modifier le thème global de l’application :
+
+```tsx
+<ToastProvider
+  classNames={{
+    viewport: "w-[28rem]",
+    toast: "rounded-xl border-2 data-[type=success]:border-emerald-500",
+    title: "text-base",
+    description: "text-foreground/80",
+    action: "text-primary",
+    close: "rounded-full",
+  }}
+>
+  {children}
+</ToastProvider>
+```
+
+`ToastClassNames` accepte `viewport`, `toast`, `content`, `icon`, `body`, `title`, `description`, `action` et `close`. Les classes s’appliquent uniquement aux notifications de ce fournisseur, y compris celles ajoutées par son gestionnaire externe.
+
+Pour le CSS classique, les valeurs `data-slot` correspondantes sont `toast-viewport`, `toast`, `toast-content`, `toast-icon`, `toast-body`, `toast-title`, `toast-description`, `toast-action` et `toast-close`. La notification expose `data-type` et sa zone expose `data-position`. La zone est rendue en portail : les sélecteurs descendants d’un conteneur ne l’atteignent pas. Les barres de défilement sont masquées pour éviter leur apparition pendant les animations ; les piles trop hautes restent défilables.
+
+Consultez [Personnalisation des composants](/docs/component-styling) pour les principes communs de thème et de personnalisation.
+
+## Ajouter, actualiser et fermer
+
+`useToast()` expose l’API Base UI : `add`, `update`, `close`, `promise` et `toasts`.
+
+```tsx
+const id = toast.add({
+  title: m.export_preparing(),
+  type: "loading",
+  timeout: 0,
+});
+
+toast.update(id, { title: m.export_ready(), type: "success", timeout: 5000 });
+toast.close(id);
+// toast.close() ferme toutes les notifications de ce fournisseur.
+```
+
+Les types `success`, `error`, `warning`, `info` et `loading` disposent d’icônes intégrées ; un type personnalisé utilise l’icône d’information. Fournissez `title` pour le nom accessible et éventuellement `description`. Le contenu accepte des nœuds React ; les chaînes restent du texte, jamais du HTML. Réutiliser un `id` explicite actualise la notification et son délai au lieu de créer un doublon.
+
+## Actions et promesses
+
+L’application possède les actions. Elles ne ferment pas automatiquement la notification : fermez-la après réussite. Ne placez pas l’unique moyen de récupérer des données importantes dans une notification éphémère.
+
+```tsx
+toast.add({
+  id: "undo-delete",
+  title: m.item_removed(),
+  timeout: 0,
+  actionProps: {
+    children: m.undo(),
+    onClick: () => {
+      restoreItem();
+      toast.close("undo-delete");
+    },
+  },
+});
+
+await toast.promise(saveChanges(), {
+  loading: { title: m.saving() },
+  success: { title: m.changes_saved() },
+  error: { title: m.save_failed() },
+});
+```
+
+Le helper actualise une seule notification de chargement en succès ou erreur. Il ne remplace pas la gestion d’erreur de l’appelant : traitez la promesse retournée comme l’opération initiale. Préférez les objets avec `title` ; les chaînes abrégées de Base UI remplissent la description. N’affichez jamais d’exceptions brutes, de jetons ou de données personnelles.
+
+## Hors React et accessibilité
+
+Créez un gestionnaire avec `createToastManager()` et transmettez cette instance à `toastManager`. Appelez ses méthodes depuis les intégrations côté client, uniquement après montage du fournisseur. Il ne s’agit pas d’une file persistante. N’émettez pas pendant le rendu serveur et ne partagez pas d’état serveur entre utilisateurs.
+
+Base UI gère les annonces polies, la suspension du délai au survol/focus ou quand la fenêtre perd le focus, l’accès clavier, Échap et le balayage. **F6** donne accès aux notifications. `priority: "high"` demande une annonce urgente : utilisez-le avec parcimonie. Les contrôles sont accessibles au clavier et les animations respectent la réduction des mouvements. Traduisez titres, descriptions et actions avec Paraglide ; les textes du fournisseur couvrent uniquement la zone et la fermeture.

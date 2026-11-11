@@ -17,6 +17,18 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./date-picker": {
+      "types": "./dist/components/ui/date-picker.d.ts",
+      "import": "./dist/components/ui/date-picker.js"
+    },
+    "./select-with-custom-input": {
+      "types": "./dist/components/ui/select-with-custom-input.d.ts",
+      "import": "./dist/components/ui/select-with-custom-input.js"
+    },
+    "./toast": {
+      "types": "./dist/components/ui/toast.d.ts",
+      "import": "./dist/components/ui/toast.js"
+    },
     "./cron-expression-editor": {
       "types": "./dist/components/ui/cron-expression-editor.d.ts",
       "import": "./dist/components/ui/cron-expression-editor.js"
@@ -379,7 +391,9 @@
     "@oxlint/plugins": "1.78.0",
     "bowser": "^2.14.1",
     "cron-parser": "^5.10.4",
+    "date-fns": "^4.4.0",
     "react-colorful": "^5.8.1",
+    "react-day-picker": "^10.0.2",
     "web-vitals": "^5.1.0"
   },
   "peerDependencies": {

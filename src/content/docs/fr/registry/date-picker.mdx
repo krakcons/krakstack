@@ -1,0 +1,55 @@
+---
+slug: date-picker
+path: /docs/date-picker
+title: Sélecteur de date
+description: Choisir ou saisir une date sans introduire d’heure ni de fuseau horaire.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Sélecteur de date
+
+Un champ contrôlé avec calendrier stylisé en popover, saisie clavier, effacement et bornes inclusives. Réutilise le calendrier shadcn installé et React Day Picker. Il représente une date unique, pas un horodatage, une plage ou une heure.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/date-picker
+```
+
+Export : `@krak-stack/registry/date-picker`.
+
+## Utilisation
+
+```tsx
+const [date, setDate] = useState("");
+
+<DatePicker
+  value={date}
+  onValueChange={setDate}
+  label={m.preferred_date()}
+  name="preferredDate"
+  min="2026-01-01"
+  max="2027-12-31"
+/>;
+```
+
+`value` est une chaîne `AAAA-MM-JJ`, vide ou incomplète pendant la saisie. Un choix dans le calendrier émet ce format et ferme le panneau. La saisie conserve le brouillon et signale les dates impossibles ou hors plage, sans normalisation silencieuse. `min` et `max` sont inclusifs ; des bornes invalides ou inversées désactivent le calendrier et signalent une erreur de configuration. `required` impose une valeur non vide. `clearable` vaut `true` par défaut ; les champs en lecture seule restent soumis mais ne peuvent être modifiés ni effacés.
+
+## Validation d’une date seule
+
+`DateOnlySchema` est un schéma Effect qui vérifie le format, le jour réel et les années bissextiles, entre 0001 et 9999. `parseDateOnly(text)` renvoie un `Date` à minuit UTC ou `undefined`. `getDatePickerState({ value, min, max })` renvoie `empty`, `valid`, `invalid`, `out-of-range` ou `invalid-range`. Validez à nouveau la chaîne soumise et les bornes métier sur le serveur.
+
+UTC sert uniquement aux calculs et à l’affichage internes pour éviter qu’un fuseau du navigateur décale le jour stocké. Conservez une chaîne de date seule, sans conversion en horodatage local. Si votre domaine exige un instant, choisissez séparément son heure et son fuseau.
+
+Le champ nommé soumet le brouillon courant. Les brouillons invalides participent à la validation native du formulaire grâce à une validité personnalisée ; `aria-invalid` et le message associé exposent l’erreur. La validation native ne remplace jamais celle du serveur.
+
+## Langue et personnalisation
+
+La locale du fournisseur ou la prop `locale` sélectionne les libellés du calendrier, l’ordre des jours et les messages anglais/français. La saisie conserve le format ISO dans les deux langues. `messages` accepte des surcharges par langue pour `label`, `open`, `clear`, `invalid`, `outOfRange` et `invalidRange`. Traduisez les libellés de l’application et `description` avec Paraglide.
+
+`className` cible le conteneur ; `inputClassName`, `contentClassName`, `calendarClassName` et `calendarClassNames` typé par React Day Picker ciblent les parties, y compris le panneau en portail. Les slots du conteneur sont `date-picker`, `date-picker-label`, `date-picker-controls`, `date-picker-description` et `date-picker-error`. Les primitives conservent leurs slots et ajoutent `data-component="date-picker-input"`, `date-picker-trigger`, `date-picker-content` et `date-picker-clear`. `data-state` du conteneur reprend l’état de validation. Consultez [Personnalisation des composants](/docs/component-styling) pour les principes généraux.
