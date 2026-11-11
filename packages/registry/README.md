@@ -10,6 +10,14 @@ bun add @krak-stack/registry
 
 Install the peer dependencies required by the items you use. Each item's registry documentation lists its dependencies and setup.
 
+Animation components require the optional `motion` peer; the phone-number input
+requires the optional `libphonenumber-js` peer. Install these only when using the
+corresponding components. Notification-menu consumers do not need either package.
+
+Les composants animés nécessitent la dépendance paire facultative `motion` ; le
+champ de numéro de téléphone nécessite `libphonenumber-js`. Installez ces paquets
+uniquement pour les composants concernés. Le menu de notifications n'en a pas besoin.
+
 ## Use
 
 Import from the specific package subpaths you need:

@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -379,8 +379,6 @@
     "@oxlint/plugins": "1.78.0",
     "bowser": "^2.14.1",
     "cron-parser": "^5.10.4",
-    "libphonenumber-js": "^1.13.16",
-    "motion": "^14.12.0",
     "react-colorful": "^5.8.1",
     "web-vitals": "^5.1.0"
   },
@@ -405,10 +403,18 @@
     "drizzle-orm": "^1.0.0-rc.4-5d5b77c",
     "effect": "^4.1.0",
     "lucide-react": "^1.18.0",
+    "libphonenumber-js": "^1.13.16",
+    "motion": "^14.12.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
+    "libphonenumber-js": {
+      "optional": true
+    },
+    "motion": {
+      "optional": true
+    },
     "@effect/sql-pg": {
       "optional": true
     },

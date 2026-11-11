@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.8.2
+
+### Patch Changes
+
+- Move `motion` and `libphonenumber-js` from required dependencies to optional peers. Consumers only need to install them when using animation components or the phone-number input; notification-menu and unrelated component consumers no longer pull them in.
+
 ## 0.8.1
 
 ### Patch Changes
