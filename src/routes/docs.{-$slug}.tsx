@@ -41,6 +41,22 @@ const registryPreviews: Readonly<
   Record<string, LazyExoticComponent<ComponentType> | undefined>
 > = Object.fromEntries([
   [
+    "image-crop-editor",
+    lazy(() =>
+      import("@/components/registry-previews/image-crop-editor-preview").then(
+        ({ ImageCropEditorPreview }) => ({ default: ImageCropEditorPreview }),
+      ),
+    ),
+  ],
+  [
+    "timezone-select",
+    lazy(() =>
+      import("@/components/registry-previews/timezone-select-preview").then(
+        ({ TimezoneSelectPreview }) => ({ default: TimezoneSelectPreview }),
+      ),
+    ),
+  ],
+  [
     "async-action-button",
     lazy(() =>
       import("@/components/registry-previews/async-action-button-preview").then(

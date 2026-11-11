@@ -1,0 +1,75 @@
+---
+slug: image-crop-editor
+path: /docs/image-crop-editor
+title: Image Crop Editor
+description: Position, zoom, rotate and export a cropped image without uploading it.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Image Crop Editor
+
+Edit image content after file selection. This does not replace File Picker or Upload Attachment: the host supplies a source URL and receives a PNG Blob. No upload, persistence or download happens automatically.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/image-crop-editor
+```
+
+Package import: `@krak-stack/registry/image-crop-editor`. Uses the existing Async Action Button for export feedback. No additional image library or stylesheet is required.
+
+## Usage
+
+```tsx
+import { useState } from "react";
+import {
+  ImageCropEditor,
+  type ImageCropState,
+} from "@krak-stack/registry/image-crop-editor";
+
+const [crop, setCrop] = useState<ImageCropState>({
+  x: 50,
+  y: 50,
+  zoom: 1,
+  rotation: 0,
+});
+
+<ImageCropEditor
+  src={imageUrl}
+  label="Organization logo"
+  value={crop}
+  onValueChange={setCrop}
+  onExport={saveImage}
+  aspectRatio={1}
+  locale="en"
+/>;
+```
+
+Localize the host-supplied label in your application. `saveImage(blob)` may return a promise; failures show safe retry feedback without exposing raw errors. The host owns authorization and transport.
+
+## API reference
+
+| Prop                     | Contract                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `src`, `label`           | Required image URL and accessible crop name                                  |
+| `value`, `onValueChange` | Controlled `ImageCropState`; update immediately                              |
+| `onExport`               | `(blob: Blob) => void \| Promise<void>`; PNG output                          |
+| `aspectRatio`            | Width/height, default `1`; constrained to `0.1–10`                           |
+| `maxOutputSize`          | Longest output edge, default `2048`; constrained to `1–8192`, never upscales |
+| `disabled`, `className`  | Disable edits/export; style the wrapper                                      |
+| `locale`, `messages`     | Provider locale or explicit override; English/French defaults                |
+
+`x` and `y` are percentages (`0–100`) of available travel in the rotated image. `zoom` ranges from `1` to `4`; `rotation` is `0`, `90`, `180` or `270`. `getImageCropGeometry(width, height, value, aspectRatio?)` exposes the same source-pixel rectangle used by preview/export.
+
+## Interaction and boundaries
+
+Drag with a mouse or touch, or use the three named native sliders with arrow keys. Rotate and Reset are ordinary keyboard-accessible buttons and never submit a surrounding form. Export locks editing while the host callback runs. Changing `src` resets loading and feedback; the host may also reset controlled crop state.
+
+Remote images must permit anonymous CORS access; same-origin, blob and data URLs work without remote CORS configuration. The component loads remote sources anonymously. Failed loading or canvas export stays local with safe feedback. Revoke host-created object URLs only when they are no longer used. Export re-encodes a single raster frame to PNG; it does not preserve EXIF, animation, original encoding or vector structure. Cap/validate file sizes and dimensions before decoding untrusted uploads; the output-size limit is not a source-memory limit.
+
+Message keys: `zoom`, `horizontal`, `vertical`, `rotate`, `reset`, `export`, `loading`, `loadError`, `help`, `exportError`. Overrides use `{ fr: { export: "Exporter" } }`.

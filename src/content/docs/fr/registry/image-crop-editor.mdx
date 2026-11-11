@@ -1,0 +1,75 @@
+---
+slug: image-crop-editor
+path: /docs/image-crop-editor
+title: Éditeur de recadrage
+description: Positionner, zoomer, pivoter et exporter une image recadrée sans téléversement.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Éditeur de recadrage
+
+Modifiez le contenu d’une image après sa sélection. Ce composant ne remplace ni File Picker ni Upload Attachment : l’application fournit une URL et reçoit un Blob PNG. Aucun téléversement, téléchargement ou enregistrement automatique.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/image-crop-editor
+```
+
+Import du paquet : `@krak-stack/registry/image-crop-editor`. Réutilise Async Action Button pour l’export. Aucune bibliothèque d’image ou feuille de style supplémentaire.
+
+## Utilisation
+
+```tsx
+import { useState } from "react";
+import {
+  ImageCropEditor,
+  type ImageCropState,
+} from "@krak-stack/registry/image-crop-editor";
+
+const [crop, setCrop] = useState<ImageCropState>({
+  x: 50,
+  y: 50,
+  zoom: 1,
+  rotation: 0,
+});
+
+<ImageCropEditor
+  src={imageUrl}
+  label="Logo de l’organisation"
+  value={crop}
+  onValueChange={setCrop}
+  onExport={saveImage}
+  aspectRatio={1}
+  locale="fr"
+/>;
+```
+
+Traduisez le libellé fourni par l’application. `saveImage(blob)` peut renvoyer une promesse ; un échec affiche un retour sûr avec possibilité de réessayer, sans erreur brute. L’application gère le transport et les autorisations.
+
+## Référence
+
+| Propriété                | Contrat                                                                     |
+| ------------------------ | --------------------------------------------------------------------------- |
+| `src`, `label`           | URL source et nom accessible obligatoires                                   |
+| `value`, `onValueChange` | État `ImageCropState` contrôlé ; mise à jour immédiate                      |
+| `onExport`               | `(blob: Blob) => void \| Promise<void>` ; sortie PNG                        |
+| `aspectRatio`            | Largeur/hauteur, `1` par défaut ; limité à `0.1–10`                         |
+| `maxOutputSize`          | Plus grand côté, `2048` par défaut ; limité à `1–8192`, sans agrandissement |
+| `disabled`, `className`  | Désactiver l’édition et l’export ; style du conteneur                       |
+| `locale`, `messages`     | Langue du fournisseur ou surcharge ; français/anglais inclus                |
+
+`x` et `y` sont des pourcentages (`0–100`) du déplacement disponible après rotation. `zoom` varie de `1` à `4` ; `rotation` vaut `0`, `90`, `180` ou `270`. `getImageCropGeometry(width, height, value, aspectRatio?)` expose le rectangle en pixels source utilisé par l’aperçu et l’export.
+
+## Interaction et limites
+
+Glissez à la souris ou au toucher, ou utilisez les trois curseurs nommés avec les flèches. Pivoter et Réinitialiser sont des boutons accessibles au clavier et ne soumettent pas un formulaire parent. L’édition est verrouillée pendant l’export et son rappel. Une nouvelle `src` réinitialise le chargement et le retour ; l’application peut aussi réinitialiser le cadrage contrôlé.
+
+Les images distantes doivent autoriser CORS anonyme ; les URL de même origine, blob et data n’exigent pas cette configuration distante. La source est chargée anonymement. Les échecs de chargement et d’export restent locaux. Libérez les URL objet créées par l’application lorsqu’elles ne sont plus utilisées. L’export réencode une seule image raster en PNG, sans conserver EXIF, animation, encodage d’origine ou structure vectorielle. Validez taille et dimensions avant de décoder un fichier non fiable ; la limite de sortie ne limite pas la mémoire source.
+
+Clés : `zoom`, `horizontal`, `vertical`, `rotate`, `reset`, `export`, `loading`, `loadError`, `help`, `exportError`. Exemple : `{ fr: { export: "Exporter" } }`.

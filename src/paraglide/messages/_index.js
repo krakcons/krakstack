@@ -2,6 +2,10 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} New_Components_TimezoneInputs */
+/** @typedef {{}} New_Components_Timezone_HelpInputs */
+/** @typedef {{}} New_Components_CropInputs */
+/** @typedef {{}} New_Components_Crop_ResultInputs */
 /** @typedef {{}} Interactions_Reorder_HelpInputs */
 /** @typedef {{}} Interactions_Simulate_FailureInputs */
 /** @typedef {{}} Interactions_Run_ActionInputs */
@@ -416,6 +420,62 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Preferred time zone" |
+*
+* @param {New_Components_TimezoneInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const new_components_timezone = /** @type {((inputs?: New_Components_TimezoneInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<New_Components_TimezoneInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.new_components_timezone(inputs)
+	return __fr.new_components_timezone(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "This example shows North American time zones. Developers can configure another continent or all zones in code. Search a city, name or UTC offset; local times..." |
+*
+* @param {New_Components_Timezone_HelpInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const new_components_timezone_help = /** @type {((inputs?: New_Components_Timezone_HelpInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<New_Components_Timezone_HelpInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.new_components_timezone_help(inputs)
+	return __fr.new_components_timezone_help(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Crop example image" |
+*
+* @param {New_Components_CropInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const new_components_crop = /** @type {((inputs?: New_Components_CropInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<New_Components_CropInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.new_components_crop(inputs)
+	return __fr.new_components_crop(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Exported PNG preview" |
+*
+* @param {New_Components_Crop_ResultInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const new_components_crop_result = /** @type {((inputs?: New_Components_Crop_ResultInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<New_Components_Crop_ResultInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.new_components_crop_result(inputs)
+	return __fr.new_components_crop_result(inputs)
+});
 /**
 * | output |
 * | --- |

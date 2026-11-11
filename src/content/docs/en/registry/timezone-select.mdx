@@ -1,0 +1,83 @@
+---
+slug: timezone-select
+path: /docs/timezone-select
+title: Timezone Select
+description: Search time zones and compare their local times and UTC offsets with your own.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Timezone Select
+
+A time-zone-specific composition of the existing Virtualized Combobox, not another generic picker. Search cities, localized time-zone names or UTC offsets. Each result shows its local time, calendar date and difference from your browser’s time zone.
+
+## Continent filter
+
+The catalog defaults to **North America**, configured in code rather than through a built-in continent dropdown. Set `continent="all"` for every time zone, or pass a specific continent. Changing this prop updates the available catalog without changing the controlled selection. A selected zone outside the configured continent stays available so its value is not lost.
+
+```tsx
+<TimezoneSelect value={zone} onValueChange={setZone} continent="all" />
+<TimezoneSelect value={zone} onValueChange={setZone} continent="europe" />
+```
+
+North America includes Central America, Greenland and the Caribbean. Groups follow IANA locations, with explicit Atlantic/Indian/Pacific island mappings; Hawaii is in Oceania, while Easter Island and the Galápagos are in South America. UTC and fixed-offset zones appear under **All time zones**, or remain visible when already selected. Valid aliases such as `US/Eastern` are classified using their resolved location. `getTimeZoneContinent(id)` exposes the grouping and returns `null` for non-geographic or invalid identifiers.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/timezone-select
+```
+
+Package import: `@krak-stack/registry/timezone-select`. Reuses Virtualized Combobox for searching, virtualization, keyboard navigation and clearing. No time-zone library, geolocation permission or network request is required.
+
+## Usage
+
+```tsx
+import { useState } from "react";
+import { TimezoneSelect } from "@krak-stack/registry/timezone-select";
+
+const [zone, setZone] = useState<string | null>("Europe/Paris");
+
+<TimezoneSelect
+  label="Preferred time zone"
+  value={zone}
+  onValueChange={setZone}
+  name="timeZone"
+  locale="en"
+/>;
+```
+
+The controlled value is a time-zone identifier, never an offset or a typed search string. Search does not change the selected value. Clearing emits `null`; **Use my time zone** explicitly chooses the browser zone rather than changing the value automatically. Localize host-supplied labels in your application.
+
+## Catalog and time comparison
+
+Includes every primary IANA zone returned by the runtime’s `Intl.supportedValuesOf("timeZone")`, plus UTC and supported fixed-offset `Etc/GMT` zones. Alias-only identifiers are not duplicated throughout the catalog, but a valid selected or comparison alias is retained. The exact catalog and spelling follow the browser/OS time-zone database; keep runtimes current. Search ignores underscores in identifiers, so `New York` and `America/New_York` both work. IANA names can contain legacy spellings such as `Katmandu`; UTC-offset search also finds those zones. `Etc/GMT` signs follow IANA’s reversed convention: `Etc/GMT+5` is UTC−05:00.
+
+Times, dates, UTC offsets and differences use the **same instant**, including daylight saving and half-/quarter-hour offsets. Calendar dates remain visible across midnight and the date line. Live display updates once per minute, within 15 seconds of the boundary. Use `referenceTime` to compare a specific future or historical instant; it is not a recurring-time or DST ambiguity resolver. Saving only today’s offset loses future DST rules: persist the identifier.
+
+Browser detection happens after hydration. No server clock or server time zone is presented as the user’s time, and no preference is selected automatically. If detection/comparison is unavailable, selection remains usable. `comparisonTimeZone` sets an explicit baseline; `null` hides comparison entirely. Differences are relative to this baseline, not necessarily UTC. A fixed reference instant also fixes the date displayed for the comparison zone.
+
+## API reference
+
+| Prop                     | Contract                                                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `value`, `onValueChange` | Required `string \| null` and controlled update                                                                            |
+| `label`                  | Visible/accessible name; localized default                                                                                 |
+| `continent`              | Code-only filter: `north-america` (default), `south-america`, `europe`, `africa`, `asia`, `oceania`, `antarctica` or `all` |
+| `comparisonTimeZone`     | Omit for browser detection; explicit identifier or `null` to disable                                                       |
+| `referenceTime`          | Optional valid `Date`; omitted uses live current time                                                                      |
+| `name`                   | Optional hidden form field; empty string for null; disabled with the component                                             |
+| `disabled`, `className`  | Disable all controls; outer wrapper styling                                                                                |
+| `locale`, `messages`     | Provider/explicit locale and partial locale-keyed labels                                                                   |
+
+`getTimeZones(additional?)` exposes the catalog. `getTimeZoneDetails({ timeZone, at, locale? })` returns the identifier, localized name/time/date, UTC offset string and numeric `offsetMinutes`, or `undefined` for an invalid zone/date. `TimeZoneIdSchema` and `isTimeZoneId` validate IDs before persistence/API use. A controlled invalid zone displays safe feedback and never gets silently replaced. Invalid reference dates disable only the time display, not selection.
+
+## Accessibility and integration
+
+The labeled trigger opens the existing searchable, virtualized combobox. Arrow keys and Enter choose an option; Escape closes without discarding the selection. Native form submission uses the hidden field when `name` is supplied. The local-time preview is not an assertive live region, so minute refreshes do not interrupt assistive technology. Time-zone names are localized with Intl; geographic identifiers retain IANA spelling.
+
+Message keys: `label`, `placeholder`, `search`, `empty`, `clear`, `yourTime`, `comparisonTime`, `selectedTime`, `useLocal`, `unavailable`, `invalid`, `invalidReference`, `same`, `ahead(duration)`, `behind(duration)`. Overrides use `{ fr: { useLocal: "Mon fuseau" } }`.

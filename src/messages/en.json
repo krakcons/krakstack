@@ -1,4 +1,8 @@
 {
+  "new_components_timezone": "Preferred time zone",
+  "new_components_timezone_help": "This example shows North American time zones. Developers can configure another continent or all zones in code. Search a city, name or UTC offset; local times account for daylight saving and are compared with your browser’s time zone.",
+  "new_components_crop": "Crop example image",
+  "new_components_crop_result": "Exported PNG preview",
   "interactions_reorder_help": "Drag an item by its grip to change the order. You can also focus a grip and use Arrow Up, Arrow Down, Home or End. Changes stay local to this example.",
   "interactions_simulate_failure": "Simulate a failed action",
   "interactions_run_action": "Run example action",

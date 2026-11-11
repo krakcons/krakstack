@@ -1,4 +1,8 @@
 {
+  "new_components_timezone": "Fuseau horaire préféré",
+  "new_components_timezone_help": "Cet exemple affiche les fuseaux d’Amérique du Nord. Le développeur peut configurer un autre continent ou tous les fuseaux dans le code. Recherchez une ville, un nom ou un décalage UTC ; les heures tiennent compte de l’heure d’été et sont comparées au fuseau du navigateur.",
+  "new_components_crop": "Recadrer l’image d’exemple",
+  "new_components_crop_result": "Aperçu du PNG exporté",
   "interactions_reorder_help": "Faites glisser un élément par sa poignée pour changer l’ordre. Vous pouvez aussi placer le focus sur une poignée et utiliser les flèches haut et bas, Début ou Fin. Les changements restent locaux à cet exemple.",
   "interactions_simulate_failure": "Simuler un échec",
   "interactions_run_action": "Lancer l’action d’exemple",

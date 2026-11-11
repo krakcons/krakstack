@@ -1,0 +1,83 @@
+---
+slug: timezone-select
+path: /docs/timezone-select
+title: Sélecteur de fuseau horaire
+description: Rechercher des fuseaux et comparer leurs heures locales et décalages UTC avec les vôtres.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-10"
+updatedAt: "2026-11-10"
+---
+
+# Sélecteur de fuseau horaire
+
+Une composition spécialisée du Virtualized Combobox existant, pas un nouveau sélecteur générique. Recherchez une ville, un nom de fuseau traduit ou un décalage UTC. Chaque résultat affiche heure locale, date et différence avec le fuseau du navigateur.
+
+## Filtre par continent
+
+Le catalogue affiche **l’Amérique du Nord** par défaut, configurée dans le code et non par un menu de continent intégré. Utilisez `continent="all"` pour tous les fuseaux ou indiquez un continent précis. Modifier cette propriété actualise le catalogue sans modifier la sélection contrôlée. Un fuseau sélectionné hors du continent configuré reste disponible pour ne pas perdre sa valeur.
+
+```tsx
+<TimezoneSelect value={zone} onValueChange={setZone} continent="all" />
+<TimezoneSelect value={zone} onValueChange={setZone} continent="europe" />
+```
+
+L’Amérique du Nord inclut l’Amérique centrale, le Groenland et les Caraïbes. Les groupes suivent les lieux IANA avec des correspondances explicites pour les îles : Hawaï appartient à l’Océanie, l’île de Pâques et les Galápagos à l’Amérique du Sud. UTC et les décalages fixes apparaissent dans **Tous les fuseaux**, ou restent visibles s’ils sont sélectionnés. Les alias valides comme `US/Eastern` sont classés selon leur lieu résolu. `getTimeZoneContinent(id)` expose ce classement et renvoie `null` pour les identifiants invalides ou non géographiques.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/timezone-select
+```
+
+Import du paquet : `@krak-stack/registry/timezone-select`. Réutilise Virtualized Combobox pour recherche, virtualisation, clavier et effacement. Aucune bibliothèque de fuseaux, autorisation de géolocalisation ou requête réseau supplémentaire.
+
+## Utilisation
+
+```tsx
+import { useState } from "react";
+import { TimezoneSelect } from "@krak-stack/registry/timezone-select";
+
+const [zone, setZone] = useState<string | null>("Europe/Paris");
+
+<TimezoneSelect
+  label="Fuseau horaire préféré"
+  value={zone}
+  onValueChange={setZone}
+  name="timeZone"
+  locale="fr"
+/>;
+```
+
+La valeur contrôlée est un identifiant de fuseau, jamais un décalage ou le texte recherché. Rechercher ne change pas la sélection. Effacer émet `null` ; **Utiliser mon fuseau horaire** choisit explicitement le fuseau du navigateur sans modifier automatiquement la préférence. Traduisez les libellés fournis par l’application.
+
+## Catalogue et comparaison
+
+Inclut tous les fuseaux IANA principaux renvoyés par `Intl.supportedValuesOf("timeZone")`, ainsi que UTC et les fuseaux fixes `Etc/GMT` pris en charge. Les alias ne sont pas tous dupliqués, mais un alias sélectionné ou utilisé pour la comparaison est conservé s’il est valide. Catalogue et orthographe suivent la base du navigateur/système ; gardez ces environnements à jour. La recherche ignore les tirets bas : `New York` et `America/New_York` fonctionnent. Certains identifiants conservent une ancienne orthographe comme `Katmandu` ; la recherche par décalage UTC les retrouve aussi. Les signes `Etc/GMT` sont inversés selon IANA : `Etc/GMT+5` vaut UTC−05:00.
+
+Heures, dates, décalages et différences utilisent **le même instant**, y compris heure d’été et décalages de demi-/quart d’heure. Les dates restent affichées pour distinguer les passages de minuit ou de la ligne de changement de date. L’heure courante se rafraîchit chaque minute, dans les 15 secondes suivant sa limite. `referenceTime` permet une comparaison à un instant précis, pas la résolution d’horaires récurrents ou d’heures locales ambiguës. Enregistrez l’identifiant, pas seulement le décalage du jour.
+
+La détection du navigateur se fait après hydratation. Ni l’heure ni le fuseau du serveur ne sont présentés comme ceux de l’utilisateur ; aucune préférence n’est choisie automatiquement. Si la comparaison est indisponible, le sélecteur reste utilisable. `comparisonTimeZone` définit une référence explicite ; `null` désactive la comparaison. Les différences sont relatives à cette référence, pas forcément UTC. Un instant fixe fixe aussi la date affichée du fuseau comparé.
+
+## Référence
+
+| Propriété                | Contrat                                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `value`, `onValueChange` | `string \| null` obligatoire et mise à jour contrôlée                                                                         |
+| `label`                  | Nom visible/accessible ; valeur traduite par défaut                                                                           |
+| `continent`              | Filtre dans le code : `north-america` (défaut), `south-america`, `europe`, `africa`, `asia`, `oceania`, `antarctica` ou `all` |
+| `comparisonTimeZone`     | Omettre pour le navigateur ; identifiant explicite ou `null`                                                                  |
+| `referenceTime`          | `Date` valide facultative ; sinon heure courante                                                                              |
+| `name`                   | Champ de formulaire masqué ; chaîne vide si null ; désactivé avec le composant                                                |
+| `disabled`, `className`  | Désactive toutes les commandes ; style du conteneur                                                                           |
+| `locale`, `messages`     | Langue du fournisseur/surcharge et libellés partiels par langue                                                               |
+
+`getTimeZones(additional?)` expose le catalogue. `getTimeZoneDetails({ timeZone, at, locale? })` renvoie identifiant, nom/heure/date traduits, décalage UTC et `offsetMinutes`, ou `undefined` si date/fuseau invalide. `TimeZoneIdSchema` et `isTimeZoneId` valident les identifiants aux frontières API/persistance. Une valeur contrôlée invalide affiche un message sûr sans remplacement silencieux. Une référence temporelle invalide n’empêche pas la sélection.
+
+## Accessibilité et intégration
+
+Le déclencheur nommé ouvre le combobox virtualisé existant. Flèches et Entrée sélectionnent ; Échap ferme sans perdre la sélection. Le champ masqué participe à la soumission native si `name` est fourni. L’aperçu n’est pas une région dynamique assertive : ses rafraîchissements n’interrompent pas les technologies d’assistance. Intl traduit les noms ; les identifiants géographiques gardent l’orthographe IANA.
+
+Clés : `label`, `placeholder`, `search`, `empty`, `clear`, `yourTime`, `comparisonTime`, `selectedTime`, `useLocal`, `unavailable`, `invalid`, `invalidReference`, `same`, `ahead(duration)`, `behind(duration)`. Exemple : `{ fr: { useLocal: "Mon fuseau" } }`.
