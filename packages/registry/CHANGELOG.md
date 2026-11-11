@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.8.0
+
+### Minor Changes
+
+- 9f63def: Add a restricted typed Cron Expression Editor with automatic spacing and per-field validation, and a numeric Phone Number Input with live formatting, protected calling codes and searchable countries. Include bilingual guides and interactive previews. Keep scheduling, phone verification and persistence application-owned.
+
 ## 0.7.0
 
 ### Minor Changes
