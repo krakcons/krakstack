@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "PostgreSQL-backed Effect notification inbox, delivery, and reminder primitives.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",
@@ -138,7 +138,7 @@
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@effect/platform-node": "^4.1.0",
     "@effect/sql-pg": "^4.1.0",
-    "@krak-stack/registry": "^0.4.0",
+    "@krak-stack/registry": "workspace:^",
     "effect": "^4.1.0",
     "nodemailer": "^9.0.6"
   },

@@ -1,5 +1,12 @@
 # @krak-stack/registry
 
+## 0.8.1
+
+### Patch Changes
+
+- Preserve native Space and Shift+Enter typing in the agent textarea instead of activating the reference popover trigger. Include regression coverage for plain text and reference queries.
+- 09d03cc: Expose the notification menu through the browser-safe `@krak-stack/notifications/client` entry point using the optional registry peer. Keep one shared menu implementation. Constrain popover and notification content overflow, place archive actions inside notification cards, and show a labeled Archive all button beneath the tabs. Use the standard rounded trigger button.
+
 ## 0.8.0
 
 ### Minor Changes

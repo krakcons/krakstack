@@ -1,5 +1,18 @@
 # @krak-stack/notifications
 
+## 0.4.0
+
+### Minor Changes
+
+- 09d03cc: Expose the notification menu through the browser-safe `@krak-stack/notifications/client` entry point using the optional registry peer. Keep one shared menu implementation. Constrain popover and notification content overflow, place archive actions inside notification cards, and show a labeled Archive all button beneath the tabs. Use the standard rounded trigger button.
+
+### Patch Changes
+
+- 09d03cc: Add optional `EmailPayloadV1.fromName` to preserve sender display names with the built-in SES and SMTP transports. SES uses UTF-8 MIME encoded words, including safe chunking for long names; SMTP uses a structured sender mailbox. Reject empty names and CR/LF header injection while preserving address-only payload compatibility.
+- Updated dependencies
+- Updated dependencies [09d03cc]
+  - @krak-stack/registry@0.8.1
+
 ## 0.3.0
 
 ### Minor Changes

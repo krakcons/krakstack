@@ -99,7 +99,7 @@
     },
     "packages/notifications": {
       "name": "@krak-stack/notifications",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@effect/platform-node-shared": "4.1.0",
       },
@@ -119,7 +119,7 @@
         "@aws-sdk/client-sesv2": "^3.1068.0",
         "@effect/platform-node": "^4.1.0",
         "@effect/sql-pg": "^4.1.0",
-        "@krak-stack/registry": "^0.4.0",
+        "@krak-stack/registry": "workspace:^",
         "effect": "^4.1.0",
         "nodemailer": "^9.0.6",
       },
@@ -154,7 +154,7 @@
     },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
         "bowser": "^2.14.1",
