@@ -189,10 +189,10 @@ const registryPreviews: Readonly<
     ),
   ],
   [
-    "secret-value",
+    "copy-value",
     lazy(() =>
-      import("@/components/registry-previews/secret-value-preview").then(
-        ({ SecretValuePreview }) => ({ default: SecretValuePreview }),
+      import("@/components/registry-previews/copy-value-preview").then(
+        ({ CopyValuePreview }) => ({ default: CopyValuePreview }),
       ),
     ),
   ],

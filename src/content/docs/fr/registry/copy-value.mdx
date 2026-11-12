@@ -1,42 +1,52 @@
 ---
-slug: secret-value
-path: /docs/secret-value
-title: Valeur masquée
-description: Masquez une valeur avec révélation explicite et copie accessible.
+slug: copy-value
+path: /docs/copy-value
+title: Valeur à copier
+description: Copiez une valeur en lecture seule avec masquage facultatif et révélation explicite.
 order: 4
 locale: fr
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-11"
 ---
 
-# Valeur masquée
+# Valeur à copier
 
-Une chaîne initialement masquée avec révélation, masquage automatique facultatif et retour de copie. Adaptée de l’affichage de secrets de Kokobi.
+Un champ en lecture seule avec retour de copie et sélection au focus, inspiré du CopyableInput de Kokobi. Les valeurs sont visibles par défaut. Activez `secret` pour masquer la valeur et proposer la révélation avec masquage automatique facultatif.
 
 ## Installation
 
 ```bash
-bunx shadcn@latest add @krak-stack/secret-value
+bunx shadcn@latest add @krak-stack/copy-value
 ```
 
 ## Utilisation
 
 ```tsx
-import { SecretValue } from "@/components/ui/secret-value";
+import { CopyValue } from "@/components/ui/copy-value";
 
-<SecretValue value={apiKey} label="Clé API" />;
+<CopyValue value={url} label="URL" />;
+<CopyValue value={apiKey} label="Clé API" secret />;
 ```
 
-Import du paquet : `@krak-stack/registry/secret-value`.
+Import du paquet : `@krak-stack/registry/copy-value`.
 
 ## Exemples
+
+### Sans bordure
+
+```tsx
+<CopyValue value={apiKey} label="Clé API" secret variant="ghost" />
+```
+
+La variante ghost retire la bordure, le fond et l’ombre, utilise une police à chasse fixe et un bouton de copie avec icône seule, tout en conservant les indicateurs de focus au clavier.
 
 ### Masquage automatique sans copie
 
 ```tsx
-<SecretValue
+<CopyValue
+  secret
   value={token}
   label="Jeton temporaire"
   autoHideDelay={5000}
@@ -47,10 +57,10 @@ Import du paquet : `@krak-stack/registry/secret-value`.
 ### Actions désactivées
 
 ```tsx
-<SecretValue value={apiKey} label="Clé API" disabled />
+<CopyValue value={apiKey} label="Clé API" secret disabled />
 ```
 
-La désactivation masque la valeur et bloque les actions. Remplacer `value` masque immédiatement la nouvelle valeur.
+La désactivation masque le secret révélé et bloque le champ et les actions. Remplacer `value` ou modifier `secret` réinitialise la révélation. Les valeurs non secrètes restent visibles même lorsque le champ est désactivé.
 
 ## Référence
 
@@ -58,6 +68,8 @@ La désactivation masque la valeur et bloque les actions. Remplacer `value` masq
 | --------------- | ------------------------------- | ------------------------------- |
 | `value`         | `string`                        | Obligatoire                     |
 | `label`         | `string`                        | Contexte accessible obligatoire |
+| `secret`        | `boolean`                       | `false`                         |
+| `variant`       | `"outline" \| "ghost"`          | `"outline"`                     |
 | `copyable`      | `boolean`                       | `true`                          |
 | `autoHideDelay` | Millisecondes                   | `0` (désactivé)                 |
 | `disabled`      | `boolean`                       | `false`                         |
@@ -70,7 +82,7 @@ Clés de messages : `show`, `hide` et `hidden`. La langue exacte est prioritaire
 
 ## Accessibilité
 
-Le bouton expose `aria-pressed`. Le texte masqué annonce une valeur cachée, sans son contenu ni sa longueur. La copie utilise le bouton accessible existant. Les actions ne soumettent pas les formulaires.
+Le champ en lecture seule possède un libellé et sélectionne son contenu au focus. Le mode secret utilise un champ de mot de passe et un bouton de révélation avec `aria-pressed`. La copie utilise le bouton accessible existant. Les actions ne soumettent pas les formulaires.
 
 ## Sécurité et intégration
 

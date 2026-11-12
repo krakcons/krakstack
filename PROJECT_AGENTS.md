@@ -1,5 +1,10 @@
 # Project-Specific Agent Instructions
 
+## Releases
+
+- Prefer patch releases by default, including component additions and API changes. Use a minor or major bump only when explicitly requested by the user.
+- Use Changesets to record release notes and apply version bumps; do not manually edit package versions.
+
 ## Language Lists
 
 - In the UI language switcher, always display language names in their own language (autonyms), regardless of the active UI locale: use `English` and `Français`, never `Anglais` or `French`. This includes message overrides and helps users find a familiar language. Surrounding labels should still follow the UI locale. Editing-locale selectors may display language names translated into the user's UI language.

@@ -85,9 +85,9 @@
       "types": "./dist/components/ui/app-switcher.d.ts",
       "import": "./dist/components/ui/app-switcher.js"
     },
-    "./secret-value": {
-      "types": "./dist/components/ui/secret-value.d.ts",
-      "import": "./dist/components/ui/secret-value.js"
+    "./copy-value": {
+      "types": "./dist/components/ui/copy-value.d.ts",
+      "import": "./dist/components/ui/copy-value.js"
     },
     "./bulk-list-input": {
       "types": "./dist/components/ui/bulk-list-input.d.ts",
@@ -420,8 +420,8 @@
     "cn": "^0.3.0",
     "drizzle-orm": "^1.0.0-rc.4-5d5b77c",
     "effect": "^4.1.0",
-    "lucide-react": "^1.18.0",
     "libphonenumber-js": "^1.13.16",
+    "lucide-react": "^1.18.0",
     "motion": "^14.12.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

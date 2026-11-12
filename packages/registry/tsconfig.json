@@ -28,7 +28,7 @@
     "../../src/components/ui/animated-list.tsx",
     "../../src/components/ui/animated-number.tsx",
     "../../src/components/ui/app-switcher.tsx",
-    "../../src/components/ui/secret-value.tsx",
+    "../../src/components/ui/copy-value.tsx",
     "../../src/components/ui/bulk-list-input.tsx",
     "../../src/components/ui/choice-cards.tsx",
     "../../src/components/ui/upload-attachment.tsx",

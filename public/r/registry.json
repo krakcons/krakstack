@@ -367,23 +367,23 @@
       "dependencies": ["react", "lucide-react"]
     },
     {
-      "name": "secret-value",
+      "name": "copy-value",
       "type": "registry:component",
-      "title": "Secret Value",
-      "description": "A masked value with explicit reveal, optional auto-hide and accessible clipboard actions.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
-      "docs": "## Overview\n\nDisplay a masked string with explicit reveal and copy actions. Extracted from Kokobi. Masking is presentation, not security: only supply values the current viewer is authorized to receive. See /docs/secret-value for installation, examples, API reference and accessibility guidance.",
+      "title": "Copy Value",
+      "description": "A read-only value with accessible clipboard actions, optional secret masking and auto-hide.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-12" },
+      "docs": "## Overview\n\nA read-only copyable input modeled on Kokobi’s CopyableInput. Set secret to enable reveal/hide and optional auto-hide. Masking is presentation, not security: only supply values the current viewer is authorized to receive. See /docs/copy-value for installation, examples, API reference and accessibility guidance.",
       "files": [
         {
-          "path": "src/components/ui/secret-value.tsx",
+          "path": "src/components/ui/copy-value.tsx",
           "type": "registry:component",
-          "target": "components/ui/secret-value.tsx"
+          "target": "components/ui/copy-value.tsx"
         }
       ],
       "registryDependencies": [
         "@krak-stack/krakstack-provider",
         "@krak-stack/copy-button",
-        "button"
+        "input-group"
       ],
       "dependencies": ["react", "lucide-react"]
     },

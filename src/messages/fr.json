@@ -90,6 +90,7 @@
   "new_components_courses_description": "Créez et gérez le contenu des cours.",
   "new_components_simulator": "Simulateur",
   "new_components_example_key": "Clé API d’exemple",
+  "new_components_example_url": "URL d’exemple",
   "new_components_disabled_key": "Clé d’exemple désactivée",
   "new_components_secret_help": "Valeurs d’exemple uniquement. Les valeurs révélées sont masquées après cinq secondes. Le masquage n’est pas une mesure de sécurité.",
   "new_components_recipients": "Destinataires",

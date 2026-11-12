@@ -88,7 +88,7 @@ export function getRegistryGroup(item: RegistryItem) {
       "animated-list",
       "animated-number",
       "app-switcher",
-      "secret-value",
+      "copy-value",
       "bulk-list-input",
       "choice-cards",
       "upload-attachment",

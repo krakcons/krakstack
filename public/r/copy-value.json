@@ -1,0 +1,26 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "copy-value",
+  "title": "Copy Value",
+  "description": "A read-only value with accessible clipboard actions, optional secret masking and auto-hide.",
+  "dependencies": ["react", "lucide-react"],
+  "registryDependencies": [
+    "@krak-stack/krakstack-provider",
+    "@krak-stack/copy-button",
+    "input-group"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/copy-value.tsx",
+      "content": "import { Eye, EyeOff } from \"lucide-react\";\nimport { useEffect, useState } from \"react\";\n\nimport {\n  InputGroup,\n  InputGroupAddon,\n  InputGroupButton,\n  InputGroupInput,\n} from \"@/components/ui/input-group\";\nimport {\n  CopyButton,\n  type CopyButtonMessageTranslations,\n} from \"@/components/ui/copy-button\";\nimport { useKrakstackLocale } from \"@/components/ui/krakstack-provider\";\nimport { cn } from \"@/lib/utils\";\n\nexport type CopyValueMessages = {\n  show: string;\n  hide: string;\n  hidden: string;\n};\nexport type CopyValueProps = {\n  value: string;\n  label: string;\n  secret?: boolean;\n  variant?: \"outline\" | \"ghost\";\n  disabled?: boolean;\n  copyable?: boolean;\n  autoHideDelay?: number;\n  className?: string;\n  locale?: string;\n  messages?: Partial<Record<string, Partial<CopyValueMessages>>>;\n  copyMessages?: CopyButtonMessageTranslations;\n};\n\nconst labels = {\n  en: { show: \"Show\", hide: \"Hide\", hidden: \"Hidden value\" },\n  fr: { show: \"Afficher\", hide: \"Masquer\", hidden: \"Valeur masquée\" },\n};\n\n/** Masking is presentation, not a security boundary. Never logs the value. */\nexport const CopyValue = ({\n  value,\n  label,\n  secret = false,\n  variant = \"outline\",\n  disabled,\n  copyable = true,\n  autoHideDelay = 0,\n  className,\n  locale: override,\n  messages,\n  copyMessages,\n}: CopyValueProps) => {\n  const locale = useKrakstackLocale(override);\n  const copy = {\n    ...(locale.startsWith(\"fr\") ? labels.fr : labels.en),\n    ...messages?.[locale.split(\"-\")[0] ?? locale],\n    ...messages?.[locale],\n  };\n  const [revealedValue, setRevealedValue] = useState<string | null>(null);\n  const [previous, setPrevious] = useState({ value, disabled, secret });\n  if (\n    previous.value !== value ||\n    previous.disabled !== disabled ||\n    previous.secret !== secret\n  ) {\n    setPrevious({ value, disabled, secret });\n    setRevealedValue(null);\n  }\n  const revealed = secret && !disabled && revealedValue === value;\n  useEffect(() => {\n    if (!revealed || autoHideDelay <= 0) return;\n    const timer = setTimeout(() => setRevealedValue(null), autoHideDelay);\n    return () => clearTimeout(timer);\n  }, [revealed, autoHideDelay, value]);\n\n  return (\n    <InputGroup\n      className={cn(\n        \"min-w-0\",\n        variant === \"ghost\" &&\n          \"border-0 bg-transparent shadow-none dark:bg-transparent\",\n        className,\n      )}\n    >\n      <InputGroupInput\n        className={variant === \"ghost\" ? \"pl-0 font-mono\" : undefined}\n        aria-label={secret && !revealed ? `${label}: ${copy.hidden}` : label}\n        value={value}\n        type={secret && !revealed ? \"password\" : \"text\"}\n        autoComplete={secret ? \"off\" : undefined}\n        readOnly\n        disabled={disabled}\n        onFocus={(event) => event.currentTarget.select()}\n      />\n      <InputGroupAddon align=\"inline-end\" className=\"gap-0\">\n        {secret ? (\n          <InputGroupButton\n            type=\"button\"\n            size=\"icon-sm\"\n            variant=\"ghost\"\n            disabled={disabled}\n            aria-label={`${revealed ? copy.hide : copy.show} ${label}`}\n            aria-pressed={revealed}\n            onClick={() => setRevealedValue(revealed ? null : value)}\n          >\n            {revealed ? (\n              <EyeOff aria-hidden=\"true\" />\n            ) : (\n              <Eye aria-hidden=\"true\" />\n            )}\n          </InputGroupButton>\n        ) : null}\n        {copyable ? (\n          <CopyButton\n            type=\"button\"\n            value={value}\n            valueDescription={label}\n            disabled={disabled}\n            variant=\"ghost\"\n            copyVariant={variant === \"ghost\" ? \"default\" : \"large\"}\n            locale={locale}\n            messages={copyMessages}\n          />\n        ) : null}\n      </InputGroupAddon>\n    </InputGroup>\n  );\n};\n",
+      "type": "registry:component",
+      "target": "components/ui/copy-value.tsx"
+    }
+  ],
+  "meta": {
+    "createdAt": "2026-11-10",
+    "updatedAt": "2026-11-12"
+  },
+  "docs": "## Overview\n\nA read-only copyable input modeled on Kokobi’s CopyableInput. Set secret to enable reveal/hide and optional auto-hide. Masking is presentation, not security: only supply values the current viewer is authorized to receive. See /docs/copy-value for installation, examples, API reference and accessibility guidance.",
+  "type": "registry:component"
+}

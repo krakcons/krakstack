@@ -90,6 +90,7 @@
   "new_components_courses_description": "Create and manage course content.",
   "new_components_simulator": "Simulator",
   "new_components_example_key": "Example API key",
+  "new_components_example_url": "Example URL",
   "new_components_disabled_key": "Disabled example key",
   "new_components_secret_help": "Example values only. Revealed values hide again after five seconds. Masking is not a security boundary.",
   "new_components_recipients": "Recipients",

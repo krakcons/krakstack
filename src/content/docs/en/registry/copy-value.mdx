@@ -1,42 +1,52 @@
 ---
-slug: secret-value
-path: /docs/secret-value
-title: Secret Value
-description: Mask a value with explicit reveal and clipboard actions.
+slug: copy-value
+path: /docs/copy-value
+title: Copy Value
+description: Copy a read-only value with optional secret masking and reveal actions.
 order: 4
 locale: en
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-11"
 ---
 
-# Secret Value
+# Copy Value
 
-An initially masked string with reveal/hide, optional auto-hide and clipboard feedback. Adapted from Kokobi’s secret display.
+A read-only input with clipboard feedback and select-on-focus, modeled on Kokobi’s CopyableInput. Values are visible by default. Set `secret` to mask the value and enable reveal/hide with optional auto-hide.
 
 ## Installation
 
 ```bash
-bunx shadcn@latest add @krak-stack/secret-value
+bunx shadcn@latest add @krak-stack/copy-value
 ```
 
 ## Usage
 
 ```tsx
-import { SecretValue } from "@/components/ui/secret-value";
+import { CopyValue } from "@/components/ui/copy-value";
 
-<SecretValue value={apiKey} label="API key" />;
+<CopyValue value={url} label="URL" />;
+<CopyValue value={apiKey} label="API key" secret />;
 ```
 
-Package import: `@krak-stack/registry/secret-value`.
+Package import: `@krak-stack/registry/copy-value`.
 
 ## Examples
+
+### Borderless
+
+```tsx
+<CopyValue value={apiKey} label="API key" secret variant="ghost" />
+```
+
+The ghost variant removes the border, background and shadow, uses monospaced text and an icon-only copy button, and keeps keyboard focus indicators.
 
 ### Auto-hide without copying
 
 ```tsx
-<SecretValue
+<CopyValue
+  secret
   value={token}
   label="Temporary token"
   autoHideDelay={5000}
@@ -47,10 +57,10 @@ Package import: `@krak-stack/registry/secret-value`.
 ### Read-only availability
 
 ```tsx
-<SecretValue value={apiKey} label="API key" disabled />
+<CopyValue value={apiKey} label="API key" secret disabled />
 ```
 
-Disabling hides a revealed value and disables both actions. Replacing `value` hides the new value immediately.
+Disabling hides a revealed secret and disables the input and both actions. Replacing `value` or changing `secret` resets revelation. Non-secret values remain visible when disabled.
 
 ## API reference
 
@@ -58,6 +68,8 @@ Disabling hides a revealed value and disables both actions. Replacing `value` hi
 | --------------- | ------------------------------- | --------------------------- |
 | `value`         | `string`                        | Required                    |
 | `label`         | `string`                        | Required accessible context |
+| `secret`        | `boolean`                       | `false`                     |
+| `variant`       | `"outline" \| "ghost"`          | `"outline"`                 |
 | `copyable`      | `boolean`                       | `true`                      |
 | `autoHideDelay` | `number` in milliseconds        | `0` (off)                   |
 | `disabled`      | `boolean`                       | `false`                     |
@@ -70,7 +82,7 @@ Message keys: `show`, `hide` and `hidden`. Exact-locale overrides take precedenc
 
 ## Accessibility
 
-The reveal button exposes `aria-pressed`. Masked text announces a hidden value rather than its contents or length. Copy uses the existing accessible Copy Button. Both actions are non-submit buttons.
+The read-only input is labeled and selects its contents on focus. Secret mode uses a password input and a reveal button exposing `aria-pressed`. Copy uses the existing accessible Copy Button. Both actions are non-submit buttons.
 
 ## Security and integration
 
