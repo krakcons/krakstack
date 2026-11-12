@@ -210,10 +210,27 @@ export function SidebarLayout({
           fullPage && "xl:h-svh xl:min-h-0 xl:overflow-hidden",
         )}
       >
-        <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur">
-          <SidebarTrigger />
-          <div className="ml-auto flex items-center gap-2">{headerActions}</div>
-        </header>
+        {/* Reserve the top bar's space while keeping it outside document overscroll. */}
+        <div className="h-14 shrink-0">
+          <header
+            className={cn(
+              "bg-background/95 supports-[backdrop-filter]:bg-background/60 fixed inset-x-0 top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur transition-[left] duration-200 ease-linear",
+              sidebarCollapsible === "none"
+                ? "left-(--sidebar-width)"
+                : sidebarOpen
+                  ? "md:left-(--sidebar-width)"
+                  : sidebarCollapsible === "icon"
+                    ? "md:left-(--sidebar-width-icon)"
+                    : "md:left-0",
+              fullPage && "xl:static",
+            )}
+          >
+            <SidebarTrigger />
+            <div className="ml-auto flex items-center gap-2">
+              {headerActions}
+            </div>
+          </header>
+        </div>
         <div
           className={cn(
             "isolate",
