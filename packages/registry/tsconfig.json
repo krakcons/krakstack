@@ -11,6 +11,7 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/ui/time-picker.tsx",
     "../../src/components/ui/date-picker.tsx",
     "../../src/components/ui/select-with-custom-input.tsx",
     "../../src/components/ui/toast.tsx",

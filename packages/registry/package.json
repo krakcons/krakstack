@@ -17,6 +17,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./time-picker": {
+      "types": "./dist/components/ui/time-picker.d.ts",
+      "import": "./dist/components/ui/time-picker.js"
+    },
     "./date-picker": {
       "types": "./dist/components/ui/date-picker.d.ts",
       "import": "./dist/components/ui/date-picker.js"

@@ -4,6 +4,32 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "time-picker",
+      "type": "registry:component",
+      "title": "Time Picker",
+      "description": "A localized time-only input with scrolling hour/minute columns, default AM/PM display, 24-hour support, bounds and configurable minute steps.",
+      "meta": { "createdAt": "2026-11-11", "updatedAt": "2026-11-11" },
+      "files": [
+        {
+          "path": "src/components/ui/time-picker.tsx",
+          "type": "registry:component",
+          "target": "components/ui/time-picker.tsx"
+        },
+        {
+          "path": "src/components/ui/time-picker.schema.ts",
+          "type": "registry:component",
+          "target": "components/ui/time-picker.schema.ts"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "popover",
+        "input",
+        "button"
+      ],
+      "dependencies": ["react", "effect", "lucide-react"]
+    },
+    {
       "name": "date-picker",
       "type": "registry:component",
       "title": "Date Picker",

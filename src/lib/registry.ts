@@ -72,6 +72,7 @@ export function getRegistryGroup(item: RegistryItem) {
     [
       "copy-button",
       "date-picker",
+      "time-picker",
       "select-with-custom-input",
       "toast",
       "cron-expression-editor",
