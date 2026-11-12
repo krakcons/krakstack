@@ -18,6 +18,56 @@ Les composants animés nécessitent la dépendance paire facultative `motion` ; 
 champ de numéro de téléphone nécessite `libphonenumber-js`. Installez ces paquets
 uniquement pour les composants concernés. Le menu de notifications n'en a pas besoin.
 
+## Shared integration documentation
+
+Generate API, OAuth MCP, and webhook guides in a Bun server loader:
+
+```ts
+import {
+  createIntegrationDocs,
+  krakStackWebhookDocs,
+} from "@krak-stack/registry/docs/integrations";
+import { loadMdxDocsDirectory } from "@krak-stack/registry/docs/server";
+import { webhookDefinitions } from "./webhook-definitions";
+
+const pages = createIntegrationDocs({
+  appName: "My App",
+  origin: "https://app.example.com",
+  api: true,
+  mcp: true,
+  webhooks: { ...krakStackWebhookDocs, events: webhookDefinitions },
+  pages: await loadMdxDocsDirectory("src/content/docs"),
+});
+```
+
+Pass records to `createDocsSource({ pages, locales: ["en", "fr"] })` through your
+existing server function. Do not import the generator into browser code.
+Each webhook definition has a `name`, `description: { en, fr }`, and an Effect
+`payload` schema for the complete delivered JSON body. Reuse the sender's
+definitions. The guide links an event summary to grouped field tables, expanding
+references and nested objects, arrays, and dictionaries without schema dumps.
+Required status applies within the containing object; variant-specific fields
+are marked conditional. Source schema annotations retain their authored language.
+
+All guides are opt-in. MCP assumes remote Streamable HTTP with OAuth.
+`krakStackWebhookDocs` explicitly selects the KrakStack webhook sender's public
+signing and delivery policy. Other senders must supply localized `verification`
+and `delivery` Markdown. Never pass secrets. `webhooks: true` keeps the generic
+guide without event definitions or sender-specific policies.
+
+Defaults are `/docs/api-access`, `/docs/mcp`, `/docs/webhooks`, English/French,
+section `integration`, and orders 1000–1002. Configure `basePath`, `section`,
+`order`, `locales`, `api: { referenceUrl }`, or `mcp: { url }` as needed.
+Local `pages` replace defaults by locale and slug. Reserve unique orders and
+matching routing metadata across translations. This does not install endpoints.
+For copied sources, install `@krak-stack/docs-integrations`.
+
+Générez les guides API, MCP OAuth et webhooks sur le serveur Bun. Les définitions
+d’événements produisent des tableaux de champs lisibles et regroupés par charge
+utile. Réutilisez `krakStackWebhookDocs` pour les instructions de vérification et
+de livraison de l’émetteur KrakStack. Les guides sont facultatifs et disponibles
+en français et en anglais ; les pages locales remplacent les valeurs par défaut.
+
 ## Use
 
 Import from the specific package subpaths you need:

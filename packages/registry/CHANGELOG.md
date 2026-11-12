@@ -1,5 +1,16 @@
 # @krak-stack/registry
 
+## 0.10.1
+
+### Patch Changes
+
+- 7bf29e1: Replace SecretValue with CopyValue, modeled on Kokobi's read-only copyable input. Values are visible by default; enable `secret` for reveal/hide and optional auto-hide. Add a borderless `variant="ghost"` with monospaced text and an icon-only copy button, and tighten spacing between actions.
+
+  Migrate imports from `@krak-stack/registry/secret-value` to `@krak-stack/registry/copy-value`, rename `SecretValue` to `CopyValue`, and add `secret` to preserve masking. The shadcn registry item is now `@krak-stack/copy-value`. Include updated English/French documentation and previews.
+
+- Add the server-only `docs/integrations` export and `docs-integrations` registry item for configurable English/French API, OAuth MCP, and webhook guides. Generate linked event summaries and grouped payload-field references directly from Effect schemas, including required/conditional fields, nested structures, and shared definitions, without raw schema dumps. Include reusable verification and delivery documentation for the KrakStack webhook sender, plus application-owned page overrides.
+- 72bcef6: Keep the sidebar layout header pinned to the viewport during document overscroll without disabling native bounce. Preserve sidebar collapse offsets, document scrolling, and full-page layouts.
+
 ## 0.10.0
 
 ### Minor Changes
