@@ -1,4 +1,7 @@
 {
+  "time_picker_demo_label": "Preferred time",
+  "time_picker_demo_help": "Scroll to choose hours, minutes and AM/PM, or type a time such as 09:30 AM. Try either 12- or 24-hour display. This example accepts 09:00–17:30, without a date or time zone.",
+  "time_picker_demo_24_hour": "24-hour format",
   "date_picker_demo_label": "Preferred date",
   "date_picker_demo_help": "Choose a day or type YYYY-MM-DD. This example accepts dates in 2026 and 2027, without storing a time or time zone.",
   "custom_select_demo_label": "Gender (optional)",

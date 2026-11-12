@@ -1,4 +1,7 @@
 {
+  "time_picker_demo_label": "Heure souhaitée",
+  "time_picker_demo_help": "Faites défiler les heures, les minutes et AM/PM, ou saisissez par exemple 09:30 AM. Essayez l’affichage sur 12 ou 24 heures. Cet exemple accepte 09:00–17:30, sans date ni fuseau horaire.",
+  "time_picker_demo_24_hour": "Format 24 heures",
   "date_picker_demo_label": "Date souhaitée",
   "date_picker_demo_help": "Choisissez un jour ou saisissez AAAA-MM-JJ. Cet exemple accepte les dates de 2026 et 2027, sans enregistrer d’heure ni de fuseau horaire.",
   "custom_select_demo_label": "Genre (facultatif)",

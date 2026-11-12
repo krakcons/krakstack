@@ -1,5 +1,8 @@
 /* eslint-disable */
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+export * from './time_picker_demo_label.js'
+export * from './time_picker_demo_help.js'
+export * from './time_picker_demo_24_hour.js'
 export * from './date_picker_demo_label.js'
 export * from './date_picker_demo_help.js'
 export * from './custom_select_demo_label.js'

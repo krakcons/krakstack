@@ -1,0 +1,63 @@
+---
+slug: time-picker
+path: /docs/time-picker
+title: Time Picker
+description: Type a time or choose hours and minutes without introducing a date or time zone.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Time Picker
+
+A controlled time field with independently scrolling hour/minute columns, keyboard entry, clearing and inclusive bounds. The default display uses 12-hour time with an AM/PM column. Set `hourCycle={24}` for a 24-hour display without AM/PM. Stored values and bounds always use the 24-hour `HH:mm` format. This is a wall-clock time, not an instant, date or time-zone selector.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/time-picker
+```
+
+Package export: `@krak-stack/registry/time-picker`.
+
+## Usage
+
+```tsx
+const [time, setTime] = useState("");
+
+<TimePicker
+  value={time}
+  onValueChange={setTime}
+  label={m.preferred_time()}
+  name="preferredTime"
+  min="09:00"
+  max="17:30"
+  minuteStep={15}
+  hourCycle={12}
+/>;
+```
+
+`value` is a canonical `HH:mm` string, or an empty/incomplete draft during editing. In the default 12-hour mode, enter a time such as `09:30 AM` or `1:05 pm`; complete entry emits `09:30` or `13:05`. Midnight is `12:00 AM` → `00:00`; noon is `12:00 PM` → `12:00`. Draft text remains visible while typing and invalid/incomplete drafts are emitted unchanged. Missing AM/PM is invalid in 12-hour entry. Complete text normalizes on blur; changing `hourCycle` changes presentation, not the stored time.
+
+`min` and `max` are inclusive canonical 24-hour values, within a single day; overnight ranges are not supported. `minuteStep` defaults to `1` and accepts integers from 1 to 60. Allowed minutes start at `00` in every hour (for example, step 15 allows 00, 15, 30 and 45). Typed values must respect the step too. Invalid bounds, reversed bounds, invalid steps and ranges containing no selectable times disable the picker and report a configuration error.
+
+Each column scrolls independently and only offers allowed values. The default step of 1 makes every minute selectable. In 12-hour mode, hours belong to the selected AM/PM period. Choosing an hour preserves the current minute when possible, otherwise choosing the nearest allowed minute in that hour. Changing AM/PM preserves the displayed hour/minute when allowed, otherwise choosing the nearest allowed time in the new period. A period with no allowed times is omitted. An empty or invalid value starts the picker at the first allowed time; selecting an option emits a complete time. Scrolling alone never changes the value, and ordinary rerenders do not recenter the columns.
+
+Selections apply immediately and keep the panel open; Done or Escape closes it. Arrow keys select the next/previous allowed value; Home/End select the first/last allowed value in that column. Tab moves between hours, minutes, AM/PM (when present) and Done. Focus returns to the trigger on close.
+
+`clearable` defaults to `true`. `required` constrains empty values. Disabled controls are not submitted; read-only controls remain submitted but cannot be changed or cleared. A hidden named input submits the canonical value (or current incomplete draft), not the 12-hour display text. Native custom validity, `aria-invalid` and associated feedback on the visible input expose errors accessibly.
+
+## Time-only validation
+
+`TimeOnlySchema` validates `00:00`–`23:59` with Effect. `parseTimeOnly(text)` returns minutes since midnight or `undefined`, without constructing a `Date`. `Time12HourSchema` validates 12-hour display text; `parse12HourTime(text)` converts it to canonical `HH:mm` or returns `undefined`. `MinuteStepSchema` validates the step. `getTimePickerState({ value, min, max, minuteStep })` validates canonical values and returns `empty`, `valid`, `invalid`, `out-of-range`, `off-step` or `invalid-range`. Validate submitted values and application-specific bounds again on the server; native form validity is not a security boundary.
+
+## Localization and styling
+
+Provider or explicit `locale` selects English/French labels and feedback; values remain `HH:mm`. `hourCycle` defaults to `12` regardless of locale. AM/PM entry markers remain literal `AM` and `PM` in both languages. `messages` accepts locale-keyed overrides for `label`, `open`, `clear`, `hours`, `minutes`, `period`, `done`, `invalid`, `invalid12`, `outOfRange`, `invalidRange` and `offStep`. Supply application labels and descriptions with Paraglide.
+
+Defaults use semantic theme tokens and existing shadcn primitives. `className` styles the wrapper; `inputClassName`, `contentClassName`, `columnClassName` and `optionClassName` customize the input, portaled panel, columns and their buttons. Caller classes are merged with `cn`. Apply portal-specific styles through `contentClassName`, not wrapper descendant selectors. The panel can scroll on short viewports to keep every control reachable.
+
+Wrapper slots are `time-picker`, `time-picker-label`, `time-picker-controls`, `time-picker-description` and `time-picker-error`. Panel slots are `time-picker-columns`, `time-picker-column`, `time-picker-column-label` and `time-picker-options`. Primitives retain their slots and expose `data-component="time-picker-input"`, `time-picker-trigger`, `time-picker-content`, `time-picker-option`, `time-picker-done` and `time-picker-clear`. Wrapper `data-state` matches validation state; options expose `aria-checked` and native focus states. Preserve focus visibility, contrast and overflow access when customizing. See [Component styling](/docs/component-styling).

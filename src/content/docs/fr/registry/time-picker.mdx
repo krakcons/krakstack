@@ -1,0 +1,63 @@
+---
+slug: time-picker
+path: /docs/time-picker
+title: Sélecteur d’heure
+description: Saisir une heure ou choisir les heures et les minutes, sans date ni fuseau horaire.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-11"
+updatedAt: "2026-11-11"
+---
+
+# Sélecteur d’heure
+
+Un champ contrôlé avec des colonnes d’heures et de minutes défilant indépendamment, la saisie clavier, l’effacement et des bornes inclusives. L’affichage par défaut utilise 12 heures avec une colonne AM/PM. Utilisez `hourCycle={24}` pour un affichage sur 24 heures sans AM/PM. Les valeurs stockées et les bornes utilisent toujours le format 24 heures `HH:mm`. Il s’agit d’une heure locale abstraite, pas d’un instant, d’une date ou d’un fuseau horaire.
+
+## Installation
+
+```sh
+bunx shadcn@latest add @krak-stack/time-picker
+```
+
+Export : `@krak-stack/registry/time-picker`.
+
+## Utilisation
+
+```tsx
+const [time, setTime] = useState("");
+
+<TimePicker
+  value={time}
+  onValueChange={setTime}
+  label={m.preferred_time()}
+  name="preferredTime"
+  min="09:00"
+  max="17:30"
+  minuteStep={15}
+  hourCycle={12}
+/>;
+```
+
+`value` est une chaîne canonique `HH:mm`, éventuellement vide ou incomplète pendant la saisie. En mode 12 heures, saisissez par exemple `09:30 AM` ou `1:05 pm` ; une saisie complète émet `09:30` ou `13:05`. Minuit correspond à `12:00 AM` → `00:00` ; midi à `12:00 PM` → `12:00`. Le brouillon reste visible pendant la saisie ; les brouillons invalides ou incomplets sont émis sans modification. L’absence de AM/PM est invalide en mode 12 heures. Une saisie complète est normalisée à la perte du focus ; modifier `hourCycle` change l’affichage, pas l’heure stockée.
+
+`min` et `max` sont inclusifs, au format canonique 24 heures, et appartiennent à la même journée ; les plages passant minuit ne sont pas prises en charge. `minuteStep` vaut `1` par défaut et accepte un entier de 1 à 60. Les minutes autorisées partent de `00` à chaque heure (par exemple : 00, 15, 30 et 45 pour un pas de 15). Les valeurs saisies doivent aussi respecter ce pas. Des bornes invalides ou inversées, un pas invalide ou une plage sans heure sélectionnable désactivent le panneau et signalent une erreur de configuration.
+
+Chaque colonne défile indépendamment et propose uniquement les valeurs autorisées. Le pas par défaut de 1 permet de sélectionner chaque minute. En mode 12 heures, les heures appartiennent à la période AM/PM sélectionnée. Choisir une heure conserve les minutes si possible ; sinon, les minutes autorisées les plus proches sont choisies dans cette heure. Changer AM/PM conserve l’heure et les minutes affichées si elles sont autorisées ; sinon, l’heure autorisée la plus proche dans la nouvelle période est choisie. Une période sans heure autorisée est omise. Une valeur vide ou invalide initialise le panneau à la première heure autorisée ; sélectionner une option émet une heure complète. Faire défiler ne change jamais la valeur et les rendus ordinaires ne recentrent pas les colonnes.
+
+Les choix s’appliquent immédiatement sans fermer le panneau ; Terminer ou Échap le ferme. Les flèches sélectionnent la valeur autorisée suivante/précédente ; Début/Fin sélectionnent la première/dernière valeur de la colonne. Tab passe entre les heures, les minutes, AM/PM (si présent) et Terminer. Le focus revient au déclencheur à la fermeture.
+
+`clearable` vaut `true` par défaut. `required` interdit une valeur vide. Les contrôles désactivés ne sont pas soumis ; les contrôles en lecture seule restent soumis, mais ne peuvent être modifiés ni effacés. Un champ caché nommé soumet la valeur canonique (ou le brouillon incomplet), pas le texte affiché sur 12 heures. La validation native personnalisée, `aria-invalid` et les messages associés au champ visible exposent les erreurs de façon accessible.
+
+## Validation de l’heure
+
+`TimeOnlySchema` valide `00:00`–`23:59` avec Effect. `parseTimeOnly(text)` renvoie le nombre de minutes depuis minuit ou `undefined`, sans construire de `Date`. `Time12HourSchema` valide le texte sur 12 heures ; `parse12HourTime(text)` le convertit en `HH:mm` canonique ou renvoie `undefined`. `MinuteStepSchema` valide le pas. `getTimePickerState({ value, min, max, minuteStep })` valide les valeurs canoniques et renvoie `empty`, `valid`, `invalid`, `out-of-range`, `off-step` ou `invalid-range`. Validez à nouveau les valeurs et les bornes métier sur le serveur ; la validation native ne constitue pas une frontière de sécurité.
+
+## Localisation et personnalisation
+
+Le fournisseur ou `locale` sélectionne les libellés et messages français/anglais ; les valeurs restent au format `HH:mm`. `hourCycle` vaut `12` par défaut, quelle que soit la langue. Les marqueurs de saisie restent `AM` et `PM` dans les deux langues. `messages` accepte des remplacements par langue pour `label`, `open`, `clear`, `hours`, `minutes`, `period`, `done`, `invalid`, `invalid12`, `outOfRange`, `invalidRange` et `offStep`. Utilisez Paraglide pour les libellés et descriptions de votre application.
+
+Les styles utilisent les tokens sémantiques du thème et les primitives shadcn existantes. `className` cible le conteneur ; `inputClassName`, `contentClassName`, `columnClassName` et `optionClassName` personnalisent le champ, le panneau en portail, les colonnes et leurs boutons. Les classes sont fusionnées avec `cn`. Ciblez le portail via `contentClassName`, pas avec des sélecteurs descendants du conteneur. Le panneau peut défiler sur un écran peu haut pour garder tous les contrôles accessibles.
+
+Les slots du conteneur sont `time-picker`, `time-picker-label`, `time-picker-controls`, `time-picker-description` et `time-picker-error`. Ceux du panneau sont `time-picker-columns`, `time-picker-column`, `time-picker-column-label` et `time-picker-options`. Les primitives conservent leurs slots et exposent `data-component="time-picker-input"`, `time-picker-trigger`, `time-picker-content`, `time-picker-option`, `time-picker-done` et `time-picker-clear`. `data-state` reprend l’état de validation ; les options exposent `aria-checked` et les états natifs de focus. Préservez la visibilité du focus, le contraste et l’accès au contenu défilant. Consultez [Personnalisation des composants](/docs/component-styling).

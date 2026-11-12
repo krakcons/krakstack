@@ -41,6 +41,14 @@ const registryPreviews: Readonly<
   Record<string, LazyExoticComponent<ComponentType> | undefined>
 > = Object.fromEntries([
   [
+    "time-picker",
+    lazy(() =>
+      import("@/components/registry-previews/time-picker-preview").then(
+        ({ TimePickerPreview }) => ({ default: TimePickerPreview }),
+      ),
+    ),
+  ],
+  [
     "date-picker",
     lazy(() =>
       import("@/components/registry-previews/date-picker-preview").then(
