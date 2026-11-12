@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.0
+
+### Minor Changes
+
+- Add Time Picker with independently scrolling hour and minute columns, default 12-hour AM/PM entry and optional 24-hour display. Keep values and bounds in canonical HH:mm format, support configurable minute steps and inclusive bounds, and provide accessible keyboard navigation, validation, clearing and styling hooks. Include English/French documentation and an interactive format preview.
+
 ## 0.9.0
 
 ### Minor Changes
