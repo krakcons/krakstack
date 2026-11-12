@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -212,6 +212,10 @@
     "./docs/server": {
       "types": "./dist/lib/docs.server.d.ts",
       "import": "./dist/lib/docs.server.js"
+    },
+    "./docs/integrations": {
+      "types": "./dist/lib/docs.integrations.server.d.ts",
+      "import": "./dist/lib/docs.integrations.server.js"
     },
     "./documentation-toolkit": {
       "types": "./dist/lib/documentation-toolkit.d.ts",

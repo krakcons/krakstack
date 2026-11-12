@@ -1280,6 +1280,28 @@
       ]
     },
     {
+      "name": "docs-integrations",
+      "title": "Integration Documentation",
+      "description": "Configurable English and French REST API, OAuth MCP, and readable webhook guides for application documentation.",
+      "type": "registry:lib",
+      "meta": { "createdAt": "2026-11-12", "updatedAt": "2026-11-12" },
+      "docs": "## Integration pages\n\nInstall `@krak-stack/docs-integrations`, or import `createIntegrationDocs` and `krakStackWebhookDocs` from `@krak-stack/registry/docs/integrations`. The copied helper is `@/lib/docs.integrations.server`.\n\nCall on the Bun server with `{ appName, origin, api: true, mcp: true, webhooks: { ...krakStackWebhookDocs, events: webhookDefinitions }, pages: localPages }`. Pass returned records to `createDocsSource` through the application's existing server loader. Do not import into browser code. Integrations are opt-in; MCP assumes remote Streamable HTTP with OAuth.\n\nDefaults: English/French, `/docs/api-access`, `/docs/mcp`, `/docs/webhooks`, section `integration`, orders 1000–1002, API reference `/api/docs`, MCP endpoint `/api/mcp`. Configure `basePath`, `section`, `order`, `locales`, `api: { referenceUrl }`, and `mcp: { url }`.\n\n## Webhook definitions\n\nReuse sender definitions with `name`, `description: { en, fr }`, and `payload`, an Effect schema for the complete delivered JSON body. An event summary links to readable field tables showing paths, types, required/conditional status, and descriptions. Identical data shapes share one reference; nested objects, arrays, dictionaries, and referenced definitions are expanded without raw schema dumps. Recursive fields stop at the reference. Required applies within the containing object. Schema annotations retain their source language.\n\n`krakStackWebhookDocs` supplies the KrakStack sender's verification and delivery policy. Other senders can pass their own localized public Markdown through `verification` and `delivery`. Never supply secrets or private data. `webhooks: true` generates the generic guide without event definitions or sender-specific policies.\n\nLocal pages replace defaults by locale and slug. Keep locale routing metadata aligned and navigation orders unique. The helper generates documentation only, not endpoints or authentication.\n\n## Pages d’intégration\n\nGénérez les guides API REST, MCP OAuth et webhooks en français et en anglais sur le serveur Bun. Les définitions d’événements produisent un sommaire et des tableaux de champs lisibles ; les charges utiles identiques partagent une seule référence. Réutilisez `krakStackWebhookDocs` pour la vérification et la livraison de l’émetteur KrakStack. Les pages locales remplacent les valeurs par défaut par langue et identifiant.",
+      "registryDependencies": ["@krak-stack/docs"],
+      "dependencies": ["effect@^4.1.0"],
+      "files": [
+        {
+          "path": "src/lib/docs.integrations.server.ts",
+          "type": "registry:lib",
+          "target": "lib/docs.integrations.server.ts"
+        },
+        {
+          "path": "src/lib/docs.webhook-reference.server.ts",
+          "type": "registry:lib",
+          "target": "lib/docs.webhook-reference.server.ts"
+        }
+      ]
+    },
+    {
       "name": "docs",
       "title": "Documentation",
       "description": "A provider-neutral localized documentation source, catalog, search index, and complete responsive documentation UI.",
