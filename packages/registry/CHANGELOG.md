@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.2
+
+### Patch Changes
+
+- 91114c4: Expose optional grouped DataTable styling hooks, including portalled menus, submenus, filter selects, page-size popups, feedback and gallery layouts. Add AppBrand part classes and stable slots, Pagination root/popup classes, and select-field popup classes. Preserve existing defaults and interaction/data behavior.
+
 ## 0.10.1
 
 ### Patch Changes
