@@ -8,7 +8,7 @@ locale: en
 section: getting-started
 type: concept
 createdAt: "2026-11-11"
-updatedAt: "2026-11-11"
+updatedAt: "2026-11-12"
 ---
 
 # Component styling
@@ -50,6 +50,31 @@ Menus, popovers and dialogs can render outside their trigger's DOM subtree. A de
 The same applies to theme overrides: a CSS variable set only on a local wrapper does not automatically reach a portal rendered elsewhere. Put shared theme variables on a common ancestor, or apply the local theme to the portaled content too.
 
 ## Preserve behavior and accessibility
+
+### Tables, branding and field popups
+
+`DataTable` accepts root `className` and a typed `DataTableClassNames` map. No overrides means the existing appearance remains unchanged.
+
+```tsx
+<DataTable
+  rowData={rows}
+  columnDefs={columns}
+  className="project-table"
+  classNames={{
+    table: { head: "project-table-heading", cell: "project-table-cell" },
+    menu: { content: "project-table-menu", subContent: "project-table-menu" },
+    popup: { select: "project-select", tooltip: "project-tooltip" },
+  }}
+/>
+```
+
+Groups are `table` (`content`, `header`, `body`, `row`, `head`, `cell`), `toolbar` (`content`, `search`, `trigger`), `menu` (`content`, `subContent`, `label`, `item`, `separator`, `subTrigger`), `popup` (`select`, `tooltip`) and `feedback` (`loading`, `empty`, `error`). `pagination` and `gallery` accept a class string. The `toolbar.search` class applies to table-owned input controls, including filter inputs. Menu classes cover toolbar, column, row, group and list-cell menus. Popup select classes also reach the page-size selector. Custom content supplied by callers remains caller-owned.
+
+Primitive `data-slot` attributes remain intact. Additional `data-table-slot` attributes identify table parts and portalled surfaces; scope them through your own classes. Separate tables do not inherit each other's overrides.
+
+`AppBrand.classNames` exposes `visual`, `image`, `icon`, `content`, `label` and `subtitle`. Their selectors are `data-slot="app-brand-<part>"`; the root is `app-brand`. All static, anchor and router-link forms support these hooks.
+
+`Pagination.className` targets its root; `pageSizeContentClassName` targets the portalled page-size options. Effect Form's `SelectField`, `FolderField`, `SearchableSelectField` and `SingleSearchableSelectField` accept `contentClassName` in their field options for the options popup.
 
 Customization should change presentation without removing the safeguards that make a control usable. Preserve visible keyboard focus, sufficient contrast, disabled/error states, responsive bounds and access to overflowing content. Respect reduced-motion preferences and leave hidden or inert content out of the interaction flow.
 

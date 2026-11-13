@@ -568,6 +568,7 @@ export const CheckboxField: FormReact.FieldComponent<boolean, FieldOptions> = ({
 );
 
 type SelectFieldOptions<T extends string> = FieldOptions & {
+  contentClassName?: string;
   options: ReadonlyArray<{ label: string; value: T }>;
   placeholder?: string;
 };
@@ -588,7 +589,7 @@ export const SelectField = <T extends string>({
       <SelectTrigger id={field.path} aria-invalid={Option.isSome(field.error)}>
         <SelectValue placeholder={props.placeholder} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={props.contentClassName}>
         <SelectGroup>
           {props.options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
@@ -706,6 +707,7 @@ export const NullableMultiSelectField = <T extends string>({
 );
 
 type SearchableSelectFieldSharedOptions<TData> = FieldOptions & {
+  contentClassName?: string;
   emptyLabel: ReactNode;
   initialItems?: readonly VirtualizedComboboxOption<TData>[];
   items: readonly VirtualizedComboboxOption<TData>[];
@@ -762,6 +764,7 @@ export const SearchableSelectField = <TData,>({
     <Field className="min-w-0" data-invalid={invalid}>
       <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
       <VirtualizedCombobox<TData>
+        contentClassName={props.contentClassName}
         ariaInvalid={invalid}
         ariaLabel={ariaLabel}
         emptyLabel={props.emptyLabel}
@@ -814,6 +817,7 @@ export const SingleSearchableSelectField = <TData,>({
     <Field className="min-w-0" data-invalid={invalid}>
       <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
       <VirtualizedCombobox<TData>
+        contentClassName={props.contentClassName}
         ariaInvalid={invalid}
         ariaLabel={ariaLabel}
         emptyLabel={props.emptyLabel}

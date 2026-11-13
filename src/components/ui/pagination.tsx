@@ -66,6 +66,8 @@ export const paginationMessages = (
 });
 
 export type PaginationProps = {
+  className?: string | undefined;
+  pageSizeContentClassName?: string | undefined;
   compact?: boolean | undefined;
   locale?: string | undefined;
   messages?: PaginationMessageTranslations | undefined;
@@ -81,6 +83,8 @@ export type PaginationProps = {
 };
 
 export function Pagination({
+  className,
+  pageSizeContentClassName,
   compact = false,
   locale: localeOverride,
   messages: messageOverrides,
@@ -102,9 +106,11 @@ export function Pagination({
 
   return (
     <div
+      data-slot="pagination"
       className={cn(
         "flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between",
         compact && "gap-2 px-0 sm:flex-col sm:items-stretch",
+        className,
       )}
     >
       {showResults ? (
@@ -139,7 +145,7 @@ export function Pagination({
             <SelectTrigger className="h-8 w-[70px]" id={pageSizeId}>
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
-            <SelectContent side="top">
+            <SelectContent side="top" className={pageSizeContentClassName}>
               {pageSizes.map((size) => (
                 <SelectItem key={size} value={`${size}`}>
                   {size}

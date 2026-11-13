@@ -64,6 +64,83 @@ const data: Row[] = [
   { id: "three", name: "Gamma", score: 20 },
 ];
 
+describe("table presentation hooks", () => {
+  it("styles portalled sorting menus without changing sorting or leaking to another table", async () => {
+    const onStateChange = vi.fn();
+    const view = render(
+      <>
+        <DataTable
+          className="custom-table"
+          classNames={{
+            table: { cell: "custom-cell" },
+            menu: {
+              content: "custom-menu",
+              subContent: "custom-submenu",
+              item: "custom-item",
+            },
+          }}
+          rowData={data}
+          columnDefs={columns}
+          onStateChange={onStateChange}
+        />
+        <DataTable rowData={data} columnDefs={columns} />
+      </>,
+    );
+    await waitFor(() => expect(screen.getAllByRole("table")).toHaveLength(2));
+    const root = view.container.querySelector(".custom-table")!;
+    expect(root.querySelectorAll(".custom-cell").length).toBeGreaterThan(0);
+    const otherTable = screen
+      .getAllByRole("table")
+      .find((table) => !root.contains(table))!;
+    expect(otherTable.querySelector(".custom-cell")).toBeNull();
+    fireEvent.click(within(root).getByRole("menuitem", { name: "Sort by" }));
+    const name = await screen.findByRole("menuitem", {
+      name: "Name",
+      exact: true,
+    });
+    const menu = name.closest(".custom-menu");
+    expect(menu).not.toBeNull();
+    expect(root.contains(menu)).toBe(false);
+    fireEvent.click(name);
+    const ascending = await screen.findByRole("menuitem", {
+      name: "Ascending",
+    });
+    expect(ascending.classList.contains("custom-item")).toBe(true);
+    expect(ascending.closest(".custom-submenu")).not.toBeNull();
+    fireEvent.click(ascending);
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort: [{ id: "name", direction: "asc" }] }),
+    );
+  });
+
+  it("forwards page-size popup styling while preserving pagination callbacks", async () => {
+    const onStateChange = vi.fn();
+    render(
+      <DataTable
+        initialState={{ pageSize: 10 }}
+        rowData={data}
+        columnDefs={columns}
+        onStateChange={onStateChange}
+        classNames={{ popup: { select: "custom-page-size" } }}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("combobox", { name: "Page size" }));
+    const option = await screen.findByRole("option", {
+      name: "20",
+      exact: true,
+    });
+    expect(option.getAttribute("aria-selected")).toBe("false");
+    expect(option.closest(".custom-page-size")).not.toBeNull();
+    fireEvent.pointerDown(option, { pointerType: "mouse", button: 0 });
+    fireEvent.click(option, { detail: 1 });
+    await waitFor(() =>
+      expect(onStateChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 0, pageSize: 20 }),
+      ),
+    );
+  });
+});
+
 const HookCell = ({ value }: DataTableCellRendererParams<Row>) => {
   const [initialValue] = useState(value);
   return String(initialValue);

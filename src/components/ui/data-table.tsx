@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import {
   createContext,
+  type ComponentType,
+  type ComponentProps,
   isValidElement,
   useCallback,
   useContext,
@@ -48,21 +50,21 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
-  DropdownMenuContent,
+  DropdownMenuContent as PrimitiveDropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuItem as PrimitiveDropdownMenuItem,
+  DropdownMenuLabel as PrimitiveDropdownMenuLabel,
+  DropdownMenuSeparator as PrimitiveDropdownMenuSeparator,
   DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
+  DropdownMenuSubContent as PrimitiveDropdownMenuSubContent,
+  DropdownMenuSubTrigger as PrimitiveDropdownMenuSubTrigger,
+  DropdownMenuTrigger as PrimitiveDropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+import { Input as PrimitiveInput } from "@/components/ui/input";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   Select,
-  SelectContent,
+  SelectContent as PrimitiveSelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
@@ -70,20 +72,20 @@ import {
 } from "@/components/ui/select";
 import { Loading } from "@/components/ui/loading";
 import {
-  Menubar,
-  MenubarCheckboxItem,
-  MenubarContent,
+  Menubar as PrimitiveMenubar,
+  MenubarCheckboxItem as PrimitiveMenubarCheckboxItem,
+  MenubarContent as PrimitiveMenubarContent,
   MenubarGroup,
-  MenubarItem,
-  MenubarLabel,
+  MenubarItem as PrimitiveMenubarItem,
+  MenubarLabel as PrimitiveMenubarLabel,
   MenubarMenu,
   MenubarRadioGroup,
-  MenubarRadioItem,
-  MenubarSeparator,
+  MenubarRadioItem as PrimitiveMenubarRadioItem,
+  MenubarSeparator as PrimitiveMenubarSeparator,
   MenubarSub,
-  MenubarSubContent,
-  MenubarSubTrigger,
-  MenubarTrigger,
+  MenubarSubContent as PrimitiveMenubarSubContent,
+  MenubarSubTrigger as PrimitiveMenubarSubTrigger,
+  MenubarTrigger as PrimitiveMenubarTrigger,
 } from "@/components/ui/menubar";
 import {
   Pagination,
@@ -92,16 +94,16 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table as PrimitiveTable,
+  TableBody as PrimitiveTableBody,
+  TableCell as PrimitiveTableCell,
+  TableHead as PrimitiveTableHead,
+  TableHeader as PrimitiveTableHeader,
+  TableRow as PrimitiveTableRow,
 } from "@/components/ui/table";
 import {
   Tooltip,
-  TooltipContent,
+  TooltipContent as PrimitiveTooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
@@ -114,6 +116,172 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
+
+/** Presentation only. Popup classes are applied inside portals, not to their triggers. */
+export type DataTableClassNames = {
+  table?: Partial<
+    Record<"content" | "header" | "body" | "row" | "head" | "cell", string>
+  >;
+  toolbar?: Partial<Record<"content" | "search" | "trigger", string>>;
+  menu?: Partial<
+    Record<
+      "content" | "subContent" | "label" | "item" | "separator" | "subTrigger",
+      string
+    >
+  >;
+  popup?: Partial<Record<"select" | "tooltip", string>>;
+  pagination?: string;
+  gallery?: string;
+  feedback?: Partial<Record<"loading" | "empty" | "error", string>>;
+};
+
+const DataTableStylesContext = createContext<DataTableClassNames | undefined>(
+  undefined,
+);
+
+// Context follows portals; primitive props, refs and event handlers pass through unchanged.
+const styledTablePart = <Props extends object>(
+  Part: ComponentType<Props>,
+  slot: string,
+  style: (styles: DataTableClassNames | undefined) => string | undefined,
+) => {
+  const StyledPart = (props: Props & { className?: string }) => {
+    const styles = useContext(DataTableStylesContext);
+    const className = cn(props.className, style(styles));
+    return <Part data-table-slot={slot} {...props} className={className} />;
+  };
+  return StyledPart;
+};
+
+const Table = styledTablePart(
+  PrimitiveTable,
+  "table",
+  (s) => s?.table?.content,
+);
+const TableHeader = styledTablePart(
+  PrimitiveTableHeader,
+  "header",
+  (s) => s?.table?.header,
+);
+const TableBody = styledTablePart(
+  PrimitiveTableBody,
+  "body",
+  (s) => s?.table?.body,
+);
+const TableRow = styledTablePart(
+  PrimitiveTableRow,
+  "row",
+  (s) => s?.table?.row,
+);
+const TableHead = styledTablePart(
+  PrimitiveTableHead,
+  "head",
+  (s) => s?.table?.head,
+);
+const TableCell = styledTablePart(
+  PrimitiveTableCell,
+  "cell",
+  (s) => s?.table?.cell,
+);
+const Input = styledTablePart(
+  PrimitiveInput,
+  "input",
+  (s) => s?.toolbar?.search,
+);
+const Menubar = styledTablePart(
+  PrimitiveMenubar,
+  "menubar",
+  (s) => s?.toolbar?.content,
+);
+const MenubarTrigger = styledTablePart(
+  PrimitiveMenubarTrigger,
+  "menu-trigger",
+  (s) => s?.toolbar?.trigger,
+);
+const MenubarContent = styledTablePart(
+  PrimitiveMenubarContent,
+  "menu",
+  (s) => s?.menu?.content,
+);
+const MenubarSubContent = styledTablePart(
+  PrimitiveMenubarSubContent,
+  "submenu",
+  (s) => s?.menu?.subContent,
+);
+const MenubarSubTrigger = styledTablePart(
+  PrimitiveMenubarSubTrigger,
+  "submenu-trigger",
+  (s) => s?.menu?.subTrigger,
+);
+const MenubarItem = styledTablePart(
+  PrimitiveMenubarItem,
+  "menu-item",
+  (s) => s?.menu?.item,
+);
+const MenubarCheckboxItem = styledTablePart(
+  PrimitiveMenubarCheckboxItem,
+  "menu-checkbox-item",
+  (s) => s?.menu?.item,
+);
+const MenubarRadioItem = styledTablePart<
+  ComponentProps<typeof PrimitiveMenubarRadioItem>
+>(PrimitiveMenubarRadioItem, "menu-radio-item", (s) => s?.menu?.item);
+const MenubarLabel = styledTablePart(
+  PrimitiveMenubarLabel,
+  "menu-label",
+  (s) => s?.menu?.label,
+);
+const MenubarSeparator = styledTablePart(
+  PrimitiveMenubarSeparator,
+  "menu-separator",
+  (s) => s?.menu?.separator,
+);
+const DropdownMenuTrigger = styledTablePart(
+  PrimitiveDropdownMenuTrigger,
+  "row-menu-trigger",
+  (s) => s?.toolbar?.trigger,
+);
+const DropdownMenuContent = styledTablePart(
+  PrimitiveDropdownMenuContent,
+  "row-menu",
+  (s) => s?.menu?.content,
+);
+const DropdownMenuSubContent = styledTablePart(
+  PrimitiveDropdownMenuSubContent,
+  "row-submenu",
+  (s) => s?.menu?.subContent,
+);
+const DropdownMenuSubTrigger = styledTablePart(
+  PrimitiveDropdownMenuSubTrigger,
+  "row-submenu-trigger",
+  (s) => s?.menu?.subTrigger,
+);
+const DropdownMenuItem = styledTablePart(
+  PrimitiveDropdownMenuItem,
+  "row-menu-item",
+  (s) => s?.menu?.item,
+);
+const DropdownMenuLabel = styledTablePart(
+  PrimitiveDropdownMenuLabel,
+  "row-menu-label",
+  (s) => s?.menu?.label,
+);
+const DropdownMenuSeparator = styledTablePart(
+  PrimitiveDropdownMenuSeparator,
+  "row-menu-separator",
+  (s) => s?.menu?.separator,
+);
+const SelectContent = styledTablePart(
+  PrimitiveSelectContent,
+  "select-popup",
+  (s) => s?.popup?.select,
+);
+const TooltipContent = styledTablePart(
+  PrimitiveTooltipContent,
+  "tooltip",
+  (s) => s?.popup?.tooltip,
+);
+
 type RowData = object;
 
 export type DataTableView = "table" | "gallery";
@@ -717,6 +885,8 @@ export const dataTableMessages = (
 });
 
 export interface DataTableProps<TData extends RowData> {
+  className?: string;
+  classNames?: DataTableClassNames;
   rowData: readonly TData[];
   columnDefs: readonly DataTableColDef<TData>[];
   getRowId?: (row: TData) => string;
@@ -3578,6 +3748,7 @@ const DataTableBody = <TData extends RowData>({
 }: {
   tableAtom: TableAtom<TData>;
 }) => {
+  const styles = useContext(DataTableStylesContext);
   const [store] = useTableAtom(tableAtom);
   const model = deriveModel(store);
   const fields = getActiveGrouping(store);
@@ -3602,7 +3773,13 @@ const DataTableBody = <TData extends RowData>({
       (!rows.length && !store.config.status.loading) ? (
         <TableRow>
           <TableCell
-            className="h-24 text-center"
+            data-table-slot={store.config.status.error ? "error" : "empty"}
+            className={cn(
+              "h-24 text-center",
+              store.config.status.error
+                ? styles?.feedback?.error
+                : styles?.feedback?.empty,
+            )}
             colSpan={Math.max(colSpan, 1)}
           >
             {store.config.status.error ??
@@ -3613,7 +3790,8 @@ const DataTableBody = <TData extends RowData>({
       ) : store.config.status.loading && !rows.length ? (
         <TableRow>
           <TableCell
-            className="h-24 text-center"
+            data-table-slot="loading"
+            className={cn("h-24 text-center", styles?.feedback?.loading)}
             colSpan={Math.max(colSpan, 1)}
           >
             <Loading label={store.config.labels.loading} />
@@ -3724,6 +3902,7 @@ const DataTableGallery = <TData extends RowData>({
 }: {
   tableAtom: TableAtom<TData>;
 }) => {
+  const styles = useContext(DataTableStylesContext);
   const [store, setStore] = useTableAtom(tableAtom);
   const model = deriveModel(store);
   const fields = getActiveGrouping(store);
@@ -3731,28 +3910,52 @@ const DataTableGallery = <TData extends RowData>({
   const sections = groupDataTableRows(rows, fields);
   if (store.config.status.error) {
     return (
-      <div className="text-destructive rounded-lg border border-dashed p-10 text-center">
+      <div
+        data-table-slot="error"
+        className={cn(
+          "text-destructive rounded-lg border border-dashed p-10 text-center",
+          styles?.feedback?.error,
+        )}
+      >
         {store.config.status.error}
       </div>
     );
   }
   if (store.config.status.loading && !rows.length) {
     return (
-      <div className="rounded-lg border border-dashed p-10 text-center">
+      <div
+        data-table-slot="loading"
+        className={cn(
+          "rounded-lg border border-dashed p-10 text-center",
+          styles?.feedback?.loading,
+        )}
+      >
         <Loading label={store.config.labels.loading} />
       </div>
     );
   }
   if (!rows.length && !sections.length) {
     return (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-10 text-center">
+      <div
+        data-table-slot="empty"
+        className={cn(
+          "text-muted-foreground rounded-lg border border-dashed p-10 text-center",
+          styles?.feedback?.empty,
+        )}
+      >
         {store.config.status.empty ?? store.config.labels.empty}
       </div>
     );
   }
   if (!fields.length) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div
+        data-table-slot="gallery"
+        className={cn(
+          "grid gap-3 sm:grid-cols-2 xl:grid-cols-3",
+          styles?.gallery,
+        )}
+      >
         {rows.map((row) => (
           <RowIdContext.Provider key={row.id} value={row.id}>
             <GalleryCard tableAtom={tableAtom} />
@@ -3811,7 +4014,13 @@ const DataTableGallery = <TData extends RowData>({
             section.children.length ? (
               renderSections(section.children)
             ) : section.rows.length ? (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div
+                data-table-slot="gallery"
+                className={cn(
+                  "grid gap-3 sm:grid-cols-2 xl:grid-cols-3",
+                  styles?.gallery,
+                )}
+              >
                 {section.rows.map((row) => (
                   <RowIdContext.Provider
                     key={`${section.key}:${row.id}`}
@@ -3839,6 +4048,7 @@ const DataTablePagination = <TData extends RowData>({
 }: {
   tableAtom: TableAtom<TData>;
 }) => {
+  const styles = useContext(DataTableStylesContext);
   const [store, setStore] = useTableAtom(tableAtom);
   const model = deriveModel(store);
   const pagination = store.config.features.pagination ?? { mode: "client" };
@@ -3864,8 +4074,12 @@ const DataTablePagination = <TData extends RowData>({
   const setPagination = (next: Pick<QueryType, "page" | "pageSize">) =>
     changeState(setStore, (state) => ({ ...state, ...next }));
   return (
-    <div className="pt-4">
+    <div
+      data-table-slot="pagination"
+      className={cn("pt-4", styles?.pagination)}
+    >
       <Pagination
+        pageSizeContentClassName={styles?.popup?.select}
         locale={store.config.locale}
         messages={{ [store.config.locale]: store.config.labels }}
         onPageChange={(page) =>
@@ -3989,7 +4203,10 @@ const HydratedDataTable = <TData extends RowData>({
   ]);
 
   return (
-    <div className="w-full max-w-full min-w-0 rounded-md" data-table-root="">
+    <div
+      className={cn("w-full max-w-full min-w-0 rounded-md", props.className)}
+      data-table-root=""
+    >
       <DataTableToolbar tableAtom={tableAtom} />
       <DataTableContent tableAtom={tableAtom} />
       <DataTablePagination tableAtom={tableAtom} />
@@ -4041,18 +4258,23 @@ export const DataTable = <TData extends RowData>(
     return (
       <div
         aria-busy="true"
-        className="invisible w-full max-w-full min-w-0 rounded-md"
+        className={cn(
+          "invisible w-full max-w-full min-w-0 rounded-md",
+          props.className,
+        )}
         data-table-root=""
       />
     );
   }
   return (
-    <HydratedDataTable
-      {...props}
-      locale={locale}
-      persistedUiState={persistedUiState}
-      setPersistedUiState={setPersistedUiState}
-    />
+    <DataTableStylesContext.Provider value={props.classNames}>
+      <HydratedDataTable
+        {...props}
+        locale={locale}
+        persistedUiState={persistedUiState}
+        setPersistedUiState={setPersistedUiState}
+      />
+    </DataTableStylesContext.Provider>
   );
 };
 

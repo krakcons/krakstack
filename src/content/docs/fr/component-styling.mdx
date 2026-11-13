@@ -8,7 +8,7 @@ locale: fr
 section: getting-started
 type: concept
 createdAt: "2026-11-11"
-updatedAt: "2026-11-11"
+updatedAt: "2026-11-12"
 ---
 
 # Personnalisation des composants
@@ -50,6 +50,31 @@ Les menus, popovers et boîtes de dialogue peuvent être rendus hors de l’arbr
 Cela vaut aussi pour le thème : une variable CSS définie uniquement sur un conteneur local ne s’applique pas automatiquement à un portail rendu ailleurs. Placez les variables partagées sur un ancêtre commun ou appliquez également le thème local au contenu en portail.
 
 ## Préserver le comportement et l’accessibilité
+
+### Tableaux, identité et listes de choix
+
+`DataTable` accepte `className` pour la racine et un objet typé `DataTableClassNames`. Sans surcharge, l’apparence existante est conservée.
+
+```tsx
+<DataTable
+  rowData={rows}
+  columnDefs={columns}
+  className="project-table"
+  classNames={{
+    table: { head: "project-table-heading", cell: "project-table-cell" },
+    menu: { content: "project-table-menu", subContent: "project-table-menu" },
+    popup: { select: "project-select", tooltip: "project-tooltip" },
+  }}
+/>
+```
+
+Groupes : `table` (`content`, `header`, `body`, `row`, `head`, `cell`), `toolbar` (`content`, `search`, `trigger`), `menu` (`content`, `subContent`, `label`, `item`, `separator`, `subTrigger`), `popup` (`select`, `tooltip`) et `feedback` (`loading`, `empty`, `error`). `pagination` et `gallery` acceptent une chaîne de classes. `toolbar.search` s’applique aux champs du tableau, y compris les filtres. Les classes de menu couvrent la barre d’outils, les colonnes, les lignes, les groupes et les cellules de liste. La classe des listes de choix atteint aussi le sélecteur de taille de page. Le contenu personnalisé fourni par l’appelant reste sous sa responsabilité.
+
+Les attributs `data-slot` des primitives sont conservés. Les attributs supplémentaires `data-table-slot` identifient les parties du tableau et les surfaces en portail ; limitez vos sélecteurs avec vos propres classes. Les surcharges d’un tableau ne se propagent pas aux autres.
+
+`AppBrand.classNames` expose `visual`, `image`, `icon`, `content`, `label` et `subtitle`, ciblés par `data-slot="app-brand-<part>"`. La racine est `app-brand`. Ces points de personnalisation fonctionnent avec le rendu statique, les liens HTML et le routeur.
+
+`Pagination.className` cible la racine ; `pageSizeContentClassName` cible les options en portail. Les options des champs Effect Form `SelectField`, `FolderField`, `SearchableSelectField` et `SingleSearchableSelectField` acceptent `contentClassName` pour leur liste de choix.
 
 La personnalisation doit modifier la présentation sans retirer les garanties d’utilisation. Conservez le focus clavier visible, un contraste suffisant, les états désactivés et d’erreur, les limites adaptatives et l’accès au contenu débordant. Respectez la réduction des mouvements et gardez les contenus cachés ou inertes hors du parcours interactif.
 
