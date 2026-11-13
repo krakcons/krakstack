@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.3
+
+### Patch Changes
+
+- 098424e: Expose optional ThemeSwitcher trigger and portalled menu class hooks. Preserve default appearance, localized choices, keyboard interactions and theme persistence; consumers own custom colors and selected-state styling.
+
 ## 0.10.2
 
 ### Patch Changes
