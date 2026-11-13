@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
+import { cn } from "@/lib/utils";
 const messages = {
   en: {
     title: "Switch theme",
@@ -76,7 +77,9 @@ type ThemeProviderProps = {
   scriptDisabled?: boolean;
 };
 
-type ThemeSwitcherProps = {
+export type ThemeSwitcherProps = {
+  className?: string;
+  contentClassName?: string;
   locale?: string;
   messages?: ThemeSwitcherMessageTranslations;
   options?: ReadonlyArray<Theme>;
@@ -203,6 +206,8 @@ export const useTheme = () => {
 };
 
 export const ThemeSwitcher = ({
+  className,
+  contentClassName,
   locale: localeOverride,
   messages,
   options = themes,
@@ -216,7 +221,12 @@ export const ThemeSwitcher = ({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="icon" aria-label={labels.title}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={labels.title}
+            className={className}
+          >
             <Sun
               aria-hidden="true"
               className="hidden [[data-theme=light]_&]:block"
@@ -233,7 +243,7 @@ export const ThemeSwitcher = ({
           </Button>
         }
       />
-      <DropdownMenuContent className="w-32">
+      <DropdownMenuContent className={cn("w-32", contentClassName)}>
         <DropdownMenuGroup>
           <DropdownMenuLabel>{labels.title}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
