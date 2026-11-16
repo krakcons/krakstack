@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications-admin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Optional React administration screens and Effect Atom helpers for KrakStack notifications.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",
