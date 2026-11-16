@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import { Option } from "effect";
-import { AsyncResult } from "effect/reactivity";
+import { useState } from "react";
+import { useAtomSet } from "@effect/atom-react";
 import type * as S from "@krak-stack/notifications/admin/operations.schema";
 import {
   initialTableState,
@@ -13,7 +11,7 @@ import {
 } from "@krak-stack/notifications-admin/operations";
 import { makeSendOperationsAtoms, operationsQueryKey } from "./operations.atom";
 import { sendOperationsMessages } from "./operations.messages";
-import { useTableTotal } from "./table";
+import { useNotificationQuery } from "@krak-stack/notifications-admin/hooks";
 
 type Atoms = ReturnType<typeof makeSendOperationsAtoms>;
 export const SendOperationsPanel = ({
@@ -36,18 +34,16 @@ export const SendOperationsPanel = ({
   const [table, setTable] = useState<typeof TableState.Type>(initialTableState);
   const [selected, setSelected] = useState<string>();
   const resource = atoms.query(operationsQueryKey({ view, filters, table }));
-  const result = useAtomValue(resource.atom);
-  const data = Option.getOrUndefined(AsyncResult.value(result));
-  const total = useTableTotal(data?.total);
-  const refresh = useAtomRefresh(resource.refresh);
+  const { data, total, refresh, pending, failed } = useNotificationQuery(
+    resource,
+    {
+      retentionKey: JSON.stringify([atoms.authorizationKey, view]),
+      total: (data) => data.total,
+      refreshIntervalMillis: 15_000,
+    },
+  );
   const add = useAtomSet(atoms.add, { mode: "promise" });
   const remove = useAtomSet(atoms.remove, { mode: "promise" });
-  // Refresh only the mounted view. Query retention leaves prior successful data
-  // visible while workers and provider feedback advance the authoritative state.
-  useEffect(() => {
-    const timer = setInterval(refresh, 15_000);
-    return () => clearInterval(timer);
-  }, [refresh]);
   const m = sendOperationsMessages(locale);
   const common: SendOperationsProps = {
     view,
@@ -57,8 +53,8 @@ export const SendOperationsPanel = ({
     total,
     tableState: table,
     onTableStateChange: setTable,
-    pending: AsyncResult.isInitial(result) || AsyncResult.isWaiting(result),
-    error: AsyncResult.isFailure(result) ? m.failed : undefined,
+    pending,
+    error: failed ? m.failed : undefined,
     onView: (v) => {
       setView(v);
       setTable(initialTableState);
@@ -101,21 +97,19 @@ const Inspection = ({
   common: SendOperationsProps;
 }) => {
   const query = atoms.inspection(id);
-  const result = useAtomValue(query);
-  const refresh = useAtomRefresh(query);
-  useEffect(() => {
-    const timer = setInterval(refresh, 15_000);
-    return () => clearInterval(timer);
-  }, [refresh]);
+  const { data, failed, refresh } = useNotificationQuery(
+    { atom: query, refresh: query },
+    {
+      retentionKey: JSON.stringify([atoms.authorizationKey, id]),
+      refreshIntervalMillis: 15_000,
+    },
+  );
   return (
     <SendOperationsAdmin
       {...common}
       inspecting
-      inspection={Option.getOrUndefined(AsyncResult.value(result))}
-      error={
-        common.error ||
-        (AsyncResult.isFailure(result) ? common.messages.failed : undefined)
-      }
+      inspection={data}
+      error={common.error || (failed ? common.messages.failed : undefined)}
       onRefresh={() => {
         common.onRefresh();
         refresh();

@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
-import { useAtomValue, useAtomRefresh } from "@effect/atom-react";
-import { AsyncResult } from "effect/reactivity";
-import { Option } from "effect";
+import { useState } from "react";
 import type * as S from "@krak-stack/notifications/admin/delivery.schema";
 import {
   initialTableState,
@@ -9,6 +6,7 @@ import {
 } from "@krak-stack/notifications/admin/table.schema";
 import {
   NotificationDeliveries,
+  NotificationDeliveryDetails,
   type NotificationDeliveriesProps,
 } from "@krak-stack/notifications-admin/deliveries";
 import {
@@ -17,7 +15,14 @@ import {
   deliveryInspectionKey,
 } from "./delivery.atom";
 import { notificationDeliveryMessages } from "./delivery.messages";
-import { useTableTotal } from "./table";
+import { useNotificationQuery } from "@krak-stack/notifications-admin/hooks";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type Atoms = ReturnType<typeof makeNotificationDeliveryAtoms>;
 export const NotificationDeliveriesPanel = (props: {
@@ -62,18 +67,21 @@ const DeliverySelectionPanel = ({
   const key = deliveryQueryKey({ view, source, scope: atoms.scope, table });
   const resource = atoms.query(key);
   // Only the mounted view is subscribed and refreshed.
-  const result = useAtomValue(resource.atom);
-  const data = AsyncResult.isFailure(result)
-    ? undefined
-    : Option.getOrUndefined(AsyncResult.value(result));
+  const { data, total, refresh, pending, failed } = useNotificationQuery(
+    resource,
+    {
+      retentionKey: JSON.stringify([
+        atoms.authorizationKey,
+        atoms.scope,
+        source,
+        view,
+      ]),
+      total: (data) => data.activity?.total,
+      refreshIntervalMillis: 15_000,
+    },
+  );
   const overview = data?.overview;
   const activity = data?.activity;
-  const total = useTableTotal(activity?.total);
-  const refresh = useAtomRefresh(resource.refresh);
-  useEffect(() => {
-    const timer = setInterval(refresh, 15_000);
-    return () => clearInterval(timer);
-  }, [refresh]);
   const messages = notificationDeliveryMessages(locale);
   const common: NotificationDeliveriesProps = {
     messages,
@@ -85,25 +93,28 @@ const DeliverySelectionPanel = ({
     activity,
     table,
     onTable: setTable,
-    total: AsyncResult.isFailure(result) ? 0 : total,
-    pending: AsyncResult.isInitial(result) || AsyncResult.isWaiting(result),
-    error: AsyncResult.isFailure(result) ? messages.common.failed : undefined,
+    total,
+    pending,
+    error: failed ? messages.common.failed : undefined,
     inspecting: !!selected,
     onInspect: setSelected,
     onRefresh: refresh,
     onContact,
     onCampaign,
   };
-  return selected ? (
-    <Inspection
-      key={selected}
-      atoms={atoms}
-      id={selected}
-      queryKey={key}
-      common={common}
-    />
-  ) : (
-    <NotificationDeliveries {...common} />
+  return (
+    <>
+      <NotificationDeliveries {...common} inspecting={false} />
+      {selected && (
+        <Inspection
+          key={selected}
+          atoms={atoms}
+          id={selected}
+          queryKey={key}
+          common={common}
+        />
+      )}
+    </>
   );
 };
 const Inspection = ({
@@ -118,30 +129,45 @@ const Inspection = ({
   common: NotificationDeliveriesProps;
 }) => {
   const atom = atoms.inspection(deliveryInspectionKey({ id, queryKey }));
-  const result = useAtomValue(atom);
-  const refresh = useAtomRefresh(atom);
-  useEffect(() => {
-    const timer = setInterval(refresh, 15_000);
-    return () => clearInterval(timer);
-  }, [refresh]);
+  const { data, failed, refresh } = useNotificationQuery(
+    { atom, refresh: atom },
+    {
+      retentionKey: JSON.stringify([atoms.authorizationKey, atoms.scope, id]),
+      refreshIntervalMillis: 15_000,
+    },
+  );
+  const messages = common.messages.common;
   return (
-    <NotificationDeliveries
-      {...common}
-      inspection={
-        common.error || AsyncResult.isFailure(result)
-          ? undefined
-          : Option.getOrUndefined(AsyncResult.value(result))
-      }
-      inspectionError={
-        common.error ??
-        (AsyncResult.isFailure(result)
-          ? common.messages.common.failed
-          : undefined)
-      }
-      onRefresh={() => {
-        common.onRefresh();
-        refresh();
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) common.onInspect(undefined);
       }}
-    />
+    >
+      <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>{messages.inspect}</DialogTitle>
+        </DialogHeader>
+        <NotificationDeliveryDetails
+          messages={common.messages}
+          inspection={data}
+          error={common.error ?? (failed ? messages.failed : undefined)}
+          onContact={common.onContact}
+          onCampaign={common.onCampaign}
+        />
+        <Button
+          variant="outline"
+          onClick={() => {
+            common.onRefresh();
+            refresh();
+          }}
+        >
+          {messages.refresh}
+        </Button>
+        <Button variant="outline" onClick={() => common.onInspect(undefined)}>
+          {messages.close}
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -1,8 +1,37 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { DataTable } from "@krak-stack/registry/data-table";
+import type {
+  DataTableColDef,
+  DataTableProps,
+} from "@krak-stack/registry/data-table";
+
+export type NotificationTableId =
+  | "delivery-activity"
+  | "delivery-attempts"
+  | "operations-activity"
+  | "feedback"
+  | "suppressions"
+  | "suppression-audit"
+  | "campaign-recipients"
+  | "operations-attempts";
+
+export interface NotificationTableOptions<Row extends object> {
+  readonly columns?: (
+    defaults: ReadonlyArray<DataTableColDef<Row>>,
+  ) => ReadonlyArray<DataTableColDef<Row>>;
+  readonly initialState?: DataTableProps<Row>["initialState"];
+  readonly className?: string;
+}
+
+export type NotificationTableProps<Row extends object> = DataTableProps<Row> & {
+  readonly notificationTable?: NotificationTableId;
+};
+export type NotificationTableRenderer = <Row extends object>(
+  props: NotificationTableProps<Row>,
+) => ReactNode;
 
 export interface NotificationPresentation {
-  readonly Table: typeof DataTable;
+  readonly Table: NotificationTableRenderer;
   readonly renderReference?: (kind: string, id: string) => ReactNode;
 }
 const PresentationContext = createContext<NotificationPresentation>({
@@ -19,7 +48,9 @@ export const NotificationPresentationProvider = ({
   </PresentationContext.Provider>
 );
 
-export const NotificationTable: typeof DataTable = (props) => {
+export const NotificationTable = <Row extends object>(
+  props: NotificationTableProps<Row>,
+) => {
   const { Table } = useContext(PresentationContext);
   return <Table {...props} />;
 };

@@ -23,7 +23,11 @@ import { useAppForm } from "@krak-stack/registry/form";
 import {
   NotificationTable as DataTable,
   NotificationReference,
+  type NotificationTableId,
+  type NotificationTableOptions,
 } from "./presentation.js";
+import { NotificationAttemptHistory } from "./deliveries.js";
+import { useKrakstackLocale } from "@krak-stack/registry/krakstack-provider";
 
 export { SendOperationsAdmin as NotificationOperations };
 export type {
@@ -116,6 +120,9 @@ export interface SendOperationsMessages {
   readonly id: string;
 }
 export interface SendOperationsProps {
+  readonly header?: boolean;
+  readonly navigation?: boolean;
+  readonly views?: ReadonlyArray<View>;
   readonly tableState?: DataTablePublicState;
   readonly onTableStateChange?: (state: DataTablePublicState) => void;
   readonly total?: number;
@@ -173,18 +180,25 @@ const Records = <T extends { readonly id: string }>({
   columns,
   m,
   table,
+  tableId,
+  tableOptions,
 }: {
   items: ReadonlyArray<T> | undefined;
   columns: DataTableColDef<T>[];
-  m: SendOperationsMessages;
+  m: Pick<SendOperationsMessages, "empty" | "loading">;
   table?: Pick<
     DataTableProps<T>,
     "state" | "onStateChange" | "status" | "features"
   >;
+  tableId?: NotificationTableId;
+  tableOptions?: NotificationTableOptions<T>;
 }) => (
   <DataTable
-    rowData={items ?? []}
-    columnDefs={columns.map((column) =>
+    notificationTable={tableId}
+    initialState={tableOptions?.initialState}
+    className={tableOptions?.className}
+    rowData={table?.status?.error ? [] : (items ?? [])}
+    columnDefs={(tableOptions?.columns?.(columns) ?? columns).map((column) =>
       column.colId === "inspect" || column.colId === "remove"
         ? {
             ...column,
@@ -204,6 +218,43 @@ const Records = <T extends { readonly id: string }>({
     {...table}
   />
 );
+
+export interface NotificationOperationsTableProps<
+  Row extends { readonly id: string },
+  Messages = Pick<SendOperationsMessages, "empty" | "loading">,
+> {
+  readonly messages: Messages;
+  readonly items?: ReadonlyArray<Row>;
+  readonly tableState?: DataTablePublicState;
+  readonly onTableStateChange?: (state: DataTablePublicState) => void;
+  readonly total?: number;
+  readonly pending?: boolean;
+  readonly error?: string;
+  readonly onRefresh?: () => void;
+  readonly tableOptions?: NotificationTableOptions<Row>;
+}
+const recordControls = (
+  p: Pick<
+    NotificationOperationsTableProps<{ id: string }>,
+    | "tableState"
+    | "onTableStateChange"
+    | "total"
+    | "pending"
+    | "error"
+    | "onRefresh"
+  >,
+) => ({
+  state: p.tableState,
+  onStateChange: p.onTableStateChange,
+  status: { loading: p.pending, error: p.error },
+  features: {
+    pagination:
+      p.total === undefined
+        ? { mode: "client" as const }
+        : { mode: "server" as const, rowCount: p.error ? 0 : p.total },
+    refresh: p.onRefresh,
+  },
+});
 
 const OverviewWindowForm = ({
   filters,
@@ -262,9 +313,9 @@ const SuppressionDialog = ({
   onClose,
 }: {
   record: typeof S.SuppressionRecord.Type | null;
-  m: SendOperationsMessages;
-  onAdd: SendOperationsProps["onAddSuppression"];
-  onRemove: SendOperationsProps["onRemoveSuppression"];
+  m: NotificationSuppressionMessages;
+  onAdd?: SendOperationsProps["onAddSuppression"];
+  onRemove?: SendOperationsProps["onRemoveSuppression"];
   onClose: () => void;
 }) => {
   const [requestId] = useState(() => crypto.randomUUID());
@@ -275,7 +326,11 @@ const SuppressionDialog = ({
     onSubmit: async ({ value }) => {
       setFailure(undefined);
       try {
-        if (record)
+        if ((record && !onRemove) || (!record && !onAdd)) {
+          setFailure(m.failed);
+          return;
+        }
+        if (record && onRemove)
           await onRemove({
             id: record.id,
             payload: {
@@ -284,7 +339,7 @@ const SuppressionDialog = ({
               reason: value.reason,
             },
           });
-        else
+        else if (onAdd)
           await onAdd({ requestId, email: value.email, reason: value.reason });
         onClose();
       } catch {
@@ -341,68 +396,40 @@ const SuppressionDialog = ({
   );
 };
 
-export const SendOperationsAdmin = (p: SendOperationsProps) => {
-  const { messages: m, view } = p;
-  const tableControls = {
-    state: p.tableState,
-    onStateChange: p.onTableStateChange,
-    status: { loading: p.pending, error: p.error },
-    features: {
-      pagination:
-        p.total === undefined
-          ? { mode: "client" as const }
-          : { mode: "server" as const, rowCount: p.total },
-      refresh: p.onRefresh,
-    },
-  };
-  const [manage, setManage] = useState<
-    typeof S.SuppressionRecord.Type | null | undefined
-  >();
+export type NotificationFeedbackMessages = Pick<
+  SendOperationsMessages,
+  | "empty"
+  | "loading"
+  | "never"
+  | "email"
+  | "kinds"
+  | "correlation"
+  | "pending"
+  | "applied"
+  | "provider"
+  | "providerMessageId"
+  | "eventId"
+  | "occurred"
+  | "received"
+  | "checked"
+  | "deliveryId"
+  | "contactId"
+  | "campaign"
+  | "inspect"
+> & { readonly views: Pick<SendOperationsMessages["views"], "feedback"> };
+export interface NotificationFeedbackTableProps extends NotificationOperationsTableProps<
+  typeof S.FeedbackRecord.Type,
+  NotificationFeedbackMessages
+> {
+  readonly onInspect: (id: string) => void;
+}
+export const NotificationFeedbackTable = (
+  p: NotificationFeedbackTableProps,
+) => {
+  const m = p.messages;
+  const locale = useKrakstackLocale();
   const date = (value: Date | null) =>
-    value ? value.toLocaleString() : m.never;
-  const activityColumns: DataTableColDef<typeof S.DeliveryActivity.Type>[] = [
-    { field: "email", headerName: m.email },
-    { field: "subject", headerName: m.subject },
-    {
-      field: "status",
-      headerName: m.status,
-      filterOptions: Object.entries(m.statuses).map(([value, label]) => ({
-        value,
-        label,
-      })),
-      cellRenderer: ({ data }) => m.statuses[data.status],
-    },
-    {
-      field: "campaignName",
-      headerName: m.campaign,
-      cellRenderer: ({ data }) =>
-        data.campaignId && p.onCampaign ? (
-          <Button
-            variant="link"
-            onClick={() => p.onCampaign?.(data.campaignId!)}
-          >
-            {data.campaignName}
-          </Button>
-        ) : (
-          (data.campaignName ?? "—")
-        ),
-    },
-    { field: "attempts", headerName: m.attempts, type: "number" },
-    { field: "provider", headerName: m.provider },
-    { field: "errorMessage", headerName: m.reason },
-    { field: "createdAt", headerName: m.created, type: "date" },
-    { field: "scheduledFor", headerName: m.scheduled, type: "date" },
-    { field: "sentAt", headerName: m.accepted, type: "date" },
-    {
-      colId: "inspect",
-      headerName: m.inspect,
-      cellRenderer: ({ data }) => (
-        <Button variant="outline" onClick={() => p.onInspect(data.id)}>
-          {m.inspect}
-        </Button>
-      ),
-    },
-  ];
+    value ? value.toLocaleString(locale) : m.never;
   const feedbackColumns: DataTableColDef<typeof S.FeedbackRecord.Type>[] = [
     { field: "recipientAddress", headerName: m.email },
     {
@@ -469,6 +496,57 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
         ),
     },
   ];
+  return (
+    <Records
+      items={p.items}
+      columns={feedbackColumns}
+      m={m}
+      table={recordControls(p)}
+      tableId="feedback"
+      tableOptions={p.tableOptions}
+    />
+  );
+};
+
+export type NotificationSuppressionMessages = Pick<
+  SendOperationsMessages,
+  | "empty"
+  | "loading"
+  | "never"
+  | "email"
+  | "purpose"
+  | "all"
+  | "reason"
+  | "active"
+  | "expired"
+  | "status"
+  | "created"
+  | "expires"
+  | "removeSuppression"
+  | "addSuppression"
+  | "previousReason"
+  | "failed"
+  | "confirm"
+  | "suppressionWarning"
+>;
+export interface NotificationSuppressionsProps extends NotificationOperationsTableProps<
+  typeof S.SuppressionRecord.Type,
+  NotificationSuppressionMessages
+> {
+  readonly onAddSuppression?: SendOperationsProps["onAddSuppression"];
+  readonly onRemoveSuppression?: SendOperationsProps["onRemoveSuppression"];
+}
+export const NotificationSuppressions = (p: NotificationSuppressionsProps) => {
+  const m = p.messages;
+  const locale = useKrakstackLocale();
+  const date = (value: Date | null) =>
+    value ? value.toLocaleString(locale) : m.never;
+  const [manage, setManage] = useState<
+    typeof S.SuppressionRecord.Type | null | undefined
+  >();
+  const canManage =
+    manage === null ? !!p.onAddSuppression : !!p.onRemoveSuppression;
+  if ((p.error || !canManage) && manage !== undefined) setManage(undefined);
   const suppressionColumns: DataTableColDef<typeof S.SuppressionRecord.Type>[] =
     [
       { field: "email", headerName: m.email },
@@ -507,6 +585,71 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
         ),
       },
     ];
+  return (
+    <>
+      {!p.error && p.onAddSuppression && (
+        <Button onClick={() => setManage(null)}>{m.addSuppression}</Button>
+      )}
+      <Records
+        items={p.items}
+        columns={
+          p.onRemoveSuppression
+            ? suppressionColumns
+            : suppressionColumns.filter((column) => column.colId !== "remove")
+        }
+        m={m}
+        table={recordControls(p)}
+        tableId="suppressions"
+        tableOptions={p.tableOptions}
+      />
+      {!p.error && canManage && manage !== undefined && (
+        <SuppressionDialog
+          record={manage}
+          m={m}
+          onAdd={p.onAddSuppression}
+          onRemove={p.onRemoveSuppression}
+          onClose={() => setManage(undefined)}
+        />
+      )}
+    </>
+  );
+};
+
+export type NotificationSuppressionAuditRow = typeof S.SuppressionAudit.Type & {
+  readonly id: string;
+};
+export type NotificationSuppressionAuditMessages = Pick<
+  SendOperationsMessages,
+  | "empty"
+  | "loading"
+  | "never"
+  | "email"
+  | "action"
+  | "add"
+  | "remove"
+  | "reason"
+  | "previousReason"
+  | "actor"
+  | "occurred"
+  | "requestId"
+  | "id"
+>;
+export interface NotificationSuppressionAuditProps extends Omit<
+  NotificationOperationsTableProps<
+    NotificationSuppressionAuditRow,
+    NotificationSuppressionAuditMessages
+  >,
+  "items"
+> {
+  readonly items?: ReadonlyArray<typeof S.SuppressionAudit.Type>;
+}
+export const NotificationSuppressionAudit = (
+  p: NotificationSuppressionAuditProps,
+) => {
+  const m = p.messages;
+  const locale = useKrakstackLocale();
+  const date = (value: Date | null) =>
+    value ? value.toLocaleString(locale) : m.never;
   const auditColumns: DataTableColDef<
     typeof S.SuppressionAudit.Type & { id: string }
   >[] = [
@@ -531,6 +674,70 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
     },
     { field: "requestId", headerName: m.requestId },
     { field: "suppressionId", headerName: m.id },
+  ];
+  return (
+    <Records
+      items={p.items?.map((row) => ({ ...row, id: row.requestId }))}
+      columns={auditColumns}
+      m={m}
+      table={recordControls(p)}
+      tableId="suppression-audit"
+      tableOptions={p.tableOptions}
+    />
+  );
+};
+
+export const SendOperationsAdmin = (p: SendOperationsProps) => {
+  const { messages: m, view } = p;
+  const locale = useKrakstackLocale();
+  const date = (value: Date | null) =>
+    value ? value.toLocaleString(locale) : m.never;
+  const tableControls = recordControls(p);
+  const visibleViews = p.views ?? views;
+  const activityColumns: DataTableColDef<typeof S.DeliveryActivity.Type>[] = [
+    { field: "email", headerName: m.email },
+    { field: "subject", headerName: m.subject },
+    {
+      field: "status",
+      headerName: m.status,
+      filterOptions: Object.entries(m.statuses).map(([value, label]) => ({
+        value,
+        label,
+      })),
+      cellRenderer: ({ data }) => m.statuses[data.status],
+    },
+    {
+      field: "campaignName",
+      headerName: m.campaign,
+      cellRenderer: ({ data }) =>
+        data.campaignId && p.onCampaign ? (
+          <Button
+            variant="link"
+            onClick={() => {
+              if (data.campaignId) p.onCampaign?.(data.campaignId);
+            }}
+          >
+            {data.campaignName}
+          </Button>
+        ) : (
+          (data.campaignName ?? "—")
+        ),
+    },
+    { field: "attempts", headerName: m.attempts, type: "number" },
+    { field: "provider", headerName: m.provider },
+    { field: "errorMessage", headerName: m.reason },
+    { field: "createdAt", headerName: m.created, type: "date" },
+    { field: "scheduledFor", headerName: m.scheduled, type: "date" },
+    { field: "sentAt", headerName: m.accepted, type: "date" },
+    {
+      colId: "inspect",
+      headerName: m.inspect,
+      cellRenderer: ({ data }) => (
+        <Button variant="outline" onClick={() => p.onInspect(data.id)}>
+          {m.inspect}
+        </Button>
+      ),
+    },
   ];
   const recipientColumns: DataTableColDef<typeof S.CampaignRecipient.Type>[] = [
     { field: "email", headerName: m.email },
@@ -563,31 +770,38 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
     },
   ];
   const delivery = p.inspection?.delivery;
+  // Visibility is a host composition option, never backend authorization.
+  if (!visibleViews.includes(view)) return null;
   return (
     <section className="space-y-4" aria-busy={p.pending}>
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{m.title}</h1>
-          <p>{m.description}</p>
-        </div>
-        <Button variant="outline" onClick={p.onRefresh}>
-          {m.refresh}
-        </Button>
-      </header>
-      <Tabs
-        value={view}
-        onValueChange={(value) =>
-          p.onView(Schema.decodeUnknownSync(S.OperationsView)(value))
-        }
-      >
-        <TabsList className="h-auto flex-wrap" aria-label={m.title}>
-          {views.map((v) => (
-            <TabsTrigger key={v} value={v}>
-              {m.views[v]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {p.header !== false && (
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">{m.title}</h1>
+            <p>{m.description}</p>
+          </div>
+          <Button variant="outline" onClick={p.onRefresh}>
+            {m.refresh}
+          </Button>
+        </header>
+      )}
+      {p.navigation !== false && (
+        <Tabs
+          value={view}
+          onValueChange={(value) => {
+            const next = Schema.decodeUnknownSync(S.OperationsView)(value);
+            if (visibleViews.includes(next)) p.onView(next);
+          }}
+        >
+          <TabsList className="h-auto flex-wrap" aria-label={m.title}>
+            {visibleViews.map((v) => (
+              <TabsTrigger key={v} value={v}>
+                {m.views[v]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
       {view === "overview" && (
         <OverviewWindowForm
           key={`${view}:${JSON.stringify(p.filters)}`}
@@ -608,7 +822,7 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
       )}
       {p.error && <p role="alert">{p.error}</p>}
       {p.pending && <p role="status">{m.loading}</p>}
-      {view === "overview" && p.overview && (
+      {view === "overview" && p.overview && !p.error && (
         <dl className="grid gap-3 sm:grid-cols-3">
           {metricKeys.map((key) => (
             <div
@@ -629,34 +843,17 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
           columns={activityColumns}
           m={m}
           table={tableControls}
+          tableId="operations-activity"
         />
       )}
       {view === "feedback" && (
-        <Records
-          items={p.feedback?.items}
-          columns={feedbackColumns}
-          m={m}
-          table={tableControls}
-        />
+        <NotificationFeedbackTable {...p} items={p.feedback?.items} />
       )}
       {view === "suppressions" && (
-        <>
-          <Button onClick={() => setManage(null)}>{m.addSuppression}</Button>
-          <Records
-            items={p.suppressions?.items}
-            columns={suppressionColumns}
-            table={tableControls}
-            m={m}
-          />
-        </>
+        <NotificationSuppressions {...p} items={p.suppressions?.items} />
       )}
       {view === "audit" && (
-        <Records
-          items={p.audit?.items.map((row) => ({ ...row, id: row.requestId }))}
-          columns={auditColumns}
-          table={tableControls}
-          m={m}
-        />
+        <NotificationSuppressionAudit {...p} items={p.audit?.items} />
       )}
       {view === "recipients" &&
         (p.filters.campaignId ? (
@@ -664,6 +861,7 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
             items={p.recipients?.items}
             columns={recipientColumns}
             table={tableControls}
+            tableId="campaign-recipients"
             m={m}
           />
         ) : (
@@ -681,7 +879,7 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
           </DialogHeader>
           {p.error && <p role="alert">{p.error}</p>}
           {!delivery && !p.error && <p role="status">{m.loading}</p>}
-          {delivery && (
+          {delivery && !p.error && (
             <>
               {p.onContact && (
                 <Button
@@ -748,47 +946,10 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
                 ))}
               </dl>
               <h3>{m.attempts}</h3>
-              <Records
-                items={p.inspection?.attempts}
-                m={m}
-                columns={[
-                  { field: "generation", headerName: m.generation },
-                  { field: "attempt", headerName: m.attempts },
-                  {
-                    colId: "outcome",
-                    headerName: m.outcome,
-                    cellRenderer: ({ data }) =>
-                      data.outcome ? m.outcomes[data.outcome._tag] : m.pending,
-                  },
-                  {
-                    colId: "reason",
-                    headerName: m.reason,
-                    cellRenderer: ({ data }) => {
-                      const outcome = data.outcome;
-                      if (!outcome) return "—";
-                      switch (outcome._tag) {
-                        case "Sent":
-                          return outcome.providerMessageId ?? "—";
-                        case "Skipped":
-                          return outcome.reason;
-                        case "RetryableFailure":
-                        case "PermanentFailure":
-                        case "Unavailable":
-                          return outcome.message;
-                      }
-                    },
-                  },
-                  {
-                    colId: "started",
-                    headerName: m.started,
-                    cellRenderer: ({ data }) => date(data.startedAt),
-                  },
-                  {
-                    colId: "completed",
-                    headerName: m.completed,
-                    cellRenderer: ({ data }) => date(data.completedAt),
-                  },
-                ]}
+              <NotificationAttemptHistory
+                messages={m}
+                attempts={p.inspection?.attempts ?? []}
+                tableId="operations-attempts"
               />
               <Button
                 onClick={() => {
@@ -808,15 +969,6 @@ export const SendOperationsAdmin = (p: SendOperationsProps) => {
           </Button>
         </DialogContent>
       </Dialog>
-      {manage !== undefined && (
-        <SuppressionDialog
-          record={manage}
-          m={m}
-          onAdd={p.onAddSuppression}
-          onRemove={p.onRemoveSuppression}
-          onClose={() => setManage(undefined)}
-        />
-      )}
     </section>
   );
 };

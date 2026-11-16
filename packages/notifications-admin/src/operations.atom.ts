@@ -4,6 +4,7 @@ import { FetchHttpClient } from "effect/http";
 import { SendOperationsApi } from "@krak-stack/notifications/admin/operations.api";
 import * as S from "@krak-stack/notifications/admin/operations.schema";
 import { TableState } from "@krak-stack/notifications/admin/table.schema";
+import type { NotificationAdminClientOptions } from "./client-options.js";
 
 export const OperationsQueryKey = Schema.Struct({
   view: S.OperationsView,
@@ -21,14 +22,14 @@ export interface OperationsData {
   readonly audit?: typeof S.SuppressionAuditPage.Type;
   readonly recipients?: typeof S.RecipientPage.Type;
 }
-interface Resource {
-  readonly atom: Atom.Atom<AsyncResult.AsyncResult<OperationsData, unknown>>;
+interface Resource<E> {
+  readonly atom: Atom.Atom<AsyncResult.AsyncResult<OperationsData, E>>;
   readonly refresh: Atom.Atom<unknown>;
 }
 const retain = <A, E>(
   source: Atom.Atom<AsyncResult.AsyncResult<A, E>>,
   map: (value: A) => OperationsData,
-): Resource => ({
+): Resource<E> => ({
   atom: Atom.map(Atom.optimistic(source), (result) =>
     AsyncResult.map(result, map),
   ),
@@ -37,13 +38,27 @@ const retain = <A, E>(
 
 // Construct once per host with its trusted origin and authenticated/CSRF-aware
 // HttpClient. No host credentials are stored in component props or URL filters.
-export const makeSendOperationsAtoms = (baseUrl: string) => {
+export const makeSendOperationsAtoms = (
+  input: string | NotificationAdminClientOptions,
+) => {
+  // The legacy string form remains supported, but each construction is isolated.
+  const options = Schema.is(Schema.String)(input)
+    ? { baseUrl: input, authorizationKey: crypto.randomUUID() }
+    : input;
+  const authorizationKey = Schema.decodeSync(Schema.NonEmptyString)(
+    options.authorizationKey,
+  );
+  const identity = JSON.stringify([options.baseUrl, authorizationKey]);
   class Client extends AtomHttpApi.Service<Client>()(
-    "example/SendOperationsClient",
-    { api: SendOperationsApi, baseUrl, httpClient: FetchHttpClient.layer },
+    `host/NotificationOperations/${identity}`,
+    {
+      api: SendOperationsApi,
+      baseUrl: options.baseUrl,
+      httpClient: options.httpClient ?? FetchHttpClient.layer,
+    },
   ) {}
-  const reactivityKeys = ["kraksend.operations"];
-  const query = Atom.family((key: string): Resource => {
+  const reactivityKeys = [`notification.operations.${identity}`];
+  const query = Atom.family((key: string) => {
     const { view, filters: f, table } = Schema.decodeSync(KeyCodec)(key);
     switch (view) {
       case "overview":
@@ -127,7 +142,7 @@ export const makeSendOperationsAtoms = (baseUrl: string) => {
               }),
             )
           : {
-              atom: Atom.make(AsyncResult.success({})),
+              atom: Atom.make(AsyncResult.success<OperationsData>({})),
               refresh: Atom.make(undefined),
             };
     }
@@ -159,5 +174,5 @@ export const makeSendOperationsAtoms = (baseUrl: string) => {
         reactivityKeys: [...reactivityKeys, "kraksend.campaigns"],
       }),
   );
-  return { query, inspection, add, remove };
+  return { query, inspection, add, remove, authorizationKey };
 };

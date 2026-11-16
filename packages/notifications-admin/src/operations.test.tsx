@@ -9,7 +9,13 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
-import { SendOperationsAdmin, type SendOperationsProps } from "./operations.js";
+import {
+  SendOperationsAdmin,
+  NotificationFeedbackTable,
+  NotificationSuppressions,
+  NotificationSuppressionAudit,
+  type SendOperationsProps,
+} from "./operations.js";
 import { sendOperationsMessages } from "@/agent-examples/send/operations.messages";
 afterEach(cleanup);
 const m = sendOperationsMessages("en");
@@ -29,6 +35,90 @@ const props = (): SendOperationsProps => ({
   onRemoveSuppression: vi.fn(),
 });
 describe("sending operations frontend behavior", () => {
+  it("offers only configured views and supports host navigation without hiding tabs in CSS", () => {
+    const p = props();
+    const { rerender } = render(
+      <SendOperationsAdmin
+        {...p}
+        views={["suppressions", "feedback", "audit"]}
+      />,
+    );
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+    expect(screen.queryByRole("tab", { name: m.views.activity })).toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: m.views.feedback }));
+    expect(p.onView).toHaveBeenCalledWith("feedback");
+    rerender(
+      <SendOperationsAdmin
+        {...p}
+        views={["suppressions"]}
+        navigation={false}
+        header={false}
+      />,
+    );
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(screen.getByRole("button", { name: m.addSuppression })).toBeTruthy();
+    rerender(
+      <SendOperationsAdmin {...p} view="overview" views={["suppressions"]} />,
+    );
+    expect(screen.queryByRole("button", { name: m.addSuppression })).toBeNull();
+  });
+
+  it("allows individual control tables without screen navigation or unrelated callbacks", () => {
+    const { rerender } = render(
+      <NotificationFeedbackTable messages={m} items={[]} onInspect={vi.fn()} />,
+    );
+    expect(screen.queryByRole("tab")).toBeNull();
+    rerender(<NotificationSuppressionAudit messages={m} items={[]} />);
+    expect(screen.queryByRole("tab")).toBeNull();
+    rerender(
+      <NotificationSuppressions
+        messages={m}
+        items={[]}
+        onAddSuppression={vi.fn()}
+        onRemoveSuppression={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: m.addSuppression }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("renders read-only suppressions when mutation callbacks are absent", () => {
+    render(<NotificationSuppressions messages={m} items={[]} />);
+    expect(screen.queryByRole("button", { name: m.addSuppression })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: m.removeSuppression }),
+    ).toBeNull();
+  });
+
+  it("hides retained suppression records and open mutation forms after a failed protected read", () => {
+    const record = {
+      id,
+      version: "42",
+      email: "private@example.com",
+      purpose: null,
+      reason: null,
+      createdAt: new Date(0),
+      expiresAt: null,
+      active: true,
+    };
+    const p = {
+      messages: m,
+      items: [record],
+      onAddSuppression: vi.fn(),
+      onRemoveSuppression: vi.fn(),
+    };
+    const { rerender } = render(<NotificationSuppressions {...p} />);
+    fireEvent.click(screen.getByRole("button", { name: m.removeSuppression }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    rerender(<NotificationSuppressions {...p} error="Denied" />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByText(record.email)).toBeNull();
+    expect(p.onRemoveSuppression).not.toHaveBeenCalled();
+    rerender(<NotificationSuppressions {...p} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("forwards shared table search to the server and resets the page", async () => {
     const apply = vi.fn();
     const p = {

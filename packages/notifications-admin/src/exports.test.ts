@@ -8,6 +8,18 @@ import {
   NotificationDeliveries,
 } from "@krak-stack/notifications-admin/operations";
 import { NotificationDeliveries as Deliveries } from "@krak-stack/notifications-admin/deliveries";
+import {
+  NotificationDeliveryOverview,
+  NotificationDeliveryActivity,
+  NotificationDeliveryDetails,
+  NotificationAttemptHistory,
+} from "@krak-stack/notifications-admin/deliveries";
+import {
+  NotificationFeedbackTable,
+  NotificationSuppressions,
+  NotificationSuppressionAudit,
+} from "@krak-stack/notifications-admin/operations";
+import { useNotificationQuery } from "@krak-stack/notifications-admin/hooks";
 import { NotificationPresentationProvider } from "@krak-stack/notifications-admin/presentation";
 import {
   makeNotificationContactAtoms,
@@ -31,6 +43,20 @@ describe("notification admin package exports", () => {
     expect(admin.SendContacts).toBe(NotificationContacts);
     expect(admin.SendCampaignAdmin).toBe(NotificationCampaigns);
     expect(admin.SendOperationsAdmin).toBe(NotificationOperations);
+    expect(admin.NotificationDeliveryOverview).toBe(
+      NotificationDeliveryOverview,
+    );
+    expect(admin.NotificationDeliveryActivity).toBe(
+      NotificationDeliveryActivity,
+    );
+    expect(admin.NotificationDeliveryDetails).toBe(NotificationDeliveryDetails);
+    expect(admin.NotificationAttemptHistory).toBe(NotificationAttemptHistory);
+    expect(admin.NotificationFeedbackTable).toBe(NotificationFeedbackTable);
+    expect(admin.NotificationSuppressions).toBe(NotificationSuppressions);
+    expect(admin.NotificationSuppressionAudit).toBe(
+      NotificationSuppressionAudit,
+    );
+    expect(admin.useNotificationQuery).toBe(useNotificationQuery);
   });
   it("keeps existing Effect Atom factory names as aliases", () => {
     expect(makeNotificationContactAtoms).toBe(makeSendContactAtoms);

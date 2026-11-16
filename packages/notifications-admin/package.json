@@ -48,6 +48,10 @@
       "types": "./dist/atoms.d.ts",
       "import": "./dist/atoms.js"
     },
+    "./hooks": {
+      "types": "./dist/hooks.d.ts",
+      "import": "./dist/hooks.js"
+    },
     "./tailwind.css": "./tailwind.css",
     "./package.json": "./package.json"
   },
@@ -69,8 +73,8 @@
     "@base-ui/react": "^1.5.0",
     "@effect/atom-react": "^4.1.0",
     "@effect/platform-browser": "^4.1.0",
-    "@krak-stack/notifications": "^0.3.0",
-    "@krak-stack/registry": "^0.2.2",
+    "@krak-stack/notifications": "^0.3.0 || ^0.4.0",
+    "@krak-stack/registry": "^0.2.2 || ^0.10.3",
     "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-virtual": "^3.14.5",
