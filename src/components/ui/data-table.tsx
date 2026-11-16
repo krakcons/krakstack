@@ -680,6 +680,22 @@ export interface DataTableExportFeature {
   onError?: (error: unknown, action: DataTableExportAction) => void;
 }
 
+export interface DataTableGalleryFeature<TData> {
+  name: string;
+  description?: string;
+  /** Column IDs in display order. Custom cell renderers own their presentation. */
+  tags?: readonly string[];
+  /** Legacy single-tag configuration. Used when tags is not supplied. */
+  tag?: string;
+  tagIcon?: ReactNode;
+  /** Optional cover image. Missing or failed images leave a text-only card. */
+  image?: {
+    getSrc: (row: TData) => string | null | undefined;
+    /** Omit for a decorative image; the card title already identifies the row. */
+    getAlt?: (row: TData) => string;
+  };
+}
+
 export interface DataTableFeatures<TData> {
   toolbar?:
     | false
@@ -705,9 +721,7 @@ export interface DataTableFeatures<TData> {
   rowActions?:
     false | { label?: string; items: readonly DataTableRowAction<TData>[] };
   export?: false | DataTableExportFeature;
-  gallery?:
-    | false
-    | { name: string; description?: string; tag?: string; tagIcon?: ReactNode };
+  gallery?: false | DataTableGalleryFeature<TData>;
   grouping?: false | DataTableGroupingFeature<TData>;
   reordering?:
     | false
@@ -894,6 +908,8 @@ export interface DataTableProps<TData extends RowData> {
   initialState?: Partial<DataTablePublicState> & {
     /** Initial visibility defaults; saved user preferences take precedence. */
     columnVisibility?: Readonly<Record<string, boolean>>;
+    /** Initial view only; a saved user preference takes precedence. */
+    view?: DataTableView;
   };
   locale?: string;
   onStateChange?: (state: DataTablePublicState) => void;
@@ -3808,6 +3824,53 @@ const DataTableBody = <TData extends RowData>({
   );
 };
 
+const GalleryImage = ({ src, alt }: { src: string; alt: string }) => {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className="aspect-video w-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+};
+
+const GalleryTag = <TData extends RowData>({
+  row,
+  column,
+  icon,
+  locale,
+  labels,
+}: {
+  row: DataTableModelRow<TData>;
+  column: DataTableColumn<TData>;
+  icon?: ReactNode;
+  locale: string;
+  labels: DataTableMessages;
+}) => {
+  const value = row.values.get(column.id);
+  if ((value == null || value === "") && !column.colDef.cellRenderer)
+    return null;
+  const content = renderCell(row, column, locale, labels);
+  // Renderers may return badges, links, or invitation actions. Never nest those
+  // inside another badge; only uncustomized column values get a default badge.
+  return column.colDef.cellRenderer || column.colDef.valueFormatter ? (
+    <div className="flex min-w-0 items-center gap-1">
+      {icon}
+      {content}
+    </div>
+  ) : (
+    <Badge variant="secondary">
+      {icon}
+      {content}
+    </Badge>
+  );
+};
+
 const GalleryCard = <TData extends RowData>({
   tableAtom,
 }: {
@@ -3820,10 +3883,13 @@ const GalleryCard = <TData extends RowData>({
   const gallery = store.config.features.gallery;
   if (!row || !gallery) return null;
   const find = (id?: string) =>
-    id ? model.visibleColumns.find((column) => column.id === id) : undefined;
+    id ? model.columns.find((column) => column.id === id) : undefined;
   const name = find(gallery.name);
   const description = find(gallery.description);
-  const tag = find(gallery.tag);
+  const tagIds = [
+    ...new Set(gallery.tags ?? (gallery.tag ? [gallery.tag] : [])),
+  ];
+  const imageSrc = gallery.image?.getSrc(row.data);
   const selection = store.config.features.selection;
   const selectable =
     !!selection && (selection.isRowSelectable?.(row.data) ?? true);
@@ -3848,27 +3914,45 @@ const GalleryCard = <TData extends RowData>({
       }}
       tabIndex={store.config.onRowClicked ? 0 : undefined}
     >
-      <CardHeader className="pr-12">
-        <div className="flex items-center gap-2">
-          {selection ? (
-            <Checkbox
-              aria-label={store.config.labels.selectRow}
-              checked={!!store.state.rowSelection[row.id]}
-              disabled={!selectable}
-              onCheckedChange={(checked) =>
-                toggleRow(store, setStore, row.id, checked)
-              }
-              onClick={(event) => event.stopPropagation()}
-            />
-          ) : null}
-          {draggable ? <DragHandle tableAtom={tableAtom} /> : null}
-          {tag ? (
-            <Badge variant="secondary">
-              {gallery.tagIcon}
-              {renderCell(row, tag, store.config.locale, store.config.labels)}
-            </Badge>
-          ) : null}
-        </div>
+      {imageSrc ? (
+        <GalleryImage
+          key={imageSrc}
+          src={imageSrc}
+          alt={gallery.image?.getAlt?.(row.data) ?? ""}
+        />
+      ) : null}
+      <CardHeader
+        className={cn("relative", hasRowActionMenu(store) && "pr-12")}
+      >
+        {selection || draggable || tagIds.length ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {selection ? (
+              <Checkbox
+                aria-label={store.config.labels.selectRow}
+                checked={!!store.state.rowSelection[row.id]}
+                disabled={!selectable}
+                onCheckedChange={(checked) =>
+                  toggleRow(store, setStore, row.id, checked)
+                }
+                onClick={(event) => event.stopPropagation()}
+              />
+            ) : null}
+            {draggable ? <DragHandle tableAtom={tableAtom} /> : null}
+            {tagIds.map((id) => {
+              const column = find(id);
+              return column ? (
+                <GalleryTag
+                  key={id}
+                  row={row}
+                  column={column}
+                  locale={store.config.locale}
+                  labels={store.config.labels}
+                  icon={id === gallery.tag ? gallery.tagIcon : undefined}
+                />
+              ) : null;
+            })}
+          </div>
+        ) : null}
         <CardTitle>
           {name
             ? renderCell(row, name, store.config.locale, store.config.labels)
@@ -3886,7 +3970,7 @@ const GalleryCard = <TData extends RowData>({
         ) : null}
         {hasRowActionMenu(store) ? (
           <div
-            className="absolute top-4 right-4"
+            className="absolute top-0 right-4"
             onClick={(event) => event.stopPropagation()}
           >
             <DataTableRowActionMenu tableAtom={tableAtom} />
@@ -4234,6 +4318,9 @@ export const DataTable = <TData extends RowData>(
       schema: DataTablePersistedUiStateSchema,
       defaultValue: () => ({
         ...persistedUiFromState(DEFAULT_UI_STATE),
+        view: props.features?.gallery
+          ? (props.initialState?.view ?? "table")
+          : "table",
         grouping: props.features?.grouping
           ? (props.features.grouping.initial ?? [])
           : [],

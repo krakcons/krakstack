@@ -38,6 +38,7 @@ import {
   type DataTablePublicState,
 } from "./data-table";
 import { MenubarMenu, MenubarTrigger } from "./menubar";
+import { Badge } from "./badge";
 import type { ColumnFilter } from "@/lib/query";
 
 afterEach(() => {
@@ -63,6 +64,139 @@ const data: Row[] = [
   { id: "two", name: "Beta", score: 10 },
   { id: "three", name: "Gamma", score: 20 },
 ];
+
+describe("DataTable gallery", () => {
+  it("uses the initial gallery view and preserves a saved table preference", async () => {
+    const table = (
+      <DataTable
+        columnDefs={columns}
+        rowData={data}
+        initialState={{ view: "gallery" }}
+        features={{ gallery: { name: "name" }, pagination: false }}
+      />
+    );
+    const { unmount } = render(table);
+    await screen.findByText("Alpha");
+    expect(screen.queryByRole("table")).toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: "View" }));
+    fireEvent.click(
+      await screen.findByRole("menuitemradio", { name: "Table" }),
+    );
+    await screen.findByRole("table");
+    await waitFor(() =>
+      expect(
+        localStorage.getItem("data-table:/:name,score:gallery:ui"),
+      ).toContain('"view":"table"'),
+    );
+    unmount();
+    render(table);
+    await screen.findByRole("table");
+  });
+
+  it("ignores the initial gallery view when the feature is disabled", async () => {
+    render(
+      <DataTable
+        columnDefs={columns}
+        rowData={data}
+        initialState={{ view: "gallery" }}
+      />,
+    );
+    await screen.findByRole("table");
+  });
+
+  it("renders multiple tags without nesting custom badges or hiding configured fields", async () => {
+    render(
+      <DataTable
+        columnDefs={[
+          ...columns,
+          {
+            colId: "status",
+            headerName: "Status",
+            valueGetter: () => "Available",
+            cellRenderer: () => <Badge>Available</Badge>,
+          },
+          { colId: "empty", headerName: "Empty", valueGetter: () => null },
+        ]}
+        rowData={data.slice(0, 1)}
+        initialState={{
+          view: "gallery",
+          columnVisibility: { name: false, score: false },
+        }}
+        features={{
+          gallery: {
+            name: "name",
+            tags: ["status", "score", "score", "empty", "missing"],
+          },
+        }}
+      />,
+    );
+    await screen.findByText("Alpha");
+    expect(screen.getAllByText("30")).toHaveLength(1);
+    const status = screen.getByText("Available");
+    expect(status.parentElement?.closest('[data-slot="badge"]')).toBeNull();
+    expect(screen.queryByText("Empty")).toBeNull();
+  });
+
+  it("keeps legacy tags and interactive custom renderers working", async () => {
+    const onAction = vi.fn();
+    const onRowClicked = vi.fn();
+    render(
+      <DataTable
+        columnDefs={[
+          ...columns,
+          {
+            colId: "action",
+            headerName: "Action",
+            cellRenderer: () => (
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onAction();
+                }}
+              >
+                Join
+              </button>
+            ),
+          },
+        ]}
+        rowData={data.slice(0, 1)}
+        initialState={{ view: "gallery" }}
+        features={{ gallery: { name: "name", tag: "action" } }}
+        onRowClicked={onRowClicked}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Join" }));
+    expect(onAction).toHaveBeenCalledOnce();
+    expect(onRowClicked).not.toHaveBeenCalled();
+  });
+
+  it("omits unavailable images and recovers when a failed image source changes", async () => {
+    const table = (src?: string) => (
+      <DataTable
+        columnDefs={columns}
+        rowData={data.slice(0, 1)}
+        initialState={{ view: "gallery" }}
+        features={{
+          gallery: {
+            name: "name",
+            image: { getSrc: () => src, getAlt: (row) => row.name },
+          },
+        }}
+      />
+    );
+    const { rerender } = render(table());
+    await screen.findByText("Alpha");
+    expect(screen.queryByRole("img")).toBeNull();
+    rerender(table("/first.png"));
+    fireEvent.error(await screen.findByRole("img", { name: "Alpha" }));
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("Alpha")).toBeTruthy();
+    rerender(table("/second.png"));
+    expect(
+      (await screen.findByRole("img", { name: "Alpha" })).getAttribute("src"),
+    ).toBe("/second.png");
+  });
+});
 
 describe("table presentation hooks", () => {
   it("styles portalled sorting menus without changing sorting or leaking to another table", async () => {

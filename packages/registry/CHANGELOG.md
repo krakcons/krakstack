@@ -1,5 +1,12 @@
 # @krak-stack/registry
 
+## 0.10.4
+
+### Patch Changes
+
+- Improve DataTable galleries with multiple tag columns, optional lazy-loaded cover images, and an initial view setting that respects saved preferences. Custom tag renderers no longer receive an extra badge wrapper. Existing single-tag configurations remain supported.
+- 852280e: Update effect-form to 1.1.1 so date-only changes enable Save and unsaved-change detection.
+
 ## 0.10.3
 
 ### Patch Changes

@@ -377,7 +377,7 @@ export function DataTablePreview() {
               gallery: {
                 name: "name",
                 description: "summary",
-                tag: "status",
+                tags: ["status", "category"],
               },
               rowActions: { items: rowActions },
               selection: {
