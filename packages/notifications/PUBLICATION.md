@@ -175,6 +175,147 @@ Keep installed versions available for as long as persisted deliveries require th
 Checks should be read-only and idempotent: do not publish or perform irreversible
 side effects from an eligibility check inside the publication transaction.
 
+### Sending windows
+
+`@krak-stack/notifications/sending-window` exports:
+
+- `SendingWindow`: an Effect schema for `{ timeZone, start, end }`.
+- `sendingWindowRequirement(configuration)`: validates and snapshots configuration
+  into an existing publication-policy requirement. Returns an Effect; invalid
+  configuration fails with `DispatchPolicyError`.
+- `sendingWindowPolicy`: the package-owned `krakstack.sending-window@1` extension.
+
+Register the policy on **both publisher and runtime**, alongside other extensions:
+
+```ts
+import { Layer } from "effect";
+import { NotificationService } from "@krak-stack/notifications";
+import { NotificationRuntime } from "@krak-stack/notifications/runtime";
+import { publicationPoliciesLayer } from "@krak-stack/notifications/publication-policy";
+import {
+  sendingWindowPolicy,
+  sendingWindowRequirement,
+} from "@krak-stack/notifications/sending-window";
+
+const policies = publicationPoliciesLayer([sendingWindowPolicy]);
+const publisher = NotificationService.layer.pipe(Layer.provide(policies));
+const runtime = NotificationRuntime.layer.pipe(Layer.provide(policies));
+// Provide the existing shared Postgres, transport and reminder-handler layers
+// to publisher/runtime as in the README composition example.
+
+// Inside an Effect program, after resolving the recipient in trusted host code:
+const overnight =
+  yield *
+  sendingWindowRequirement({
+    timeZone: "America/Edmonton",
+    start: "23:00",
+    end: "05:00",
+  });
+
+const commonEmail = {
+  channel: "email",
+  recipient: { address: "reader@example.com", name: null },
+  template: null,
+  payloadVersion: 1,
+};
+const optionalEmail = {
+  ...commonEmail,
+  key: "optional-email",
+  policy: { kind: "notification" },
+  checks: [overnight],
+  payload: {
+    subject: "Optional update",
+    text: "An update you requested.",
+    unsubscribeUrl: "https://example.com/unsubscribe",
+  },
+} satisfies import("@krak-stack/notifications/schema").PublicationDeliveryInput;
+const transactionalEmail = {
+  ...commonEmail,
+  key: "receipt-email",
+  policy: { kind: "transactional" },
+  payload: { subject: "Receipt", text: "Your receipt." },
+} satisfies import("@krak-stack/notifications/schema").PublicationDeliveryInput;
+```
+
+Use these delivery definitions in the host's appropriate publications, with distinct
+idempotency keys and event keys. The optional example assumes a verified account
+recipient in `scope.recipientUserId`; non-account/contact optional mail must also
+declare applicable consent. The window is an additional eligibility check, never
+consent. The transactional delivery has no window check and is not delayed by
+installing the policy. Any delivery can opt into its own window and timezone.
+
+#### Local-time and DST semantics
+
+- `start` and `end` must be zero-padded `HH:mm`, from `00:00` through `23:59`.
+  Start is inclusive; end is exclusive, including at subsecond precision.
+- `start < end` is an ordinary same-day interval. `start > end` crosses midnight.
+  Equal endpoints are rejected, not interpreted as empty or all-day. Omit the check
+  for unrestricted delivery.
+- `timeZone` must be a named IANA timezone recognized by the runtime's timezone
+  database, such as `America/Edmonton` or `UTC`. Raw numeric offsets and unknown
+  zones are rejected. Worker-local time and `CurrentTimeZone` are never consulted.
+- Eligibility follows the **actual local wall-clock reading** at the instant of
+  the check. During fall-back, both occurrences of an included local time qualify.
+  A narrow window can close between repeated intervals, then open again.
+- Missing local times never qualify. For a `02:30`–`04:00` window on a day when
+  the clock jumps from `01:59:59` to `03:00`, the first opening is `03:00`, not
+  `03:30`. A window entirely within the gap waits for its next actual occurrence.
+  Non-hour transitions and skipped calendar dates follow the same rule.
+
+The host owns recipient timezone selection and any fallback decision. Pass the
+resolved timezone explicitly; the package does not infer it from an address,
+profile, server locale or organization. Keep runtime timezone databases current
+and consistent across publishers and workers. The snapshot preserves the named
+zone and local hours, not a frozen copy of timezone legislation. Future rule
+updates can change the corresponding UTC opening.
+
+#### Persistence, retries and compatibility
+
+The helper encodes configuration deterministically in a package-owned policy subject.
+Treat that subject as opaque and use the helper rather than constructing it manually.
+This self-contained snapshot deliberately reuses existing publication metadata,
+versioned checks and immutable fingerprints; no new columns or migrations are needed.
+There is no mutable installation-wide window lookup. Do not replace or reuse the
+package-owned policy identity for host implementations.
+
+Identical publication replay returns the original delivery IDs. Changing hours,
+timezone, policy version, adding or removing a check under the same publication key
+conflicts. Preserve the original request when retrying publication; editing a
+recipient's profile does not move accepted work into a new timezone. New intent
+requires a new publication key and, where appropriate, cancellation of the old
+delivery. Keep required policy versions installed while queued or retryable work
+depends on them. Malformed persisted configuration, missing versions and calculation
+errors fail closed.
+
+Outside its window, the policy returns the existing `Defer` decision with the earliest
+next actual opening. The engine durably records eligibility and does not spend a
+provider attempt on deferral. Initial `scheduledFor` remains a lower bound; a later
+schedule is rechecked when due, rather than being advanced to an earlier opening.
+Manual retry also retains a later existing eligibility date.
+
+At each provider attempt, including automatic/manual retries and restart recovery,
+all applicable checks must allow. An allowed window does not skip other policies.
+Another policy may defer beyond this window, in which case the next attempt checks
+the window again. The runtime rechecks the built-in window after other eligibility
+checks, and checks expiry again, so slow policy I/O cannot retain an earlier allow.
+Expiry still cancels work; a next opening after expiry cannot revive it. Consent,
+account unsubscribe, preferences and suppression are checked through existing paths,
+including changes made while a delivery was deferred.
+
+Run the existing scheduler and worker continuously, or use existing batch operations.
+No window-specific worker schedule, queue or recurring-job system is required.
+Offline workers, queue load, later policy deferrals and provider failures can delay
+an attempt beyond an opening; the next attempt must still qualify. Windows govern
+**provider-attempt eligibility**, not inbox arrival or an exact-time guarantee.
+Provider calls cannot be recalled after they begin.
+
+Existing publications without a window check retain their eligibility behavior and
+need no window policy registration. This opt-in applies to canonical
+`PublicationInput` deliveries; direct transient dispatch and legacy authoring shapes
+do not acquire window enforcement implicitly. A window constrains an existing
+delivery. Digest matching, grouping, content and recurring generation remain
+consumer-owned and are not provided here.
+
 ## Transactions, replay and lifecycle
 
 Call `publish` inside the application's existing `sql.withTransaction(...)` to

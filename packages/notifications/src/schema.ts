@@ -1,4 +1,4 @@
-import { Option, Schema } from "effect";
+import { DateTime, Option, Schema } from "effect";
 
 const PositiveInt = Schema.Int.pipe(
   Schema.check(Schema.isGreaterThan(0)),
@@ -284,6 +284,32 @@ export const PublicationPolicyRequirement = Schema.Struct({
   version: PositiveInt,
   subject: ConsentSubject,
 }).annotate({ identifier: "NotificationPublicationPolicyRequirement" });
+
+const SendingWindowTime = Schema.String.check(
+  Schema.isPattern(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+).annotate({ identifier: "NotificationSendingWindowTime" });
+
+export const SendingWindow = Schema.Struct({
+  timeZone: Schema.NonEmptyString.check(
+    Schema.isPattern(/^[A-Za-z][A-Za-z0-9._+-]*(?:\/[A-Za-z0-9._+-]+)*$/),
+    Schema.makeFilter(
+      (value) =>
+        Option.isSome(DateTime.zoneMakeNamed(value)) ||
+        "Sending windows require a valid named IANA timezone",
+    ),
+  ),
+  start: SendingWindowTime,
+  end: SendingWindowTime,
+})
+  .check(
+    Schema.makeFilter(
+      (window) =>
+        window.start !== window.end ||
+        "Sending window start and end must differ",
+    ),
+  )
+  .annotate({ identifier: "NotificationSendingWindow" });
+export type SendingWindow = typeof SendingWindow.Type;
 
 export const ConsentRequirement = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("stored"), subject: ConsentSubject }),

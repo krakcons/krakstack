@@ -1683,6 +1683,11 @@ const makeNotificationService = Effect.gen(function* () {
               operation: "retryDelivery",
             });
           }
+          // A manual retry must not accelerate an accepted schedule or policy
+          // deferral. The scheduler will allocate work when it becomes eligible.
+          const scheduledFor = new Date(
+            Math.max(now.getTime(), current.scheduledFor.getTime()),
+          );
           yield* sql`
             UPDATE notification_deliveries
             SET
@@ -1693,7 +1698,7 @@ const makeNotificationService = Effect.gen(function* () {
               provider = NULL,
               provider_message_id = NULL,
               error_message = NULL,
-              scheduled_for = ${now},
+              scheduled_for = ${scheduledFor},
               failed_at = NULL,
               cancelled_at = NULL,
               claimed_by = NULL,
@@ -1701,14 +1706,16 @@ const makeNotificationService = Effect.gen(function* () {
               updated_at = ${now}
             WHERE id = ${current.id}
           `;
-          yield* allocateDeliveryJob({
-            sql,
-            queues,
-            deliveryId: current.id,
-            attempts: current.attempts,
-            jobGeneration: current.jobGeneration,
-            now,
-          });
+          if (scheduledFor.getTime() <= now.getTime()) {
+            yield* allocateDeliveryJob({
+              sql,
+              queues,
+              deliveryId: current.id,
+              attempts: current.attempts,
+              jobGeneration: current.jobGeneration,
+              now,
+            });
+          }
           const rows = yield* sql`
             SELECT ${deliveryColumns(sql)}
             FROM notification_deliveries

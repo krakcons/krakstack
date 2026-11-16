@@ -2,6 +2,7 @@ import { Cause, Context, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 import { PgClient } from "@effect/sql-pg";
 import { makePublicationPolicy } from "./publication-policy.js";
+import { recheckSendingWindows } from "./internal/sending-window-policy.js";
 
 import { allocateDeliveryJob, allocateReminderJob } from "./internal/jobs.js";
 import { makeEmailSubscriptions } from "./internal/email-subscriptions.js";
@@ -650,7 +651,17 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
             });
             if (decision._tag !== "Allow") return decision;
           }
-          return yield* dispatchPolicy.check(delivery);
+          const decision = yield* dispatchPolicy
+            .check(delivery)
+            .pipe(Effect.flatMap(Schema.decodeEffect(DispatchDecision)));
+          if (decision._tag !== "Allow" || !delivery.publication)
+            return decision;
+          return yield* recheckSendingWindows({
+            scope: delivery.scope,
+            eventKey: delivery.eventKey,
+            channel: delivery.channel,
+            publication: delivery.publication,
+          });
         }).pipe(
           Effect.flatMap(Schema.decodeEffect(DispatchDecision)),
           Effect.mapError(
@@ -663,8 +674,33 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
               }),
           ),
         );
+        const checkedAt = yield* DateTime.nowAsDate;
+        // Policy I/O can cross expiry after the initial queue-work check.
+        if (
+          delivery.expiresAt !== null &&
+          delivery.expiresAt.getTime() <= checkedAt.getTime()
+        ) {
+          yield* sql.withTransaction(
+            Effect.gen(function* () {
+              yield* markAttemptSkipped({
+                deliveryId: delivery.id,
+                jobId: metadata.id,
+                reason: "expired",
+                now: checkedAt,
+              });
+              yield* sql`
+              UPDATE notification_deliveries
+              SET status = 'cancelled', current_job_id = NULL, processing_at = NULL,
+                error_message = 'expired_before_delivery', cancelled_at = ${checkedAt},
+                updated_at = ${checkedAt}
+              WHERE id = ${delivery.id} AND current_job_id = ${metadata.id}
+                AND job_generation = ${job.generation}
+            `;
+            }),
+          );
+          return "skipped" satisfies DeliveryBatchOutcome;
+        }
         if (policyDecision._tag !== "Allow") {
-          const checkedAt = yield* DateTime.nowAsDate;
           if (
             policyDecision._tag === "Defer" &&
             policyDecision.until.getTime() <= checkedAt.getTime()

@@ -21,6 +21,7 @@ HTTP API, UI, provider credentials, or rendered product copy.
 - `@krak-stack/notifications/runtime` provides due-work enqueueing, workers, retry policy, and reminder handlers.
 - `@krak-stack/notifications/consent` provides audited, address/purpose/exact-scope consent evidence.
 - `@krak-stack/notifications/publication-policy` provides versioned publication policy extensions and the contact-recipient policy seam.
+- `@krak-stack/notifications/sending-window` provides validated per-delivery local-time windows through existing publication checks and durable deferrals.
 - `@krak-stack/notifications/integration` provides host-authorized publish, inspect, cancel and retry operations, with no default authentication or public routes.
 - `@krak-stack/notifications/feedback` provides host-configured provider-feedback coverage for new canonical publications.
 - `@krak-stack/notifications/transport` provides the transport contract and channel registry.
@@ -33,6 +34,29 @@ HTTP API, UI, provider credentials, or rendered product copy.
 - `@krak-stack/notifications/direct` provides transient dispatch without SQL or a queue.
 - `@krak-stack/notifications/unsubscribe` provides signed account-wide email unsubscribe links and one-click form schemas.
 - `@krak-stack/notifications/testing` provides fake transport and reminder-handler layers.
+
+## Per-delivery sending windows
+
+Use `sendingWindowRequirement({ timeZone, start, end })` on selected canonical
+delivery `checks`, and install `sendingWindowPolicy` on both publisher and runtime
+through `publicationPoliciesLayer`. `SendingWindow` is the Effect validation schema.
+For example, optional email can use `23:00`–`05:00` in `America/Edmonton` while a
+transactional delivery without that check remains immediate.
+
+Windows are daily, start-inclusive and end-exclusive, support midnight crossings,
+and reject equal endpoints. Configuration is snapshotted and fingerprinted; timezone
+selection and fallback belong to the host. Retries and recovered work are checked
+again. A deferral does not spend the provider-attempt budget or bypass consent,
+unsubscribe, suppression or expiry. Manual retries retain any later existing
+eligibility date rather than accelerating accepted work.
+
+A continuously running worker is compatible with these per-delivery restrictions.
+The window governs provider-attempt eligibility, not inbox arrival or an exact
+delivery time. It does not generate recurring messages. Existing callers without
+window checks need no registration or migration.
+
+See [sending-window configuration, registration, DST and replay semantics](./PUBLICATION.md#sending-windows)
+for a complete example and operational requirements.
 
 ## Database Ownership
 

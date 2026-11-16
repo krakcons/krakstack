@@ -55,6 +55,10 @@
       "types": "./dist/publication-policy.d.ts",
       "import": "./dist/publication-policy.js"
     },
+    "./sending-window": {
+      "types": "./dist/sending-window.d.ts",
+      "import": "./dist/sending-window.js"
+    },
     "./consent": {
       "types": "./dist/consent.d.ts",
       "import": "./dist/consent.js"
