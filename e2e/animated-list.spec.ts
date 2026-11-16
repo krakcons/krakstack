@@ -15,8 +15,13 @@ for (const locale of ["en", "fr"]) {
       });
       await page.goto(`${origin}/${locale}/docs/animated-list`);
       const code = page.getByRole("tab", { name: "Code", exact: true });
-      await code.click();
-      await expect(code).toHaveAttribute("aria-selected", "true");
+      // SSR tabs can be visible before hydration installs their handlers.
+      await expect
+        .poll(async () => {
+          await code.click();
+          return code.getAttribute("aria-selected");
+        })
+        .toBe("true");
       await page
         .getByRole("tab", { name: french ? "Aperçu" : "Preview", exact: true })
         .click();
@@ -100,3 +105,57 @@ for (const locale of ["en", "fr"]) {
     });
   }
 }
+
+test.describe("touch reordering", () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 900 } });
+
+  test("keeps dragging across keyed moves and releases a cancelled touch", async ({
+    page,
+  }) => {
+    await page.goto(`${origin}/en/docs/animated-list`);
+    const code = page.getByRole("tab", { name: "Code", exact: true });
+    await expect
+      .poll(async () => {
+        await code.click();
+        return code.getAttribute("aria-selected");
+      })
+      .toBe("true");
+    await page.getByRole("tab", { name: "Preview", exact: true }).click();
+    const demo = page.getByRole("tabpanel", { name: "Preview", exact: true });
+    const list = demo.getByRole("list");
+    const handle = list.getByRole("button", {
+      name: "Reorder: Item 1",
+      exact: true,
+    });
+    await handle.scrollIntoViewIfNeeded();
+    const start = await handle.boundingBox();
+    const target = await list.getByRole("listitem").last().boundingBox();
+    if (!start || !target)
+      throw new Error("Touch targets must have layout boxes");
+    const x = start.x + start.width / 2;
+    const y = start.y + start.height / 2;
+    const destination = target.y + target.height * 0.75;
+    const touch = await page.context().newCDPSession(page);
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y }],
+    });
+    for (let step = 1; step <= 12; step++) {
+      await touch.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: y + ((destination - y) * step) / 12 }],
+      });
+    }
+    await expect(list.getByRole("listitem").last()).toContainText("Item 1");
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchCancel",
+      touchPoints: [],
+    });
+    await expect(list.locator("[data-dragging]")).toHaveCount(0);
+    await handle.focus();
+    await handle.press("Home");
+    await expect(list.getByRole("listitem").first()).toContainText("Item 1");
+    await expect(handle).toBeFocused();
+    await touch.detach();
+  });
+});

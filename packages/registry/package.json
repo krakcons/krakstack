@@ -426,15 +426,11 @@
     "effect": "^4.1.0",
     "libphonenumber-js": "^1.13.16",
     "lucide-react": "^1.18.0",
-    "motion": "^14.12.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
     "libphonenumber-js": {
-      "optional": true
-    },
-    "motion": {
       "optional": true
     },
     "@effect/sql-pg": {

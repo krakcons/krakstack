@@ -1,11 +1,5 @@
-import {
-  animate,
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useTransform,
-} from "motion/react";
-import { useEffect, useMemo } from "react";
+import { useNumberTransition } from "@/lib/krakmotion";
+import { useMemo } from "react";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 
 export type AnimatedNumberProps = {
@@ -29,29 +23,11 @@ export const AnimatedNumber = ({
     () => new Intl.NumberFormat(locale, format),
     [locale, format],
   );
-  const displayed = useMotionValue(value);
-  const text = useTransform(() => formatter.format(displayed.get()));
-  const reduced = useReducedMotion();
-  useEffect(() => {
-    if (
-      reduced !== false ||
-      duration <= 0 ||
-      !Number.isFinite(value) ||
-      !Number.isFinite(displayed.get())
-    ) {
-      displayed.set(value);
-      return;
-    }
-    const controls = animate(displayed, value, {
-      duration: duration / 1000,
-      ease: "easeOut",
-    });
-    return () => controls.stop();
-  }, [displayed, duration, reduced, value]);
+  const displayed = useNumberTransition(value, duration);
   return (
     <span data-slot="animated-number" className={className}>
       <span className="sr-only">{formatter.format(value)}</span>
-      <motion.span aria-hidden="true">{text}</motion.span>
+      <span aria-hidden="true">{formatter.format(displayed)}</span>
     </span>
   );
 };

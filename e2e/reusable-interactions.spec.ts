@@ -6,8 +6,12 @@ const visitExample = async (page: Page, locale: string, slug: string) => {
   await page.goto(`${origin}/${locale}/docs/${slug}`);
   // Exercise a hydrated control before editing server-rendered inputs.
   const code = page.getByRole("tab", { name: "Code", exact: true });
-  await code.click();
-  await expect(code).toHaveAttribute("aria-selected", "true");
+  await expect
+    .poll(async () => {
+      await code.click();
+      return code.getAttribute("aria-selected");
+    })
+    .toBe("true");
   const preview = page.getByRole("tab", {
     name: locale === "fr" ? "Aperçu" : "Preview",
     exact: true,

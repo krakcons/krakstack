@@ -280,12 +280,27 @@
       "dependencies": ["react", "lucide-react"]
     },
     {
+      "name": "krakmotion",
+      "type": "registry:lib",
+      "title": "KrakMotion internals",
+      "description": "Shared native animation, keyed presence, layout and pointer-drag internals for KrakStack components.",
+      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-16" },
+      "files": [
+        {
+          "path": "src/lib/krakmotion.ts",
+          "type": "registry:lib",
+          "target": "lib/krakmotion.ts"
+        }
+      ],
+      "dependencies": ["react"]
+    },
+    {
       "name": "presence-transition",
       "type": "registry:component",
       "title": "Presence Transition",
       "description": "SSR-safe enter/exit motion that makes exiting content inert and respects reduced-motion preferences.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
-      "docs": "## Overview\n\nA small Motion wrapper for conditional content with reliable exit unmounting. Initial server content remains visible and exits become inert. See /docs/presence-transition.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-16" },
+      "docs": "## Overview\n\nNative conditional-content transitions powered by shared KrakMotion internals. Initial server content remains visible and exits become inert. No external animation dependency. See /docs/presence-transition.",
       "files": [
         {
           "path": "src/components/ui/presence-transition.tsx",
@@ -293,15 +308,16 @@
           "target": "components/ui/presence-transition.tsx"
         }
       ],
-      "dependencies": ["react", "motion@^14.12.0"]
+      "registryDependencies": ["@krak-stack/krakmotion"],
+      "dependencies": ["react"]
     },
     {
       "name": "auto-height",
       "type": "registry:component",
       "title": "Auto Height",
       "description": "Content-driven height transitions using ResizeObserver with SSR and reduced-motion fallbacks.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
-      "docs": "## Overview\n\nAnimate changing content height without hardcoded measurements. Uses ResizeObserver and Motion; server output and observer-less browsers remain auto-sized. See /docs/auto-height.",
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-16" },
+      "docs": "## Overview\n\nAnimate changing content height without hardcoded measurements. Uses ResizeObserver and native KrakMotion internals; server output and observer-less browsers remain auto-sized. See /docs/auto-height.",
       "files": [
         {
           "path": "src/components/ui/auto-height.tsx",
@@ -309,14 +325,15 @@
           "target": "components/ui/auto-height.tsx"
         }
       ],
-      "dependencies": ["react", "motion@^14.12.0"]
+      "registryDependencies": ["@krak-stack/krakmotion"],
+      "dependencies": ["react"]
     },
     {
       "name": "animated-list",
       "type": "registry:component",
       "title": "Animated List",
       "description": "A keyed semantic list with insertion, removal, controlled drag reordering and keyboard-accessible handles.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-16" },
       "docs": "## Overview\n\nAnimate a small list using stable entity keys. Supply onReorder to enable vertical drag handles and keyboard reordering. The host owns the order and persistence; removed items become inert during exit. This is not virtualization or cross-list dragging. See /docs/animated-list.",
       "files": [
         {
@@ -325,15 +342,18 @@
           "target": "components/ui/animated-list.tsx"
         }
       ],
-      "registryDependencies": ["@krak-stack/krakstack-provider"],
-      "dependencies": ["react", "lucide-react", "motion@^14.12.0"]
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/krakmotion"
+      ],
+      "dependencies": ["react", "lucide-react"]
     },
     {
       "name": "animated-number",
       "type": "registry:component",
       "title": "Animated Number",
       "description": "Localized numeric transitions with SSR target values and stable assistive-technology output.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-10" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-16" },
       "docs": "## Overview\n\nAnimate numeric targets with Intl.NumberFormat. Assistive technology receives the final number, not intermediate frames. English/French locales follow KrakstackProvider. See /docs/animated-number.",
       "files": [
         {
@@ -342,8 +362,11 @@
           "target": "components/ui/animated-number.tsx"
         }
       ],
-      "registryDependencies": ["@krak-stack/krakstack-provider"],
-      "dependencies": ["react", "motion@^14.12.0"]
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "@krak-stack/krakmotion"
+      ],
+      "dependencies": ["react"]
     },
     {
       "name": "app-switcher",

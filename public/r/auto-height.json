@@ -3,19 +3,20 @@
   "name": "auto-height",
   "title": "Auto Height",
   "description": "Content-driven height transitions using ResizeObserver with SSR and reduced-motion fallbacks.",
-  "dependencies": ["react", "motion@^14.12.0"],
+  "dependencies": ["react"],
+  "registryDependencies": ["@krak-stack/krakmotion"],
   "files": [
     {
       "path": "src/components/ui/auto-height.tsx",
-      "content": "import { motion, useReducedMotion } from \"motion/react\";\nimport { useEffect, useRef, useState, type ReactNode } from \"react\";\n\nexport type AutoHeightProps = {\n  children: ReactNode;\n  duration?: number;\n  className?: string;\n  contentClassName?: string;\n};\n\n/** Measures content, not the animated container. SSR and observer-less browsers stay auto-sized. */\nexport const AutoHeight = ({\n  children,\n  duration = 200,\n  className,\n  contentClassName,\n}: AutoHeightProps) => {\n  const content = useRef<HTMLDivElement>(null);\n  const [height, setHeight] = useState<number>();\n  const reduced = useReducedMotion();\n  useEffect(() => {\n    const element = content.current;\n    if (!element || !globalThis.ResizeObserver) return;\n    const observer = new ResizeObserver(() => {\n      // Hidden tab panes have no layout box; zero is not their content height.\n      if (element.getClientRects().length === 0) return;\n      setHeight(element.getBoundingClientRect().height);\n    });\n    observer.observe(element);\n    return () => observer.disconnect();\n  }, []);\n  return (\n    <motion.div\n      data-slot=\"auto-height\"\n      className={className}\n      initial={false}\n      animate={{ height: height ?? \"auto\" }}\n      transition={{\n        duration: reduced !== false ? 0 : Math.max(0, duration) / 1000,\n      }}\n      style={{ overflow: \"clip\", boxSizing: \"content-box\" }}\n    >\n      <div\n        ref={content}\n        className={contentClassName}\n        style={{ display: \"flow-root\" }}\n      >\n        {children}\n      </div>\n    </motion.div>\n  );\n};\n",
+      "content": "import { animateElement, useReducedMotion } from \"@/lib/krakmotion\";\nimport { useEffect, useRef, type ReactNode } from \"react\";\n\nexport type AutoHeightProps = {\n  children: ReactNode;\n  duration?: number;\n  className?: string;\n  contentClassName?: string;\n};\n\n/** Measures content, not the animated container. SSR and observer-less browsers stay auto-sized. */\nexport const AutoHeight = ({\n  children,\n  duration = 200,\n  className,\n  contentClassName,\n}: AutoHeightProps) => {\n  const content = useRef<HTMLDivElement>(null);\n  const container = useRef<HTMLDivElement>(null);\n  const reduced = useReducedMotion();\n  useEffect(() => {\n    const element = content.current;\n    const wrapper = container.current;\n    if (!element || !wrapper || !globalThis.ResizeObserver) return;\n    let previous: number | undefined;\n    let cancel = () => {};\n    const observer = new ResizeObserver(() => {\n      // Hidden tab panes have no layout box; zero is not their content height.\n      if (element.getClientRects().length === 0) return;\n      const height = element.getBoundingClientRect().height;\n      const from = Number.parseFloat(getComputedStyle(wrapper).height);\n      cancel();\n      wrapper.style.height = `${height}px`;\n      if (previous !== undefined)\n        cancel = animateElement(\n          wrapper,\n          [{ height: `${from}px` }, { height: `${height}px` }],\n          reduced ? 0 : Math.max(0, duration),\n        );\n      previous = height;\n    });\n    observer.observe(element);\n    return () => {\n      observer.disconnect();\n      cancel();\n      wrapper.style.height = \"\";\n    };\n  }, [duration, reduced]);\n  return (\n    <div\n      ref={container}\n      data-slot=\"auto-height\"\n      className={className}\n      style={{ overflow: \"clip\", boxSizing: \"content-box\" }}\n    >\n      <div\n        ref={content}\n        className={contentClassName}\n        style={{ display: \"flow-root\" }}\n      >\n        {children}\n      </div>\n    </div>\n  );\n};\n",
       "type": "registry:component",
       "target": "components/ui/auto-height.tsx"
     }
   ],
   "meta": {
     "createdAt": "2026-11-10",
-    "updatedAt": "2026-11-10"
+    "updatedAt": "2026-11-16"
   },
-  "docs": "## Overview\n\nAnimate changing content height without hardcoded measurements. Uses ResizeObserver and Motion; server output and observer-less browsers remain auto-sized. See /docs/auto-height.",
+  "docs": "## Overview\n\nAnimate changing content height without hardcoded measurements. Uses ResizeObserver and native KrakMotion internals; server output and observer-less browsers remain auto-sized. See /docs/auto-height.",
   "type": "registry:component"
 }

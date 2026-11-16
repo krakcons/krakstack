@@ -1,15 +1,22 @@
 import {
-  AnimatePresence,
-  Reorder,
-  motion,
-  useDragControls,
-  useIsPresent,
-  useReducedMotion,
-} from "motion/react";
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { GripVertical } from "lucide-react";
-import { useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import { cn } from "cn";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
-import { cn } from "@/lib/utils";
+import {
+  animateElement,
+  useKeyedPresence,
+  useListLayout,
+  useReducedMotion,
+  useVerticalDrag,
+} from "@/lib/krakmotion";
 
 export type AnimatedListProps<T> = {
   items: readonly T[];
@@ -20,16 +27,17 @@ export type AnimatedListProps<T> = {
   itemClassName?: string;
   label?: string;
   onReorder?: (items: T[]) => void;
-  dragOverflow?: number;
   getItemLabel?: (item: T) => string;
+  dragOverflow?: number;
   locale?: string;
-  messages?: Partial<Record<string, Partial<AnimatedListMessages>>>;
-};
-
-export type AnimatedListMessages = {
-  reorder: string;
-  instructions: string;
-  position: (label: string, position: number, total: number) => string;
+  messages?: Record<
+    string,
+    Partial<{
+      reorder: string;
+      instructions: string;
+      position: (label: string, position: number, total: number) => string;
+    }>
+  >;
 };
 
 const labels = {
@@ -73,7 +81,10 @@ export const AnimatedList = <T,>({
   const instructions = useId();
   const container = useRef<HTMLUListElement>(null);
   const [announcedKey, setAnnouncedKey] = useState<string | null>(null);
-  const keys = items.map(getKey);
+  const retained = useKeyedPresence(items, getKey);
+  const [initial, setInitial] = useState(true);
+  useEffect(() => setInitial(false), []);
+  useListLayout(container, duration);
   const announcement = items
     .map((item, index) =>
       getKey(item) === announcedKey
@@ -85,215 +96,193 @@ export const AnimatedList = <T,>({
         : "",
     )
     .join("");
-  const reorder = (nextKeys: string[]) => {
-    const order = new Map(nextKeys.map((key, index) => [key, index]));
-    onReorder?.(
-      [...items].sort(
-        (a, b) => (order.get(getKey(a)) ?? 0) - (order.get(getKey(b)) ?? 0),
-      ),
-    );
+  const move = (key: string, target: number) => {
+    const index = items.findIndex((item) => getKey(item) === key);
+    if (index < 0 || index === target || !onReorder) return;
+    const next = [...items];
+    const [item] = next.splice(index, 1);
+    if (item === undefined) return;
+    next.splice(target, 0, item);
+    setAnnouncedKey(key);
+    onReorder(next);
   };
-
-  if (onReorder)
-    return (
-      <>
-        <Reorder.Group
-          data-slot="animated-list"
-          ref={container}
-          as="ul"
-          axis="y"
-          values={keys}
-          onReorder={reorder}
-          className={cn("grid gap-3", className)}
-          aria-label={label}
-        >
-          <AnimatePresence initial={false}>
-            {items.map((item, index) => {
-              const key = getKey(item);
-              const itemLabel = getItemLabel?.(item) ?? key;
-              return (
-                <ReorderableListItem
-                  key={key}
-                  value={key}
-                  duration={duration}
-                  className={itemClassName}
-                  instructions={instructions}
-                  handleLabel={`${copy.reorder}: ${itemLabel}`}
-                  disabled={items.length < 2}
-                  constraints={container}
-                  dragOverflow={dragOverflow}
-                  onMove={(direction) => {
-                    const target =
-                      direction === "Home"
-                        ? 0
-                        : direction === "End"
-                          ? items.length - 1
-                          : Math.max(
-                              0,
-                              Math.min(
-                                items.length - 1,
-                                index + (direction === "ArrowUp" ? -1 : 1),
-                              ),
-                            );
-                    if (index === target) return;
-                    const nextKeys = [...keys];
-                    nextKeys.splice(index, 1);
-                    nextKeys.splice(target, 0, key);
-                    setAnnouncedKey(key);
-                    reorder(nextKeys);
-                  }}
-                  onDragEnd={() => setAnnouncedKey(key)}
-                >
-                  {children(item)}
-                </ReorderableListItem>
-              );
-            })}
-          </AnimatePresence>
-        </Reorder.Group>
-        <span id={instructions} className="sr-only">
-          {copy.instructions}
-        </span>
-        <span role="status" className="sr-only">
-          {announcement}
-        </span>
-      </>
-    );
-
   return (
-    <ul
-      data-slot="animated-list"
-      className={cn("grid gap-3", className)}
-      aria-label={label}
-    >
-      <AnimatePresence initial={false}>
-        {items.map((item) => (
-          <AnimatedListItem
-            key={getKey(item)}
-            duration={duration}
-            className={itemClassName}
+    <>
+      <ul
+        ref={container}
+        data-slot="animated-list"
+        className={cn("relative grid gap-3", className)}
+        aria-label={label}
+      >
+        {retained.items.map((item) => {
+          const key = getKey(item);
+          const index = items.findIndex(
+            (candidate) => getKey(candidate) === key,
+          );
+          return (
+            <ListItem
+              key={key}
+              itemKey={key}
+              present={retained.present.has(key)}
+              initial={initial}
+              duration={duration}
+              className={itemClassName}
+              instructions={instructions}
+              handleLabel={`${copy.reorder}: ${getItemLabel?.(item) ?? key}`}
+              reorderable={!!onReorder}
+              disabled={items.length < 2}
+              container={container}
+              dragOverflow={dragOverflow}
+              onExit={() => retained.remove(key)}
+              onMove={(target) => move(key, target)}
+              onKeyMove={(direction) =>
+                move(
+                  key,
+                  direction === "Home"
+                    ? 0
+                    : direction === "End"
+                      ? items.length - 1
+                      : Math.max(
+                          0,
+                          Math.min(
+                            items.length - 1,
+                            index + (direction === "ArrowUp" ? -1 : 1),
+                          ),
+                        ),
+                )
+              }
+            >
+              {children(item)}
+            </ListItem>
+          );
+        })}
+      </ul>
+      {onReorder ? (
+        <>
+          <p id={instructions} className="sr-only">
+            {copy.instructions}
+          </p>
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
           >
-            {children(item)}
-          </AnimatedListItem>
-        ))}
-      </AnimatePresence>
-    </ul>
+            {announcement}
+          </p>
+        </>
+      ) : null}
+    </>
   );
 };
 
-const ReorderableListItem = ({
-  children,
-  value,
+const ListItem = ({
+  itemKey,
+  present,
+  initial,
   duration,
   className,
   instructions,
   handleLabel,
+  reorderable,
   disabled,
-  constraints,
+  container,
   dragOverflow,
+  onExit,
   onMove,
-  onDragEnd,
+  onKeyMove,
+  children,
 }: {
-  children: ReactNode;
-  value: string;
+  itemKey: string;
+  present: boolean;
+  initial: boolean;
   duration: number;
   className?: string;
   instructions: string;
   handleLabel: string;
+  reorderable: boolean;
   disabled: boolean;
-  constraints: RefObject<HTMLUListElement | null>;
+  container: RefObject<HTMLUListElement | null>;
   dragOverflow: number;
-  onMove: (direction: "ArrowUp" | "ArrowDown" | "Home" | "End") => void;
-  onDragEnd: () => void;
+  onExit: () => void;
+  onMove: (target: number) => void;
+  onKeyMove: (direction: "Home" | "End" | "ArrowUp" | "ArrowDown") => void;
+  children: ReactNode;
 }) => {
-  const present = useIsPresent();
+  const ref = useRef<HTMLLIElement>(null);
+  const mounted = useRef(false);
+  const lastPresent = useRef(present);
+  const transitioning = useRef(false);
+  const exit = useEffectEvent(onExit);
   const reduced = useReducedMotion();
-  const controls = useDragControls();
+  const drag = useVerticalDrag({
+    ref,
+    container,
+    enabled: reorderable && !disabled && present,
+    overflow: dragOverflow,
+    onMove,
+  });
+  useEffect(() => {
+    const element = ref.current;
+    const first = !mounted.current;
+    mounted.current = true;
+    if (!element || (first && initial && present)) return;
+    if (!first && lastPresent.current === present && !transitioning.current)
+      return;
+    lastPresent.current = present;
+    transitioning.current = true;
+    return animateElement(
+      element,
+      [{ opacity: present ? 0 : 1 }, { opacity: present ? 1 : 0 }],
+      reduced ? 0 : Math.max(0, duration),
+      () => {
+        transitioning.current = false;
+        if (!present) exit();
+      },
+    );
+  }, [present, initial, duration, reduced]);
   return (
-    <Reorder.Item
+    <li
+      ref={ref}
       data-slot="animated-list-item"
-      as="li"
-      value={value}
-      dragListener={false}
-      dragControls={controls}
-      dragMomentum={false}
-      dragConstraints={constraints}
-      dragElastic={0}
-      onMeasureDragConstraints={(bounds) => ({
-        ...bounds,
-        top: bounds.top - Math.max(0, dragOverflow),
-        bottom: bounds.bottom + Math.max(0, dragOverflow),
-      })}
-      tabIndex={-1}
-      layout="position"
+      data-motion-key={itemKey}
       className={cn("relative", className)}
       inert={!present}
       aria-hidden={!present ? true : undefined}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{
-        duration: reduced !== false ? 0 : Math.max(0, duration) / 1000,
-      }}
-      onDragEnd={onDragEnd}
     >
-      <button
-        data-slot="animated-list-handle"
-        type="button"
-        disabled={disabled || !present}
-        aria-label={handleLabel}
-        aria-describedby={instructions}
-        className="text-muted-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md outline-none select-none focus-visible:ring-2 active:cursor-grabbing disabled:cursor-default disabled:opacity-50"
-        onPointerDown={(event) => {
-          if (!disabled && present) controls.start(event);
-        }}
-        onKeyDown={(event) => {
-          if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
-            return;
-          if (
-            event.key === "ArrowUp" ||
-            event.key === "ArrowDown" ||
-            event.key === "Home" ||
-            event.key === "End"
-          ) {
-            event.preventDefault();
-            event.stopPropagation();
-            onMove(event.key);
-          }
-        }}
-      >
-        <GripVertical className="size-4" aria-hidden="true" />
-      </button>
+      {reorderable ? (
+        <button
+          data-slot="animated-list-handle"
+          type="button"
+          disabled={disabled || !present}
+          aria-label={handleLabel}
+          aria-describedby={instructions}
+          className="text-muted-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md outline-none select-none focus-visible:ring-2 active:cursor-grabbing disabled:cursor-default disabled:opacity-50"
+          {...drag}
+          onKeyDown={(event) => {
+            if (
+              event.altKey ||
+              event.ctrlKey ||
+              event.metaKey ||
+              event.shiftKey
+            )
+              return;
+            if (
+              event.key === "ArrowUp" ||
+              event.key === "ArrowDown" ||
+              event.key === "Home" ||
+              event.key === "End"
+            ) {
+              event.preventDefault();
+              event.stopPropagation();
+              onKeyMove(event.key);
+            }
+          }}
+        >
+          <GripVertical className="size-4" aria-hidden="true" />
+        </button>
+      ) : null}
       {children}
-    </Reorder.Item>
-  );
-};
-
-const AnimatedListItem = ({
-  children,
-  duration,
-  className,
-}: {
-  children: ReactNode;
-  duration: number;
-  className?: string;
-}) => {
-  const present = useIsPresent();
-  const reduced = useReducedMotion();
-  return (
-    <motion.li
-      data-slot="animated-list-item"
-      layout={reduced === false ? "position" : false}
-      className={className}
-      inert={!present}
-      aria-hidden={!present ? true : undefined}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{
-        duration: reduced !== false ? 0 : Math.max(0, duration) / 1000,
-      }}
-    >
-      {children}
-    </motion.li>
+    </li>
   );
 };
