@@ -57,6 +57,8 @@ Faites glisser la poignée à la souris ou au toucher. Placez-y le focus et util
 
 Le déplacement reste dans la liste, avec une marge verticale de 12 pixels au-delà de ses bords. Utilisez `dragOverflow={0}` pour un confinement strict ou fournissez une autre marge positive en pixels. Cette marge est fixe, sans étirement élastique dépendant de la distance du pointeur.
 
+Les éléments peuvent avoir des hauteurs différentes. Le réordonnancement compare le bord avant de l’élément déplacé au milieu de son voisin : même un élément haut peut atteindre la première et la dernière position sans augmenter la marge de glissement.
+
 ## Référence
 
 `dragOverflow?: number` vaut `12` pixels par défaut et concerne uniquement le glissement. Le réordonnancement clavier reste toujours dans la liste.

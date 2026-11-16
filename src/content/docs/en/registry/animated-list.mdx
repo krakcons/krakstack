@@ -57,6 +57,8 @@ Drag the grip with a mouse or touch. Focus a grip and press Arrow Up/Down to mov
 
 Dragging stays inside the list, with 12 pixels of vertical wiggle room beyond its edges. Set `dragOverflow={0}` for strict containment or supply another non-negative pixel allowance. The allowance is fixed, not an elastic stretch that grows with pointer distance.
 
+Variable-height rows reorder when their leading edge crosses a neighbor’s midpoint. Even a tall row can reach the first and last positions without increasing drag overflow.
+
 ## API reference
 
 `dragOverflow?: number` defaults to `12` pixels and applies only to pointer dragging. Keyboard reordering always stays within the list.

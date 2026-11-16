@@ -254,7 +254,7 @@ export const useVerticalDrag = ({
       ),
     );
     setDragStyle(element, `0 ${desired - top - element.offsetTop}px`, true);
-    const center = desired + element.offsetHeight / 2;
+    const bottom = desired + element.offsetHeight;
     const siblings = [...list.children].filter(
       (child) =>
         child instanceof HTMLElement &&
@@ -266,8 +266,10 @@ export const useVerticalDrag = ({
       const sibling = siblings[i];
       if (!(sibling instanceof HTMLElement) || sibling === element) continue;
       const middle = top + sibling.offsetTop + sibling.offsetHeight / 2;
-      if (i > index && center > middle) target = i;
-      if (i < index && center < middle) {
+      // Use the leading edge: a tall row's constrained center may never reach
+      // a shorter neighbor's midpoint at either end of the list.
+      if (i > index && bottom > middle) target = i;
+      if (i < index && desired < middle) {
         target = i;
         break;
       }
