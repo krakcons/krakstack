@@ -3924,8 +3924,8 @@ const GalleryCard = <TData extends RowData>({
       <CardHeader
         className={cn("relative", hasRowActionMenu(store) && "pr-12")}
       >
-        {selection || draggable || tagIds.length ? (
-          <div className="flex flex-wrap items-center gap-2">
+        {selection || draggable ? (
+          <div className="flex items-center gap-2">
             {selection ? (
               <Checkbox
                 aria-label={store.config.labels.selectRow}
@@ -3938,6 +3938,15 @@ const GalleryCard = <TData extends RowData>({
               />
             ) : null}
             {draggable ? <DragHandle tableAtom={tableAtom} /> : null}
+          </div>
+        ) : null}
+        <CardTitle>
+          {name
+            ? renderCell(row, name, store.config.locale, store.config.labels)
+            : row.id}
+        </CardTitle>
+        {tagIds.length ? (
+          <div className="flex flex-wrap items-center gap-2">
             {tagIds.map((id) => {
               const column = find(id);
               return column ? (
@@ -3953,11 +3962,6 @@ const GalleryCard = <TData extends RowData>({
             })}
           </div>
         ) : null}
-        <CardTitle>
-          {name
-            ? renderCell(row, name, store.config.locale, store.config.labels)
-            : row.id}
-        </CardTitle>
         {description ? (
           <div className="text-muted-foreground line-clamp-3 text-sm">
             {renderCell(

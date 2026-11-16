@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.5
+
+### Patch Changes
+
+- Place gallery tags below the card name, before the description. Keep selection and drag controls above the name.
+
 ## 0.10.4
 
 ### Patch Changes
