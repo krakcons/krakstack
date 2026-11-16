@@ -412,7 +412,7 @@
     "@effect/sql-pg": "^4.1.0",
     "@iconify/react": "^6.0.2",
     "@inlang/paraglide-js": "^2.19.0",
-    "@lucas-barake/effect-form": "1.1.0",
+    "@lucas-barake/effect-form": "1.1.1",
     "@lucas-barake/effect-form-react": "1.1.0",
     "@tanstack/highlight": "^0.0.10",
     "@tanstack/react-form": "^1.33.0",

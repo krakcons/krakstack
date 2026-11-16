@@ -16,7 +16,7 @@
         "@krak-stack/notifications": "workspace:*",
         "@krak-stack/notifications-admin": "workspace:*",
         "@krak-stack/registry": "workspace:*",
-        "@lucas-barake/effect-form": "1.1.0",
+        "@lucas-barake/effect-form": "1.1.1",
         "@lucas-barake/effect-form-react": "1.1.0",
         "@shadcn/react": "^0.2.1",
         "@tailwindcss/vite": "^4.3.1",
@@ -174,7 +174,7 @@
         "@effect/sql-pg": "^4.1.0",
         "@iconify/react": "^6.0.2",
         "@inlang/paraglide-js": "^2.19.0",
-        "@lucas-barake/effect-form": "1.1.0",
+        "@lucas-barake/effect-form": "1.1.1",
         "@lucas-barake/effect-form-react": "1.1.0",
         "@tanstack/highlight": "^0.0.10",
         "@tanstack/react-form": "^1.33.0",
@@ -561,7 +561,7 @@
 
     "@lix-js/server-protocol-schema": ["@lix-js/server-protocol-schema@0.1.1", "", {}, "sha512-jBeALB6prAbtr5q4vTuxnRZZv1M2rKe8iNqRQhFJ4Tv7150unEa0vKyz0hs8Gl3fUGsWaNJBh3J8++fpbrpRBQ=="],
 
-    "@lucas-barake/effect-form": ["@lucas-barake/effect-form@1.1.0", "", { "peerDependencies": { "effect": "^4.0.0" } }, "sha512-d1LhwVXkp7Qx/4+6KT4wZoDfiILgleYA+KIWqJfhrh1GlefZhyo5MJP0SII0rKyjbBd8mMe4uoPqm7z1xbwDUg=="],
+    "@lucas-barake/effect-form": ["@lucas-barake/effect-form@1.1.1", "", { "peerDependencies": { "effect": "^4.0.0" } }, "sha512-ulNzHlEnCkpktvBG7kOgJD85pmnNXylnFxPbz9fffnev9viX50uPj9DbmkCuMZmutDsPtNplYqoyK55MGuZb1A=="],
 
     "@lucas-barake/effect-form-react": ["@lucas-barake/effect-form-react@1.1.0", "", { "dependencies": { "@lucas-barake/effect-form": "^1.1.0" }, "peerDependencies": { "@effect/atom-react": "^4.0.0", "effect": "^4.0.0", "react": "^19.0.0" } }, "sha512-883pL16lF1POoukIS2Et06DWXF6WyuweVyj1tiNR71nkhOOWicSqqP4LF0cro9exBotdTMZwKC1EQm8eHOcxlg=="],
 

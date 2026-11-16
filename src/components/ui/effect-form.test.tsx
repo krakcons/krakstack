@@ -2,7 +2,13 @@
 
 import { describe, expect, it } from "@effect/vitest";
 import { FormBuilder, FormReact } from "@lucas-barake/effect-form-react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { Effect, Exit, Schema } from "effect";
 import { HttpApiError } from "effect/http-api";
 import {
@@ -13,7 +19,12 @@ import {
 import { AsyncResult } from "effect/reactivity";
 import { afterEach, vi } from "vitest";
 
-import { ImageField, SubmitError, effectFormMessages } from "./effect-form";
+import {
+  ImageField,
+  SubmitButton,
+  SubmitError,
+  effectFormMessages,
+} from "./effect-form";
 import { KrakstackProvider } from "./krakstack-provider";
 
 afterEach(() => {
@@ -123,6 +134,79 @@ describe("SubmitError", () => {
     expect(screen.queryByRole("alert")).toBeNull();
     rerender(<SubmitError result={AsyncResult.success(undefined)} />);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+describe("SubmitButton", () => {
+  it("saves date-only changes in existing assignments, including after a previous save", async () => {
+    const initial = new Date("2026-01-01T09:00:00.000Z");
+    const changed = new Date("2026-02-01T09:00:00.000Z");
+    const next = new Date("2026-03-01T09:00:00.000Z");
+    const submissions: Date[] = [];
+    const allocations = Schema.Array(
+      Schema.Struct({ resourceId: Schema.String, startsAt: Schema.Date }),
+    );
+    const builder = FormBuilder.empty.addField("allocations", allocations);
+    const field: FormReact.FieldComponent<typeof allocations.Type> = ({
+      field,
+    }) => (
+      <>
+        {[initial, changed, next].map((date, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() =>
+              field.onChange(
+                field.value.map((allocation) => ({
+                  ...allocation,
+                  startsAt: new Date(date),
+                })),
+              )
+            }
+          >
+            Date {index}
+          </button>
+        ))}
+      </>
+    );
+    const form = FormReact.make(builder, {
+      fields: { allocations: field },
+      onSubmit: (_, { decoded }) =>
+        Effect.sync(() => {
+          submissions.push(decoded.allocations[0]!.startsAt);
+        }),
+    });
+    render(
+      <form.Initialize
+        defaultValues={{
+          allocations: [{ resourceId: "existing", startsAt: initial }],
+        }}
+      >
+        <form.allocations />
+        <SubmitButton form={form}>Save</SubmitButton>
+      </form.Initialize>,
+    );
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Date 0" }));
+    expect(save.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Date 1" }));
+    expect(save.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Date 0" }));
+    expect(save.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Date 1" }));
+    fireEvent.click(save);
+    await waitFor(() => {
+      expect(submissions).toEqual([changed]);
+      expect(save.hasAttribute("disabled")).toBe(true);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Date 2" }));
+    expect(save.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(save);
+    await waitFor(() => {
+      expect(submissions).toEqual([changed, next]);
+      expect(save.hasAttribute("disabled")).toBe(true);
+    });
   });
 });
 

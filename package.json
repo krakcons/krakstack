@@ -49,7 +49,7 @@
     "@krak-stack/notifications": "workspace:*",
     "@krak-stack/notifications-admin": "workspace:*",
     "@krak-stack/registry": "workspace:*",
-    "@lucas-barake/effect-form": "1.1.0",
+    "@lucas-barake/effect-form": "1.1.1",
     "@lucas-barake/effect-form-react": "1.1.0",
     "@shadcn/react": "^0.2.1",
     "@tailwindcss/vite": "^4.3.1",
