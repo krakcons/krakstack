@@ -8,12 +8,12 @@ locale: en
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-16"
 ---
 
 # Presence Transition
 
-A small Motion wrapper for entering and exiting content. Closed content unmounts after its exit; it becomes inert and hidden from assistive technology immediately.
+A native enter/exit transition powered by shared KrakMotion internals. Closed content unmounts after its exit; it becomes inert and hidden from assistive technology immediately.
 
 ## Installation
 
@@ -31,7 +31,7 @@ import { PresenceTransition } from "@/components/ui/presence-transition";
 </PresenceTransition>;
 ```
 
-Package import: `@krak-stack/registry/presence-transition`. Motion is a runtime dependency; no CSS import or animation provider is needed.
+Package import: `@krak-stack/registry/presence-transition`. KrakMotion uses the browser’s Web Animations API, with immediate changes when unavailable. No external animation library, CSS import or animation provider is needed.
 
 ## API reference
 

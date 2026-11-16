@@ -8,12 +8,12 @@ locale: fr
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-16"
 ---
 
 # Liste animée
 
-Une liste sémantique non ordonnée avec transitions Motion de présence et de position. Activez le réordonnancement vertical contrôlé avec `onReorder`. L’application fournit les éléments et gère les mutations. Ce composant ne gère ni les déplacements entre listes, ni la pagination, ni la virtualisation.
+Une liste sémantique non ordonnée animée par KrakMotion : des mécanismes natifs partagés d’animation et de glissement, sans bibliothèque d’animation externe. Activez le réordonnancement vertical contrôlé avec `onReorder`. L’application fournit les éléments et gère les mutations. Ce composant ne gère ni les déplacements entre listes, ni la pagination, ni la virtualisation.
 
 ## Installation
 
@@ -36,7 +36,7 @@ import { AnimatedList } from "@/components/ui/animated-list";
 </AnimatedList>;
 ```
 
-Import du paquet : `@krak-stack/registry/animated-list`. Motion est une dépendance d’exécution. Aucun import CSS ni fournisseur n’est nécessaire.
+Import du paquet : `@krak-stack/registry/animated-list`. Le registre installe automatiquement les mécanismes internes partagés de KrakMotion ; les imports du paquet les intègrent. Aucune bibliothèque d’animation externe, feuille de style ou fournisseur n’est nécessaire.
 
 ## Réordonnancement à la souris et au clavier
 
@@ -79,4 +79,8 @@ Le réordonnancement émet un nouveau tableau ; actualisez immédiatement `items
 
 ## Accessibilité et intégration
 
-Le composant produit `ul` et `li` ; retournez le contenu de l’élément, pas un second `li`. Les poignées ont des noms traduits et des instructions clavier. Les positions acceptées au clavier et les positions de fin de glissement sont annoncées dans une région de statut. Les éléments retirés deviennent immédiatement inertes et masqués aux technologies d’assistance. Déplacez le focus avant de retirer un élément actif. Conservez les brouillons persistants à l’extérieur. Privilégiez la virtualisation pour les grandes listes ; ne l’utilisez pas pour des lignes de tableau ou un tri multicolonne. Dans un conteneur défilant, utilisez si nécessaire l’intégration Motion de mesure du défilement sur l’ancêtre concerné.
+Le composant produit `ul` et `li` ; retournez le contenu de l’élément, pas un second `li`. Les poignées ont des noms traduits et des instructions clavier. Les positions acceptées sont annoncées dans une région de statut. Les éléments retirés deviennent immédiatement inertes et masqués aux technologies d’assistance. Déplacez le focus avant de retirer un élément actif. Conservez les brouillons persistants à l’extérieur. Privilégiez la virtualisation pour les grandes listes ; ne l’utilisez pas pour des lignes de tableau ou un tri multicolonne. Le glissement suit le défilement des ancêtres, sans défilement automatique aux bords. L’annulation du pointeur termine le glissement sans annuler les changements d’ordre acceptés. Un redimensionnement termine le glissement actif.
+
+## Mécanismes d’animation natifs
+
+KrakMotion utilise les événements de pointeur et leur capture pour le glissement, des mesures FLIP avec l’API Web Animations pour les déplacements et une présence par clé pour les entrées et sorties. Le clavier ne dépend pas des animations. Sans l’API Web Animations, les changements sont immédiats ; la réduction des animations désactive les transitions sans désactiver le glissement.

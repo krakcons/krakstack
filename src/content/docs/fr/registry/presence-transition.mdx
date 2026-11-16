@@ -8,12 +8,12 @@ locale: fr
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-16"
 ---
 
 # Transition de présence
 
-Une petite composition Motion pour l’apparition et la disparition de contenu. À la fermeture, il devient immédiatement inerte et masqué aux technologies d’assistance, puis est démonté après la transition.
+Une transition native d’apparition et de disparition basée sur les mécanismes internes partagés de KrakMotion. À la fermeture, le contenu devient immédiatement inerte et masqué aux technologies d’assistance, puis est démonté après la transition.
 
 ## Installation
 
@@ -31,7 +31,7 @@ import { PresenceTransition } from "@/components/ui/presence-transition";
 </PresenceTransition>;
 ```
 
-Import du paquet : `@krak-stack/registry/presence-transition`. Motion est une dépendance d’exécution ; aucun import CSS ni fournisseur d’animation n’est nécessaire.
+Import du paquet : `@krak-stack/registry/presence-transition`. KrakMotion utilise l’API Web Animations du navigateur ; sans elle, les changements sont immédiats. Aucune bibliothèque d’animation externe, aucun import CSS ni fournisseur d’animation n’est nécessaire.
 
 ## Référence
 

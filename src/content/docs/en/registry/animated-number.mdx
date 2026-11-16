@@ -8,7 +8,7 @@ locale: en
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-16"
 ---
 
 # Animated Number
@@ -33,7 +33,7 @@ import { AnimatedNumber } from "@/components/ui/animated-number";
 />;
 ```
 
-Package import: `@krak-stack/registry/animated-number`. Motion is a runtime dependency. No stylesheet or provider is needed for animation; locale follows KrakstackProvider when present.
+Package import: `@krak-stack/registry/animated-number`. Shared KrakMotion internals interpolate values with the browser’s animation frames. No external animation library, stylesheet or provider is needed for animation; locale follows KrakstackProvider when present.
 
 ## API reference
 

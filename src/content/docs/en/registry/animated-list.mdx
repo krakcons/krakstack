@@ -8,12 +8,12 @@ locale: en
 section: components
 type: reference
 createdAt: "2026-11-10"
-updatedAt: "2026-11-10"
+updatedAt: "2026-11-16"
 ---
 
 # Animated List
 
-A semantic unordered list with Motion presence and position transitions. Enable controlled vertical drag reordering with `onReorder`. The host supplies the items and owns all mutations. This is not cross-list dragging, pagination or virtualization.
+A semantic unordered list powered by KrakMotion: shared native animation and pointer-drag internals, without an external animation library. Enable controlled vertical drag reordering with `onReorder`. The host supplies the items and owns all mutations. This is not cross-list dragging, pagination or virtualization.
 
 ## Installation
 
@@ -36,7 +36,7 @@ import { AnimatedList } from "@/components/ui/animated-list";
 </AnimatedList>;
 ```
 
-Package import: `@krak-stack/registry/animated-list`. Motion is a runtime dependency. No stylesheet or provider is needed.
+Package import: `@krak-stack/registry/animated-list`. The registry installs the shared KrakMotion internals automatically; package imports bundle them. No external animation library, stylesheet or provider is needed.
 
 ## Drag and keyboard reordering
 
@@ -79,4 +79,8 @@ Reordering emits a new array; update the controlled `items` immediately. Stable 
 
 ## Accessibility and integration
 
-The component renders `ul` and `li`; return item contents, not another `li`. Handles have localized names and keyboard instructions. Accepted keyboard positions and drag-end positions are announced in a status region. Removed items immediately become inert and hidden from assistive technology. Move focus to the next logical control before removing a focused item. Keep persistent drafts outside removed items. Prefer virtualization for large datasets and do not use this component for table rows or multi-column sorting. In scroll containers, use Motion’s layout-scroll integration on the scrolling ancestor when needed.
+The component renders `ul` and `li`; return item contents, not another `li`. Handles have localized names and keyboard instructions. Accepted positions are announced in a status region. Removed items immediately become inert and hidden from assistive technology. Move focus to the next logical control before removing a focused item. Keep persistent drafts outside removed items. Prefer virtualization for large datasets and do not use this component for table rows or multi-column sorting. Dragging tracks ancestor scrolling but does not automatically scroll at the edges. Pointer cancellation ends the drag without rolling back accepted order changes. Resizing ends an active drag.
+
+## Native animation internals
+
+KrakMotion uses Pointer Events and pointer capture for dragging, FLIP measurements with the Web Animations API for position changes, and keyed presence for entry and exit. Keyboard controls do not depend on animation support. Browsers without the Web Animations API apply changes immediately; reduced motion disables transitions without disabling dragging.
