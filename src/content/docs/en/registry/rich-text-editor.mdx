@@ -1,0 +1,78 @@
+---
+slug: rich-text-editor
+path: /docs/rich-text-editor
+title: Rich Text Editor
+description: Inline formatting, safe links and variable chips, built on native browser editing.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-16"
+updatedAt: "2026-11-16"
+---
+
+# Rich Text Editor
+
+Write directly in the document. Select a few words to make them bold, italic or underlined, add a link, or insert a variable from the toolbar. Paragraphs, headings and single-level lists share the same editing surface.
+
+No Tiptap, Lexical or external editor engine. The component uses native `contenteditable`, Selection/Range and input/composition events. Saved content is a constrained, versioned JSON document—not HTML.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/rich-text-editor
+```
+
+## Usage
+
+```tsx
+import { useState } from "react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { richTextFromString } from "@/lib/rich-text/model";
+
+const MessageEditor = () => {
+  const [value, setValue] = useState(() => richTextFromString("Welcome!"));
+  return (
+    <RichTextEditor
+      label="Message"
+      value={value}
+      onChange={setValue}
+      variables={[
+        { key: "firstName", label: "First name", type: "text", sample: "Alex" },
+      ]}
+    />
+  );
+};
+```
+
+Package imports: `@krak-stack/registry/rich-text-editor`, `@krak-stack/registry/rich-text/model` and `@krak-stack/registry/rich-text/schema`.
+
+## Interface
+
+| Prop                 | Purpose                                                                     |
+| -------------------- | --------------------------------------------------------------------------- |
+| `value`, `onChange`  | Controlled `RichTextDocument`; update immediately                           |
+| `label`              | Accessible name of the editing surface                                      |
+| `variables`          | Allowed keys, translated labels, value types and sample values              |
+| `disabled`           | Read-only editing surface and disabled toolbar                              |
+| `locale`, `messages` | Provider locale, English/French defaults and label overrides                |
+| `className`          | Outer editor styling                                                        |
+| `contentStyle`       | Editing-surface styles, separate from the toolbar's app theme               |
+| `singleLine`         | Compact plain-text mode with atomic variables; no formatting or line breaks |
+| `maxLength`          | Maximum serialized text length, including variable tokens                   |
+
+Use `RichTextDocument` from `schema.ts` to validate persisted input. `richTextPlainText(value, values)` returns text with resolved variables or readable `{{key}}` placeholders.
+
+## Editing behavior
+
+Variables are atomic, non-editable chips. Bold, italic and underline apply to the selection or subsequent typing. Links accept HTTPS and mailto destinations; arbitrary HTML and executable URLs are not supported.
+
+Undo/redo retains up to 100 local editing snapshots. Use the toolbar or Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. Incoming external document replacements reset this local history. The host owns saving, unsaved changes, collaboration and conflict resolution.
+
+Paste deliberately accepts **plain text only**. Images, nested lists, tables, HTML source editing and rich clipboard import are outside this first version. Browser composition is allowed to finish before normalization. Validate the editing experience with your target input methods before broad rollout.
+
+## Accessibility and safety
+
+The editing surface is a labelled multiline textbox. Toolbar buttons have localized accessible names and never submit forms. Variable selectors and block-style selectors are native controls. The component does not execute user expressions or retain arbitrary DOM attributes. No `execCommand` is used.
+
+The [Email Editor](/en/docs/email-editor) composes this editor with a reorderable email canvas and shared HTML/plain-text rendering.

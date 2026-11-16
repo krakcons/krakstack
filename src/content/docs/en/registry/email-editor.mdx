@@ -1,0 +1,91 @@
+---
+slug: email-editor
+path: /docs/email-editor
+title: Email Editor
+description: Design emails with rich text, typed variables and drag-to-reorder elements. No fixed header, body or footer.
+order: 4
+locale: en
+section: components
+type: reference
+createdAt: "2026-11-16"
+updatedAt: "2026-11-16"
+---
+
+# Email Editor
+
+A free-order email canvas, not a header/body/footer form. Move the logo, message, verification code and action wherever they belong. Edit rich text in place, insert variable chips and change each element’s alignment and spacing.
+
+KrakStack owns the editing and drag interactions: native browser rich text and shared KrakMotion internals, without an external editor or drag library.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/email-editor
+```
+
+## Integration
+
+```tsx
+import { EmailEditor } from "@/components/ui/email-editor";
+
+<EmailEditor
+  value={document}
+  onChange={setDocument}
+  locale="en"
+  variables={variables}
+  requiredVariables={["code"]}
+  preview={<EmailPreview />}
+/>;
+```
+
+The host supplies an initial `EmailDocument`, owns all changes and provides the preview. Package imports use `@krak-stack/registry/email-editor` and `@krak-stack/registry/email-document/{schema,model,render}`.
+
+## What you can edit
+
+- Add, duplicate, remove and reorder text, logo, image, button, code, divider and spacer elements.
+- Format selected words, add safe links and insert typed variable chips.
+- Set element alignment and vertical spacing.
+- Change shared colors and font family.
+- Edit subject and preview text; `{{appName}}`-style variables are supported there.
+- Switch to the host-provided delivery preview and inspect plain text.
+
+Drag handles support mouse, touch and pen. Arrow Up/Down and Home/End reorder with the keyboard. There are no mandatory regions or fixed authentication-element positions. This is a responsive vertical email layout, not an absolute-positioned design tool.
+
+## Documents and variables
+
+`EmailDocument` is a versioned Effect schema. Text contains a `RichTextDocument`; every email element has a stable unique ID. A document has at most 40 elements and each rich-text element accepts at most 20,000 text units.
+
+Each variable has a stable `key`, translated `label`, `type` (`text` or `url`) and `sample`. Text chips resolve to escaped text. Buttons can point to a static safe URL or a URL variable. No expressions, scripts or arbitrary HTML.
+
+`validateEmailDocument` reports unknown variables, missing values, unsafe URL values, invalid documents and missing required body variables. The host decides which variables are required and whether their presence must be in a particular element. Authentication policy, tenant isolation and authorization remain application-owned.
+
+## One rendering path
+
+```tsx
+import { renderEmailDocument } from "@/lib/email-document/render";
+
+const rendered =
+  yield *
+  renderEmailDocument({
+    document,
+    variables,
+    values: {
+      appName: "KrakStack",
+      firstName: "Alex",
+      code: "482 916",
+      accountUrl: "https://example.com/account",
+    },
+    requiredVariables: ["code"],
+  });
+// rendered.subject, rendered.html, rendered.text
+```
+
+Use this Effect in your authorized preview, test-send and production-send paths. It validates the document and variables before rendering. HTML uses email-friendly tables and inline styles through React’s static renderer; text follows the same element order. No React Email or additional rendering dependency is required.
+
+The docs demo sends draft content to a local preview function and uses sample values only. It never sends email or saves anything. The English/French switch in the demo owns two independent drafts; localization and template inheritance belong to the host.
+
+## Current scope
+
+Paste is plain text. Images use HTTPS URLs; file uploads and asset ownership are host concerns. The first version has no columns, nested layouts, rich clipboard import, structural undo, collaboration or cross-list dragging. The rich-text editor has its own undo/redo history.
+
+Invalid drafts keep the last successful delivery preview visible with an error. A draft must pass schema and domain validation before persistence or delivery. Image fetching is not performed on the server; preview images load in the viewer’s browser. Test output against your supported email clients before production use.

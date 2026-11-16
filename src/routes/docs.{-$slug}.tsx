@@ -165,6 +165,22 @@ const registryPreviews: Readonly<
     ),
   ],
   [
+    "rich-text-editor",
+    lazy(() =>
+      import("@/components/registry-previews/rich-text-editor-preview").then(
+        ({ RichTextEditorPreview }) => ({ default: RichTextEditorPreview }),
+      ),
+    ),
+  ],
+  [
+    "email-editor",
+    lazy(() =>
+      import("@/components/registry-previews/email-editor-preview").then(
+        ({ EmailEditorPreview }) => ({ default: EmailEditorPreview }),
+      ),
+    ),
+  ],
+  [
     "animated-list",
     lazy(() =>
       import("@/components/registry-previews/animated-list-preview").then(

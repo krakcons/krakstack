@@ -17,6 +17,34 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./rich-text-editor": {
+      "types": "./dist/components/ui/rich-text-editor.d.ts",
+      "import": "./dist/components/ui/rich-text-editor.js"
+    },
+    "./rich-text/schema": {
+      "types": "./dist/lib/rich-text/schema.d.ts",
+      "import": "./dist/lib/rich-text/schema.js"
+    },
+    "./rich-text/model": {
+      "types": "./dist/lib/rich-text/model.d.ts",
+      "import": "./dist/lib/rich-text/model.js"
+    },
+    "./email-editor": {
+      "types": "./dist/components/ui/email-editor.d.ts",
+      "import": "./dist/components/ui/email-editor.js"
+    },
+    "./email-document/schema": {
+      "types": "./dist/lib/email-document/schema.d.ts",
+      "import": "./dist/lib/email-document/schema.js"
+    },
+    "./email-document/model": {
+      "types": "./dist/lib/email-document/model.d.ts",
+      "import": "./dist/lib/email-document/model.js"
+    },
+    "./email-document/render": {
+      "types": "./dist/lib/email-document/render.d.ts",
+      "import": "./dist/lib/email-document/render.js"
+    },
     "./time-picker": {
       "types": "./dist/components/ui/time-picker.d.ts",
       "import": "./dist/components/ui/time-picker.js"

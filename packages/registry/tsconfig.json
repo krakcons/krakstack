@@ -11,6 +11,9 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/ui/rich-text-editor.tsx",
+    "../../src/components/ui/email-editor.tsx",
+    "../../src/lib/email-document/render.tsx",
     "../../src/components/ui/time-picker.tsx",
     "../../src/components/ui/date-picker.tsx",
     "../../src/components/ui/select-with-custom-input.tsx",

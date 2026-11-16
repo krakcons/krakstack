@@ -4,6 +4,103 @@
   "homepage": "https://krakstack.net",
   "items": [
     {
+      "name": "rich-text",
+      "type": "registry:lib",
+      "title": "Rich text model",
+      "description": "Constrained Effect schemas, editing operations and native DOM adapters for KrakStack rich text.",
+      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-16" },
+      "files": [
+        {
+          "path": "src/lib/rich-text/schema.ts",
+          "type": "registry:lib",
+          "target": "lib/rich-text/schema.ts"
+        },
+        {
+          "path": "src/lib/rich-text/model.ts",
+          "type": "registry:lib",
+          "target": "lib/rich-text/model.ts"
+        },
+        {
+          "path": "src/lib/rich-text/dom.ts",
+          "type": "registry:lib",
+          "target": "lib/rich-text/dom.ts"
+        }
+      ],
+      "dependencies": ["effect", "react"]
+    },
+    {
+      "name": "rich-text-editor",
+      "type": "registry:component",
+      "title": "Rich Text Editor",
+      "description": "Native rich-text editing with inline formatting, safe links, atomic variables and undo/redo. No external editor library.",
+      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-16" },
+      "files": [
+        {
+          "path": "src/components/ui/rich-text-editor.tsx",
+          "type": "registry:component",
+          "target": "components/ui/rich-text-editor.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/rich-text",
+        "@krak-stack/krakstack-provider",
+        "button",
+        "input"
+      ],
+      "dependencies": ["react", "effect", "lucide-react", "@base-ui/react"]
+    },
+    {
+      "name": "email-document",
+      "type": "registry:lib",
+      "title": "Email document",
+      "description": "Versioned email documents, typed variable validation and shared email-safe HTML/plain-text rendering.",
+      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-16" },
+      "files": [
+        {
+          "path": "src/lib/email-document/schema.ts",
+          "type": "registry:lib",
+          "target": "lib/email-document/schema.ts"
+        },
+        {
+          "path": "src/lib/email-document/model.ts",
+          "type": "registry:lib",
+          "target": "lib/email-document/model.ts"
+        },
+        {
+          "path": "src/lib/email-document/render.tsx",
+          "type": "registry:lib",
+          "target": "lib/email-document/render.tsx"
+        }
+      ],
+      "registryDependencies": ["@krak-stack/rich-text"],
+      "dependencies": ["react", "react-dom", "effect"]
+    },
+    {
+      "name": "email-editor",
+      "type": "registry:component",
+      "title": "Email Editor",
+      "description": "A free-order email canvas with native rich text, variable chips, KrakMotion drag handles and email-safe rendering.",
+      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-16" },
+      "files": [
+        {
+          "path": "src/components/ui/email-editor.tsx",
+          "type": "registry:component",
+          "target": "components/ui/email-editor.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/email-document",
+        "@krak-stack/rich-text-editor",
+        "@krak-stack/animated-list",
+        "@krak-stack/krakstack-provider",
+        "button",
+        "input",
+        "popover",
+        "tabs"
+      ],
+      "dependencies": ["react", "effect", "lucide-react"]
+    },
+    {
       "name": "time-picker",
       "type": "registry:component",
       "title": "Time Picker",

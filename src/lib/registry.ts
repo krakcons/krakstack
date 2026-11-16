@@ -64,6 +64,8 @@ export function getRegistryGroup(item: RegistryItem) {
       "localization",
       "seo",
       "webfetch-toolkit",
+      "rich-text",
+      "email-document",
     ].includes(item.name)
   ) {
     return "Libraries";
@@ -83,6 +85,8 @@ export function getRegistryGroup(item: RegistryItem) {
       "unsaved-changes-guard",
       "danger-confirmation",
       "editable-text",
+      "rich-text-editor",
+      "email-editor",
       "presence-transition",
       "auto-height",
       "animated-list",

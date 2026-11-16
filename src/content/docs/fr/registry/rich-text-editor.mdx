@@ -1,0 +1,79 @@
+---
+slug: rich-text-editor
+path: /docs/rich-text-editor
+title: Éditeur de texte enrichi
+description: Mise en forme, liens sûrs et variables avec l’édition native du navigateur.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-16"
+updatedAt: "2026-11-16"
+---
+
+# Éditeur de texte enrichi
+
+Écrivez directement dans le document. Sélectionnez des mots pour appliquer le gras, l’italique ou le soulignement, ajouter un lien ou insérer une variable depuis la barre d’outils. Paragraphes, titres et listes simples partagent la même surface.
+
+Sans Tiptap, Lexical ni moteur d’édition externe. Le composant utilise `contenteditable`, Selection/Range et les événements natifs de saisie et de composition. Le contenu enregistré est un document JSON contraint et versionné, pas du HTML.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/rich-text-editor
+```
+
+## Utilisation
+
+```tsx
+import { useState } from "react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { richTextFromString } from "@/lib/rich-text/model";
+
+const MessageEditor = () => {
+  const [value, setValue] = useState(() => richTextFromString("Bienvenue !"));
+  return (
+    <RichTextEditor
+      label="Message"
+      value={value}
+      onChange={setValue}
+      locale="fr"
+      variables={[
+        { key: "firstName", label: "Prénom", type: "text", sample: "Alex" },
+      ]}
+    />
+  );
+};
+```
+
+Imports du paquet : `@krak-stack/registry/rich-text-editor`, `@krak-stack/registry/rich-text/model` et `@krak-stack/registry/rich-text/schema`.
+
+## Interface
+
+| Propriété            | Rôle                                                                             |
+| -------------------- | -------------------------------------------------------------------------------- |
+| `value`, `onChange`  | `RichTextDocument` contrôlé ; mise à jour immédiate                              |
+| `label`              | Nom accessible de la surface d’édition                                           |
+| `variables`          | Clés autorisées, libellés traduits, types et valeurs d’exemple                   |
+| `disabled`           | Lecture seule et barre d’outils désactivée                                       |
+| `locale`, `messages` | Langue du fournisseur, valeurs anglais/français et remplacements                 |
+| `className`          | Style du conteneur                                                               |
+| `contentStyle`       | Style du contenu, séparé du thème de la barre d’outils                           |
+| `singleLine`         | Mode texte compact avec variables atomiques, sans mise en forme ni saut de ligne |
+| `maxLength`          | Longueur maximale du texte sérialisé, variables comprises                        |
+
+Validez les données persistées avec `RichTextDocument` dans `schema.ts`. `richTextPlainText(value, values)` résout les variables ou affiche des espaces réservés `{{key}}`.
+
+## Comportement d’édition
+
+Les variables sont atomiques et non modifiables. Le gras, l’italique et le soulignement s’appliquent à la sélection ou à la saisie suivante. Les liens acceptent HTTPS et mailto ; ni HTML arbitraire ni URL exécutable.
+
+Annuler/rétablir conserve jusqu’à 100 instantanés locaux. Utilisez la barre d’outils ou Ctrl/Cmd+Z et Ctrl/Cmd+Maj+Z. Un remplacement externe du document réinitialise cet historique. L’application gère l’enregistrement, les modifications non enregistrées, la collaboration et les conflits.
+
+Le collage accepte volontairement **le texte brut uniquement**. Images, listes imbriquées, tableaux, édition HTML et import enrichi sont exclus de cette première version. La composition native se termine avant la normalisation. Vérifiez vos méthodes de saisie cibles avant un déploiement large.
+
+## Accessibilité et sécurité
+
+La surface est une zone de texte multiligne nommée. Les boutons ont des noms accessibles traduits et ne soumettent jamais les formulaires. Les sélecteurs de variables et de styles sont natifs. Le composant n’exécute aucune expression et ne conserve pas les attributs DOM arbitraires. Aucun `execCommand`.
+
+L’[éditeur de courriels](/fr/docs/email-editor) ajoute une zone réordonnable et un rendu HTML/texte brut partagé.

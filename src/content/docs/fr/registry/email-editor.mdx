@@ -1,0 +1,91 @@
+---
+slug: email-editor
+path: /docs/email-editor
+title: Éditeur de courriels
+description: Texte enrichi, variables typées et éléments déplaçables, sans en-tête, corps ou pied de page imposé.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-16"
+updatedAt: "2026-11-16"
+---
+
+# Éditeur de courriels
+
+Une zone de composition libre, pas un formulaire en-tête/corps/pied de page. Placez le logo, le message, le code et l’action où vous le souhaitez. Modifiez le texte sur place, insérez des variables et réglez l’alignement et l’espacement.
+
+KrakStack gère l’édition et le glissement : saisie native du navigateur et mécanismes partagés KrakMotion, sans bibliothèque d’édition ou de glissement externe.
+
+## Installation
+
+```bash
+bunx shadcn@latest add @krak-stack/email-editor
+```
+
+## Intégration
+
+```tsx
+import { EmailEditor } from "@/components/ui/email-editor";
+
+<EmailEditor
+  value={document}
+  onChange={setDocument}
+  locale="fr"
+  variables={variables}
+  requiredVariables={["code"]}
+  preview={<EmailPreview />}
+/>;
+```
+
+L’application fournit un `EmailDocument`, gère les modifications et fournit l’aperçu. Imports : `@krak-stack/registry/email-editor` et `@krak-stack/registry/email-document/{schema,model,render}`.
+
+## Personnalisation
+
+- Ajouter, dupliquer, retirer et déplacer texte, logo, image, bouton, code, séparateur et espace.
+- Mettre des mots en forme, ajouter des liens sûrs et insérer des variables typées.
+- Régler l’alignement et les espaces verticaux.
+- Modifier les couleurs et la police communes.
+- Modifier l’objet et le texte d’aperçu, avec des variables comme `{{appName}}`.
+- Ouvrir l’aperçu de livraison fourni par l’application et consulter le texte brut.
+
+Les poignées prennent en charge souris, toucher et stylet. Les flèches haut/bas et Début/Fin permettent le réordonnancement au clavier. Aucune région ni position d’authentification n’est imposée. La disposition est verticale et adaptative, pas à positionnement absolu.
+
+## Documents et variables
+
+`EmailDocument` est un schéma Effect versionné. Le texte contient un `RichTextDocument` ; chaque élément possède un identifiant stable et unique. Un document accepte 40 éléments maximum et chaque élément de texte jusqu’à 20 000 unités de texte.
+
+Chaque variable possède une `key` stable, un `label` traduit, un `type` (`text` ou `url`) et un `sample`. Les variables textuelles sont échappées. Les boutons utilisent une URL sûre ou une variable URL. Aucune expression, aucun script ni HTML arbitraire.
+
+`validateEmailDocument` signale les variables inconnues, valeurs absentes, URL dangereuses, documents invalides et variables obligatoires absentes du contenu. L’application choisit les variables obligatoires et leurs contraintes de placement. La politique d’authentification, l’isolation des locataires et les autorisations lui appartiennent.
+
+## Un seul chemin de rendu
+
+```tsx
+import { renderEmailDocument } from "@/lib/email-document/render";
+
+const rendered =
+  yield *
+  renderEmailDocument({
+    document,
+    variables,
+    values: {
+      appName: "KrakStack",
+      firstName: "Alex",
+      code: "482 916",
+      accountUrl: "https://example.com/account",
+    },
+    requiredVariables: ["code"],
+  });
+// rendered.subject, rendered.html, rendered.text
+```
+
+Utilisez cet Effect pour l’aperçu autorisé, les essais et l’envoi réel. Il valide le document et ses variables avant le rendu. Le HTML utilise des tableaux et styles intégrés adaptés aux courriels via le rendu statique React ; le texte suit le même ordre. Aucune dépendance React Email supplémentaire.
+
+La démo transmet le brouillon à une fonction locale avec des valeurs d’exemple uniquement. Elle n’envoie aucun courriel et n’enregistre rien. Le sélecteur anglais/français conserve deux brouillons indépendants ; traduction et héritage de modèles appartiennent à l’application.
+
+## Périmètre actuel
+
+Le collage est en texte brut. Les images utilisent des URL HTTPS ; téléversement et propriété des fichiers sont gérés par l’application. Pas de colonnes, dispositions imbriquées, import enrichi, historique structurel, collaboration ou glissement entre listes. L’éditeur de texte a son propre historique annuler/rétablir.
+
+Un brouillon invalide conserve le dernier aperçu réussi et affiche une erreur. Validez schéma et règles métier avant enregistrement ou envoi. Le serveur ne télécharge pas les images ; elles sont chargées par le navigateur du lecteur. Vérifiez le rendu dans vos clients de messagerie cibles avant utilisation en production.

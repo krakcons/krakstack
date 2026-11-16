@@ -2,6 +2,29 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Email_Editor_Demo_LocaleInputs */
+/** @typedef {{}} Email_Editor_Demo_HelpInputs */
+/** @typedef {{}} Email_Editor_Demo_Rich_LabelInputs */
+/** @typedef {{}} Email_Editor_Demo_Rich_HelpInputs */
+/** @typedef {{ appName: NonNullable<unknown> }} Email_Editor_Demo_SubjectInputs */
+/** @typedef {{}} Email_Editor_Demo_PreheaderInputs */
+/** @typedef {{}} Email_Editor_Demo_HeadingInputs */
+/** @typedef {{}} Email_Editor_Demo_GreetingInputs */
+/** @typedef {{}} Email_Editor_Demo_BodyInputs */
+/** @typedef {{}} Email_Editor_Demo_Body_EndInputs */
+/** @typedef {{}} Email_Editor_Demo_FooterInputs */
+/** @typedef {{}} Email_Editor_Demo_ActionInputs */
+/** @typedef {{}} Email_Editor_Demo_Brand_VariableInputs */
+/** @typedef {{}} Email_Editor_Demo_User_VariableInputs */
+/** @typedef {{}} Email_Editor_Demo_Code_VariableInputs */
+/** @typedef {{}} Email_Editor_Demo_Url_VariableInputs */
+/** @typedef {{}} Email_Editor_Demo_Preview_LoadingInputs */
+/** @typedef {{}} Email_Editor_Demo_Preview_ErrorInputs */
+/** @typedef {{}} Email_Editor_Demo_DeliveryInputs */
+/** @typedef {{}} Email_Editor_Demo_TextInputs */
+/** @typedef {{}} Email_Editor_Demo_Subject_LabelInputs */
+/** @typedef {{}} Email_Editor_Demo_Preheader_LabelInputs */
+/** @typedef {{}} Email_Editor_Demo_DataInputs */
 /** @typedef {{}} Time_Picker_Demo_LabelInputs */
 /** @typedef {{}} Time_Picker_Demo_HelpInputs */
 /** @typedef {{}} Time_Picker_Demo_24_HourInputs */
@@ -473,6 +496,328 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Email language" |
+*
+* @param {Email_Editor_Demo_LocaleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_locale = /** @type {((inputs?: Email_Editor_Demo_LocaleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_LocaleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_locale(inputs)
+	return __fr.email_editor_demo_locale(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "A local draft only — nothing is saved or sent. Format selected text, insert variables, and drag any element using its handle. The delivery preview uses sampl..." |
+*
+* @param {Email_Editor_Demo_HelpInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_help = /** @type {((inputs?: Email_Editor_Demo_HelpInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_HelpInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_help(inputs)
+	return __fr.email_editor_demo_help(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Message" |
+*
+* @param {Email_Editor_Demo_Rich_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_rich_label = /** @type {((inputs?: Email_Editor_Demo_Rich_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Rich_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_rich_label(inputs)
+	return __fr.email_editor_demo_rich_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Select a few words to format them. Insert a variable, paste plain text, or try undo and redo. Variables are atomic: one Backspace removes the entire chip." |
+*
+* @param {Email_Editor_Demo_Rich_HelpInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_rich_help = /** @type {((inputs?: Email_Editor_Demo_Rich_HelpInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Rich_HelpInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_rich_help(inputs)
+	return __fr.email_editor_demo_rich_help(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Your sign-in code for {appName}" |
+*
+* @param {Email_Editor_Demo_SubjectInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_subject = /** @type {((inputs: Email_Editor_Demo_SubjectInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_SubjectInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_subject(inputs)
+	return __fr.email_editor_demo_subject(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Welcome back. Your secure sign-in code is ready." |
+*
+* @param {Email_Editor_Demo_PreheaderInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_preheader = /** @type {((inputs?: Email_Editor_Demo_PreheaderInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_PreheaderInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_preheader(inputs)
+	return __fr.email_editor_demo_preheader(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "A little code. A warm welcome." |
+*
+* @param {Email_Editor_Demo_HeadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_heading = /** @type {((inputs?: Email_Editor_Demo_HeadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_HeadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_heading(inputs)
+	return __fr.email_editor_demo_heading(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Hi" |
+*
+* @param {Email_Editor_Demo_GreetingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_greeting = /** @type {((inputs?: Email_Editor_Demo_GreetingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_GreetingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_greeting(inputs)
+	return __fr.email_editor_demo_greeting(inputs)
+});
+/**
+* | output |
+* | --- |
+* | ", Use the code below to sign in to" |
+*
+* @param {Email_Editor_Demo_BodyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_body = /** @type {((inputs?: Email_Editor_Demo_BodyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_BodyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_body(inputs)
+	return __fr.email_editor_demo_body(inputs)
+});
+/**
+* | output |
+* | --- |
+* | ". It expires in 10 minutes. Never share it with anyone." |
+*
+* @param {Email_Editor_Demo_Body_EndInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_body_end = /** @type {((inputs?: Email_Editor_Demo_Body_EndInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Body_EndInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_body_end(inputs)
+	return __fr.email_editor_demo_body_end(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Didn't request this? You can safely ignore this email." |
+*
+* @param {Email_Editor_Demo_FooterInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_footer = /** @type {((inputs?: Email_Editor_Demo_FooterInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_FooterInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_footer(inputs)
+	return __fr.email_editor_demo_footer(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Open your account" |
+*
+* @param {Email_Editor_Demo_ActionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_action = /** @type {((inputs?: Email_Editor_Demo_ActionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_ActionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_action(inputs)
+	return __fr.email_editor_demo_action(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "App name" |
+*
+* @param {Email_Editor_Demo_Brand_VariableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_brand_variable = /** @type {((inputs?: Email_Editor_Demo_Brand_VariableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Brand_VariableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_brand_variable(inputs)
+	return __fr.email_editor_demo_brand_variable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "First name" |
+*
+* @param {Email_Editor_Demo_User_VariableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_user_variable = /** @type {((inputs?: Email_Editor_Demo_User_VariableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_User_VariableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_user_variable(inputs)
+	return __fr.email_editor_demo_user_variable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Sign-in code" |
+*
+* @param {Email_Editor_Demo_Code_VariableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_code_variable = /** @type {((inputs?: Email_Editor_Demo_Code_VariableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Code_VariableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_code_variable(inputs)
+	return __fr.email_editor_demo_code_variable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Account URL" |
+*
+* @param {Email_Editor_Demo_Url_VariableInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_url_variable = /** @type {((inputs?: Email_Editor_Demo_Url_VariableInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Url_VariableInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_url_variable(inputs)
+	return __fr.email_editor_demo_url_variable(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Rendering the delivery preview…" |
+*
+* @param {Email_Editor_Demo_Preview_LoadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_preview_loading = /** @type {((inputs?: Email_Editor_Demo_Preview_LoadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Preview_LoadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_preview_loading(inputs)
+	return __fr.email_editor_demo_preview_loading(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Preview unavailable. Check the document and its variables; the last valid preview stays visible." |
+*
+* @param {Email_Editor_Demo_Preview_ErrorInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_preview_error = /** @type {((inputs?: Email_Editor_Demo_Preview_ErrorInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Preview_ErrorInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_preview_error(inputs)
+	return __fr.email_editor_demo_preview_error(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Delivery preview" |
+*
+* @param {Email_Editor_Demo_DeliveryInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_delivery = /** @type {((inputs?: Email_Editor_Demo_DeliveryInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_DeliveryInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_delivery(inputs)
+	return __fr.email_editor_demo_delivery(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Plain-text version" |
+*
+* @param {Email_Editor_Demo_TextInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_text = /** @type {((inputs?: Email_Editor_Demo_TextInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_TextInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_text(inputs)
+	return __fr.email_editor_demo_text(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Subject" |
+*
+* @param {Email_Editor_Demo_Subject_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_subject_label = /** @type {((inputs?: Email_Editor_Demo_Subject_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Subject_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_subject_label(inputs)
+	return __fr.email_editor_demo_subject_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Preview text" |
+*
+* @param {Email_Editor_Demo_Preheader_LabelInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_preheader_label = /** @type {((inputs?: Email_Editor_Demo_Preheader_LabelInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_Preheader_LabelInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_preheader_label(inputs)
+	return __fr.email_editor_demo_preheader_label(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Document data" |
+*
+* @param {Email_Editor_Demo_DataInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const email_editor_demo_data = /** @type {((inputs?: Email_Editor_Demo_DataInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Email_Editor_Demo_DataInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.email_editor_demo_data(inputs)
+	return __fr.email_editor_demo_data(inputs)
+});
 /**
 * | output |
 * | --- |
