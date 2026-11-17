@@ -8,12 +8,12 @@ locale: en
 section: components
 type: reference
 createdAt: "2026-11-11"
-updatedAt: "2026-11-11"
+updatedAt: "2026-11-16"
 ---
 
 # Time Picker
 
-A controlled time field with independently scrolling hour/minute columns, keyboard entry, clearing and inclusive bounds. The default display uses 12-hour time with an AM/PM column. Set `hourCycle={24}` for a 24-hour display without AM/PM. Stored values and bounds always use the 24-hour `HH:mm` format. This is a wall-clock time, not an instant, date or time-zone selector.
+A controlled time field with independently scrolling columns, keyboard entry, clearing and inclusive bounds. The default display uses 12-hour time with an AM/PM column. Set `hourCycle={24}` for a 24-hour display without AM/PM. Stored values and bounds always use 24-hour time: `HH:mm` by default, with optional seconds or milliseconds. This is a wall-clock time, not an instant, date or time-zone selector.
 
 ## Installation
 
@@ -52,11 +52,32 @@ Selections apply immediately and keep the panel open; Done or Escape closes it. 
 
 ## Time-only validation
 
+### Optional seconds and milliseconds
+
+`precision` defaults to `"minute"` (`HH:mm`). Set it to `"second"` for `HH:mm:ss`, or `"millisecond"` for `HH:mm:ss.SSS`. Values and bounds must use the exact selected format; fractional seconds require three digits. Switching precision does not rewrite the controlled value or silently discard lower units.
+
+```tsx
+<TimePicker
+  value={time}
+  onValueChange={setTime}
+  precision="millisecond"
+  min="09:00:00.000"
+  max="17:30:00.999"
+  hourCycle={24}
+/>
+```
+
+Both display cycles support all precisions: for example, `1:05:09.007 PM` emits `13:05:09.007`. Seconds and milliseconds have their own scrolling, keyboard-accessible columns. Choosing a higher unit preserves lower units when allowed, otherwise clamps to the nearest allowed time in the selected unit. Bounds include their exact second or millisecond. `minuteStep` still constrains only the minute within each hour; seconds and milliseconds remain freely selectable within bounds. The implementation uses at most 1,440 minute intervals rather than enumerating every millisecond of a day.
+
+`TimeSecondSchema` and `TimeMillisecondSchema` validate the additional canonical formats. `parseTimeValue(text, precision?)` returns **milliseconds since midnight**, and `formatTimeValue(milliseconds, precision)` formats that representation. `parseTimeOnly` still accepts only `HH:mm` and returns minutes. `parse12HourTime(text, precision?)` and `getTimePickerState({ value, min, max, minuteStep, precision })` default to minute precision, preserving existing callers.
+
+Additional message keys are `seconds`, `milliseconds`, `invalidSecond`, `invalidMillisecond`, `invalid12Second` and `invalid12Millisecond`. Default labels and feedback are available in English and French.
+
 `TimeOnlySchema` validates `00:00`–`23:59` with Effect. `parseTimeOnly(text)` returns minutes since midnight or `undefined`, without constructing a `Date`. `Time12HourSchema` validates 12-hour display text; `parse12HourTime(text)` converts it to canonical `HH:mm` or returns `undefined`. `MinuteStepSchema` validates the step. `getTimePickerState({ value, min, max, minuteStep })` validates canonical values and returns `empty`, `valid`, `invalid`, `out-of-range`, `off-step` or `invalid-range`. Validate submitted values and application-specific bounds again on the server; native form validity is not a security boundary.
 
 ## Localization and styling
 
-Provider or explicit `locale` selects English/French labels and feedback; values remain `HH:mm`. `hourCycle` defaults to `12` regardless of locale. AM/PM entry markers remain literal `AM` and `PM` in both languages. `messages` accepts locale-keyed overrides for `label`, `open`, `clear`, `hours`, `minutes`, `period`, `done`, `invalid`, `invalid12`, `outOfRange`, `invalidRange` and `offStep`. Supply application labels and descriptions with Paraglide.
+Provider or explicit `locale` selects English/French labels and feedback; values remain canonical 24-hour time at the selected precision. `hourCycle` defaults to `12` regardless of locale. AM/PM entry markers remain literal `AM` and `PM` in both languages. `messages` accepts locale-keyed overrides for `label`, `open`, `clear`, `hours`, `minutes`, `period`, `done`, `invalid`, `invalid12`, `outOfRange`, `invalidRange` and `offStep`, plus the precision-specific keys above. Supply application labels and descriptions with Paraglide.
 
 Defaults use semantic theme tokens and existing shadcn primitives. `className` styles the wrapper; `inputClassName`, `contentClassName`, `columnClassName` and `optionClassName` customize the input, portaled panel, columns and their buttons. Caller classes are merged with `cn`. Apply portal-specific styles through `contentClassName`, not wrapper descendant selectors. The panel can scroll on short viewports to keep every control reachable.
 

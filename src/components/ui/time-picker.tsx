@@ -14,8 +14,12 @@ import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 import { cn } from "@/lib/utils";
 import {
   getTimePickerState,
-  parseTimeOnly,
+  parseTimeValue,
+  formatTimeValue,
+  getTimeIntervals,
+  timePrecisionUnit,
   parse12HourTime,
+  type TimePrecision,
 } from "./time-picker.schema";
 export {
   TimeOnlySchema,
@@ -24,6 +28,11 @@ export {
   parseTimeOnly,
   Time12HourSchema,
   parse12HourTime,
+  TimeSecondSchema,
+  TimeMillisecondSchema,
+  parseTimeValue,
+  formatTimeValue,
+  type TimePrecision,
 } from "./time-picker.schema";
 
 export type TimePickerMessages = {
@@ -32,24 +41,32 @@ export type TimePickerMessages = {
   clear: string;
   hours: string;
   minutes: string;
+  seconds: string;
+  milliseconds: string;
   period: string;
   done: string;
   invalid: string;
   invalid12: string;
+  invalidSecond: string;
+  invalidMillisecond: string;
+  invalid12Second: string;
+  invalid12Millisecond: string;
   outOfRange: string;
   invalidRange: string;
   offStep: string;
 };
 
 export type TimePickerProps = {
-  /** HH:mm, or an empty/incomplete draft while typing. */
+  /** Canonical 24-hour time at the selected precision, or a draft. */
   value: string;
   onValueChange: (value: string) => void;
   min?: string;
   max?: string;
   /** Allowed minute values start at 00 in each hour; integer from 1 to 60. */
   minuteStep?: number;
-  /** Display and entry format. Values and bounds always use 24-hour HH:mm. */
+  /** Defaults to minute; seconds and milliseconds are opt-in. */
+  precision?: TimePrecision;
+  /** Display and entry format. Values and bounds always use 24-hour time. */
   hourCycle?: 12 | 24;
   label?: string;
   name?: string;
@@ -74,10 +91,19 @@ const labels = {
     clear: "Clear time",
     hours: "Hours",
     minutes: "Minutes",
+    seconds: "Seconds",
+    milliseconds: "Milliseconds",
     period: "AM/PM",
     done: "Done",
     invalid: "Enter a valid time as HH:mm (00:00–23:59).",
     invalid12: "Enter a valid time with AM or PM, such as 09:30 AM.",
+    invalidSecond: "Enter a valid time as HH:mm:ss (00:00:00–23:59:59).",
+    invalidMillisecond:
+      "Enter a valid time as HH:mm:ss.SSS (00:00:00.000–23:59:59.999).",
+    invalid12Second:
+      "Enter a valid time with seconds and AM or PM, such as 09:30:15 AM.",
+    invalid12Millisecond:
+      "Enter a valid time with milliseconds and AM or PM, such as 09:30:15.123 AM.",
     outOfRange: "Choose a time within the allowed range.",
     invalidRange: "The allowed time range or minute step is invalid.",
     offStep: "Choose a time that matches the minute step.",
@@ -88,19 +114,27 @@ const labels = {
     clear: "Effacer l’heure",
     hours: "Heures",
     minutes: "Minutes",
+    seconds: "Secondes",
+    milliseconds: "Millisecondes",
     period: "AM/PM",
     done: "Terminer",
     invalid: "Saisissez une heure valide au format HH:mm (00:00–23:59).",
     invalid12:
       "Saisissez une heure valide avec AM ou PM, par exemple 09:30 AM.",
+    invalidSecond:
+      "Saisissez une heure valide au format HH:mm:ss (00:00:00–23:59:59).",
+    invalidMillisecond:
+      "Saisissez une heure valide au format HH:mm:ss.SSS (00:00:00.000–23:59:59.999).",
+    invalid12Second:
+      "Saisissez une heure valide avec les secondes et AM ou PM, par exemple 09:30:15 AM.",
+    invalid12Millisecond:
+      "Saisissez une heure valide avec les millisecondes et AM ou PM, par exemple 09:30:15.123 AM.",
     outOfRange: "Choisissez une heure dans la plage autorisée.",
     invalidRange: "La plage horaire ou le pas des minutes est invalide.",
     offStep: "Choisissez une heure qui respecte le pas des minutes.",
   },
 };
 const pad = (value: number) => String(value).padStart(2, "0");
-const formatTime = (value: number) =>
-  `${pad(Math.floor(value / 60))}:${pad(value % 60)}`;
 
 const TimeColumn = ({
   label,
@@ -205,6 +239,7 @@ export const TimePicker = ({
   min,
   max,
   minuteStep = 1,
+  precision = "minute",
   hourCycle = 12,
   label,
   name,
@@ -233,28 +268,47 @@ export const TimePicker = ({
     text: string;
     value: string;
     hourCycle: 12 | 24;
+    precision: TimePrecision;
   }>();
   const activeDraft =
-    draft?.value === value && draft.hourCycle === hourCycle ? draft : undefined;
-  const canonicalStatus = getTimePickerState({ value, min, max, minuteStep });
+    draft?.value === value &&
+    draft.hourCycle === hourCycle &&
+    draft.precision === precision
+      ? draft
+      : undefined;
+  const canonicalStatus = getTimePickerState({
+    value,
+    min,
+    max,
+    minuteStep,
+    precision,
+  });
   const status =
     canonicalStatus !== "invalid-range" &&
     hourCycle === 12 &&
     activeDraft?.text &&
-    !parse12HourTime(activeDraft.text)
+    !parse12HourTime(activeDraft.text, precision)
       ? "invalid"
       : canonicalStatus;
-  const parsedValue = parseTimeOnly(value);
+  const parsedValue = parseTimeValue(value, precision);
   const displayValue =
     activeDraft?.text ??
     (hourCycle === 12 && parsedValue !== undefined
-      ? `${Math.floor(parsedValue / 60) % 12 || 12}:${pad(parsedValue % 60)} ${parsedValue < 720 ? "AM" : "PM"}`
+      ? `${Math.floor(parsedValue / 3_600_000) % 12 || 12}${value.slice(2)} ${parsedValue < 43_200_000 ? "AM" : "PM"}`
       : value);
   const error =
     status === "invalid"
       ? hourCycle === 12
-        ? copy.invalid12
-        : copy.invalid
+        ? precision === "minute"
+          ? copy.invalid12
+          : precision === "second"
+            ? copy.invalid12Second
+            : copy.invalid12Millisecond
+        : precision === "minute"
+          ? copy.invalid
+          : precision === "second"
+            ? copy.invalidSecond
+            : copy.invalidMillisecond
       : status === "invalid-range"
         ? copy.invalidRange
         : status === "out-of-range"
@@ -263,38 +317,80 @@ export const TimePicker = ({
             ? copy.offStep
             : undefined;
   const locked = disabled || readOnly;
-  const times =
+  const unit = timePrecisionUnit(precision);
+  const intervals =
     status === "invalid-range"
       ? []
-      : Array.from({ length: 1440 }, (_, time) => time).filter((time) => {
-          const text = formatTime(time);
-          return (
-            (!min || text >= min) &&
-            (!max || text <= max) &&
-            (time % 60) % minuteStep === 0
-          );
-        });
-  const selected = status === "valid" ? parseTimeOnly(value)! : (times[0] ?? 0);
-  const hour = Math.floor(selected / 60);
+      : getTimeIntervals(
+          min === undefined ? 0 : parseTimeValue(min, precision)!,
+          max === undefined
+            ? 86_400_000 - unit
+            : parseTimeValue(max, precision)!,
+          minuteStep,
+          precision,
+        );
+  const selected =
+    status === "valid" ? parsedValue! : (intervals[0]?.start ?? 0);
+  const hour = Math.floor(selected / 3_600_000);
+  const minute = Math.floor(selected / 60_000) % 60;
+  const second = Math.floor(selected / 1000) % 60;
   const period = Math.floor(hour / 12);
-  const periods = [...new Set(times.map((time) => Math.floor(time / 720)))];
+  const periods = [
+    ...new Set(intervals.map(({ minute }) => Math.floor(minute / 720))),
+  ];
   const hours = [
     ...new Set(
-      times
-        .filter((time) => hourCycle === 24 || Math.floor(time / 720) === period)
-        .map((time) => Math.floor(time / 60)),
+      intervals
+        .filter(
+          ({ minute }) =>
+            hourCycle === 24 || Math.floor(minute / 720) === period,
+        )
+        .map(({ minute }) => Math.floor(minute / 60)),
     ),
   ].sort((left, right) =>
     hourCycle === 12 ? (left % 12 || 12) - (right % 12 || 12) : left - right,
   );
-  const minutes = times
-    .filter((time) => Math.floor(time / 60) === hour)
-    .map((time) => time % 60);
+  const minutes = intervals
+    .filter(({ minute }) => Math.floor(minute / 60) === hour)
+    .map(({ minute }) => minute % 60);
+  const current = intervals.find(
+    (interval) => interval.minute === Math.floor(selected / 60_000),
+  );
+  const seconds = Array.from({ length: 60 }, (_, second) => second).filter(
+    (second) => {
+      const start = hour * 3_600_000 + minute * 60_000 + second * 1000;
+      return (
+        current && start <= current.end && start + 1000 - unit >= current.start
+      );
+    },
+  );
+  const milliseconds = Array.from(
+    { length: 1000 },
+    (_, millisecond) => millisecond,
+  ).filter((millisecond) => {
+    const time = Math.floor(selected / 1000) * 1000 + millisecond;
+    return current && time >= current.start && time <= current.end;
+  });
+  const selectClosest = (desired: number, choices = intervals) => {
+    const candidates = choices.map(({ start, end }) =>
+      Math.max(start, Math.min(end, desired)),
+    );
+    const closest = candidates.reduce<number | undefined>(
+      (best, time) =>
+        best === undefined ||
+        Math.abs(time - desired) < Math.abs(best - desired)
+          ? time
+          : best,
+      undefined,
+    );
+    if (closest !== undefined) select(closest);
+  };
   const select = (time: number) => {
-    const next = formatTime(time);
+    const next = formatTimeValue(time, precision);
     if (
       !locked &&
-      getTimePickerState({ value: next, min, max, minuteStep }) === "valid"
+      getTimePickerState({ value: next, min, max, minuteStep, precision }) ===
+        "valid"
     ) {
       setDraft(undefined);
       onValueChange(next);
@@ -327,7 +423,7 @@ export const TimePicker = ({
           ref={(element) => {
             element?.setCustomValidity(error ?? "");
           }}
-          placeholder={hourCycle === 12 ? "hh:mm AM/PM" : "HH:mm"}
+          placeholder={`${hourCycle === 12 ? "hh" : "HH"}:mm${precision === "minute" ? "" : ":ss"}${precision === "millisecond" ? ".SSS" : ""}${hourCycle === 12 ? " AM/PM" : ""}`}
           autoComplete="off"
           spellCheck={false}
           aria-invalid={Boolean(error)}
@@ -338,14 +434,16 @@ export const TimePicker = ({
             if (locked) return;
             const text = event.target.value;
             const next =
-              hourCycle === 12 ? (parse12HourTime(text) ?? text) : text;
-            setDraft({ text, value: next, hourCycle });
+              hourCycle === 12
+                ? (parse12HourTime(text, precision) ?? text)
+                : text;
+            setDraft({ text, value: next, hourCycle, precision });
             onValueChange(next);
           }}
           onBlur={() => {
             if (
               activeDraft &&
-              (hourCycle === 24 || parse12HourTime(activeDraft.text))
+              (hourCycle === 24 || parse12HourTime(activeDraft.text, precision))
             )
               setDraft(undefined);
           }}
@@ -373,7 +471,12 @@ export const TimePicker = ({
             align="end"
             data-component="time-picker-content"
             className={cn(
-              "max-h-[calc(100dvh-2rem)] w-72 max-w-[calc(100vw-2rem)] gap-3 overflow-y-auto",
+              "max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] gap-3 overflow-y-auto",
+              precision === "millisecond"
+                ? "w-112"
+                : precision === "second"
+                  ? "w-96"
+                  : "w-72",
               contentClassName,
             )}
           >
@@ -384,7 +487,17 @@ export const TimePicker = ({
               data-slot="time-picker-columns"
               className={cn(
                 "grid gap-3",
-                hourCycle === 12 ? "grid-cols-3" : "grid-cols-2",
+                precision === "millisecond"
+                  ? hourCycle === 12
+                    ? "grid-cols-5"
+                    : "grid-cols-4"
+                  : precision === "second"
+                    ? hourCycle === 12
+                      ? "grid-cols-4"
+                      : "grid-cols-3"
+                    : hourCycle === 12
+                      ? "grid-cols-3"
+                      : "grid-cols-2",
               )}
             >
               <TimeColumn
@@ -397,28 +510,63 @@ export const TimePicker = ({
                 }
                 optionClassName={optionClassName}
                 onSelect={(nextHour) => {
-                  const choices = times.filter(
-                    (time) => Math.floor(time / 60) === nextHour,
+                  selectClosest(
+                    nextHour * 3_600_000 + (selected % 3_600_000),
+                    intervals.filter(
+                      ({ minute }) => Math.floor(minute / 60) === nextHour,
+                    ),
                   );
-                  const closest = choices.reduce(
-                    (best, time) =>
-                      Math.abs((time % 60) - (selected % 60)) <
-                      Math.abs((best % 60) - (selected % 60))
-                        ? time
-                        : best,
-                    choices[0]!,
-                  );
-                  select(closest);
                 }}
               />
               <TimeColumn
                 label={copy.minutes}
                 values={minutes}
-                selected={selected % 60}
+                selected={minute}
                 className={columnClassName}
                 optionClassName={optionClassName}
-                onSelect={(minute) => select(hour * 60 + minute)}
+                onSelect={(minute) =>
+                  selectClosest(
+                    hour * 3_600_000 + minute * 60_000 + (selected % 60_000),
+                    intervals.filter(
+                      (interval) => interval.minute === hour * 60 + minute,
+                    ),
+                  )
+                }
               />
+              {precision !== "minute" ? (
+                <TimeColumn
+                  label={copy.seconds}
+                  values={seconds}
+                  selected={second}
+                  className={columnClassName}
+                  optionClassName={optionClassName}
+                  onSelect={(second) => {
+                    const start =
+                      Math.floor(selected / 60_000) * 60_000 + second * 1000;
+                    if (current)
+                      selectClosest(start + (selected % 1000), [
+                        {
+                          ...current,
+                          start: Math.max(current.start, start),
+                          end: Math.min(current.end, start + 1000 - unit),
+                        },
+                      ]);
+                  }}
+                />
+              ) : null}
+              {precision === "millisecond" ? (
+                <TimeColumn
+                  label={copy.milliseconds}
+                  values={milliseconds}
+                  selected={selected % 1000}
+                  format={(value) => String(value).padStart(3, "0")}
+                  className={columnClassName}
+                  optionClassName={optionClassName}
+                  onSelect={(millisecond) =>
+                    select(Math.floor(selected / 1000) * 1000 + millisecond)
+                  }
+                />
+              ) : null}
               {hourCycle === 12 ? (
                 <TimeColumn
                   label={copy.period}
@@ -429,18 +577,14 @@ export const TimePicker = ({
                   optionClassName={optionClassName}
                   onSelect={(nextPeriod) => {
                     const desired =
-                      ((hour % 12) + nextPeriod * 12) * 60 + (selected % 60);
-                    const choices = times.filter(
-                      (time) => Math.floor(time / 720) === nextPeriod,
+                      ((hour % 12) + nextPeriod * 12) * 3_600_000 +
+                      (selected % 3_600_000);
+                    selectClosest(
+                      desired,
+                      intervals.filter(
+                        ({ minute }) => Math.floor(minute / 720) === nextPeriod,
+                      ),
                     );
-                    const closest = choices.reduce(
-                      (best, time) =>
-                        Math.abs(time - desired) < Math.abs(best - desired)
-                          ? time
-                          : best,
-                      choices[0]!,
-                    );
-                    select(closest);
                   }}
                 />
               ) : null}

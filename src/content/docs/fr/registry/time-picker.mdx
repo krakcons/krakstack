@@ -8,12 +8,12 @@ locale: fr
 section: components
 type: reference
 createdAt: "2026-11-11"
-updatedAt: "2026-11-11"
+updatedAt: "2026-11-16"
 ---
 
 # Sélecteur d’heure
 
-Un champ contrôlé avec des colonnes d’heures et de minutes défilant indépendamment, la saisie clavier, l’effacement et des bornes inclusives. L’affichage par défaut utilise 12 heures avec une colonne AM/PM. Utilisez `hourCycle={24}` pour un affichage sur 24 heures sans AM/PM. Les valeurs stockées et les bornes utilisent toujours le format 24 heures `HH:mm`. Il s’agit d’une heure locale abstraite, pas d’un instant, d’une date ou d’un fuseau horaire.
+Un champ contrôlé avec des colonnes défilant indépendamment, la saisie clavier, l’effacement et des bornes inclusives. L’affichage par défaut utilise 12 heures avec une colonne AM/PM. Utilisez `hourCycle={24}` pour un affichage sur 24 heures sans AM/PM. Les valeurs stockées et les bornes utilisent toujours le format 24 heures : `HH:mm` par défaut, avec les secondes ou les millisecondes en option. Il s’agit d’une heure locale abstraite, pas d’un instant, d’une date ou d’un fuseau horaire.
 
 ## Installation
 
@@ -52,11 +52,32 @@ Les choix s’appliquent immédiatement sans fermer le panneau ; Terminer ou Éc
 
 ## Validation de l’heure
 
+### Secondes et millisecondes facultatives
+
+`precision` vaut `"minute"` par défaut (`HH:mm`). Utilisez `"second"` pour `HH:mm:ss` ou `"millisecond"` pour `HH:mm:ss.SSS`. Les valeurs et les bornes doivent respecter exactement le format choisi ; les fractions nécessitent trois chiffres. Changer la précision ne réécrit pas la valeur contrôlée et ne supprime jamais silencieusement les unités inférieures.
+
+```tsx
+<TimePicker
+  value={time}
+  onValueChange={setTime}
+  precision="millisecond"
+  min="09:00:00.000"
+  max="17:30:00.999"
+  hourCycle={24}
+/>
+```
+
+Les deux cycles d’affichage prennent en charge chaque précision : `1:05:09.007 PM` émet par exemple `13:05:09.007`. Les secondes et les millisecondes disposent de colonnes défilantes accessibles au clavier. Choisir une unité supérieure conserve les unités inférieures si possible ; sinon, l’heure autorisée la plus proche dans l’unité choisie est utilisée. Les bornes sont inclusives à la seconde ou à la milliseconde exacte. `minuteStep` contraint uniquement les minutes de chaque heure ; les secondes et les millisecondes restent libres dans les bornes. L’implémentation utilise au maximum 1 440 intervalles de minutes, sans énumérer toutes les millisecondes de la journée.
+
+`TimeSecondSchema` et `TimeMillisecondSchema` valident les nouveaux formats canoniques. `parseTimeValue(text, precision?)` renvoie les **millisecondes depuis minuit** et `formatTimeValue(milliseconds, precision)` formate cette représentation. `parseTimeOnly` accepte toujours uniquement `HH:mm` et renvoie des minutes. `parse12HourTime(text, precision?)` et `getTimePickerState({ value, min, max, minuteStep, precision })` conservent la précision minute par défaut.
+
+Les clés de messages supplémentaires sont `seconds`, `milliseconds`, `invalidSecond`, `invalidMillisecond`, `invalid12Second` et `invalid12Millisecond`. Les libellés et messages par défaut sont disponibles en français et en anglais.
+
 `TimeOnlySchema` valide `00:00`–`23:59` avec Effect. `parseTimeOnly(text)` renvoie le nombre de minutes depuis minuit ou `undefined`, sans construire de `Date`. `Time12HourSchema` valide le texte sur 12 heures ; `parse12HourTime(text)` le convertit en `HH:mm` canonique ou renvoie `undefined`. `MinuteStepSchema` valide le pas. `getTimePickerState({ value, min, max, minuteStep })` valide les valeurs canoniques et renvoie `empty`, `valid`, `invalid`, `out-of-range`, `off-step` ou `invalid-range`. Validez à nouveau les valeurs et les bornes métier sur le serveur ; la validation native ne constitue pas une frontière de sécurité.
 
 ## Localisation et personnalisation
 
-Le fournisseur ou `locale` sélectionne les libellés et messages français/anglais ; les valeurs restent au format `HH:mm`. `hourCycle` vaut `12` par défaut, quelle que soit la langue. Les marqueurs de saisie restent `AM` et `PM` dans les deux langues. `messages` accepte des remplacements par langue pour `label`, `open`, `clear`, `hours`, `minutes`, `period`, `done`, `invalid`, `invalid12`, `outOfRange`, `invalidRange` et `offStep`. Utilisez Paraglide pour les libellés et descriptions de votre application.
+Le fournisseur ou `locale` sélectionne les libellés et messages français/anglais ; les valeurs restent au format canonique 24 heures à la précision choisie. `hourCycle` vaut `12` par défaut, quelle que soit la langue. Les marqueurs de saisie restent `AM` et `PM` dans les deux langues. `messages` accepte des remplacements par langue pour `label`, `open`, `clear`, `hours`, `minutes`, `period`, `done`, `invalid`, `invalid12`, `outOfRange`, `invalidRange` et `offStep`, ainsi que les clés de précision indiquées ci-dessus. Utilisez Paraglide pour les libellés et descriptions de votre application.
 
 Les styles utilisent les tokens sémantiques du thème et les primitives shadcn existantes. `className` cible le conteneur ; `inputClassName`, `contentClassName`, `columnClassName` et `optionClassName` personnalisent le champ, le panneau en portail, les colonnes et leurs boutons. Les classes sont fusionnées avec `cn`. Ciblez le portail via `contentClassName`, pas avec des sélecteurs descendants du conteneur. Le panneau peut défiler sur un écran peu haut pour garder tous les contrôles accessibles.
 
