@@ -112,14 +112,14 @@ export const EmailEditorPreview = () => {
             srcDoc={preview.html}
             className="h-[640px] w-full rounded-xl border bg-white"
           />
-          <details className="rounded-lg border p-3">
-            <summary className="cursor-pointer text-xs font-medium">
+          <section className="rounded-lg border p-3">
+            <h3 className="text-xs font-medium">
               {m.email_editor_demo_text()}
-            </summary>
+            </h3>
             <pre className="mt-3 overflow-auto text-xs whitespace-pre-wrap">
               {preview.text}
             </pre>
-          </details>
+          </section>
         </>
       ) : null}
     </div>
