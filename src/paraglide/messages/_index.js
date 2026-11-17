@@ -143,6 +143,10 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Notification_Menu_Preview_Collection_TitleInputs */
 /** @typedef {{}} Notification_Menu_Preview_Collection_DescriptionInputs */
 /** @typedef {{}} Notification_Menu_Preview_Export_TitleInputs */
+/** @typedef {{}} Notification_Menu_Preview_Reminder_TitleInputs */
+/** @typedef {{}} Notification_Menu_Preview_Reminder_DescriptionInputs */
+/** @typedef {{}} Notification_Menu_Preview_Completion_TitleInputs */
+/** @typedef {{}} Notification_Menu_Preview_Completion_DescriptionInputs */
 /** @typedef {{}} Notification_Menu_Preview_Export_DescriptionInputs */
 /** @typedef {{}} Map_Picker_Preview_TitleInputs */
 /** @typedef {{}} Map_Picker_Preview_DescriptionInputs */
@@ -2470,6 +2474,62 @@ export const notification_menu_preview_export_title = /** @type {((inputs?: Noti
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.notification_menu_preview_export_title(inputs)
 	return __fr.notification_menu_preview_export_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Continue your learning" |
+*
+* @param {Notification_Menu_Preview_Reminder_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_reminder_title = /** @type {((inputs?: Notification_Menu_Preview_Reminder_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Reminder_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_reminder_title(inputs)
+	return __fr.notification_menu_preview_reminder_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Your next lesson is waiting. Pick up where you left off in your team's onboarding course." |
+*
+* @param {Notification_Menu_Preview_Reminder_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_reminder_description = /** @type {((inputs?: Notification_Menu_Preview_Reminder_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Reminder_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_reminder_description(inputs)
+	return __fr.notification_menu_preview_reminder_description(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Course completed" |
+*
+* @param {Notification_Menu_Preview_Completion_TitleInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_completion_title = /** @type {((inputs?: Notification_Menu_Preview_Completion_TitleInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Completion_TitleInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_completion_title(inputs)
+	return __fr.notification_menu_preview_completion_title(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "You've completed your first course. Review your progress and explore more learning opportunities." |
+*
+* @param {Notification_Menu_Preview_Completion_DescriptionInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const notification_menu_preview_completion_description = /** @type {((inputs?: Notification_Menu_Preview_Completion_DescriptionInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Notification_Menu_Preview_Completion_DescriptionInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.notification_menu_preview_completion_description(inputs)
+	return __fr.notification_menu_preview_completion_description(inputs)
 });
 /**
 * | output |

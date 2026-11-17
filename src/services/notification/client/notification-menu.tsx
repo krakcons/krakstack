@@ -6,7 +6,7 @@ import {
   Inbox,
   TriangleAlert,
 } from "lucide-react";
-import { Fragment, type ReactElement, type ReactNode, useState } from "react";
+import { type ReactElement, type ReactNode, useState } from "react";
 import { Schema } from "effect";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -347,20 +346,18 @@ export function NotificationList<ActionResult>({
   }
 
   return (
-    <ScrollArea className="h-[min(24rem,60svh)] min-h-0 min-w-0 flex-1">
+    <ScrollArea className="flex max-h-[min(24rem,60svh)] min-h-0 min-w-0 flex-auto flex-col overflow-hidden [&>[data-slot=scroll-area-viewport]]:h-auto [&>[data-slot=scroll-area-viewport]]:min-h-0 [&>[data-slot=scroll-area-viewport][data-has-overflow-y]]:[--notification-scrollbar-gutter:0.375rem]">
       <div className="flex min-w-0 flex-col">
-        {notifications.map((notification, index) => (
-          <Fragment key={notification.id}>
-            {index > 0 ? <Separator /> : null}
-            <NotificationListItem
-              labels={labels}
-              locale={locale}
-              notification={notification}
-              onArchive={onArchive}
-              onNavigate={onNavigate}
-              renderItem={renderItem}
-            />
-          </Fragment>
+        {notifications.map((notification) => (
+          <NotificationListItem
+            key={notification.id}
+            labels={labels}
+            locale={locale}
+            notification={notification}
+            onArchive={onArchive}
+            onNavigate={onNavigate}
+            renderItem={renderItem}
+          />
         ))}
       </div>
     </ScrollArea>
@@ -425,8 +422,10 @@ export function NotificationListItem<ActionResult>({
     >
       <Button
         className={cn(
-          "h-auto w-full min-w-0 cursor-pointer justify-start rounded-none border-0 px-3 py-4 text-left [overflow-wrap:anywhere] whitespace-normal",
-          !notification.archivedAt && onArchive && "pr-14",
+          "h-auto w-full min-w-0 cursor-pointer justify-start rounded-none border-0 border-b border-border px-3 py-4 pr-[calc(0.75rem+var(--notification-scrollbar-gutter,0px))] text-left [overflow-wrap:anywhere] whitespace-normal group-last:border-b-0",
+          !notification.archivedAt &&
+            onArchive &&
+            "pr-[calc(3.5rem+var(--notification-scrollbar-gutter,0px))]",
         )}
         onClick={selectNotification}
         type="button"
@@ -435,7 +434,7 @@ export function NotificationListItem<ActionResult>({
         {content}
       </Button>
       {!notification.archivedAt && onArchive ? (
-        <div className="absolute top-3 right-2">
+        <div className="absolute top-3 right-[calc(0.5rem+var(--notification-scrollbar-gutter,0px))]">
           <ArchiveButton
             label={labels.archiveItem(notificationTitle(notification))}
             notificationIds={[notification.id]}

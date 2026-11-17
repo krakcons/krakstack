@@ -29,6 +29,16 @@ export const NotificationMenuPreview = () => {
       description: m.notification_menu_preview_collection_description(),
     },
     {
+      id: "reminder",
+      title: m.notification_menu_preview_reminder_title(),
+      description: m.notification_menu_preview_reminder_description(),
+    },
+    {
+      id: "completion",
+      title: m.notification_menu_preview_completion_title(),
+      description: m.notification_menu_preview_completion_description(),
+    },
+    {
       id: "export",
       title: m.notification_menu_preview_export_title(),
       description: m.notification_menu_preview_export_description(),

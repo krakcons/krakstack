@@ -1,5 +1,11 @@
 # @krak-stack/notifications
 
+## 0.4.2
+
+### Patch Changes
+
+- Fix notification menu scrolling so overflowing notifications remain reachable, size short lists to their content, and leave space between notification actions and the scrollbar. Use notification button borders instead of separate dividers to keep the pointer cursor consistent between notifications.
+
 ## 0.4.1
 
 ### Patch Changes
