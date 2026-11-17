@@ -164,6 +164,63 @@ test("clicking an email element surface selects its settings", async ({
   await expect(properties).not.toBeVisible();
 });
 
+test("element tools stay beside the whole canvas for different selections", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1920, height: 2400 });
+  const demo = await visit(page, "en", "email-editor");
+  const canvas = demo.locator('[data-slot="email-editor-canvas"]');
+  const list = demo.getByRole("list", { name: "Email content", exact: true });
+  const tools = page.getByRole("dialog");
+  const bounds = await canvas.boundingBox();
+  if (!bounds) throw new Error("The email canvas must have layout bounds");
+  const expectCanvasTools = async (elementId: string) => {
+    await expect(tools).toBeVisible();
+    await expect
+      .poll(async () => {
+        const box = await tools.boundingBox();
+        return box ? Math.abs(box.x - bounds.x - bounds.width - 8) : Infinity;
+      })
+      .toBeLessThan(2);
+    await expect
+      .poll(async () => {
+        const box = await tools.boundingBox();
+        const element = await list
+          .locator(`[data-motion-key="${elementId}"]`)
+          .boundingBox();
+        return box && element ? Math.abs(box.y - element.y) : Infinity;
+      })
+      .toBeLessThan(2);
+  };
+  await list.locator('[data-motion-key="logo"] img').click();
+  await expectCanvasTools("logo");
+  await list
+    .locator('[data-motion-key="footer"]')
+    .getByRole("button", { name: "Edit element: Text", exact: true })
+    .first()
+    .click();
+  await expectCanvasTools("footer");
+  await list.locator('[data-motion-key="logo"] img').click();
+  await expectCanvasTools("logo");
+  await list
+    .locator('[data-motion-key="footer"]')
+    .getByRole("button", { name: "Edit element: Text", exact: true })
+    .first()
+    .click();
+  await expectCanvasTools("footer");
+  await tools.getByRole("button", { name: "Close settings" }).click();
+  await list.getByRole("textbox", { name: "Text", exact: true }).click();
+  await expectCanvasTools("footer");
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await list.locator('[data-motion-key="footer"]').evaluate((element) => {
+    window.scrollBy(
+      0,
+      element.getBoundingClientRect().top - window.innerHeight + 140,
+    );
+  });
+  await expectCanvasTools("footer");
+});
+
 test("email language picker preserves separate documents and uses language autonyms", async ({
   page,
 }) => {

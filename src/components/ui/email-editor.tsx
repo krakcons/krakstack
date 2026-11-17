@@ -1,6 +1,13 @@
 import { Schema } from "effect";
 import { Popover } from "@base-ui/react/popover";
-import { useId, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   Type,
   Image,
@@ -245,10 +252,32 @@ export const EmailEditor = ({
   );
   const selected = value.elements.find((element) => element.id === active);
   const [view, setView] = useState("design");
-  const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(
-    null,
-  );
+  const canvas = useRef<HTMLDivElement>(null);
+  const elementSurfaces = useRef(new Map<string, HTMLDivElement>());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsAnchor = useMemo(
+    () =>
+      settingsOpen
+        ? {
+            get contextElement() {
+              return canvas.current ?? undefined;
+            },
+            getBoundingClientRect: () => {
+              const canvasBounds = canvas.current?.getBoundingClientRect();
+              const elementBounds = active
+                ? elementSurfaces.current.get(active)?.getBoundingClientRect()
+                : undefined;
+              return new DOMRect(
+                canvasBounds?.x,
+                elementBounds?.y ?? canvasBounds?.y,
+                canvasBounds?.width,
+                elementBounds?.height ?? canvasBounds?.height,
+              );
+            },
+          }
+        : null,
+    [active, settingsOpen],
+  );
   const id = useId();
   const [insertOpen, setInsertOpen] = useState(false);
   const update = (element: EmailElement) => {
@@ -449,6 +478,8 @@ export const EmailEditor = ({
           </div>
           <div className="flex min-w-0 flex-col gap-4">
             <div
+              ref={canvas}
+              data-slot="email-editor-canvas"
               className="min-w-0 rounded-xl border p-3 sm:p-4"
               style={{
                 backgroundColor: Schema.is(EmailColor)(
@@ -492,17 +523,16 @@ export const EmailEditor = ({
                 >
                   {(element) => (
                     <div
+                      ref={(surface) => {
+                        if (surface)
+                          elementSurfaces.current.set(element.id, surface);
+                        else elementSurfaces.current.delete(element.id);
+                      }}
                       className="min-w-0 flex-1 rounded-lg border border-transparent transition-colors hover:border-current"
-                      onClick={(event) => {
+                      onClick={() => {
                         if (!disabled) {
                           setActive(element.id);
-                          if (
-                            element.type !== "text" ||
-                            active !== element.id
-                          ) {
-                            setSettingsAnchor(event.currentTarget);
-                            setSettingsOpen(true);
-                          }
+                          setSettingsOpen(true);
                         }
                       }}
                       onFocusCapture={() => {
@@ -519,9 +549,8 @@ export const EmailEditor = ({
                           type="button"
                           disabled={disabled}
                           aria-label={`${copy.editElement}: ${copy[element.type]}`}
-                          onClick={(event) => {
+                          onClick={() => {
                             setActive(element.id);
-                            setSettingsAnchor(event.currentTarget);
                             setSettingsOpen(true);
                           }}
                           className="inline-flex items-center gap-1 rounded px-1 py-0.5 hover:underline"
@@ -571,6 +600,7 @@ export const EmailEditor = ({
                                 ) {
                                   event.preventDefault();
                                   setActive(element.id);
+                                  setSettingsOpen(true);
                                 }
                               }}
                             >
@@ -638,11 +668,16 @@ export const EmailEditor = ({
                   side="right"
                   align="start"
                   sideOffset={8}
+                  collisionAvoidance={{
+                    side: "none",
+                    align: "none",
+                    fallbackAxisSide: "none",
+                  }}
                   className="z-50"
                 >
                   <Popover.Popup
                     initialFocus={false}
-                    className="bg-popover text-popover-foreground max-h-[min(480px,80dvh)] w-[min(420px,calc(100vw-2rem))] space-y-3 overflow-y-auto rounded-xl border p-4 shadow-lg outline-none"
+                    className="bg-popover text-popover-foreground max-h-[min(480px,80dvh)] w-[min(380px,calc(100vw-2rem))] space-y-3 overflow-y-auto rounded-xl border p-4 shadow-lg outline-none"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <Popover.Title className="text-xs font-semibold">
