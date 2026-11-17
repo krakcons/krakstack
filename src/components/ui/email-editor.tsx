@@ -20,6 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   PopoverContent,
   PopoverTrigger,
   PopoverTitle,
@@ -46,6 +53,40 @@ import {
   richTextFromEmailText,
 } from "@/lib/email-document/model";
 import { richTextPlainText } from "@/lib/rich-text/model";
+
+const EmailEditorSelect = ({
+  label,
+  value,
+  options,
+  disabled,
+  onValueChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly { value: string; label: string }[];
+  disabled?: boolean;
+  onValueChange: (value: string) => void;
+}) => (
+  <Select
+    items={options}
+    value={value}
+    disabled={disabled}
+    onValueChange={(value) => {
+      if (value !== null) onValueChange(value);
+    }}
+  >
+    <SelectTrigger aria-label={label} className="w-full min-w-0 text-xs">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent align="start" alignItemWithTrigger={false}>
+      {options.map((option) => (
+        <SelectItem key={option.value} value={option.value}>
+          {option.label}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+);
 
 const labels = {
   en: {
@@ -242,8 +283,6 @@ export const EmailEditor = ({
   const invalid =
     validateEmailDocument({ document: value, variables, requiredVariables })
       .length > 0;
-  const selectClass =
-    "h-9 w-full min-w-0 rounded-md border bg-background px-2 text-xs";
   const canvasVariables: CSSProperties &
     Record<"--email-paper" | "--email-hover", string> = {
     "--email-paper": value.appearance.surface,
@@ -386,28 +425,23 @@ export const EmailEditor = ({
                   ))}
                   {field(
                     copy.font,
-                    <select
-                      className={selectClass}
+                    <EmailEditorSelect
+                      label={copy.font}
                       value={value.appearance.font}
                       disabled={disabled}
-                      onChange={(event) =>
+                      options={(["sans", "serif", "mono"] as const).map(
+                        (font) => ({ value: font, label: copy[font] }),
+                      )}
+                      onValueChange={(font) =>
                         onChange({
                           ...value,
                           appearance: {
                             ...value.appearance,
-                            font: Schema.decodeUnknownSync(EmailFont)(
-                              event.target.value,
-                            ),
+                            font: Schema.decodeUnknownSync(EmailFont)(font),
                           },
                         })
                       }
-                    >
-                      {(["sans", "serif", "mono"] as const).map((font) => (
-                        <option key={font} value={font}>
-                          {copy[font]}
-                        </option>
-                      ))}
-                    </select>,
+                    />,
                   )}
                 </div>
               </PopoverContent>
@@ -629,27 +663,26 @@ export const EmailEditor = ({
                       <div className="grid min-w-0 items-end gap-3 sm:grid-cols-2 [&>label]:min-w-0">
                         {field(
                           copy.alignment,
-                          <select
-                            className={selectClass}
+                          <EmailEditorSelect
+                            label={copy.alignment}
                             value={selected.alignment}
                             disabled={disabled}
-                            onChange={(event) =>
+                            options={(["left", "center", "right"] as const).map(
+                              (alignment) => ({
+                                value: alignment,
+                                label: copy[alignment],
+                              }),
+                            )}
+                            onValueChange={(alignment) =>
                               update({
                                 ...selected,
-                                alignment: Schema.decodeUnknownSync(
-                                  EmailAlignment,
-                                )(event.target.value),
+                                alignment:
+                                  Schema.decodeUnknownSync(EmailAlignment)(
+                                    alignment,
+                                  ),
                               })
                             }
-                          >
-                            {(["left", "center", "right"] as const).map(
-                              (alignment) => (
-                                <option key={alignment} value={alignment}>
-                                  {copy[alignment]}
-                                </option>
-                              ),
-                            )}
-                          </select>,
+                          />,
                         )}
                         <div className="grid grid-cols-2 gap-2">
                           {(["paddingTop", "paddingBottom"] as const).map(
@@ -693,42 +726,41 @@ export const EmailEditor = ({
                             )}
                             {field(
                               copy.destination,
-                              <select
-                                className={selectClass}
+                              <EmailEditorSelect
+                                label={copy.destination}
                                 disabled={disabled}
+                                options={[
+                                  { value: "__url", label: copy.url },
+                                  ...variables
+                                    .filter(
+                                      (variable) => variable.type === "url",
+                                    )
+                                    .map((variable) => ({
+                                      value: variable.key,
+                                      label: variable.label,
+                                    })),
+                                ]}
                                 value={
                                   selected.destination.type === "variable"
                                     ? selected.destination.key
                                     : "__url"
                                 }
-                                onChange={(event) =>
+                                onValueChange={(destination) =>
                                   update({
                                     ...selected,
                                     destination:
-                                      event.target.value === "__url"
+                                      destination === "__url"
                                         ? {
                                             type: "url",
                                             url: "https://example.com",
                                           }
                                         : {
                                             type: "variable",
-                                            key: event.target.value,
+                                            key: destination,
                                           },
                                   })
                                 }
-                              >
-                                <option value="__url">{copy.url}</option>
-                                {variables
-                                  .filter((variable) => variable.type === "url")
-                                  .map((variable) => (
-                                    <option
-                                      key={variable.key}
-                                      value={variable.key}
-                                    >
-                                      {variable.label}
-                                    </option>
-                                  ))}
-                              </select>,
+                              />,
                             )}
                             {selected.destination.type === "url"
                               ? field(
@@ -754,30 +786,25 @@ export const EmailEditor = ({
                         {selected.type === "code"
                           ? field(
                               copy.variable,
-                              <select
-                                className={selectClass}
+                              <EmailEditorSelect
+                                label={copy.variable}
                                 disabled={disabled}
                                 value={selected.variable}
-                                onChange={(event) =>
-                                  update({
-                                    ...selected,
-                                    variable: event.target.value,
-                                  })
-                                }
-                              >
-                                {variables
+                                options={variables
                                   .filter(
                                     (variable) => variable.type === "text",
                                   )
-                                  .map((variable) => (
-                                    <option
-                                      key={variable.key}
-                                      value={variable.key}
-                                    >
-                                      {variable.label}
-                                    </option>
-                                  ))}
-                              </select>,
+                                  .map((variable) => ({
+                                    value: variable.key,
+                                    label: variable.label,
+                                  }))}
+                                onValueChange={(variable) =>
+                                  update({
+                                    ...selected,
+                                    variable,
+                                  })
+                                }
+                              />,
                             )
                           : null}
                         {selected.type === "logo" ||

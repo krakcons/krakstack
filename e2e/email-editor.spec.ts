@@ -153,10 +153,97 @@ test("clicking an email element surface selects its settings", async ({
   await expect(
     properties.getByRole("heading", { name: "Divider", exact: true }),
   ).toBeVisible();
-  await properties.getByRole("combobox").selectOption("right");
-  await expect(properties.getByRole("combobox")).toHaveValue("right");
+  await properties
+    .getByRole("combobox", { name: "Alignment", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Right", exact: true }).click();
+  await expect(
+    properties.getByRole("combobox", { name: "Alignment", exact: true }),
+  ).toContainText("Right");
   await page.keyboard.press("Escape");
   await expect(properties).not.toBeVisible();
+});
+
+test("email language picker preserves separate documents and uses language autonyms", async ({
+  page,
+}) => {
+  const demo = await visit(page, "en", "email-editor");
+  const language = demo.getByRole("combobox", { name: /Email language/ });
+  await demo
+    .getByRole("textbox", { name: "Subject", exact: true })
+    .fill("English draft");
+  await language.click();
+  await expect(
+    page.getByRole("option", { name: "English", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("option", { name: "Français", exact: true }).click();
+  await demo
+    .getByRole("textbox", { name: "Objet", exact: true })
+    .fill("Brouillon français");
+  await language.click();
+  await page.getByRole("option", { name: "English", exact: true }).click();
+  await expect(
+    demo.getByRole("textbox", { name: "Subject", exact: true }),
+  ).toHaveText("English draft");
+  await language.click();
+  await page.getByRole("option", { name: "Français", exact: true }).click();
+  await expect(
+    demo.getByRole("textbox", { name: "Objet", exact: true }),
+  ).toHaveText("Brouillon français");
+});
+
+test("email settings pickers update font, destination and code variable inside popovers", async ({
+  page,
+}) => {
+  const demo = await visit(page, "en", "email-editor");
+  await demo.getByRole("button", { name: "Branding", exact: true }).click();
+  const branding = page.getByRole("dialog", { name: "Branding", exact: true });
+  await branding.getByRole("combobox", { name: "Font", exact: true }).click();
+  await page.getByRole("option", { name: "Serif", exact: true }).click();
+  await expect(
+    branding.getByRole("combobox", { name: "Font", exact: true }),
+  ).toContainText("Serif");
+  await page.keyboard.press("Escape");
+  const list = demo.getByRole("list", { name: "Email content", exact: true });
+  await list
+    .locator('[data-motion-key="action"]')
+    .getByRole("button", { name: "Edit element: Button", exact: true })
+    .click();
+  const settings = page.getByRole("dialog");
+  await settings
+    .getByRole("combobox", { name: "Destination", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Custom URL", exact: true }).click();
+  await expect(
+    settings.getByRole("textbox", { name: "Custom URL", exact: true }),
+  ).toBeVisible();
+  await settings
+    .getByRole("combobox", { name: "Destination", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Account URL", exact: true }).click();
+  await expect(
+    settings.getByRole("textbox", { name: "Custom URL", exact: true }),
+  ).toHaveCount(0);
+  await settings
+    .getByRole("button", { name: "Close settings", exact: true })
+    .click();
+  await list
+    .locator('[data-motion-key="code"]')
+    .getByRole("button", {
+      name: "Edit element: Verification code",
+      exact: true,
+    })
+    .click();
+  await settings
+    .getByRole("combobox", { name: "Variable", exact: true })
+    .click();
+  await page.getByRole("option", { name: "First name", exact: true }).click();
+  await expect(
+    settings.getByRole("combobox", { name: "Variable", exact: true }),
+  ).toContainText("First name");
+  await expect(list.locator('[data-motion-key="code"]')).toContainText(
+    "{{firstName}}",
+  );
 });
 
 for (const locale of ["en", "fr"]) {
@@ -276,5 +363,50 @@ for (const locale of ["en", "fr"]) {
       body.indexOf(french ? "Un petit code" : "A little code"),
     );
     expect(body).not.toContain("{{");
+  });
+
+  test(`link removal belongs to the link panel in ${locale}`, async ({
+    page,
+  }) => {
+    const demo = await visit(page, locale, "rich-text-editor");
+    const editor = demo.getByRole("textbox", { name: "Message", exact: true });
+    const linkButton = demo.getByRole("button", {
+      name: french ? "Lien" : "Link",
+      exact: true,
+    });
+    const remove = demo.getByRole("button", {
+      name: french ? "Retirer le lien" : "Remove link",
+      exact: true,
+    });
+    await editor.fill("Visit KrakStack");
+    await editor.press("ControlOrMeta+A");
+    await linkButton.click();
+    await expect(remove).toHaveCount(0);
+    await demo
+      .getByRole("textbox", { name: french ? "URL du lien" : "Link URL" })
+      .fill("https://krakstack.net");
+    await demo
+      .getByRole("button", {
+        name: french ? "Appliquer le lien" : "Apply link",
+        exact: true,
+      })
+      .click();
+    await expect(
+      editor.getByRole("link", { name: "Visit KrakStack" }),
+    ).toHaveAttribute("href", "https://krakstack.net");
+    await expect(remove).toHaveCount(0);
+    await expect(editor).toBeFocused();
+    await linkButton.click();
+    await remove.click();
+    await expect(editor.getByRole("link")).toHaveCount(0);
+    await expect(editor).toHaveText("Visit KrakStack");
+    await expect(editor).toBeFocused();
+    await expect(remove).toHaveCount(0);
+    await demo
+      .getByRole("button", { name: french ? "Annuler" : "Undo", exact: true })
+      .click();
+    await expect(
+      editor.getByRole("link", { name: "Visit KrakStack" }),
+    ).toBeVisible();
   });
 }

@@ -33,7 +33,7 @@
       "type": "registry:component",
       "title": "Rich Text Editor",
       "description": "Native rich-text editing with inline formatting, safe links, atomic variables and undo/redo. No external editor library.",
-      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-16" },
+      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-17" },
       "files": [
         {
           "path": "src/components/ui/rich-text-editor.tsx",
@@ -82,7 +82,7 @@
       "type": "registry:component",
       "title": "Email Editor",
       "description": "A free-order email canvas with native rich text, variable chips, KrakMotion drag handles and email-safe rendering.",
-      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-16" },
+      "meta": { "createdAt": "2026-11-16", "updatedAt": "2026-11-17" },
       "files": [
         {
           "path": "src/components/ui/email-editor.tsx",
@@ -98,7 +98,8 @@
         "button",
         "input",
         "popover",
-        "tabs"
+        "tabs",
+        "select"
       ],
       "dependencies": ["react", "effect", "lucide-react"]
     },

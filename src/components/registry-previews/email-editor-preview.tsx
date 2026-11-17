@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import { useEffect, useMemo, useState } from "react";
 import { EmailEditor } from "@/components/ui/email-editor";
+import { EditingLocaleSwitcher } from "@/components/ui/editing-locale-switcher";
 import {
   EmailDocument,
   type EmailRenderResult,
@@ -125,23 +126,27 @@ export const EmailEditorPreview = () => {
   );
   return (
     <div className="space-y-4">
-      <label className="flex items-center justify-between gap-3 text-xs font-medium">
-        {m.email_editor_demo_locale()}
-        <select
-          value={locale}
-          className="bg-background h-9 rounded-md border px-3"
-          onChange={(event) =>
-            setLocale(
-              Schema.decodeUnknownSync(Schema.Literals(["en", "fr"]))(
-                event.target.value,
-              ),
-            )
-          }
-        >
-          <option value="en">English</option>
-          <option value="fr">Français</option>
-        </select>
-      </label>
+      <EditingLocaleSwitcher
+        value={locale}
+        locales={["en", "fr"]}
+        messages={{
+          en: {
+            label: m.email_editor_demo_locale(),
+            en: "English",
+            fr: "Français",
+          },
+          fr: {
+            label: m.email_editor_demo_locale(),
+            en: "English",
+            fr: "Français",
+          },
+        }}
+        onValueChange={(value) =>
+          setLocale(
+            Schema.decodeUnknownSync(Schema.Literals(["en", "fr"]))(value),
+          )
+        }
+      />
       <EmailEditor
         key={locale}
         value={value}

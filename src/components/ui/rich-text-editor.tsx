@@ -551,6 +551,7 @@ export const RichTextEditor = ({
             <ToolButton
               label={copy.link}
               disabled={disabled}
+              pressed={linkOpen || !!marks.href}
               onClick={() => {
                 selection();
                 setLink(marks.href ?? "");
@@ -559,19 +560,6 @@ export const RichTextEditor = ({
               }}
             >
               <Link2 />
-            </ToolButton>
-            <ToolButton
-              label={copy.unlink}
-              disabled={disabled}
-              onClick={() => {
-                const range = selection();
-                commit(
-                  formatRichText(model.current, range, "href", undefined),
-                  range,
-                );
-              }}
-            >
-              <Unlink />
             </ToolButton>
           </>
         ) : null}
@@ -642,6 +630,30 @@ export const RichTextEditor = ({
           >
             {copy.apply}
           </Button>
+          {marks.href ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              onClick={() => {
+                commit(
+                  formatRichText(
+                    model.current,
+                    selected.current,
+                    "href",
+                    undefined,
+                  ),
+                  selected.current,
+                );
+                setLinkOpen(false);
+                setLinkError(false);
+              }}
+            >
+              <Unlink aria-hidden />
+              {copy.unlink}
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"

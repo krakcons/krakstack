@@ -12,6 +12,9 @@ export const RichTextEditorPreview = () => {
   const locale = getLocale() === "fr" ? "fr" : "en";
   const [value, setValue] = useState(() => emailExampleMessage(locale));
   const variables = emailExampleVariables(locale);
+  const previewValues = Object.fromEntries(
+    variables.map((variable) => [variable.key, variable.sample]),
+  );
   return (
     <div className="space-y-4">
       <RichTextEditor
@@ -25,7 +28,7 @@ export const RichTextEditorPreview = () => {
         {m.email_editor_demo_rich_help()}
       </p>
       <pre className="overflow-auto rounded-lg border p-3 text-xs whitespace-pre-wrap">
-        {richTextPlainText(value)}
+        {richTextPlainText(value, previewValues)}
       </pre>
     </div>
   );
