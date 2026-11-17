@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.7
+
+### Patch Changes
+
+- cdd33b2: Anchor email element settings to the right of the full canvas at the selected element's height, and reopen settings when clicking an already-selected text element.
+
 ## 0.10.6
 
 ### Patch Changes
