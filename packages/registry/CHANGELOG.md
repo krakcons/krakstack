@@ -1,5 +1,19 @@
 # @krak-stack/registry
 
+## 0.10.6
+
+### Patch Changes
+
+- 7419de4: Use styled Select controls for email editor fonts, alignment, button destinations and code variables.
+- e9a5d41: Add native rich-text and email editors with inline formatting, variable chips, accessible element reordering and host-owned preview integration. Add versioned Effect document schemas, variable validation and shared HTML/plain-text email rendering without an external editor or drag library.
+- 5fbc467: Replace Motion in AnimatedList, PresenceTransition, AutoHeight and AnimatedNumber with shared native KrakMotion internals. Preserve controlled reordering, keyboard access, keyed child state and reduced-motion support without an external animation dependency.
+- f551df9: Add opt-in second and millisecond precision to TimePicker, including typed entry, scrolling columns, inclusive bounds, and localized validation. Existing minute precision and minute-only helpers remain unchanged.
+- 211fe58: Use styled Select and DropdownMenu controls in the rich-text toolbar, preserving editor selection and focus for block formatting and variable insertion.
+
+  Keep link removal alongside link editing rather than as a separate toolbar button.
+
+- 5b03f18: Fix native reordering for variable-height items so tall elements can reach either end of a bounded list.
+
 ## 0.10.5
 
 ### Patch Changes
