@@ -1,14 +1,8 @@
-import { createServerFn } from "@tanstack/react-start";
-import { Schema } from "effect";
+const sources = import.meta.glob<string>(
+  "../components/registry-previews/*-preview.tsx",
+  { query: "?raw", import: "default" },
+);
 
-const PreviewSlug = Schema.String.annotate({
-  identifier: "RegistryPreviewSlug",
-});
-
-export const getRegistryPreviewSource = createServerFn({ method: "GET" })
-  .validator(Schema.toStandardSchemaV1(PreviewSlug))
-  .handler(async ({ data }) => {
-    const { loadRegistryPreviewSource } =
-      await import("./registry-preview.server");
-    return loadRegistryPreviewSource(data);
-  });
+export const getRegistryPreviewSource = async ({ data }: { data: string }) =>
+  (await sources[`../components/registry-previews/${data}-preview.tsx`]?.()) ??
+  null;

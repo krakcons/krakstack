@@ -40,7 +40,23 @@ const config = defineConfig({
       ],
     }),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      pages: ["en", "fr"].flatMap((locale) =>
+        ["/docs", "/docs/developer-setup", "/docs/sites/template"].map(
+          (path) => ({
+            path: `/${locale}${path}`,
+          }),
+        ),
+      ),
+      prerender: {
+        enabled: true,
+        autoStaticPathsDiscovery: false,
+        crawlLinks: true,
+        concurrency: 4,
+        failOnError: true,
+        filter: ({ path }) => /^\/(?:en|fr)\/docs(?:\/|$)/.test(path),
+      },
+    }),
     viteReact(),
   ],
 });

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { makeRegistryDocs } from "@/lib/registry-docs";
+import { getRegistryDocsPages, makeRegistryDocs } from "@/lib/registry-docs";
 
 const origin = "https://krakstack.net";
 const locales = ["en", "fr"] as const;
@@ -13,8 +13,7 @@ const escapeXml = (value: string) =>
     .replaceAll('"', "&quot;");
 
 const sitemap = async () => {
-  const { loadRegistryDocsPages } = await import("@/lib/registry-docs.server");
-  const docs = makeRegistryDocs(await loadRegistryDocsPages());
+  const docs = makeRegistryDocs(await getRegistryDocsPages());
   const paths = ["/", ...docs.pages("en").map((page) => page.path)];
   const urls = paths.flatMap((path) =>
     locales.map((locale) => {

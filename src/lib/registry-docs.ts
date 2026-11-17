@@ -1,10 +1,16 @@
 import { Blocks } from "lucide-react";
 import { createServerFn } from "@tanstack/react-start";
+import { Schema } from "effect";
 
 import { createDocsSource, makeDocs } from "@krak-stack/registry/docs";
 import { krakstackRepositories } from "@/lib/krakstack-repositories";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
+import {
+  indexToRegistryDocsPages,
+  RegistryDocsPageRequest,
+  toRegistryDocsIndex,
+} from "./registry-docs.schema";
 
 const locales = ["en", "fr"] as const;
 
@@ -120,16 +126,60 @@ export const makeRegistryDocs = (pages: ReadonlyArray<unknown>) =>
 
 export const registryDocsShell = makeRegistryDocs([]);
 
-export const getRegistryDocsPages = createServerFn({ method: "GET" }).handler(
+const fetchRegistryDocsPages = createServerFn({ method: "GET" }).handler(
   async () => {
+    if (import.meta.env.PROD) {
+      return (await import("./registry-docs.compiled"))
+        .compiledRegistryDocsPages;
+    }
     const { loadRegistryDocsPages } = await import("./registry-docs.server");
-    return loadRegistryDocsPages();
+    return indexToRegistryDocsPages(
+      toRegistryDocsIndex(await loadRegistryDocsPages()),
+    );
   },
 );
 
-export const getAgentsPreviewMarkdown = createServerFn({
+export const getRegistryDocsPages = async () => {
+  if (import.meta.env.DEV) return fetchRegistryDocsPages();
+  return (await import("./registry-docs.compiled")).compiledRegistryDocsPages;
+};
+
+const fetchRegistryDocsPage = createServerFn({ method: "GET" })
+  .validator(Schema.toStandardSchemaV1(RegistryDocsPageRequest))
+  .handler(async ({ data }) => {
+    if (import.meta.env.PROD) {
+      const { loadCompiledRegistryDocsPage } =
+        await import("./registry-docs.compiled");
+      return loadCompiledRegistryDocsPage(data.slug, data.locale);
+    }
+    const { loadRegistryDocsPages } = await import("./registry-docs.server");
+    return (await loadRegistryDocsPages()).find(
+      (page) => page.slug === data.slug && page.locale === data.locale,
+    );
+  });
+
+export const getRegistryDocsPage = async (
+  data: typeof RegistryDocsPageRequest.Type,
+) => {
+  if (import.meta.env.DEV) return fetchRegistryDocsPage({ data });
+  const { loadCompiledRegistryDocsPage } =
+    await import("./registry-docs.compiled");
+  return loadCompiledRegistryDocsPage(data.slug, data.locale);
+};
+
+const fetchAgentsPreviewMarkdown = createServerFn({
   method: "GET",
 }).handler(async () => {
+  if (import.meta.env.PROD) {
+    return (
+      await import("./registry-docs.compiled")
+    ).loadCompiledAgentsPreview();
+  }
   const { loadAgentsPreviewMarkdown } = await import("./registry-docs.server");
   return loadAgentsPreviewMarkdown();
 });
+
+export const getAgentsPreviewMarkdown = async () => {
+  if (import.meta.env.DEV) return fetchAgentsPreviewMarkdown();
+  return (await import("./registry-docs.compiled")).loadCompiledAgentsPreview();
+};

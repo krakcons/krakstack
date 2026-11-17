@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "bun run registry:package:build && bun --bun vite dev --port 3003",
-    "build": "bun run registry:package:build && bun --bun vite build",
+    "build": "bun run registry:package:build && bun run docs:build && bun --bun vite build",
+    "docs:build": "bun run scripts/build-docs.ts",
     "start": "bun run server.ts",
     "preview": "bun --bun vite preview",
     "test": "bun run registry:package:build && bun --bun vitest run --exclude 'e2e/**' --exclude 'tmp/**'",

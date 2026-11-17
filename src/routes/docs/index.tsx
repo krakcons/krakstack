@@ -5,7 +5,11 @@ import {
   DocsHeader,
   DocsPage,
 } from "@krak-stack/registry/docs";
-import { getRegistryDocsPages, makeRegistryDocs } from "@/lib/registry-docs";
+import {
+  getRegistryDocsPage,
+  getRegistryDocsPages,
+  makeRegistryDocs,
+} from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
@@ -13,9 +17,15 @@ export const Route = createFileRoute("/docs/")({
   loader: async () => {
     const pages = await getRegistryDocsPages();
     const docs = makeRegistryDocs(pages);
-    const resolution = docs.resolve(undefined, getLocale());
+    const locale = getLocale();
+    const resolution = docs.resolve(undefined, locale);
     if (!resolution) throw notFound();
-    return { pages, resolution };
+    const page = await getRegistryDocsPage({
+      slug: resolution.page.slug,
+      locale,
+    });
+    if (!page) throw notFound();
+    return { pages, resolution: { ...resolution, page } };
   },
   head: ({ loaderData }) => {
     const docs = makeRegistryDocs(loaderData?.pages ?? []);

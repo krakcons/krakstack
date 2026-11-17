@@ -235,7 +235,7 @@ function createResponseHandler(
       "Content-Type": asset.type,
       "Cache-Control": asset.immutable
         ? "public, max-age=31536000, immutable"
-        : "public, max-age=3600",
+        : "no-cache",
     });
 
     if (ENABLE_ETAG && asset.etag) {
@@ -343,7 +343,7 @@ async function initializeStaticRoutes(
           const asset: InMemoryAsset = {
             raw: bytes,
             type: metadata.type,
-            immutable: true,
+            immutable: !metadata.type.startsWith("text/html"),
             size: bytes.byteLength,
           };
 
@@ -360,12 +360,21 @@ async function initializeStaticRoutes(
             return new Response(fileOnDemand, {
               headers: {
                 "Content-Type": metadata.type,
-                "Cache-Control": "public, max-age=3600",
+                "Cache-Control": metadata.type.startsWith("text/html")
+                  ? "no-cache"
+                  : "public, max-age=3600",
               },
             });
           };
 
           skipped.push(metadata);
+        }
+        // TanStack Start emits prerendered pages as <path>/index.html.
+        // Serve them at their canonical URLs, not only the filename URL.
+        if (route.endsWith("/index.html")) {
+          const pagePath = route.slice(0, -"index.html".length);
+          routes[pagePath] = routes[route]!;
+          if (pagePath !== "/") routes[pagePath.slice(0, -1)] = routes[route]!;
         }
       } catch (error: unknown) {
         if (error instanceof Error && error.name !== "EISDIR") {

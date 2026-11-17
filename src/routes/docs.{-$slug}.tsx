@@ -15,13 +15,19 @@ import {
 } from "@krak-stack/registry/docs";
 import {
   getAgentsPreviewMarkdown,
+  getRegistryDocsPage,
   getRegistryDocsPages,
   makeRegistryDocs,
   registryDocsShell,
 } from "@/lib/registry-docs";
 import { getLocale } from "@/paraglide/runtime";
 import { TrackingNotice } from "@/services/events/client/tracking-notice";
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import {
+  Await,
+  createFileRoute,
+  notFound,
+  redirect,
+} from "@tanstack/react-router";
 import {
   lazy,
   Suspense,
@@ -374,19 +380,31 @@ export const Route = createFileRoute("/docs/{-$slug}")({
   loader: async ({ params }) => {
     const pages = await getRegistryDocsPages();
     const docs = makeRegistryDocs(pages);
-    const resolution = docs.resolve(params.slug, getLocale());
+    const locale = getLocale();
+    const resolution = docs.resolve(params.slug, locale);
     if (!resolution) throw notFound();
     if (!resolution.canonical) {
       throw redirect({ to: resolution.page.path, statusCode: 301 });
     }
+    const page = await getRegistryDocsPage({
+      slug: resolution.page.slug,
+      locale,
+    });
+    if (!page) throw notFound();
     const item = getRegistryItem(resolution.page.slug);
     const agentsPreviewMarkdown =
       item?.name === "agents" ? await getAgentsPreviewMarkdown() : undefined;
     const previewSource =
       item && registryPreviews[item.name]
-        ? await getRegistryPreviewSource({ data: item.name })
-        : null;
-    return { agentsPreviewMarkdown, item, pages, resolution, previewSource };
+        ? getRegistryPreviewSource({ data: item.name })
+        : Promise.resolve(null);
+    return {
+      agentsPreviewMarkdown,
+      item,
+      pages,
+      resolution: { ...resolution, page },
+      previewSource,
+    };
   },
   head: ({ loaderData }) => {
     const docs = makeRegistryDocs(loaderData?.pages ?? []);
@@ -412,11 +430,24 @@ function RegistryDocs() {
       <DocsPage docs={docs} resolution={resolution}>
         <DocsHeader docs={docs} resolution={resolution} />
         {item ? (
-          <RegistryPreview
-            agentsMarkdown={agentsPreviewMarkdown}
-            slug={item.name}
-            source={previewSource}
-          />
+          <Suspense
+            fallback={
+              <RegistryPreview
+                agentsMarkdown={agentsPreviewMarkdown}
+                slug={item.name}
+              />
+            }
+          >
+            <Await promise={previewSource} key={item.name}>
+              {(source) => (
+                <RegistryPreview
+                  agentsMarkdown={agentsPreviewMarkdown}
+                  slug={item.name}
+                  source={source}
+                />
+              )}
+            </Await>
+          </Suspense>
         ) : null}
         <DocsContent docs={docs} resolution={resolution} />
         {item ? (

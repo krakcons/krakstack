@@ -2,6 +2,7 @@
 import { getLocale, experimentalStaticLocale } from "../runtime.js"
 
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+/** @typedef {{}} Page_LoadingInputs */
 /** @typedef {{}} Email_Editor_Demo_LocaleInputs */
 /** @typedef {{}} Email_Editor_Demo_HelpInputs */
 /** @typedef {{}} Email_Editor_Demo_Rich_LabelInputs */
@@ -496,6 +497,20 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Virtualized_Combobox_Preview_Multiple_PlaceholderInputs */
 import * as __en from "./en.js"
 import * as __fr from "./fr.js"
+/**
+* | output |
+* | --- |
+* | "Loading page…" |
+*
+* @param {Page_LoadingInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const page_loading = /** @type {((inputs?: Page_LoadingInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Page_LoadingInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.page_loading(inputs)
+	return __fr.page_loading(inputs)
+});
 /**
 * | output |
 * | --- |

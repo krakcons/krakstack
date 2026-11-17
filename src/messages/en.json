@@ -1,4 +1,5 @@
 {
+  "page_loading": "Loading page…",
   "email_editor_demo_locale": "Email language",
   "email_editor_demo_help": "A local draft only — nothing is saved or sent. Format selected text, insert variables, and drag any element using its handle. The delivery preview uses sample values.",
   "email_editor_demo_rich_label": "Message",
