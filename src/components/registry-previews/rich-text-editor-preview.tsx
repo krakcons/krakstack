@@ -24,14 +24,9 @@ export const RichTextEditorPreview = () => {
       <p className="text-muted-foreground text-sm">
         {m.email_editor_demo_rich_help()}
       </p>
-      <details className="rounded-lg border p-3">
-        <summary className="cursor-pointer text-xs font-medium">
-          {m.email_editor_demo_text()}
-        </summary>
-        <pre className="mt-3 overflow-auto text-xs whitespace-pre-wrap">
-          {richTextPlainText(value)}
-        </pre>
-      </details>
+      <pre className="overflow-auto rounded-lg border p-3 text-xs whitespace-pre-wrap">
+        {richTextPlainText(value)}
+      </pre>
     </div>
   );
 };

@@ -45,7 +45,9 @@
         "@krak-stack/rich-text",
         "@krak-stack/krakstack-provider",
         "button",
-        "input"
+        "input",
+        "select",
+        "dropdown-menu"
       ],
       "dependencies": ["react", "effect", "lucide-react", "@base-ui/react"]
     },

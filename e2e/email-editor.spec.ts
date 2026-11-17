@@ -33,7 +33,7 @@ test("subject and preview variables insert at the selection and respect length l
     const input = demo.getByRole("textbox", { name: label, exact: true });
     const picker = demo
       .getByRole("group", { name: label, exact: true })
-      .getByRole("combobox", {
+      .getByRole("button", {
         name: "Insert variable",
         exact: true,
       });
@@ -43,20 +43,27 @@ test("subject and preview variables insert at the selection and respect length l
     for (let index = 0; index < 6; index++) await input.press("ArrowRight");
     for (let index = 0; index < 4; index++)
       await input.press("Shift+ArrowRight");
-    await picker.selectOption("firstName");
+    await picker.click();
+    await page
+      .getByRole("menuitem", { name: "First name", exact: true })
+      .click();
     await expect(input.locator("[data-rich-variable=firstName]")).toHaveCount(
       1,
     );
     await expect(input).not.toContainText("NAME");
     await expect(input).toBeFocused();
-    await picker.selectOption("appName");
+    await picker.click();
+    await page.getByRole("menuitem", { name: "App name", exact: true }).click();
     await expect(input.locator("[data-rich-variable=appName]")).toHaveCount(1);
     await input.press("Backspace");
     await expect(input.locator("[data-rich-variable=appName]")).toHaveCount(0);
     await input.press("ControlOrMeta+z");
     await expect(input.locator("[data-rich-variable=appName]")).toHaveCount(1);
     await input.fill("x".repeat(200));
-    await picker.selectOption("firstName");
+    await picker.click();
+    await page
+      .getByRole("menuitem", { name: "First name", exact: true })
+      .click();
     await expect(input).toHaveText("x".repeat(200));
     await input.press("Enter");
     await expect(input).toHaveText("x".repeat(200));
@@ -173,11 +180,17 @@ for (const locale of ["en", "fr"]) {
     await editor.pressSequentially("!");
     await expect(editor).toHaveText("Welcome Alex!");
     await demo
-      .getByRole("combobox", {
+      .getByRole("button", {
         name: french ? "Insérer une variable" : "Insert variable",
         exact: true,
       })
-      .selectOption("appName");
+      .click();
+    await page
+      .getByRole("menuitem", {
+        name: french ? "Nom de l’application" : "App name",
+        exact: true,
+      })
+      .click();
     await expect(editor).toContainText(
       french ? "{{Nom de l’application}}" : "{{App name}}",
     );
@@ -202,6 +215,33 @@ for (const locale of ["en", "fr"]) {
     await expect(editor).toContainText("<img src=x onerror=alert(1)>");
     await expect(editor.getByRole("img")).toHaveCount(0);
     expect(errors).toEqual([]);
+  });
+
+  test(`block formatting preserves the selection through the styled picker in ${locale}`, async ({
+    page,
+  }) => {
+    const demo = await visit(page, locale, "rich-text-editor");
+    const editor = demo.getByRole("textbox", { name: "Message", exact: true });
+    await editor.fill("Selected heading");
+    await editor.press("ControlOrMeta+A");
+    await demo
+      .getByRole("combobox", {
+        name: french ? "Paragraphe" : "Paragraph",
+        exact: true,
+      })
+      .click();
+    await page
+      .getByRole("option", { name: french ? "Titre" : "Heading", exact: true })
+      .click();
+    await expect(
+      editor.getByRole("heading", { name: "Selected heading" }),
+    ).toBeVisible();
+    await expect(editor).toBeFocused();
+    await demo
+      .getByRole("button", { name: french ? "Annuler" : "Undo", exact: true })
+      .click();
+    await expect(editor.getByRole("heading")).toHaveCount(0);
+    await expect(editor).toHaveText("Selected heading");
   });
 
   test(`email element reordering and delivery preview in ${locale}`, async ({

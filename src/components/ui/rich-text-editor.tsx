@@ -17,9 +17,23 @@ import {
   Link2,
   Unlink,
   Braces,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
 import {
   RichTextDocument,
@@ -254,6 +268,14 @@ export const RichTextEditor = ({
     if (next) selected.current = next;
     return selected.current;
   };
+  const focusEditor = () => {
+    const element = root.current;
+    if (element) {
+      element.focus();
+      restoreRichTextSelection(element, selected.current);
+    }
+    return false;
+  };
   const commit = (
     next: RichTextDocument,
     range: TextSelection,
@@ -464,25 +486,44 @@ export const RichTextEditor = ({
         {!singleLine ? (
           <>
             <span className="mx-1 h-5 border-l" aria-hidden />
-            <select
-              aria-label={copy.paragraph}
+            <Select
               disabled={disabled}
               defaultValue="paragraph"
-              className="bg-background h-8 max-w-36 rounded-md border px-2 text-xs"
-              onFocus={selection}
-              onChange={(event) => {
-                const type = Schema.decodeUnknownSync(RichTextBlockKind)(
-                  event.target.value,
-                );
+              items={[
+                { value: "paragraph", label: copy.paragraph },
+                { value: "heading", label: copy.heading },
+                { value: "bullet", label: copy.bullet },
+                { value: "numbered", label: copy.numbered },
+              ]}
+              onOpenChange={(open) => {
+                if (open) selection();
+              }}
+              onValueChange={(value) => {
+                const type = Schema.decodeUnknownSync(RichTextBlockKind)(value);
                 const range = selection();
                 commit(setRichTextBlock(model.current, range, type), range);
               }}
             >
-              <option value="paragraph">{copy.paragraph}</option>
-              <option value="heading">{copy.heading}</option>
-              <option value="bullet">{copy.bullet}</option>
-              <option value="numbered">{copy.numbered}</option>
-            </select>
+              <SelectTrigger
+                size="sm"
+                aria-label={copy.paragraph}
+                className="max-w-40 text-xs"
+                onPointerDown={selection}
+                onFocus={selection}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                align="start"
+                alignItemWithTrigger={false}
+                finalFocus={focusEditor}
+              >
+                <SelectItem value="paragraph">{copy.paragraph}</SelectItem>
+                <SelectItem value="heading">{copy.heading}</SelectItem>
+                <SelectItem value="bullet">{copy.bullet}</SelectItem>
+                <SelectItem value="numbered">{copy.numbered}</SelectItem>
+              </SelectContent>
+            </Select>
             <ToolButton
               label={copy.bold}
               disabled={disabled}
@@ -535,29 +576,41 @@ export const RichTextEditor = ({
           </>
         ) : null}
         {variables.length ? (
-          <label className="bg-background ml-auto inline-flex items-center gap-1 rounded-md border px-2 text-xs">
-            <Braces className="size-3.5" aria-hidden />
-            <select
-              aria-label={copy.variable}
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (open) selection();
+            }}
+          >
+            <DropdownMenuTrigger
               disabled={disabled}
-              value=""
-              className="h-8 max-w-40 bg-transparent"
+              onPointerDown={selection}
               onFocus={selection}
-              onChange={(event) => {
-                const variable = variables.find(
-                  (candidate) => candidate.key === event.target.value,
-                );
-                if (variable) insert({ type: "variable", key: variable.key });
-              }}
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto text-xs"
+                />
+              }
             >
-              <option value="">{copy.variable}</option>
+              <Braces className="size-3.5" aria-hidden />
+              {copy.variable}
+              <ChevronDown className="size-3.5" aria-hidden />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" finalFocus={focusEditor}>
               {variables.map((variable) => (
-                <option key={variable.key} value={variable.key}>
+                <DropdownMenuItem
+                  key={variable.key}
+                  onClick={() =>
+                    insert({ type: "variable", key: variable.key })
+                  }
+                >
                   {variable.label}
-                </option>
+                </DropdownMenuItem>
               ))}
-            </select>
-          </label>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : null}
       </div>
       {linkOpen ? (
