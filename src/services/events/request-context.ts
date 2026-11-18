@@ -10,6 +10,24 @@ import {
   type EventGeolocation,
 } from "./schema";
 
+const utf8HeaderDecoder = new TextDecoder("utf-8", {
+  fatal: true,
+  ignoreBOM: true,
+});
+
+const decodeCloudflareCity = (city: string | undefined) => {
+  if (city === undefined) return undefined;
+  // Fetch exposes raw non-ASCII header bytes as Latin-1 code points.
+  // Recover UTF-8 without changing values that aren't valid UTF-8 bytes.
+  const codes = Array.from(city, (char) => char.charCodeAt(0));
+  if (codes.some((code) => code > 0xff)) return city;
+  try {
+    return utf8HeaderDecoder.decode(Uint8Array.from(codes));
+  } catch {
+    return city;
+  }
+};
+
 /** Enable only behind a verified Cloudflare ingress that prevents origin bypass. */
 export const cloudflareGeolocation = (
   headers: Readonly<Record<string, string | undefined>>,
@@ -24,7 +42,9 @@ export const cloudflareGeolocation = (
     Schema.decodeUnknownOption(EventRegion)(headers["cf-region-code"]),
   ),
   city: Option.getOrUndefined(
-    Schema.decodeUnknownOption(EventCity)(headers["cf-ipcity"]),
+    Schema.decodeUnknownOption(EventCity)(
+      decodeCloudflareCity(headers["cf-ipcity"]),
+    ),
   ),
 });
 

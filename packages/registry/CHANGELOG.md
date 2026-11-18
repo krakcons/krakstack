@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.8
+
+### Patch Changes
+
+- Decode UTF-8 Cloudflare city headers at analytics ingestion so accented and non-Latin city names are recorded correctly.
+
 ## 0.10.7
 
 ### Patch Changes

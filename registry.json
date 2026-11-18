@@ -1607,7 +1607,7 @@
       "type": "registry:lib",
       "meta": {
         "createdAt": "2026-10-18",
-        "updatedAt": "2026-11-02"
+        "updatedAt": "2026-11-18"
       },
       "registryDependencies": [
         "@krak-stack/service-opentelemetry",
