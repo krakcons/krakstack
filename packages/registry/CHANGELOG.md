@@ -1,5 +1,13 @@
 # @krak-stack/registry
 
+## 0.10.9
+
+### Patch Changes
+
+- e2a62f9: Keep data table group headers fixed across the visible table width during horizontal scrolling, with the label on the left and the count and action menu on the right.
+
+  Center the built-in table loading indicator within the visible table width, even when the columns overflow.
+
 ## 0.10.8
 
 ### Patch Changes
