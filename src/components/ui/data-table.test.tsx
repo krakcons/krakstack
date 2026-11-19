@@ -2952,6 +2952,44 @@ describe("DataTable model", () => {
     expect(getDataTableWidth(normalizeDataTableColumns(columns), 3)).toBe(536);
   });
 
+  it("runs group actions without collapsing the group", async () => {
+    const onClick = vi.fn();
+    render(
+      <DataTable
+        columnDefs={columns}
+        features={{
+          grouping: {
+            initial: ["name"],
+            fields: [
+              {
+                id: "name",
+                label: "Name",
+                getGroupId: (row) => row.name,
+                actionsLabel: "Group actions",
+                actions: [{ name: "Edit group", onClick }],
+              },
+            ],
+          },
+        }}
+        getRowId={(row) => row.id}
+        rowData={data}
+      />,
+    );
+
+    const group = await screen.findByRole("button", { name: /Alpha/ });
+    fireEvent.click(
+      within(group.closest("tr")!).getByRole("button", {
+        name: "Group actions",
+      }),
+    );
+    expect(group.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Edit group" }),
+    );
+    expect(onClick).toHaveBeenCalledWith("Alpha");
+    expect(group.getAttribute("aria-expanded")).toBe("true");
+  });
+
   it("exposes group expansion and expandable icon overflow", async () => {
     const { rerender } = render(
       <DataTable

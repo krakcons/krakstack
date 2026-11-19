@@ -1,9 +1,13 @@
 import {
   DataTable,
   type DataTableColDef,
+  type DataTableGroupAction,
   type DataTableRowAction,
   type DataTableListOption,
 } from "@krak-stack/registry/data-table";
+import { useAtomValue } from "@effect/atom-react";
+import { Effect } from "effect";
+import { AsyncResult, Atom } from "effect/reactivity";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -17,6 +21,7 @@ import {
   Ban,
   CircleDot,
   ExternalLink,
+  Info,
   LogIn,
   Pencil,
 } from "lucide-react";
@@ -336,9 +341,13 @@ const getProjectMembers = (project: Project) =>
     ? exampleMembers
     : exampleMembers.slice(0, project.category === "Product" ? 3 : 1));
 
+// Simulate the initial request so the preview demonstrates the table's loading state.
+const previewLoadAtom = Atom.make(Effect.sleep("750 millis"));
+
 export function DataTablePreview() {
   const search = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
+  const isLoading = !AsyncResult.isSuccess(useAtomValue(previewLoadAtom));
   const [previewProjects, setPreviewProjects] = useState(projects);
   const [memberAction, setMemberAction] = useState<{
     action: string;
@@ -346,6 +355,14 @@ export function DataTablePreview() {
     row: string;
   } | null>(null);
   const columns = projectColumns({ setMemberAction, setPreviewProjects });
+  const groupActions: DataTableGroupAction[] = [
+    {
+      name: m.data_table_preview_show_group_name(),
+      icon: <Info />,
+      onClick: (group) =>
+        window.alert(m.data_table_preview_group_name({ group })),
+    },
+  ];
   return (
     <div className="grid gap-6">
       <Card className="max-w-full min-w-0 overflow-hidden bg-[var(--surface-strong)]">
@@ -367,7 +384,8 @@ export function DataTablePreview() {
               })
             }
             getRowId={(project) => project.id}
-            rowData={previewProjects}
+            rowData={isLoading ? [] : previewProjects}
+            status={{ loading: isLoading }}
             features={{
               reordering: {
                 getRowLabel: (project) => project.name,
@@ -407,6 +425,8 @@ export function DataTablePreview() {
                   {
                     id: "status",
                     label: "Status",
+                    actionsLabel: m.data_table_preview_group_actions(),
+                    actions: groupActions,
                     getGroupId: (project) => project.status,
                     getGroupIds: () => [
                       "Backlog",
@@ -423,6 +443,8 @@ export function DataTablePreview() {
                   {
                     id: "owner",
                     label: "Owner",
+                    actionsLabel: m.data_table_preview_group_actions(),
+                    actions: groupActions,
                     getGroupId: (project) => project.owner,
                     getGroupIds: () => ["Ada", "Grace", "Hedy", "Linus"],
                     renderGroupLabel: (owner) => owner,

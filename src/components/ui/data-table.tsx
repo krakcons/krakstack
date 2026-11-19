@@ -3342,10 +3342,12 @@ const GroupActions = ({
   actions,
   groupId,
   title,
+  triggerClassName,
 }: {
   actions?: readonly DataTableGroupAction[] | undefined;
   groupId: string;
   title: string;
+  triggerClassName?: string;
 }) => {
   const visible = actions?.filter(
     (action) => !action.visible || action.visible(groupId),
@@ -3356,13 +3358,16 @@ const GroupActions = ({
       <DropdownMenuTrigger
         onClick={(event) => event.stopPropagation()}
         render={
-          <Button size="icon" variant="ghost">
+          <Button className={triggerClassName} size="icon" variant="ghost">
             <span className="sr-only">{title}</span>
             <MoreHorizontal />
           </Button>
         }
       />
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent
+        align="end"
+        onClick={(event) => event.stopPropagation()}
+      >
         <DropdownMenuGroup>
           {visible.map((action) => (
             <DropdownMenuItem
@@ -3414,35 +3419,39 @@ const GroupedTable = <TData extends RowData>({
             className="bg-muted/40 hover:bg-accent! cursor-pointer"
             onClick={toggleCollapsed}
           >
-            <TableCell colSpan={model.visibleColumns.length + extra}>
-              <div
-                className="flex items-center gap-2"
-                style={{ paddingLeft: section.depth * 20 }}
-              >
+            <TableCell
+              className="p-0"
+              colSpan={model.visibleColumns.length + extra}
+            >
+              <div className="sticky left-0 flex w-[100cqw] max-w-full items-center gap-2 py-2 pl-2">
                 <button
                   aria-expanded={!collapsed}
-                  className="flex flex-1 cursor-pointer items-center gap-2 text-left font-medium"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left font-medium"
+                  style={{ paddingLeft: section.depth * 20 }}
                   type="button"
                 >
                   {collapsed ? (
-                    <ChevronRight className="size-4" />
+                    <ChevronRight className="size-4 shrink-0" />
                   ) : (
-                    <ChevronDown className="size-4" />
+                    <ChevronDown className="size-4 shrink-0" />
                   )}
-                  <span className="flex-1">
+                  <span className="min-w-0 flex-1 truncate">
                     {section.field.renderGroupLabel?.(
                       section.groupId,
                       section.rows.map((row) => row.data),
                     ) ?? section.groupId}
                   </span>
                 </button>
-                <Badge variant="secondary">{section.rows.length}</Badge>
+                <Badge className="shrink-0 last:mr-2" variant="secondary">
+                  {section.rows.length}
+                </Badge>
                 <GroupActions
                   actions={section.field.actions}
                   groupId={section.groupId}
                   title={
                     section.field.actionsLabel ?? store.config.labels.actions
                   }
+                  triggerClassName="w-10 shrink-0"
                 />
               </div>
             </TableCell>
@@ -3807,10 +3816,13 @@ const DataTableBody = <TData extends RowData>({
         <TableRow>
           <TableCell
             data-table-slot="loading"
-            className={cn("h-24 text-center", styles?.feedback?.loading)}
+            className={cn("h-24 p-0", styles?.feedback?.loading)}
             colSpan={Math.max(colSpan, 1)}
           >
-            <Loading label={store.config.labels.loading} />
+            <Loading
+              className="sticky left-0 w-[100cqw] max-w-full px-2"
+              label={store.config.labels.loading}
+            />
           </TableCell>
         </TableRow>
       ) : (
@@ -4386,7 +4398,7 @@ const DataTableContent = <TData extends RowData>({
       (canDragRows(store) ? 1 : 0),
   );
   return (
-    <ScrollArea className="max-w-full min-w-0">
+    <ScrollArea className="@container max-w-full min-w-0">
       <Table className="table-fixed" style={{ width: `max(100%, ${width}px)` }}>
         <DataTableHeader tableAtom={tableAtom} />
         <DataTableBody tableAtom={tableAtom} />
