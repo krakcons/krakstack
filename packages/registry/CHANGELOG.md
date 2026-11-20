@@ -1,5 +1,22 @@
 # @krak-stack/registry
 
+## 0.10.12
+
+### Patch Changes
+
+- Place table search alongside the menubar on wider screens, show an icon-only Filters trigger on mobile, and keep internal scroll targets clear of sticky column headers.
+
+  Match the menubar border and shadow to the search input.
+- Allow virtualized tables to use page scrolling instead of an internal vertical viewport.
+
+  Keep list-cell menus from locking page scrolling and disturbing virtualized rows.
+- Keep table toolbar menus non-modal so opening them does not lock page scrolling.
+- Add opt-in DataTable row virtualization for large flat tables.
+- Make pagination opt-in. Paginated tables default to 100 rows and offer page sizes of 20, 50, and 100.
+
+  Automatically virtualize tables with at least 100 displayed rows unless `virtualization` is set to `false`.
+- Virtualize expanded group rows, place the internal scrollbar below the header, and keep the bottom divider attached to the sticky header.
+
 ## 0.10.11
 
 ### Patch Changes

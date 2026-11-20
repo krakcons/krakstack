@@ -231,6 +231,8 @@ export const ColumnFilters = Schema.declare(Schema.is(ColumnFiltersArray), {
     ),
 });
 
+export const DEFAULT_PAGE_SIZE = 100;
+
 export const Query = Schema.Struct({
   page: Schema.optional(
     Schema.Union([Schema.Finite, Schema.FiniteFromString]).check(
@@ -254,9 +256,9 @@ export const Query = Schema.Struct({
     Schema.decodeTo(
       Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
       {
-        decode: SchemaGetter.withDefault(Effect.succeed(20)),
+        decode: SchemaGetter.withDefault(Effect.succeed(DEFAULT_PAGE_SIZE)),
         encode: SchemaGetter.transformOptional(
-          Option.filter((pageSize) => pageSize !== 20),
+          Option.filter((pageSize) => pageSize !== DEFAULT_PAGE_SIZE),
         ),
       },
     ),
@@ -272,7 +274,7 @@ export const Query = Schema.Struct({
   examples: [
     {
       page: 0,
-      pageSize: 20,
+      pageSize: DEFAULT_PAGE_SIZE,
       globalFilter: "housing",
       sort: [
         { id: "publicName", direction: "desc" },

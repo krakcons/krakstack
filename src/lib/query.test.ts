@@ -31,7 +31,7 @@ describe("Query", () => {
       { id: "active", kind: "boolean", value: false },
       { id: "tags", kind: "values", values: ["one", "two"] },
     ]);
-    const query = { page: 0, pageSize: 20, filters };
+    const query = { page: 0, pageSize: 100, filters };
     expect(await QueryStandard["~standard"].validate({ filters })).toEqual({
       value: query,
     });
@@ -53,7 +53,7 @@ describe("Query", () => {
       Schema.decodeSync(Schema.toCodecStringTree(Query))({
         filters: "[]",
       }),
-    ).toEqual({ page: 0, pageSize: 20, filters: [] });
+    ).toEqual({ page: 0, pageSize: 100, filters: [] });
   });
 
   it("rejects malformed filters, nonfinite and reversed ranges, and invalid dates", () => {
@@ -113,7 +113,7 @@ describe("Query", () => {
   it("validates router sorting with default pagination", async () => {
     const sort = [{ id: "name", direction: "desc" }];
     expect(await QueryStandard["~standard"].validate({ sort })).toEqual({
-      value: { page: 0, pageSize: 20, sort },
+      value: { page: 0, pageSize: 100, sort },
     });
   });
 
@@ -173,7 +173,7 @@ describe("Query", () => {
   it("preserves sorting arrays in JSON", () => {
     const query = {
       page: 0,
-      pageSize: 20,
+      pageSize: 100,
       sort: [{ id: "name", direction: "asc" as const }],
     };
     expect(Schema.encodeSync(Schema.toCodecJson(Query))(query)).toEqual({
@@ -187,7 +187,7 @@ describe("Query", () => {
       Schema.toCodecJson(Query),
       Schema.toCodecStringTree(Query),
     ]) {
-      const query = { page: 0, pageSize: 20 };
+      const query = { page: 0, pageSize: 100 };
       expect(Schema.encodeSync(codec)(query)).toEqual({});
       expect(Schema.decodeSync(codec)({})).toEqual(query);
     }
@@ -196,7 +196,8 @@ describe("Query", () => {
   it("omits each pagination default independently over HTTP", () => {
     const codec = Schema.toCodecStringTree(Query);
     for (const [query, encoded] of [
-      [{ page: 2, pageSize: 20 }, { page: "2" }],
+      [{ page: 2, pageSize: 100 }, { page: "2" }],
+      [{ page: 0, pageSize: 20 }, { pageSize: "20" }],
       [{ page: 0, pageSize: 10 }, { pageSize: "10" }],
       [{ page: 0, pageSize: 25 }, { pageSize: "25" }],
     ] as const) {
@@ -208,21 +209,21 @@ describe("Query", () => {
   it("defaults omitted and undefined pagination for data consumers", () => {
     expect(Schema.decodeSync(Query)({})).toEqual({
       page: 0,
-      pageSize: 20,
+      pageSize: 100,
     });
     expect(
       Schema.decodeSync(Query)({ page: undefined, pageSize: undefined }),
-    ).toEqual({ page: 0, pageSize: 20 });
+    ).toEqual({ page: 0, pageSize: 100 });
   });
 
   it("supplies pagination defaults in standard search validation", async () => {
     for (const input of [
       {},
-      { page: 0, pageSize: 20 },
+      { page: 0, pageSize: 100 },
       { page: undefined, pageSize: undefined },
     ]) {
       expect(await QueryStandard["~standard"].validate(input)).toStrictEqual({
-        value: { page: 0, pageSize: 20 },
+        value: { page: 0, pageSize: 100 },
       });
     }
     expect(
@@ -244,7 +245,7 @@ describe("Query", () => {
         middlewares: [
           stripSearchParams<{ page?: number; pageSize?: number }>({
             page: 0,
-            pageSize: 20,
+            pageSize: 100,
           }),
         ],
       },
@@ -262,6 +263,8 @@ describe("Query", () => {
     const router = createRouter({
       routeTree: root.addChildren([items]),
       history: createMemoryHistory({ initialEntries: ["/items"] }),
+      isServer: false,
+      origin: "http://localhost",
     });
     await router.load();
     await router.navigate({ href: "/items?page=2&pageSize=50&status=invited" });
@@ -270,26 +273,28 @@ describe("Query", () => {
       pageSize: 50,
       status: "invited",
     });
-    await router.navigate({ href: "/items?page=0&pageSize=20&status=invited" });
+    await router.navigate({
+      href: "/items?page=0&pageSize=100&status=invited",
+    });
     expect(router.state.location.searchStr).toBe("?status=invited");
     expect(router.state.matches.at(-1)?.search).toEqual({
       page: 0,
-      pageSize: 20,
+      pageSize: 100,
       status: "invited",
     });
 
-    await router.navigate({ href: "/items?page=2&pageSize=20" });
+    await router.navigate({ href: "/items?page=2&pageSize=100" });
     expect(router.state.location.search).toEqual({ page: 2 });
     expect(router.state.matches.at(-1)?.search).toEqual({
       page: 2,
-      pageSize: 20,
+      pageSize: 100,
     });
 
     await router.navigate({ href: "/items" });
     expect(router.state.location.searchStr).toBe("");
     expect(router.state.matches.at(-1)?.search).toEqual({
       page: 0,
-      pageSize: 20,
+      pageSize: 100,
     });
   });
 

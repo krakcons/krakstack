@@ -1,5 +1,7 @@
 import { useAtom, useAtomSet } from "@effect/atom-react";
+import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
 import { BrowserKeyValueStore } from "@effect/platform-browser";
+import { useVirtualizer, useWindowVirtualizer } from "@tanstack/react-virtual";
 import { DateTime, Effect, Formatter, Option, Schema, Stream } from "effect";
 import { Csv } from "effect/encoding";
 import { AsyncResult, Atom } from "effect/reactivity";
@@ -109,6 +111,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   ColumnFilter,
+  DEFAULT_PAGE_SIZE,
   TextFilterOperator,
   type QueryType,
   type SortDirection,
@@ -659,6 +662,17 @@ export type DataTablePaginationFeature =
   | { mode: "client"; pageSizes?: readonly number[] }
   | { mode: "server"; rowCount: number; pageSizes?: readonly number[] };
 
+export interface DataTableVirtualizationOptions {
+  /** Use the page scrollbar instead of an internal viewport. Defaults to "table". */
+  scroll?: "table" | "page";
+  /** Maximum internal scroll viewport height in pixels. Defaults to 480. */
+  height?: number;
+  /** Initial row height in pixels, before measuring. Defaults to 64. */
+  estimateRowHeight?: number;
+  /** Extra rows rendered on each side of the viewport. Defaults to 5. */
+  overscan?: number;
+}
+
 export interface DataTableExportAction {
   id: string;
   label: string;
@@ -706,7 +720,11 @@ export interface DataTableFeatures<TData> {
   search?: boolean;
   filtering?: boolean;
   sorting?: boolean;
+  /** Disabled by default. Opt in to client- or server-side pagination. */
   pagination?: DataTablePaginationFeature;
+  /** Opt in to windowing flat table rows. Gallery, grouping, and drag keep their normal rendering. */
+  /** Defaults to automatic virtualization at 100 displayed rows. Set false to opt out. */
+  virtualization?: boolean | DataTableVirtualizationOptions;
   columnVisibility?: boolean;
   selection?:
     | false
@@ -948,7 +966,7 @@ const DEFAULT_WIDTH = 208;
 const DEFAULT_MAX_WIDTH = 640;
 const DEFAULT_QUERY: DataTablePublicState = {
   page: 0,
-  pageSize: 20,
+  pageSize: DEFAULT_PAGE_SIZE,
 };
 
 const DEFAULT_UI_STATE: DataTableUiState = {
@@ -1699,7 +1717,7 @@ const buildDataTableModel = <TData extends RowData>(
   const rowId =
     (selection && selection.getRowId) || store.config.getRowId || undefined;
   const rows = buildDataTableRows(store.rowData, columns, rowId);
-  const pagination = store.config.features.pagination ?? { mode: "client" };
+  const pagination = store.config.features.pagination ?? false;
   const server = pagination !== false && pagination.mode === "server";
   const filteredRows = server
     ? [...rows]
@@ -1730,10 +1748,9 @@ const buildDataTableModel = <TData extends RowData>(
     filteredRows,
     sortedRows,
     pageRows,
-    pageCount: Math.max(
-      1,
-      Math.ceil(totalRows / Math.max(1, store.state.pageSize)),
-    ),
+    pageCount: pagination
+      ? Math.max(1, Math.ceil(totalRows / Math.max(1, store.state.pageSize)))
+      : 1,
     totalRows,
   };
 };
@@ -1793,7 +1810,11 @@ export const groupDataTableRows = <TData extends RowData>(
     const ids = field.getRowGroupIds?.(row.data) ?? [
       field.getGroupId(row.data),
     ];
-    ids.forEach((id) => groups.set(id, [...(groups.get(id) ?? []), row]));
+    ids.forEach((id) => {
+      const group = groups.get(id);
+      if (group) group.push(row);
+      else groups.set(id, [row]);
+    });
   });
   return Array.from(groups, ([groupId, groupRows]) => {
     const segment = `${encodeURIComponent(field.id)}:${encodeURIComponent(groupId)}`;
@@ -2118,21 +2139,22 @@ export const DataTableRowActions = <TData,>({
 
 const DataTableRowActionMenu = <TData extends RowData>({
   tableAtom,
+  row,
 }: {
   tableAtom: TableAtom<TData>;
+  row: DataTableModelRow<TData>;
 }) => {
   const [store] = useTableAtom(tableAtom);
-  const rowId = useRequiredId(RowIdContext);
-  const model = deriveModel(store);
-  const row = model.sortedRows.find((candidate) => candidate.id === rowId);
-  if (!row) return null;
-
+  const rowId = row.id;
   const rowActions = store.config.features.rowActions || undefined;
-  const visibleRows = model.pageRows;
-  const rowIndex = visibleRows.findIndex((candidate) => candidate.id === rowId);
   const reordering = store.config.features.reordering;
   const reorderActions: DataTableRowAction<TData>[] = [];
   if (reordering && canReorderRows(store)) {
+    const model = deriveModel(store);
+    const visibleRows = model.pageRows;
+    const rowIndex = visibleRows.findIndex(
+      (candidate) => candidate.id === rowId,
+    );
     const move = (targetIndex: number) =>
       reordering.onReorder(
         reorderDataTableRows(model.rows, rowId, visibleRows[targetIndex]!.id),
@@ -2228,7 +2250,13 @@ const DataTableToolbar = <TData extends RowData>({
   };
 
   return (
-    <div className="flex flex-col gap-2 pb-4">
+    <div
+      className={cn(
+        "grid min-w-0 items-center gap-2 pb-4",
+        features.search !== false &&
+          "md:grid-cols-[minmax(12rem,1fr)_minmax(0,auto)]",
+      )}
+    >
       {features.search !== false ? (
         <div className="relative min-w-0">
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -2263,8 +2291,11 @@ const DataTableToolbar = <TData extends RowData>({
           ) : null}
         </div>
       ) : null}
-      <div className="-m-1 flex overflow-x-auto p-1">
-        <Menubar className="h-auto w-max min-w-full justify-start bg-transparent shadow-none [&_[data-slot=menubar-trigger]]:gap-2 [&_[data-slot=menubar-trigger]_svg]:size-4">
+      <div className="-m-1 flex min-w-0 overflow-x-auto p-1">
+        <Menubar
+          modal={false}
+          className="border-input h-auto w-max min-w-full justify-start bg-transparent [&_[data-slot=menubar-trigger]]:gap-2 [&_[data-slot=menubar-trigger]_svg]:size-4"
+        >
           {visibleBulkActions.length ? (
             <MenubarMenu>
               <MenubarTrigger className="bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary/90">
@@ -2440,7 +2471,7 @@ const DataTableToolbar = <TData extends RowData>({
         </Menubar>
       </div>
       {exportFeature && exportFailed ? (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-destructive col-span-full text-sm">
           {labels.exportFailed ??
             dataTableMessages(store.config.locale).exportFailed}
         </p>
@@ -2761,7 +2792,7 @@ const FilterMenu = <TData extends RowData>({
     <MenubarMenu>
       <MenubarTrigger aria-label={store.config.labels.filters}>
         <ListFilter />
-        <span>{store.config.labels.filters}</span>
+        <span className="hidden sm:inline">{store.config.labels.filters}</span>
         {filters.length ? (
           <Badge variant="secondary">{filters.length}</Badge>
         ) : null}
@@ -3257,20 +3288,26 @@ const toggleRow = <TData extends RowData>(
 
 const TableDataRow = <TData extends RowData>({
   tableAtom,
+  row,
+  virtualIndex,
+  measureRef,
 }: {
   tableAtom: TableAtom<TData>;
+  row: DataTableModelRow<TData>;
+  virtualIndex?: number;
+  measureRef?: ((element: HTMLTableRowElement | null) => void) | undefined;
 }) => {
   const [store, setStore] = useTableAtom(tableAtom);
-  const rowId = useRequiredId(RowIdContext);
   const model = deriveModel(store);
-  const row = model.sortedRows.find((candidate) => candidate.id === rowId);
-  if (!row) return null;
   const selection = store.config.features.selection;
   const selectable =
     !!selection && (selection.isRowSelectable?.(row.data) ?? true);
   const draggable = canDragRows(store);
   return (
     <TableRow
+      ref={measureRef}
+      data-index={virtualIndex}
+      aria-rowindex={virtualIndex === undefined ? undefined : virtualIndex + 2}
       className={cn(
         "group/row data-[drop-position=before]:[&>td]:border-primary data-[drop-position=after]:[&>td]:border-primary h-16 data-[drag-source=true]:opacity-40 data-[drop-position=after]:[&>td]:border-b-2 data-[drop-position=before]:[&>td]:border-t-2",
         store.config.onRowClicked && "cursor-pointer",
@@ -3330,7 +3367,7 @@ const TableDataRow = <TData extends RowData>({
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex h-16 items-center justify-end pr-1">
-            <DataTableRowActionMenu tableAtom={tableAtom} />
+            <DataTableRowActionMenu row={row} tableAtom={tableAtom} />
           </div>
         </TableCell>
       ) : null}
@@ -3382,6 +3419,71 @@ const GroupActions = ({
   );
 };
 
+const GroupHeaderRow = <TData extends RowData>({
+  tableAtom,
+  section,
+  colSpan,
+  virtualIndex,
+  measureRef,
+}: {
+  tableAtom: TableAtom<TData>;
+  section: GroupSection<TData>;
+  colSpan: number;
+  virtualIndex?: number;
+  measureRef?: (element: HTMLTableRowElement | null) => void;
+}) => {
+  const [store, setStore] = useTableAtom(tableAtom);
+  const collapsed = !!store.state.collapsedGroups[section.key];
+  return (
+    <TableRow
+      ref={measureRef}
+      data-index={virtualIndex}
+      aria-rowindex={virtualIndex === undefined ? undefined : virtualIndex + 2}
+      className="bg-muted/40 hover:bg-accent! cursor-pointer"
+      onClick={() =>
+        changeState(setStore, (state) => ({
+          ...state,
+          collapsedGroups: {
+            ...state.collapsedGroups,
+            [section.key]: !collapsed,
+          },
+        }))
+      }
+    >
+      <TableCell className="p-0" colSpan={colSpan}>
+        <div className="sticky left-0 flex w-[100cqw] max-w-full items-center gap-2 py-2 pr-1 pl-2">
+          <button
+            aria-expanded={!collapsed}
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left font-medium"
+            style={{ paddingLeft: section.depth * 20 }}
+            type="button"
+          >
+            {collapsed ? (
+              <ChevronRight className="size-4 shrink-0" />
+            ) : (
+              <ChevronDown className="size-4 shrink-0" />
+            )}
+            <span className="min-w-0 flex-1 truncate">
+              {section.field.renderGroupLabel?.(
+                section.groupId,
+                section.rows.map((row) => row.data),
+              ) ?? section.groupId}
+            </span>
+          </button>
+          <Badge className="shrink-0" variant="secondary">
+            {section.rows.length}
+          </Badge>
+          <GroupActions
+            actions={section.field.actions}
+            groupId={section.groupId}
+            title={section.field.actionsLabel ?? store.config.labels.actions}
+          />
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 const GroupedTable = <TData extends RowData>({
   tableAtom,
   sections,
@@ -3389,7 +3491,7 @@ const GroupedTable = <TData extends RowData>({
   tableAtom: TableAtom<TData>;
   sections: GroupSection<TData>[];
 }) => {
-  const [store, setStore] = useTableAtom(tableAtom);
+  const [store] = useTableAtom(tableAtom);
   const model = deriveModel(store);
   const extra =
     (store.config.features.selection ? 1 : 0) +
@@ -3399,60 +3501,17 @@ const GroupedTable = <TData extends RowData>({
     items.flatMap((section) => {
       const collapsed = !!store.state.collapsedGroups[section.key];
       const targetKey = getGroupDropKey(section.field.id, section.groupId);
-      const toggleCollapsed = () =>
-        changeState(setStore, (state) => ({
-          ...state,
-          collapsedGroups: {
-            ...state.collapsedGroups,
-            [section.key]: !collapsed,
-          },
-        }));
       const body = (
         <TableBody
           className="data-[drop-target=true]:outline-primary relative data-[drop-target=true]:z-30 data-[drop-target=true]:outline-2 data-[drop-target=true]:-outline-offset-2 data-[drop-target=true]:[&>tr]:border-transparent data-[drop-target=true]:[&>tr>td:last-child]:z-0"
           data-table-group={section.field.onMoveToGroup ? targetKey : undefined}
           key={section.key}
         >
-          <TableRow
-            className="bg-muted/40 hover:bg-accent! cursor-pointer"
-            onClick={toggleCollapsed}
-          >
-            <TableCell
-              className="p-0"
-              colSpan={model.visibleColumns.length + extra}
-            >
-              <div className="sticky left-0 flex w-[100cqw] max-w-full items-center gap-2 py-2 pr-1 pl-2">
-                <button
-                  aria-expanded={!collapsed}
-                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left font-medium"
-                  style={{ paddingLeft: section.depth * 20 }}
-                  type="button"
-                >
-                  {collapsed ? (
-                    <ChevronRight className="size-4 shrink-0" />
-                  ) : (
-                    <ChevronDown className="size-4 shrink-0" />
-                  )}
-                  <span className="min-w-0 flex-1 truncate">
-                    {section.field.renderGroupLabel?.(
-                      section.groupId,
-                      section.rows.map((row) => row.data),
-                    ) ?? section.groupId}
-                  </span>
-                </button>
-                <Badge className="shrink-0" variant="secondary">
-                  {section.rows.length}
-                </Badge>
-                <GroupActions
-                  actions={section.field.actions}
-                  groupId={section.groupId}
-                  title={
-                    section.field.actionsLabel ?? store.config.labels.actions
-                  }
-                />
-              </div>
-            </TableCell>
-          </TableRow>
+          <GroupHeaderRow
+            tableAtom={tableAtom}
+            section={section}
+            colSpan={model.visibleColumns.length + extra}
+          />
           {!collapsed && !section.children.length
             ? section.rows.length
               ? section.rows.map((row) => (
@@ -3460,7 +3519,7 @@ const GroupedTable = <TData extends RowData>({
                     key={`${section.key}:${row.id}`}
                     value={row.id}
                   >
-                    <TableDataRow tableAtom={tableAtom} />
+                    <TableDataRow row={row} tableAtom={tableAtom} />
                   </RowIdContext.Provider>
                 ))
               : [
@@ -3688,8 +3747,10 @@ const ColumnHeaderMenu = <TData extends RowData>({
 
 const DataTableHeader = <TData extends RowData>({
   tableAtom,
+  sticky,
 }: {
   tableAtom: TableAtom<TData>;
+  sticky?: boolean;
 }) => {
   const [store, setStore] = useTableAtom(tableAtom);
   const model = deriveModel(store);
@@ -3708,8 +3769,14 @@ const DataTableHeader = <TData extends RowData>({
     (row) => store.state.rowSelection[row.id],
   );
   return (
-    <TableHeader>
-      <TableRow>
+    <TableHeader
+      className={
+        sticky
+          ? "bg-background after:border-border sticky top-0 z-30 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b [&_tr]:border-b-0"
+          : undefined
+      }
+    >
+      <TableRow aria-rowindex={sticky ? 1 : undefined}>
         {selection ? (
           <TableHead className="w-10 pr-0">
             <Checkbox
@@ -3765,10 +3832,163 @@ const DataTableHeader = <TData extends RowData>({
   );
 };
 
-const DataTableBody = <TData extends RowData>({
+type DataTableVirtualViewport = {
+  element: HTMLDivElement | null;
+  headerHeight: number;
+  pageOffset?: number | undefined;
+  options: DataTableVirtualizationOptions;
+};
+
+type VirtualRow<TData extends RowData> =
+  | { key: string; kind: "data"; row: DataTableModelRow<TData> }
+  | { key: string; kind: "header" | "empty"; section: GroupSection<TData> };
+
+const VirtualTableRows = <TData extends RowData>({
   tableAtom,
+  rows,
+  sections,
+  viewport,
+  colSpan,
 }: {
   tableAtom: TableAtom<TData>;
+  rows: readonly DataTableModelRow<TData>[];
+  sections: GroupSection<TData>[];
+  viewport: DataTableVirtualViewport;
+  colSpan: number;
+}) => {
+  const [{ state, config }] = useTableAtom(tableAtom);
+  const { element: scrollElement, headerHeight } = viewport;
+  const pageScroll = viewport.options.scroll === "page";
+  const scrollMargin = viewport.pageOffset ?? headerHeight;
+  const entries = useMemo(() => {
+    const result: VirtualRow<TData>[] = [];
+    const addSections = (groups: GroupSection<TData>[]) => {
+      for (const section of groups) {
+        result.push({ key: `${section.key}/header`, kind: "header", section });
+        if (state.collapsedGroups[section.key]) continue;
+        if (section.children.length) addSections(section.children);
+        else if (section.rows.length) {
+          for (const row of section.rows) {
+            result.push({
+              key: `${section.key}/row:${row.id}`,
+              kind: "data",
+              row,
+            });
+          }
+        } else
+          result.push({ key: `${section.key}/empty`, kind: "empty", section });
+      }
+    };
+    if (sections.length) addSections(sections);
+    else
+      for (const row of rows)
+        result.push({ key: `row:${row.id}`, kind: "data", row });
+    return result;
+  }, [rows, sections, state.collapsedGroups]);
+
+  useLayoutEffect(() => {
+    if (!pageScroll && scrollElement) scrollElement.scrollTop = 0;
+  }, [
+    pageScroll,
+    scrollElement,
+    state.page,
+    state.pageSize,
+    state.globalFilter,
+    state.filters,
+    state.sort,
+    state.grouping,
+  ]);
+
+  const options = {
+    count: entries.length,
+    getItemKey: useCallback((index: number) => entries[index]!.key, [entries]),
+    estimateSize: () => viewport.options.estimateRowHeight ?? 64,
+    overscan: viewport.options.overscan ?? 5,
+    scrollMargin,
+  };
+  // Keep the mutable virtualizers local; only the active range reaches the JSX.
+  // oxlint-disable-next-line react/incompatible-library
+  const tableVirtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+    ...options,
+    enabled: !pageScroll,
+    getScrollElement: () => scrollElement,
+    scrollPaddingStart: headerHeight,
+  });
+  // oxlint-disable-next-line react/incompatible-library
+  const pageVirtualizer = useWindowVirtualizer<HTMLTableRowElement>({
+    ...options,
+    enabled: pageScroll && viewport.pageOffset !== undefined,
+  });
+  const virtualizer = pageScroll ? pageVirtualizer : tableVirtualizer;
+  const items = virtualizer.getVirtualItems();
+  const first = items[0];
+  const last = items.at(-1);
+  const before = first ? first.start - scrollMargin : 0;
+  const after =
+    virtualizer.getTotalSize() - (last ? last.end - scrollMargin : 0);
+  // Keep native table layout so column widths and horizontally sticky cells still work.
+  const spacer = (height: number) =>
+    height > 0 ? (
+      <tr aria-hidden="true">
+        <td
+          colSpan={Math.max(1, colSpan)}
+          className="border-0 p-0"
+          style={{ height }}
+        />
+      </tr>
+    ) : null;
+
+  return (
+    <>
+      {spacer(before)}
+      {items.map(({ index, key }) => {
+        const entry = entries[index]!;
+        if (entry.kind === "data")
+          return (
+            <TableDataRow
+              key={key}
+              measureRef={virtualizer.measureElement}
+              row={entry.row}
+              tableAtom={tableAtom}
+              virtualIndex={index}
+            />
+          );
+        if (entry.kind === "header")
+          return (
+            <GroupHeaderRow
+              key={key}
+              measureRef={virtualizer.measureElement}
+              section={entry.section}
+              colSpan={colSpan}
+              tableAtom={tableAtom}
+              virtualIndex={index}
+            />
+          );
+        return (
+          <TableRow
+            key={key}
+            ref={virtualizer.measureElement}
+            data-index={index}
+            aria-rowindex={index + 2}
+          >
+            <TableCell className="text-muted-foreground h-16" colSpan={colSpan}>
+              {entry.section.field.renderEmptyGroup?.(entry.section.groupId) ??
+                config.labels.empty}
+            </TableCell>
+          </TableRow>
+        );
+      })}
+      {spacer(after)}
+    </>
+  );
+};
+
+const DataTableBody = <TData extends RowData>({
+  tableAtom,
+  viewport,
+}: {
+  tableAtom: TableAtom<TData>;
+  viewport?: DataTableVirtualViewport;
 }) => {
   const styles = useContext(DataTableStylesContext);
   const [store] = useTableAtom(tableAtom);
@@ -3776,23 +3996,26 @@ const DataTableBody = <TData extends RowData>({
   const fields = getActiveGrouping(store);
   const grouped = fields.length > 0;
   const rows = grouped ? model.sortedRows : model.pageRows;
-  const sections = groupDataTableRows(rows, fields);
+  const sections = useMemo(
+    () => groupDataTableRows(rows, fields),
+    [rows, fields],
+  );
   const colSpan =
     model.visibleColumns.length +
     (store.config.features.selection ? 1 : 0) +
     (hasRowActionMenu(store) ? 1 : 0) +
     (canDragRows(store) ? 1 : 0);
-  if (
+  const showGroups =
     sections.length &&
     (rows.length || !store.config.status.loading) &&
-    !store.config.status.error
-  ) {
+    !store.config.status.error;
+  if (showGroups && !viewport) {
     return <GroupedTable tableAtom={tableAtom} sections={sections} />;
   }
   return (
     <TableBody>
       {store.config.status.error ||
-      (!rows.length && !store.config.status.loading) ? (
+      (!showGroups && !rows.length && !store.config.status.loading) ? (
         <TableRow>
           <TableCell
             data-table-slot={store.config.status.error ? "error" : "empty"}
@@ -3809,7 +4032,7 @@ const DataTableBody = <TData extends RowData>({
               store.config.labels.empty}
           </TableCell>
         </TableRow>
-      ) : store.config.status.loading && !rows.length ? (
+      ) : !showGroups && store.config.status.loading && !rows.length ? (
         <TableRow>
           <TableCell
             data-table-slot="loading"
@@ -3822,10 +4045,18 @@ const DataTableBody = <TData extends RowData>({
             />
           </TableCell>
         </TableRow>
+      ) : viewport ? (
+        <VirtualTableRows
+          colSpan={colSpan}
+          rows={rows}
+          sections={sections}
+          tableAtom={tableAtom}
+          viewport={viewport}
+        />
       ) : (
         rows.map((row) => (
           <RowIdContext.Provider key={row.id} value={row.id}>
-            <TableDataRow tableAtom={tableAtom} />
+            <TableDataRow row={row} tableAtom={tableAtom} />
           </RowIdContext.Provider>
         ))
       )}
@@ -3986,7 +4217,7 @@ const GalleryCard = <TData extends RowData>({
             className="absolute top-0 right-4"
             onClick={(event) => event.stopPropagation()}
           >
-            <DataTableRowActionMenu tableAtom={tableAtom} />
+            <DataTableRowActionMenu row={row} tableAtom={tableAtom} />
           </div>
         ) : null}
       </CardHeader>
@@ -4148,7 +4379,7 @@ const DataTablePagination = <TData extends RowData>({
   const styles = useContext(DataTableStylesContext);
   const [store, setStore] = useTableAtom(tableAtom);
   const model = deriveModel(store);
-  const pagination = store.config.features.pagination ?? { mode: "client" };
+  const pagination = store.config.features.pagination ?? false;
   const clientGrouping =
     pagination !== false &&
     pagination.mode === "client" &&
@@ -4384,6 +4615,40 @@ const DataTableContent = <TData extends RowData>({
   tableAtom: TableAtom<TData>;
 }) => {
   const [store] = useTableAtom(tableAtom);
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [headerHeight, setHeaderHeight] = useState(48);
+  const [pageTable, setPageTable] = useState<HTMLDivElement | null>(null);
+  const [pageOffset, setPageOffset] = useState<number>();
+  useLayoutEffect(() => {
+    const header = pageTable?.querySelector("thead");
+    if (!pageTable || !header) return;
+    const measure = () =>
+      setPageOffset(window.scrollY + header.getBoundingClientRect().bottom);
+    measure();
+    window.addEventListener("resize", measure);
+    const observer = globalThis.ResizeObserver
+      ? new ResizeObserver(measure)
+      : undefined;
+    observer?.observe(document.body);
+    observer?.observe(header);
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [pageTable]);
+  useLayoutEffect(() => {
+    const header = scrollElement?.querySelector("thead");
+    if (!header) return;
+    const measure = () =>
+      setHeaderHeight(header.getBoundingClientRect().height);
+    measure();
+    if (!globalThis.ResizeObserver) return;
+    const observer = new globalThis.ResizeObserver(measure);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [scrollElement]);
   if (store.config.features.gallery && store.state.view === "gallery") {
     return <DataTableGallery tableAtom={tableAtom} />;
   }
@@ -4394,6 +4659,98 @@ const DataTableContent = <TData extends RowData>({
       (hasRowActionMenu(store) ? 1 : 0) +
       (canDragRows(store) ? 1 : 0),
   );
+  const virtualization = store.config.features.virtualization;
+  const fields = getActiveGrouping(store);
+  const visibleCount = (sections: GroupSection<TData>[]): number =>
+    sections.reduce(
+      (count, section) =>
+        count +
+        1 +
+        (store.state.collapsedGroups[section.key]
+          ? 0
+          : section.children.length
+            ? visibleCount(section.children)
+            : Math.max(1, section.rows.length)),
+      0,
+    );
+  const automaticallyVirtualize =
+    virtualization === undefined &&
+    !store.config.status.error &&
+    (fields.length
+      ? visibleCount(groupDataTableRows(model.sortedRows, fields))
+      : model.pageRows.length) >= 100;
+  if ((virtualization || automaticallyVirtualize) && !canDragRows(store)) {
+    const options =
+      virtualization && virtualization !== true ? virtualization : {};
+    const rowCount =
+      !getActiveGrouping(store).length &&
+      model.pageRows.length &&
+      !store.config.status.error
+        ? model.pageRows.length + 1
+        : undefined;
+    if (options.scroll === "page") {
+      return (
+        <div
+          ref={setPageTable}
+          data-table-page-virtualization=""
+          className="[overflow-anchor:none]"
+        >
+          <ScrollArea className="@container max-w-full min-w-0">
+            <Table
+              aria-rowcount={rowCount}
+              className="table-fixed"
+              style={{ width: `max(100%, ${width}px)` }}
+            >
+              <DataTableHeader tableAtom={tableAtom} />
+              <DataTableBody
+                tableAtom={tableAtom}
+                viewport={{
+                  element: null,
+                  headerHeight: 0,
+                  pageOffset,
+                  options,
+                }}
+              />
+            </Table>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </div>
+      );
+    }
+    return (
+      <ScrollAreaPrimitive.Root className="relative isolate max-w-full min-w-0">
+        <ScrollAreaPrimitive.Viewport
+          ref={setScrollElement}
+          data-table-virtual-viewport=""
+          className="@container [overflow-anchor:none] data-has-overflow-y:me-2.5 [&_[data-slot=table-container]]:overflow-visible"
+          style={{
+            maxHeight: options.height ?? 480,
+            scrollPaddingTop: headerHeight,
+          }}
+        >
+          <ScrollAreaPrimitive.Content>
+            <Table
+              aria-rowcount={rowCount}
+              className="table-fixed"
+              style={{ width: `max(100%, ${width}px)` }}
+            >
+              <DataTableHeader sticky tableAtom={tableAtom} />
+              <DataTableBody
+                tableAtom={tableAtom}
+                viewport={{ element: scrollElement, headerHeight, options }}
+              />
+            </Table>
+          </ScrollAreaPrimitive.Content>
+        </ScrollAreaPrimitive.Viewport>
+        <ScrollBar
+          className="data-vertical:h-auto"
+          style={{ top: headerHeight }}
+        />
+        <ScrollBar orientation="horizontal" />
+        <ScrollAreaPrimitive.Corner />
+      </ScrollAreaPrimitive.Root>
+    );
+  }
   return (
     <ScrollArea className="@container max-w-full min-w-0">
       <Table className="table-fixed" style={{ width: `max(100%, ${width}px)` }}>
@@ -4603,7 +4960,7 @@ const DataTableListMenu = ({
   const resolvedLabel =
     label ?? (hasActions ? labels.actions : labels.listDetails);
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         onClick={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}

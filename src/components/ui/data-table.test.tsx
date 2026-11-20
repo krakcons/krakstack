@@ -65,6 +65,90 @@ const data: Row[] = [
   { id: "three", name: "Gamma", score: 20 },
 ];
 
+describe("DataTable virtualization", () => {
+  it("virtualizes from 100 displayed rows unless explicitly disabled", async () => {
+    const rows = Array.from({ length: 100 }, (_, index) => ({
+      id: String(index),
+      name: `Record ${index}`,
+      score: index,
+    }));
+    const props = { columnDefs: columns, getRowId: (row: Row) => row.id };
+    const { container, rerender } = render(
+      <DataTable {...props} rowData={rows.slice(1)} />,
+    );
+    await screen.findByText("Record 99");
+    expect(container.querySelector("[data-table-virtual-viewport]")).toBeNull();
+    rerender(<DataTable {...props} rowData={rows} />);
+    await waitFor(() =>
+      expect(
+        container.querySelector("[data-table-virtual-viewport]"),
+      ).not.toBeNull(),
+    );
+    rerender(
+      <DataTable
+        {...props}
+        rowData={rows}
+        features={{ virtualization: false }}
+      />,
+    );
+    await screen.findByText("Record 99");
+    expect(container.querySelector("[data-table-virtual-viewport]")).toBeNull();
+  });
+
+  it("windows rows as the viewport scrolls without limiting select-all", async () => {
+    // jsdom has no layout; supply the dimensions read by the real virtualizer.
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.hasAttribute("data-table-virtual-viewport")) return 256;
+        return this.tagName === "TR" ? 64 : 0;
+      },
+    );
+    const rows = Array.from({ length: 200 }, (_, index) => ({
+      id: String(index),
+      name: `Record ${index}`,
+      score: index,
+    }));
+    const onSelectionChange = vi.fn();
+    const { container } = render(
+      <DataTable
+        columnDefs={columns}
+        features={{
+          pagination: false,
+          selection: { onSelectionChange },
+          virtualization: { height: 256, overscan: 2 },
+        }}
+        getRowId={(row) => row.id}
+        rowData={rows}
+      />,
+    );
+    await screen.findByText("Record 0");
+    expect(container.querySelectorAll("[data-table-row]").length).toBeLessThan(
+      20,
+    );
+    expect(screen.queryByText("Record 100")).toBeNull();
+
+    const viewport = container.querySelector("[data-table-virtual-viewport]")!;
+    fireEvent.scroll(viewport, { target: { scrollTop: 6400 } });
+    const row = await screen.findByText("Record 100");
+    expect(row.closest("tr")?.getAttribute("aria-rowindex")).toBe("102");
+    expect(screen.queryByText("Record 0")).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Select all rows on this page" }),
+    );
+    expect(onSelectionChange).toHaveBeenLastCalledWith(rows);
+
+    fireEvent.change(screen.getByPlaceholderText("Filter results..."), {
+      target: { value: "Record 19" },
+    });
+    expect(viewport.scrollTop).toBe(0);
+    // Unlike browsers, jsdom does not emit scroll events for scrollTop writes.
+    fireEvent.scroll(viewport);
+    await screen.findByText("Record 19");
+    expect(screen.getByRole("table").getAttribute("aria-rowcount")).toBe("12");
+  });
+});
+
 describe("DataTable gallery", () => {
   it("uses the initial gallery view and preserves a saved table preference", async () => {
     const table = (
@@ -255,10 +339,14 @@ describe("table presentation hooks", () => {
         rowData={data}
         columnDefs={columns}
         onStateChange={onStateChange}
+        features={{ pagination: { mode: "client" } }}
         classNames={{ popup: { select: "custom-page-size" } }}
       />,
     );
     fireEvent.click(await screen.findByRole("combobox", { name: "Page size" }));
+    expect(
+      screen.getAllByRole("option").map((item) => item.textContent),
+    ).toEqual(["20", "50", "100"]);
     const option = await screen.findByRole("option", {
       name: "20",
       exact: true,
@@ -2361,7 +2449,10 @@ describe("DataTable model", () => {
           ]}
           rowData={[...data, { id: "four", name: "Zed", score: 15 }]}
           initialState={{ page: 0, pageSize: 1, globalFilter: "a" }}
-          features={{ export: { baseName: "records", scope } }}
+          features={{
+            export: { baseName: "records", scope },
+            pagination: { mode: "client" },
+          }}
         />,
       );
       fireEvent.click(screen.getByRole("button", { name: "Private" }));
@@ -2447,16 +2538,32 @@ describe("DataTable model", () => {
     expect(await screen.findByText("Open row")).toBeTruthy();
   });
 
-  it("defaults to 20 rows per page", () => {
-    const rows = Array.from({ length: 21 }, (_, index) => ({
+  it("renders all rows by default and shows 100 rows when opted into pagination", async () => {
+    const rows = Array.from({ length: 101 }, (_, index) => ({
       id: `row-${index}`,
       name: `Record ${index + 1}`,
       score: index,
     }));
-    render(<DataTable columnDefs={columns} rowData={rows} />);
+    const { rerender } = render(
+      <DataTable
+        columnDefs={columns}
+        rowData={rows}
+        features={{ virtualization: false }}
+      />,
+    );
+    expect(screen.getByText("Record 101")).toBeTruthy();
+    expect(screen.queryByRole("combobox", { name: "Page size" })).toBeNull();
 
-    expect(screen.getByText("Record 20")).toBeTruthy();
-    expect(screen.queryByText("Record 21")).toBeNull();
+    rerender(
+      <DataTable
+        columnDefs={columns}
+        rowData={rows}
+        features={{ virtualization: false, pagination: { mode: "client" } }}
+      />,
+    );
+    await screen.findByRole("combobox", { name: "Page size" });
+    expect(screen.getByText("Record 100")).toBeTruthy();
+    expect(screen.queryByText("Record 101")).toBeNull();
   });
 
   it("controls API-ready query state while keeping UI state internal", () => {
@@ -2558,7 +2665,7 @@ describe("DataTable model", () => {
         .getAllByRole("row")
         .slice(1)
         .map((row) => row.textContent),
-    ).toEqual(["Alpha30", "Beta10"]);
+    ).toEqual(["Alpha30", "Beta10", "Gamma20"]);
   });
 
   it("searches hidden-by-default ID columns and lets users show them", async () => {

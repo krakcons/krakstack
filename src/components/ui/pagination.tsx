@@ -93,7 +93,7 @@ export function Pagination({
   page,
   pageCount,
   pageSize,
-  pageSizes = [10, 20, 30, 40, 50],
+  pageSizes = [20, 50, 100],
   selectedRows = 0,
   showResults = true,
   totalRows,
