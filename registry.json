@@ -473,7 +473,7 @@
       "type": "registry:component",
       "title": "App Switcher",
       "description": "A keyboard-accessible menu for navigating between applications with icons, descriptions, badges and current-app indication.",
-      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-11" },
+      "meta": { "createdAt": "2026-11-10", "updatedAt": "2026-11-20" },
       "docs": "## Overview\n\nA configurable application navigation menu extracted from Kokobi. Supply trusted app destinations; the component does not switch organizations or manage authentication. See /docs/app-switcher for installation, examples, API reference and accessibility guidance.",
       "files": [
         {

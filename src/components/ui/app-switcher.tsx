@@ -1,4 +1,4 @@
-import { Check, Grid2X2 } from "lucide-react";
+import { Check, Grip } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,7 @@ export const AppSwitcher = ({
           />
         }
       >
-        <Grid2X2 aria-hidden="true" />
+        <Grip aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         data-component="app-switcher-content"

@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.10
+
+### Patch Changes
+
+- Use the six-dot Grip icon for the App Switcher trigger, matching Kokobi’s original product switcher.
+
 ## 0.10.9
 
 ### Patch Changes
