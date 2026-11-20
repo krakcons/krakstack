@@ -3329,7 +3329,7 @@ const TableDataRow = <TData extends RowData>({
           className="bg-background group-data-[state=selected]/row:bg-muted sticky right-0 z-20 w-10 min-w-10 cursor-default p-0 transition-colors group-hover/row:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))]"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex h-16 items-center justify-center">
+          <div className="flex h-16 items-center justify-end pr-1">
             <DataTableRowActionMenu tableAtom={tableAtom} />
           </div>
         </TableCell>
@@ -3342,12 +3342,10 @@ const GroupActions = ({
   actions,
   groupId,
   title,
-  triggerClassName,
 }: {
   actions?: readonly DataTableGroupAction[] | undefined;
   groupId: string;
   title: string;
-  triggerClassName?: string;
 }) => {
   const visible = actions?.filter(
     (action) => !action.visible || action.visible(groupId),
@@ -3358,7 +3356,7 @@ const GroupActions = ({
       <DropdownMenuTrigger
         onClick={(event) => event.stopPropagation()}
         render={
-          <Button className={triggerClassName} size="icon" variant="ghost">
+          <Button size="icon-sm" variant="ghost">
             <span className="sr-only">{title}</span>
             <MoreHorizontal />
           </Button>
@@ -3423,7 +3421,7 @@ const GroupedTable = <TData extends RowData>({
               className="p-0"
               colSpan={model.visibleColumns.length + extra}
             >
-              <div className="sticky left-0 flex w-[100cqw] max-w-full items-center gap-2 py-2 pl-2">
+              <div className="sticky left-0 flex w-[100cqw] max-w-full items-center gap-2 py-2 pr-1 pl-2">
                 <button
                   aria-expanded={!collapsed}
                   className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left font-medium"
@@ -3442,7 +3440,7 @@ const GroupedTable = <TData extends RowData>({
                     ) ?? section.groupId}
                   </span>
                 </button>
-                <Badge className="shrink-0 last:mr-2" variant="secondary">
+                <Badge className="shrink-0" variant="secondary">
                   {section.rows.length}
                 </Badge>
                 <GroupActions
@@ -3451,7 +3449,6 @@ const GroupedTable = <TData extends RowData>({
                   title={
                     section.field.actionsLabel ?? store.config.labels.actions
                   }
-                  triggerClassName="w-10 shrink-0"
                 />
               </div>
             </TableCell>

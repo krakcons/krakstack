@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.11
+
+### Patch Changes
+
+- Use a compact square button for Data Table group actions and align it with the row action buttons, with a small inset from the right edge.
+
 ## 0.10.10
 
 ### Patch Changes
