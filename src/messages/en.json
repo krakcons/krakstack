@@ -74,6 +74,8 @@
   "interactions_simulate_failure": "Simulate a failed action",
   "interactions_run_action": "Run example action",
   "interactions_local_only": "Local demonstration only. No records are created, changed or deleted on a server.",
+  "support_preview_success": "Demo complete. No request was sent.",
+  "support_preview_local_only": "This preview does not send or save your request.",
   "interactions_delete_example": "Delete example workspace",
   "interactions_delete_title": "Delete this example workspace?",
   "interactions_delete_description": "Type DELETE to try the confirmation flow. This example does not delete any real data.",

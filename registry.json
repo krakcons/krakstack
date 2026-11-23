@@ -511,6 +511,31 @@
       "dependencies": ["react", "lucide-react"]
     },
     {
+      "name": "support-dialog",
+      "type": "registry:component",
+      "title": "Support Dialog",
+      "description": "A localized form for bug reports and support requests with host-owned delivery.",
+      "meta": { "createdAt": "2026-11-23", "updatedAt": "2026-11-23" },
+      "docs": "Supply an onSubmit callback. English and French messages are built in, with optional locale-specific overrides. The dialog collects a message, optional screenshots, and a reply email only when requested. It preserves the draft if the callback rejects. Delivery and server-side validation belong to the host. See /docs/support-dialog.",
+      "files": [
+        {
+          "path": "src/components/support-dialog.tsx",
+          "type": "registry:component",
+          "target": "components/support-dialog.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@krak-stack/krakstack-provider",
+        "attachment",
+        "button",
+        "dialog",
+        "input",
+        "label",
+        "textarea"
+      ],
+      "dependencies": ["@base-ui/react", "effect", "lucide-react", "react"]
+    },
+    {
       "name": "bulk-list-input",
       "type": "registry:component",
       "title": "Bulk List Input",

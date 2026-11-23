@@ -77,6 +77,8 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Interactions_Simulate_FailureInputs */
 /** @typedef {{}} Interactions_Run_ActionInputs */
 /** @typedef {{}} Interactions_Local_OnlyInputs */
+/** @typedef {{}} Support_Preview_SuccessInputs */
+/** @typedef {{}} Support_Preview_Local_OnlyInputs */
 /** @typedef {{}} Interactions_Delete_ExampleInputs */
 /** @typedef {{}} Interactions_Delete_TitleInputs */
 /** @typedef {{}} Interactions_Delete_DescriptionInputs */
@@ -1553,6 +1555,34 @@ export const interactions_local_only = /** @type {((inputs?: Interactions_Local_
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.interactions_local_only(inputs)
 	return __fr.interactions_local_only(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Demo complete. No request was sent." |
+*
+* @param {Support_Preview_SuccessInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const support_preview_success = /** @type {((inputs?: Support_Preview_SuccessInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Support_Preview_SuccessInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.support_preview_success(inputs)
+	return __fr.support_preview_success(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "This preview does not send or save your request." |
+*
+* @param {Support_Preview_Local_OnlyInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const support_preview_local_only = /** @type {((inputs?: Support_Preview_Local_OnlyInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Support_Preview_Local_OnlyInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.support_preview_local_only(inputs)
+	return __fr.support_preview_local_only(inputs)
 });
 /**
 * | output |

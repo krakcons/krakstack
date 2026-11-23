@@ -202,7 +202,14 @@ const makeSmtpEmailTransport = Effect.gen(function* () {
     const from = email.from ?? environment.sender;
     const result = yield* Effect.tryPromise({
       try: () =>
-        transporter.sendMail(smtpEmailRequest({ email, recipient, from })),
+        transporter.sendMail(
+          smtpEmailRequest({
+            email,
+            recipient,
+            from,
+            attachments: input.attachments,
+          }),
+        ),
       catch: classifyFailure,
     });
     const providerMessageId = Option.getOrNull(

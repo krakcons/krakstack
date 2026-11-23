@@ -1,0 +1,34 @@
+---
+slug: support-dialog
+path: /docs/support-dialog
+title: Boîte de dialogue de soutien
+description: Recueillir des signalements de bogues et des demandes de soutien sans imposer de service d’envoi.
+order: 4
+locale: fr
+section: components
+type: reference
+createdAt: "2026-11-23"
+updatedAt: "2026-11-23"
+---
+
+# Boîte de dialogue de soutien
+
+Utilisez `SupportDialog` pour recueillir un message et, au besoin, des captures d’écran. Les utilisateurs peuvent choisir des fichiers ou les coller dans le champ de message. La boîte de dialogue accepte jusqu’à trois images PNG, JPEG ou WebP de 5 Mio chacune. Votre application choisit le mode d’envoi.
+
+```bash
+bunx shadcn@latest add @krak-stack/support-dialog
+```
+
+```tsx
+import { SupportDialog } from "@/components/support-dialog";
+
+<SupportDialog onSubmit={sendSupportRequest} />;
+```
+
+Le composant est aussi exporté par `@krak-stack/registry/support-dialog`. Fournissez un bouton via `trigger` pour choisir son emplacement ou son style.
+
+Les textes sont fournis en français et en anglais. La boîte de dialogue suit la langue de `KrakstackProvider`, sauf si vous précisez `locale`. Pour personnaliser certains textes, utilisez des substitutions par langue, par exemple `messages={{ fr: { title: "Contacter le soutien" } }}`.
+
+`onSubmit` reçoit `{ message, attachments, replyEmail? }`, où `attachments` est une liste d’objets `File`. Activez `askForReplyEmail` pour les utilisateurs non connectés. Pour les utilisateurs connectés, récupérez l’adresse de réponse à partir de la session côté serveur. Résolvez la promesse lorsque la demande est acceptée ou signalez une erreur pour conserver le brouillon et permettre un nouvel essai.
+
+Utilisez des données de formulaire multipart pour envoyer les fichiers au serveur. Appliquez des limites de taille côté serveur, utilisez `SupportRequestSchema` pour valider les données reçues et vérifiez le contenu des images plutôt que de vous fier au type MIME déclaré. Gardez les identifiants d’accès et le choix du destinataire côté serveur. N’incluez pas le contenu des demandes dans la télémétrie. La boîte de dialogue ne recueille pas automatiquement les URL, les détails du compte ou les diagnostics.

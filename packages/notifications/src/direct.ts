@@ -46,6 +46,11 @@ export class DirectNotificationDispatcher extends Context.Service<
                 }),
             ),
           );
+          if (input.channel !== "email" && input.attachments?.length) {
+            return yield* new DirectNotificationValidationError({
+              message: "Attachments are only supported for direct email",
+            });
+          }
           const transport = yield* registry.get(input.channel);
           const transportInput = yield* Schema.decodeEffect(
             NotificationTransportInput,

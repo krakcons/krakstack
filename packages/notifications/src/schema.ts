@@ -604,6 +604,23 @@ export const NotificationQueueJob = Schema.Union([
   identifier: "NotificationQueueJob",
 });
 
+const EmailAttachments = Schema.Array(
+  Schema.Struct({
+    filename: Schema.String.check(
+      Schema.isMaxLength(128),
+      Schema.isPattern(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
+    ),
+    contentType: Schema.String.check(Schema.isPattern(/^[\w.+-]+\/[\w.+-]+$/)),
+    content: Schema.Uint8Array.check(
+      Schema.makeFilter(
+        (bytes) => bytes.byteLength > 0 && bytes.byteLength <= 5 * 1024 * 1024,
+      ),
+    ),
+  }),
+)
+  .check(Schema.isMaxLength(3))
+  .annotate({ identifier: "NotificationEmailAttachments" });
+
 export const NotificationTransportInput = Schema.Struct({
   dispatchId: Schema.NonEmptyString,
   deliveryId: Schema.NullOr(NotificationDeliveryId),
@@ -617,6 +634,7 @@ export const NotificationTransportInput = Schema.Struct({
   recipientName: Schema.NullOr(Schema.NonEmptyString),
   payloadVersion: PositiveInt,
   payload: Schema.Json,
+  attachments: Schema.optionalKey(EmailAttachments),
 }).annotate({ identifier: "NotificationTransportInput" });
 
 export const NotificationTransportResult = Schema.Struct({
@@ -634,6 +652,7 @@ export const DirectNotificationInput = Schema.Struct({
   recipientName: Schema.NullOr(Schema.NonEmptyString),
   payloadVersion: PositiveInt,
   payload: Schema.Json,
+  attachments: Schema.optionalKey(EmailAttachments),
 }).annotate({ identifier: "DirectNotificationInput" });
 
 export const RetryPolicy = Schema.Struct({

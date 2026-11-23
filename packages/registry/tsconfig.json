@@ -11,6 +11,7 @@
     "sourceMap": false
   },
   "files": [
+    "../../src/components/support-dialog.tsx",
     "../../src/components/ui/rich-text-editor.tsx",
     "../../src/components/ui/email-editor.tsx",
     "../../src/lib/email-document/render.tsx",

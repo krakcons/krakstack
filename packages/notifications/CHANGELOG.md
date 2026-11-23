@@ -1,5 +1,13 @@
 # @krak-stack/notifications
 
+## 0.4.3
+
+### Patch Changes
+
+- Support in-memory attachments for direct email dispatch through SES and SMTP without storing attachment bytes in the notification queue.
+- Updated dependencies
+  - @krak-stack/registry@0.10.13
+
 ## 0.4.2
 
 ### Patch Changes

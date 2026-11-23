@@ -100,7 +100,7 @@
     },
     "packages/notifications": {
       "name": "@krak-stack/notifications",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "dependencies": {
         "@effect/platform-node-shared": "4.1.0",
       },
@@ -155,7 +155,7 @@
     },
     "packages/registry": {
       "name": "@krak-stack/registry",
-      "version": "0.10.12",
+      "version": "0.10.13",
       "dependencies": {
         "@oxlint/plugins": "1.78.0",
         "bowser": "^2.14.1",

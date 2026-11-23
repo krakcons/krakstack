@@ -13,6 +13,42 @@ import {
 
 describe("email adapter requests", () => {
   it.effect(
+    "maps in-memory attachments to SES and SMTP without file access",
+    () =>
+      Effect.gen(function* () {
+        const request = {
+          email: yield* decodeEmailPayloadV1({
+            subject: "Support",
+            text: "Body",
+          }),
+          recipient: { address: "recipient@example.com", name: null },
+          from: "sender@example.com",
+          attachments: [
+            {
+              filename: "screen.png",
+              contentType: "image/png",
+              content: Uint8Array.of(1, 2, 3),
+            },
+          ],
+        };
+        expect(sesEmailRequest(request).Content?.Simple?.Attachments).toEqual([
+          {
+            FileName: "screen.png",
+            ContentType: "image/png",
+            RawContent: Uint8Array.of(1, 2, 3),
+            ContentTransferEncoding: "BASE64",
+          },
+        ]);
+        expect(smtpEmailRequest(request).attachments).toEqual([
+          {
+            filename: "screen.png",
+            contentType: "image/png",
+            content: Buffer.from([1, 2, 3]),
+          },
+        ]);
+      }),
+  );
+  it.effect(
     "preserves sender display names in SES and SMTP, including UTF-8 word boundaries",
     () =>
       Effect.gen(function* () {

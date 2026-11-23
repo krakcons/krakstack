@@ -1,5 +1,13 @@
 # @krak-stack/registry
 
+## 0.10.13
+
+### Patch Changes
+
+- Add a reusable support dialog with a message, optional screenshot attachments, and a host-owned delivery callback.
+
+  Share support schemas, multipart limits, and screenshot handling with host APIs.
+
 ## 0.10.12
 
 ### Patch Changes

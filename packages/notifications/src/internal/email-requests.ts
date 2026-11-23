@@ -2,7 +2,11 @@ import type { Body, SendEmailCommandInput } from "@aws-sdk/client-sesv2";
 import { Buffer } from "node:buffer";
 import type { SendMailOptions } from "nodemailer";
 
-import type { EmailPayloadV1, EmailRecipient } from "../schema.js";
+import type {
+  EmailPayloadV1,
+  EmailRecipient,
+  NotificationTransportInput,
+} from "../schema.js";
 import {
   emailUnsubscribeHeaders,
   formatEmailRecipient,
@@ -12,6 +16,7 @@ interface EmailRequestInput {
   readonly email: EmailPayloadV1;
   readonly recipient: EmailRecipient;
   readonly from: string;
+  readonly attachments?: NotificationTransportInput["attachments"];
 }
 
 // SES requires MIME encoded words for non-ASCII display names. Encoding every
@@ -40,6 +45,7 @@ export const sesEmailRequest = ({
   email,
   recipient,
   from,
+  attachments,
 }: EmailRequestInput): SendEmailCommandInput => {
   const body: Body = {};
   if (email.text !== undefined)
@@ -56,6 +62,18 @@ export const sesEmailRequest = ({
       Simple: {
         Subject: { Data: email.subject, Charset: "UTF-8" },
         Body: body,
+        ...(attachments?.length
+          ? {
+              Attachments: attachments.map(
+                ({ filename, contentType, content }) => ({
+                  FileName: filename,
+                  ContentType: contentType,
+                  RawContent: content,
+                  ContentTransferEncoding: "BASE64" as const,
+                }),
+              ),
+            }
+          : {}),
         Headers:
           email.unsubscribeUrl === undefined
             ? undefined
@@ -73,6 +91,7 @@ export const smtpEmailRequest = ({
   email,
   recipient,
   from,
+  attachments,
 }: EmailRequestInput): SendMailOptions => ({
   from:
     email.fromName === undefined
@@ -83,6 +102,15 @@ export const smtpEmailRequest = ({
   subject: email.subject,
   text: email.text,
   html: email.html,
+  ...(attachments?.length
+    ? {
+        attachments: attachments.map(({ filename, contentType, content }) => ({
+          filename,
+          contentType,
+          content: Buffer.from(content),
+        })),
+      }
+    : {}),
   headers:
     email.unsubscribeUrl === undefined
       ? undefined

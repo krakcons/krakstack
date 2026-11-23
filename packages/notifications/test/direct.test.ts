@@ -30,13 +30,21 @@ describe("direct notification dispatcher", () => {
 
     return Effect.gen(function* () {
       const dispatcher = yield* DirectNotificationDispatcher;
-      const result = yield* dispatcher.dispatch(input);
+      const attachments = [
+        {
+          filename: "screen.png",
+          contentType: "image/png",
+          content: Uint8Array.of(1, 2, 3),
+        },
+      ];
+      const result = yield* dispatcher.dispatch({ ...input, attachments });
 
       expect(result.provider).toBe("fake");
       expect(fake.sent).toHaveLength(1);
       expect(fake.sent[0]?.deliveryId).toBeNull();
       expect(fake.sent[0]?.recipientAddress).toBe("person@example.com");
       expect(fake.sent[0]?.payload).toEqual(input.payload);
+      expect(fake.sent[0]?.attachments).toEqual(attachments);
     }).pipe(Effect.provide(layer));
   });
 

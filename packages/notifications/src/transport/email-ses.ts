@@ -213,7 +213,14 @@ const makeSesEmailTransport = Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
       try: () =>
         client.send(
-          new SendEmailCommand(sesEmailRequest({ email, recipient, from })),
+          new SendEmailCommand(
+            sesEmailRequest({
+              email,
+              recipient,
+              from,
+              attachments: input.attachments,
+            }),
+          ),
         ),
       catch: classifyFailure,
     });

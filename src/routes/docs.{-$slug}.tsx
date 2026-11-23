@@ -219,6 +219,14 @@ const registryPreviews: Readonly<
     ),
   ],
   [
+    "support-dialog",
+    lazy(() =>
+      import("@/components/registry-previews/support-dialog-preview").then(
+        ({ SupportDialogPreview }) => ({ default: SupportDialogPreview }),
+      ),
+    ),
+  ],
+  [
     "bulk-list-input",
     lazy(() =>
       import("@/components/registry-previews/bulk-list-input-preview").then(
