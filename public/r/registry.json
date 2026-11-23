@@ -533,7 +533,7 @@
         "label",
         "textarea"
       ],
-      "dependencies": ["@base-ui/react", "effect", "lucide-react", "react"]
+      "dependencies": ["effect", "lucide-react", "react"]
     },
     {
       "name": "bulk-list-input",
