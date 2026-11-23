@@ -287,6 +287,25 @@ const smtpRuntime = NotificationRuntime.layer.pipe(
 );
 ```
 
+For queued email, pass `attachments` alongside the version 1 `payload` on a
+delivery in `NotificationService.publish`:
+
+```ts
+attachments: [{
+  filename: "certificate.pdf",
+  contentType: "application/pdf",
+  content: pdfBytes, // Uint8Array
+}]
+```
+
+Each email supports up to three attachments of up to 5 MiB each; provider
+message-size limits still apply. The package stores the bytes as base64 in the
+existing Postgres delivery payload, not in queue jobs or delivery API responses.
+Retries reuse the stored bytes. A successful send removes them; unsuccessful
+deliveries retain any stored bytes until the delivery is removed. Republish with
+a new idempotency key to send a new copy. Upgrade all delivery workers before
+publishing queued attachments; older workers won't send them.
+
 Direct mode uses the same provider registry without SQL, migrations, or a
 persisted queue. It does not consult endpoint suppressions:
 

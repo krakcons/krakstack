@@ -52,6 +52,8 @@ import {
   ReminderHandlerInput,
   ReminderHandlerUnavailable,
   RetryPolicy,
+  StoredEmailAttachments,
+  queuedEmailAttachmentsKey,
   type NotificationBatchOptions,
   type NotificationBatchResult,
   type NotificationBatchTimeoutError,
@@ -238,6 +240,11 @@ export interface NotificationRuntimeContract {
   readonly runScheduler: Effect.Effect<never>;
 }
 
+const WorkerDelivery = NotificationDelivery.mapFields((fields) => ({
+  ...fields,
+  hasAttachments: Schema.Boolean,
+})).annotate({ identifier: "NotificationWorkerDelivery" });
+
 const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
   Effect.gen(function* () {
     const runtimeOptions = yield* Schema.decodeEffect(
@@ -393,6 +400,11 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
               provider = ${input.result.provider},
               provider_message_id = ${input.result.providerMessageId},
               error_message = NULL,
+              payload = CASE
+                WHEN channel = 'email' AND jsonb_typeof(payload) = 'object'
+                  THEN payload - ${queuedEmailAttachmentsKey}::text
+                ELSE payload
+              END,
               sent_at = ${input.now},
               updated_at = ${input.now}
             WHERE id = ${input.delivery.id}
@@ -474,14 +486,16 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
       ) {
         const now = yield* DateTime.nowAsDate;
         const rows = yield* sql`
-          SELECT ${deliveryColumns(sql)}
+          SELECT ${deliveryColumns(sql)},
+            (channel = 'email' AND jsonb_typeof(payload) = 'object'
+              AND payload ? ${queuedEmailAttachmentsKey}::text) AS "hasAttachments"
           FROM notification_deliveries
           WHERE id = ${job.deliveryId}
           LIMIT 1
         `;
         const decoded = yield* decodeRows(
           "notification delivery",
-          NotificationDelivery,
+          WorkerDelivery,
           rows,
         );
         const delivery = decoded.at(0);
@@ -560,35 +574,6 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
           });
           return "skipped" satisfies DeliveryBatchOutcome;
         }
-
-        const transportInput = yield* Schema.decodeEffect(
-          NotificationTransportInput,
-        )({
-          dispatchId: metadata.id,
-          deliveryId: delivery.id,
-          attempt: job.attempt,
-          scope: delivery.scope,
-          eventKey: delivery.eventKey,
-          eventVersion: delivery.eventVersion,
-          channel: delivery.channel,
-          template: delivery.template,
-          recipientAddress: canonicalRecipientAddress(
-            delivery.channel,
-            delivery.recipientAddress,
-          ),
-          recipientName: delivery.recipientName,
-          payloadVersion: delivery.payloadVersion,
-          payload: delivery.payload,
-        }).pipe(
-          Effect.mapError(
-            (cause) =>
-              new NotificationDataError({
-                entity: "notification transport input",
-                message: "Could not decode persisted transport payload",
-                cause,
-              }),
-          ),
-        );
 
         const dispatchCheckedAt = yield* DateTime.nowAsDate;
         const suppressionReason = yield* deliverySuppressionReason({
@@ -743,6 +728,46 @@ const makeNotificationRuntime = (options: NotificationRuntimeOptions = {}) =>
           );
           return policyDecision._tag === "Defer" ? "skipped" : "suppressed";
         }
+
+        const attachmentRows = delivery.hasAttachments
+          ? yield* sql`
+              SELECT payload -> ${queuedEmailAttachmentsKey}::text AS attachments
+              FROM notification_deliveries
+              WHERE id = ${delivery.id} AND current_job_id = ${metadata.id}
+                AND job_generation = ${job.generation}
+            `
+          : undefined;
+        if (attachmentRows?.length === 0) return "skipped";
+        const storedAttachments = attachmentRows?.[0]?.attachments;
+        const attachments = storedAttachments == null
+          ? undefined
+          : yield* Schema.decodeUnknownEffect(StoredEmailAttachments)(storedAttachments).pipe(
+              Effect.mapError(() => new NotificationDataError({
+                entity: "notification email attachments",
+                message: "Could not decode persisted email attachments",
+              })),
+            );
+        const transportInput = yield* Schema.decodeEffect(NotificationTransportInput)({
+          dispatchId: metadata.id,
+          deliveryId: delivery.id,
+          attempt: job.attempt,
+          scope: delivery.scope,
+          eventKey: delivery.eventKey,
+          eventVersion: delivery.eventVersion,
+          channel: delivery.channel,
+          template: delivery.template,
+          recipientAddress: canonicalRecipientAddress(delivery.channel, delivery.recipientAddress),
+          recipientName: delivery.recipientName,
+          payloadVersion: delivery.payloadVersion,
+          payload: delivery.payload,
+          ...(attachments ? { attachments } : {}),
+        }).pipe(
+          Effect.mapError((cause) => new NotificationDataError({
+            entity: "notification transport input",
+            message: "Could not decode persisted transport payload",
+            cause,
+          })),
+        );
 
         return yield* registrySend(transports, transportInput).pipe(
           Effect.matchEffect({

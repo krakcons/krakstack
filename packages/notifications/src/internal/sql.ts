@@ -5,6 +5,7 @@ import {
   NotificationDataError,
   NotificationStorageError,
   NotificationValidationError,
+  queuedEmailAttachmentsKey,
   type NotificationScope,
 } from "../schema.js";
 
@@ -64,7 +65,11 @@ export const deliveryColumns = (sql: SqlClient.SqlClient, alias?: "d") => {
     ${prefix}recipient_address AS "recipientAddress",
     ${prefix}recipient_name AS "recipientName",
     ${prefix}payload_version AS "payloadVersion",
-    ${prefix}payload,
+    CASE
+      WHEN ${prefix}channel = 'email' AND jsonb_typeof(${prefix}payload) = 'object'
+        THEN ${prefix}payload - '${queuedEmailAttachmentsKey}'
+      ELSE ${prefix}payload
+    END AS payload,
     ${prefix}status,
     ${prefix}attempts,
     ${prefix}max_attempts AS "maxAttempts",

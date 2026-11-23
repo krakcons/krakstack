@@ -31,6 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 import { useKrakstackLocale } from "@/components/ui/krakstack-provider";
+
 export type NotificationMenuTab = "inbox" | "archive";
 
 export type NotificationItem = {
@@ -214,7 +215,7 @@ export function NotificationMenu<ActionResult = ErrorOptions["cause"]>({
           className="min-h-0 min-w-0 flex-1 gap-0"
         >
           <div className="flex shrink-0 flex-col gap-2 border-b p-2">
-            <TabsList className="grid w-full min-w-0 grid-cols-2">
+            <TabsList className="w-full min-w-0 gap-2">
               <TabsTrigger className="min-w-0" value="inbox">
                 <Inbox data-icon="inline-start" />
                 <span className="truncate">{labels.inbox}</span>
@@ -346,8 +347,8 @@ export function NotificationList<ActionResult>({
   }
 
   return (
-    <ScrollArea className="flex max-h-[min(24rem,60svh)] min-h-0 min-w-0 flex-auto flex-col overflow-hidden [&>[data-slot=scroll-area-viewport]]:h-auto [&>[data-slot=scroll-area-viewport]]:min-h-0 [&>[data-slot=scroll-area-viewport][data-has-overflow-y]]:[--notification-scrollbar-gutter:0.375rem]">
-      <div className="flex min-w-0 flex-col">
+    <ScrollArea className="flex max-h-[min(24rem,60svh)] min-h-0 min-w-0 flex-auto flex-col overflow-hidden [&>[data-slot=scroll-area-viewport]]:h-auto [&>[data-slot=scroll-area-viewport]]:min-h-0 [&>[data-slot=scroll-area-viewport][data-has-overflow-y]]:[--notification-scrollbar-gutter:--spacing(2.5)]">
+      <div className="divide-border flex min-w-0 flex-col divide-y pe-[var(--notification-scrollbar-gutter,0px)]">
         {notifications.map((notification) => (
           <NotificationListItem
             key={notification.id}
@@ -380,16 +381,16 @@ export function NotificationListItem<ActionResult>({
   renderItem?: ((notification: NotificationItem) => ReactNode) | undefined;
 }) {
   const unread = !notification.readAt && !notification.archivedAt;
-  const selectNotification = () => {
-    if (onNavigate) {
-      onNavigate(notification);
-      return;
-    }
-
-    if (notification.href && globalThis.window) {
-      window.location.assign(notification.href);
-    }
-  };
+  const { href } = notification;
+  const canArchive = !notification.archivedAt && onArchive;
+  const rowClassName = cn(
+    "h-auto w-full min-w-0 justify-start rounded-none px-3 py-4 text-start [overflow-wrap:anywhere] whitespace-normal",
+    canArchive && "pe-14",
+  );
+  const actionClassName = cn(
+    rowClassName,
+    "focus-visible:inset-ring-ring/50 focus-visible:ring-0 focus-visible:inset-ring-3 forced-colors:focus-visible:outline-2 forced-colors:focus-visible:-outline-offset-2 forced-colors:focus-visible:outline-solid",
+  );
   const content = renderItem?.(notification) ?? (
     <span className="flex min-w-0 flex-1 flex-col gap-1">
       <span className="flex min-w-0 items-start gap-2">
@@ -417,30 +418,55 @@ export function NotificationListItem<ActionResult>({
 
   return (
     <div
-      className={cn("group relative min-w-0", unread && "bg-muted/70")}
+      className={cn("relative flex min-w-0", unread && "bg-muted/70")}
       data-unread={unread || undefined}
     >
-      <Button
-        className={cn(
-          "h-auto w-full min-w-0 cursor-pointer justify-start rounded-none border-0 border-b border-border px-3 py-4 pr-[calc(0.75rem+var(--notification-scrollbar-gutter,0px))] text-left [overflow-wrap:anywhere] whitespace-normal group-last:border-b-0",
-          !notification.archivedAt &&
-            onArchive &&
-            "pr-[calc(3.5rem+var(--notification-scrollbar-gutter,0px))]",
-        )}
-        onClick={selectNotification}
-        type="button"
-        variant="ghost"
-      >
-        {content}
-      </Button>
-      {!notification.archivedAt && onArchive ? (
-        <div className="absolute top-3 right-[calc(0.5rem+var(--notification-scrollbar-gutter,0px))]">
-          <ArchiveButton
-            label={labels.archiveItem(notificationTitle(notification))}
-            notificationIds={[notification.id]}
-            onArchive={onArchive}
-          />
+      {href ? (
+        <a
+          className={cn(buttonVariants({ variant: "ghost" }), actionClassName)}
+          href={href}
+          onClick={(event) => {
+            if (
+              !onNavigate ||
+              event.defaultPrevented ||
+              event.button !== 0 ||
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            ) {
+              return;
+            }
+
+            event.preventDefault();
+            onNavigate(notification);
+          }}
+        >
+          {content}
+        </a>
+      ) : onNavigate ? (
+        <Button
+          className={actionClassName}
+          onClick={() => onNavigate(notification)}
+          type="button"
+          variant="ghost"
+        >
+          {content}
+        </Button>
+      ) : (
+        <div
+          className={cn(rowClassName, "flex items-center text-sm font-medium")}
+        >
+          {content}
         </div>
+      )}
+      {canArchive ? (
+        <ArchiveButton
+          className="absolute end-2 top-2"
+          label={labels.archiveItem(notificationTitle(notification))}
+          notificationIds={[notification.id]}
+          onArchive={canArchive}
+        />
       ) : null}
     </div>
   );
@@ -495,7 +521,7 @@ function ArchiveButton<ActionResult>({
       className={className}
       disabled={pending}
       onClick={() => void archiveNotifications()}
-      size={showLabel ? "sm" : "icon-sm"}
+      size={showLabel ? "default" : "icon"}
       title={label}
       type="button"
       variant={showLabel ? "outline" : "ghost"}

@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications",
-  "version": "0.4.3",
+  "version": "0.4.5",
   "description": "PostgreSQL-backed Effect notification inbox, delivery, and reminder primitives.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",

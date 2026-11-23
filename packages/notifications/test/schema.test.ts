@@ -6,6 +6,8 @@ import {
   DeliveryQueueJob,
   ListRemindersInput,
   ListSuppressionsInput,
+  PublicationDeliveryInput,
+  PublishDeliveryInput,
   PublishInput,
   PublishResult,
   ReminderQueueJob,
@@ -14,6 +16,7 @@ import {
   SetPreferenceInput,
   SetSuppressionInput,
   UnreadCountInput,
+  queuedEmailAttachmentsKey,
 } from "../src/schema.js";
 import { NotificationTransportResult } from "../src/transport.js";
 
@@ -24,6 +27,47 @@ const scope = {
 };
 
 describe("notification schemas", () => {
+  it.effect("validates attachments on both queued publication APIs", () =>
+    Effect.gen(function* () {
+      const attachment = {
+        filename: "certificate.pdf",
+        contentType: "application/pdf",
+        content: new Uint8Array([0, 1, 2]),
+      };
+      const delivery = {
+        key: "email",
+        channel: "email",
+        template: null,
+        payloadVersion: 1,
+        payload: { subject: "Certificate", text: "Attached" },
+        attachments: [attachment],
+      };
+      const legacy = {
+        ...delivery,
+        purpose: "transactional" as const,
+        recipientAddress: "person@example.com",
+        recipientName: null,
+      };
+      expect(yield* Schema.decodeUnknownEffect(PublishDeliveryInput)(legacy)).toEqual(legacy);
+      const canonical = {
+        ...delivery,
+        recipient: { address: "person@example.com", name: null },
+        policy: { kind: "transactional" },
+      };
+      expect(yield* Schema.decodeUnknownEffect(PublicationDeliveryInput)(canonical)).toEqual(canonical);
+      for (const invalid of [
+        { ...legacy, channel: "push" },
+        { ...legacy, payloadVersion: 2 },
+        { ...legacy, attachments: [attachment, attachment, attachment, attachment] },
+        { ...legacy, attachments: [{ ...attachment, content: new Uint8Array(5 * 1024 * 1024 + 1) }] },
+        { ...legacy, attachments: [{ ...attachment, filename: "../certificate.pdf" }] },
+        { ...legacy, payload: { ...legacy.payload, [queuedEmailAttachmentsKey]: [] } },
+      ]) {
+        expect((yield* Schema.decodeUnknownEffect(PublishDeliveryInput)(invalid).pipe(Effect.exit))._tag).toBe("Failure");
+      }
+    }),
+  );
+
   it.effect("decodes a channel-neutral publish snapshot", () =>
     Effect.gen(function* () {
       const decoded = yield* Schema.decodeEffect(PublishInput)({

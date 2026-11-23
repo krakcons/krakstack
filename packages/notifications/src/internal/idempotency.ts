@@ -7,6 +7,7 @@ import type { PublishInput, ScheduleReminderInput } from "../schema.js";
 import type { ResolvedPublication } from "./publication.js";
 
 type Json = Schema.Json;
+const encodeAttachmentContent = Schema.encodeSync(Schema.Uint8ArrayFromBase64);
 
 const decodeJsonArray = Schema.decodeUnknownOption(Schema.Array(Schema.Json));
 const decodeJsonObject = Schema.decodeUnknownOption(
@@ -100,6 +101,15 @@ export const publicationFingerprint = (input: ResolvedPublication): string => {
           recipientName: delivery.recipientName,
           payloadVersion: delivery.payloadVersion,
           payload: delivery.payload,
+          ...(delivery.attachments?.length
+            ? {
+                attachments: delivery.attachments.map(({ filename, contentType, content }) => ({
+                  filename,
+                  contentType,
+                  content: encodeAttachmentContent(content),
+                })),
+              }
+            : {}),
           scheduledFor: delivery.scheduledFor?.toISOString() ?? null,
           expiresAt: delivery.expiresAt?.toISOString() ?? null,
           maxAttempts: delivery.maxAttempts ?? 5,

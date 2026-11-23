@@ -20,6 +20,7 @@ import {
   NotificationTransportRegistry,
   NotificationTransportUnavailable,
 } from "../src/transport.js";
+import { queuedEmailAttachmentsKey } from "../src/schema.js";
 import { makePushTransport } from "../src/transport/push.js";
 import { EmailUnsubscribe } from "../src/unsubscribe.js";
 
@@ -31,6 +32,7 @@ class NotificationFixtureTimeout extends Data.TaggedError(
 }> {}
 
 let unavailableFailures = 0;
+const attachmentAttempts: Array<ReadonlyArray<Uint8Array>> = [];
 let providerCompletedAt: Date | null = null;
 let handlerCompletedAt: Date | null = null;
 const readProviderCompletedAt = (): Date | null => providerCompletedAt;
@@ -52,6 +54,15 @@ const fakeTransport = makeFakeTransport({
       if (input.eventKey === "integration.completion-time") {
         yield* TestClock.adjust(25);
         providerCompletedAt = yield* DateTime.nowAsDate;
+      }
+      if (input.eventKey === "integration.attachments") {
+        attachmentAttempts.push(input.attachments?.map(({ content }) => content) ?? []);
+        expect(input.payload).toEqual({ subject: "Certificate", text: "Attached" });
+        if (input.attempt === 1)
+          return yield* new NotificationTransportUnavailable({
+            channel: "email",
+            message: "Retry attachment delivery",
+          });
       }
       return { provider: "fake", providerMessageId: input.dispatchId };
     }),
@@ -110,6 +121,66 @@ const notificationLayerFor = (url: string) => {
 const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
 
 describe.skipIf(!hasTestDatabase)("notification PostgreSQL integration", () => {
+  it.effect("persists queued attachments, reuses them on retry, and purges them on success", () => {
+    const url = process.env.TEST_DATABASE_URL;
+    if (url === undefined) return Effect.die(new Error("TEST_DATABASE_URL is required"));
+    const schemaName = `notification_attachments_${crypto.randomUUID().replaceAll("-", "")}`;
+    return Effect.acquireUseRelease(
+      createTestSchema(url, schemaName),
+      () => Effect.gen(function* () {
+        attachmentAttempts.length = 0;
+        const service = yield* NotificationService;
+        const runtime = yield* NotificationRuntime;
+        const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+        const bytes = new Uint8Array([0, 1, 2, 255]);
+        const input: PublishInput = {
+          idempotencyKey: "attachments",
+          scope: { recipientUserId: null, organizationId: null, workspaceId: null },
+          eventKey: "integration.attachments",
+          eventVersion: 1,
+          deliveries: [{
+            key: "email",
+            channel: "email",
+            purpose: "transactional",
+            template: null,
+            recipientAddress: "attachments@notifications.invalid",
+            recipientName: null,
+            payloadVersion: 1,
+            payload: { subject: "Certificate", text: "Attached" },
+            attachments: [{ filename: "certificate.pdf", contentType: "application/pdf", content: bytes }],
+          }],
+        };
+        const published = yield* service.publish(input);
+        const deliveryId = published.deliveryIds[0]!;
+        const stored = sql`SELECT payload -> ${queuedEmailAttachmentsKey}::text AS attachments FROM notification_deliveries WHERE id = ${deliveryId}`;
+        expect(yield* stored).toEqual([{ attachments: [{
+          filename: "certificate.pdf", contentType: "application/pdf", content: "AAEC/w==",
+        }] }]);
+        const detail = yield* service.getDelivery({ scope: input.scope, deliveryId });
+        expect(detail.delivery.payload).toEqual(input.deliveries[0]?.payload);
+        yield* runtime.runDeliveryWorkerOnce;
+        expect((yield* service.getDelivery({ scope: input.scope, deliveryId })).delivery.status).toBe("retrying");
+        expect(yield* stored).not.toEqual([{ attachments: null }]);
+        yield* TestClock.adjust(10);
+        yield* runtime.enqueueDue({ limit: 10 });
+        yield* runtime.runDeliveryWorkerOnce;
+        expect((yield* service.getDelivery({ scope: input.scope, deliveryId })).delivery.status).toBe("sent");
+        expect(attachmentAttempts).toEqual([[bytes], [bytes]]);
+        expect(yield* stored).toEqual([{ attachments: null }]);
+        expect(yield* service.publish(input)).toEqual({ ...published, idempotentReplay: true });
+        const changed = yield* service.publish({
+          ...input,
+          deliveries: input.deliveries.map((delivery) => ({
+            ...delivery,
+            attachments: [{ filename: "certificate.pdf", contentType: "application/pdf", content: new Uint8Array([8]) }],
+          })),
+        }).pipe(Effect.flip);
+        expect(changed._tag).toBe("NotificationIdempotencyConflictError");
+      }).pipe(Effect.provide(notificationLayerFor(databaseUrlForSchema(url, schemaName)))),
+      () => dropTestSchema(url, schemaName).pipe(Effect.orDie),
+    );
+  });
+
   it.effect(
     "unsubscribes an account across tenants and addresses, including queued, scheduled and retrying email",
     () => {

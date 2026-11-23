@@ -69,6 +69,8 @@ import {
   ReminderMutationInput,
   ResolvePreferenceInput,
   ScheduleReminderInput,
+  StoredEmailAttachments,
+  queuedEmailAttachmentsKey,
   SetSuppressionInput,
   SetPreferenceInput,
   UnreadCountInput,
@@ -557,6 +559,7 @@ const makeNotificationService = Effect.gen(function* () {
                   index,
                 });
               const matchesIntent = (candidate: NotificationDeliveryType) =>
+                !intent.attachments?.length &&
                 scopesEqual(candidate.scope, input.scope) &&
                 candidate.eventKey === input.eventKey &&
                 candidate.eventVersion === input.eventVersion &&
@@ -837,6 +840,14 @@ const makeNotificationService = Effect.gen(function* () {
               : expired
                 ? "cancelled"
                 : "queued";
+            const storedAttachments = !suppressed && intent.attachments?.length
+              ? yield* Schema.encodeEffect(StoredEmailAttachments)(intent.attachments).pipe(
+                  Effect.mapError(() => new NotificationValidationError({
+                    operation: "publish",
+                    message: "Invalid queued email attachments",
+                  })),
+                )
+              : undefined;
             const errorMessage = suppressed
               ? policyDecision?._tag === "Suppress"
                 ? policyDecision.reason
@@ -897,7 +908,11 @@ const makeNotificationService = Effect.gen(function* () {
                 ${recipientAddress},
                 ${intent.recipientName},
                 ${intent.payloadVersion},
-                ${pg.json(intent.payload)},
+                ${storedAttachments === undefined
+                  ? sql`${pg.json(intent.payload)}::jsonb`
+                  : sql`${pg.json(intent.payload)}::jsonb || jsonb_build_object(
+                      ${queuedEmailAttachmentsKey}::text, ${pg.json(storedAttachments)}::jsonb
+                    )`},
                 ${status},
                 0,
                 ${maxAttempts},

@@ -217,6 +217,58 @@ export const NotificationRecipientAddress = Schema.NonEmptyString.pipe(
   ),
 ).annotate({ identifier: "NotificationRecipientAddress" });
 
+/** Reserved key in the persisted email payload, never part of the transport body. */
+export const queuedEmailAttachmentsKey = "$krakstack.emailAttachmentsV1";
+
+const EmailAttachment = Schema.Struct({
+  filename: Schema.String.check(
+    Schema.isMaxLength(128),
+    Schema.isPattern(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
+  ),
+  contentType: Schema.String.check(Schema.isPattern(/^[\w.+-]+\/[\w.+-]+$/)),
+  content: Schema.Uint8Array.check(
+    Schema.makeFilter(
+      (bytes) => bytes.byteLength > 0 && bytes.byteLength <= 5 * 1024 * 1024,
+    ),
+  ),
+}).annotate({ identifier: "NotificationEmailAttachment" });
+
+const EmailAttachments = Schema.Array(EmailAttachment)
+  .check(Schema.isMaxLength(3))
+  .annotate({ identifier: "NotificationEmailAttachments" });
+
+export const StoredEmailAttachments = Schema.Array(
+  EmailAttachment.mapFields((fields) => ({
+    ...fields,
+    content: Schema.Uint8ArrayFromBase64.pipe(Schema.decodeTo(fields.content)),
+  })),
+)
+  .check(Schema.isMaxLength(3))
+  .annotate({ identifier: "StoredNotificationEmailAttachments" });
+
+const queuedAttachmentsCheck = Schema.makeFilter(
+  (delivery: {
+    readonly channel: string;
+    readonly payloadVersion: number;
+    readonly payload: Schema.Json;
+    readonly attachments?: typeof EmailAttachments.Type;
+  }) => {
+    if (
+      delivery.channel === "email" &&
+      Schema.is(Schema.Record(Schema.String, Schema.Json))(delivery.payload) &&
+      Object.hasOwn(delivery.payload, queuedEmailAttachmentsKey)
+    )
+      return "The payload contains a reserved attachment field";
+    if (
+      delivery.attachments?.length &&
+      (delivery.channel !== "email" ||
+        delivery.payloadVersion !== 1 ||
+        !Schema.is(EmailPayloadV1)(delivery.payload))
+    )
+      return "Queued attachments require a version 1 email payload";
+  },
+);
+
 export const PublishDeliveryInput = Schema.Struct({
   recipient: Schema.optional(Schema.Never),
   policy: Schema.optional(Schema.Never),
@@ -235,12 +287,15 @@ export const PublishDeliveryInput = Schema.Struct({
   recipientName: Schema.NullOr(Schema.NonEmptyString),
   payloadVersion: PositiveInt,
   payload: Schema.Json,
+  attachments: Schema.optionalKey(EmailAttachments),
   scheduledFor: Schema.optional(NotificationDate),
   expiresAt: Schema.optional(Schema.NullOr(NotificationDate)),
   maxAttempts: Schema.optional(PositiveInt),
   references: Schema.optional(Schema.Array(NotificationDeliveryReferenceInput)),
   dispatchPolicy: Schema.optional(Schema.NonEmptyString),
-}).annotate({ identifier: "PublishNotificationDeliveryInput" });
+})
+  .check(queuedAttachmentsCheck)
+  .annotate({ identifier: "PublishNotificationDeliveryInput" });
 
 const PublishInputFields = Schema.Struct({
   idempotencyKey: Schema.NonEmptyString,
@@ -353,6 +408,7 @@ export const PublicationDeliveryInput = Schema.Struct({
   template: Schema.NullOr(Schema.NonEmptyString),
   payloadVersion: PositiveInt,
   payload: Schema.Json,
+  attachments: Schema.optionalKey(EmailAttachments),
   scheduledFor: Schema.optional(NotificationDate),
   expiresAt: Schema.optional(Schema.NullOr(NotificationDate)),
   maxAttempts: Schema.optional(PositiveInt),
@@ -361,7 +417,9 @@ export const PublicationDeliveryInput = Schema.Struct({
   purpose: Schema.optional(Schema.Never),
   recipientAddress: Schema.optional(Schema.Never),
   recipientName: Schema.optional(Schema.Never),
-}).annotate({ identifier: "NotificationPublicationDeliveryInput" });
+})
+  .check(queuedAttachmentsCheck)
+  .annotate({ identifier: "NotificationPublicationDeliveryInput" });
 
 export const PublicationInput = Schema.Struct({
   ...PublishInputFields.fields,
@@ -603,23 +661,6 @@ export const NotificationQueueJob = Schema.Union([
 ]).annotate({
   identifier: "NotificationQueueJob",
 });
-
-const EmailAttachments = Schema.Array(
-  Schema.Struct({
-    filename: Schema.String.check(
-      Schema.isMaxLength(128),
-      Schema.isPattern(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
-    ),
-    contentType: Schema.String.check(Schema.isPattern(/^[\w.+-]+\/[\w.+-]+$/)),
-    content: Schema.Uint8Array.check(
-      Schema.makeFilter(
-        (bytes) => bytes.byteLength > 0 && bytes.byteLength <= 5 * 1024 * 1024,
-      ),
-    ),
-  }),
-)
-  .check(Schema.isMaxLength(3))
-  .annotate({ identifier: "NotificationEmailAttachments" });
 
 export const NotificationTransportInput = Schema.Struct({
   dispatchId: Schema.NonEmptyString,

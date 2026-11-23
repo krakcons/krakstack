@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { m } from "@/paraglide/messages";
+import { getLocale } from "@/paraglide/runtime";
 
 const timestamp = "2026-11-11T12:00:00.000Z";
 
@@ -45,6 +46,7 @@ export const NotificationMenuPreview = () => {
     },
   ].map((notification) => ({
     ...notification,
+    href: `/${getLocale()}/docs/notifications`,
     createdAt: timestamp,
     readAt: readIds.includes(notification.id) ? timestamp : null,
     archivedAt: archivedIds.includes(notification.id) ? timestamp : null,

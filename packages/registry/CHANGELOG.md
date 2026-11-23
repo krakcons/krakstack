@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.14
+
+### Patch Changes
+
+- Render notification destinations as native links and improve keyboard focus outlines in the notification menu.
+
 ## 0.10.13
 
 ### Patch Changes

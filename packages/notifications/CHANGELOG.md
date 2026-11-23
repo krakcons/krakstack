@@ -1,5 +1,17 @@
 # @krak-stack/notifications
 
+## 0.4.5
+
+### Patch Changes
+
+- Use `@krak-stack/registry@^0.10.14` for the notification menu, which renders destinations as native links and improves keyboard focus outlines.
+
+## 0.4.4
+
+### Patch Changes
+
+- Support attachments on queued email deliveries. Attachments are stored in the existing PostgreSQL delivery payload, reused on retry, and removed on success. Upgrade workers before publishing queued attachments.
+
 ## 0.4.3
 
 ### Patch Changes
