@@ -169,6 +169,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
             expect(JSON.stringify(inspected)).not.toMatch(
               /private body|secret|private-ref|Not a safe snapshot|idempotencyKey|leaseExpiresAt/,
             );
+            const scoped = yield* f.deliveries.inspect({
+              access: { ...access, deliveryInput: true },
+              id: before.delivery.id,
+            });
+            expect(scoped.input).toBeUndefined();
+            const installation = yield* f.deliveries.inspect({
+              access: {
+                ...access,
+                deliveryScopes: [{ _tag: "Installation" }],
+                deliveryInput: true,
+              },
+              id: before.delivery.id,
+            });
+            expect(installation.input).toEqual({
+              channel: before.delivery.channel,
+              payloadVersion: before.delivery.payloadVersion,
+              payload: before.delivery.payload,
+            });
             const replay = yield* f.notifications.publish(
               publication("original"),
             );

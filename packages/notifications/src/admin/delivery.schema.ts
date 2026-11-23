@@ -23,6 +23,8 @@ export const DeliveryScopeGrant = Schema.Union([
 
 // Supplied by trusted host middleware, never decoded from a browser query.
 export const DeliveryAdminAccess = Schema.Struct({
+  emailPreview: Schema.optional(Schema.Boolean),
+  deliveryInput: Schema.optional(Schema.Boolean),
   // Opt-in source-independent grants; old grants retain their original meaning.
   deliveryScopes: Schema.optional(Schema.Array(DeliveryScopeGrant)),
   contactManaged: Schema.Boolean,
@@ -87,6 +89,13 @@ export const AdminDeliveryInspection = Schema.Struct({
   delivery: AdminDelivery,
   attempts: Schema.Array(NotificationDeliveryAttempt),
   references: Schema.Array(NotificationDeliveryReference),
+  input: Schema.optional(
+    Schema.Struct({
+      channel: Schema.NonEmptyString,
+      payloadVersion: Schema.Int,
+      payload: Schema.Json,
+    }).annotate({ identifier: "NotificationDeliveryInput" }),
+  ),
 }).annotate({ identifier: "NotificationAdminDeliveryInspection" });
 export const DeliveryOverview = Schema.Struct({
   total: Count,

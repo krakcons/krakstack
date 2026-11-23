@@ -57,17 +57,18 @@ host-owned layouts, navigation, dialogs, drawers or routes:
 
 | Import                                        | Focused interface                                                                             |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `/deliveries`: `NotificationDeliveryOverview` | Messages, overview, loading/error; optional metric groups and `variant: "cards" \| "rows"`    |
-| `/deliveries`: `NotificationDeliveryActivity` | Messages, activity page, controlled table state/total, inspect and optional refresh callbacks |
-| `/deliveries`: `NotificationDeliveryDetails`  | Messages, inspection, loading/error and optional contact/campaign navigation; no dialog shell |
-| `/deliveries`: `NotificationAttemptHistory`   | Common messages and attempts; no screen callbacks                                             |
+| `/deliveries`: `NotificationDeliveryOverview` | Overview, loading/error; optional metric groups and `variant: "cards" \| "rows"`    |
+| `/deliveries`: `NotificationDeliveryActivity` | Activity page, controlled table state/total, inspect and optional refresh callbacks |
+| `/deliveries`: `NotificationDeliveryDetails`  | Inspection, loading/error and optional contact/campaign navigation; no dialog shell |
+| `/deliveries`: `NotificationAttemptHistory`   | Attempts; no screen callbacks                                             |
 | `/operations`: `NotificationFeedbackTable`    | Messages, feedback items, table state and inspection callback                                 |
 | `/operations`: `NotificationSuppressions`     | Messages, suppression items, table state and optional block/unblock callbacks                 |
 | `/operations`: `NotificationSuppressionAudit` | Messages, audit items and table state; no mutation callbacks                                  |
 
 Each module exports its corresponding `*Props` and focused `*Messages` types.
-Standalone modules require only their own labels, not every full-console
-translation; existing complete message objects remain accepted. No module fetches records,
+Delivery components include English and French labels selected by the shared
+`KrakstackProvider` locale. Pass `messages` only to override the defaults;
+existing message objects remain accepted. No module fetches records,
 infers permissions, installs routes or resolves product identities.
 `NotificationSuppressions` is read-only when mutation callbacks are omitted.
 When provided, its existing confirmation form still requires an audit reason,
@@ -80,10 +81,9 @@ import {
   NotificationDeliveryDetails,
 } from "@krak-stack/notifications-admin/deliveries";
 
-// The host owns messages, state, queries, navigation and the dialog shell.
+// The host owns state, queries, navigation and the dialog shell.
 <main>
   <NotificationDeliveryOverview
-    messages={messages}
     overview={overview}
     pending={pending}
     error={error}
@@ -91,17 +91,15 @@ import {
     groups={[
       { metrics: ["total", "accepted", "failed"] },
       {
-        label: messages.feedbackCovered,
         metrics: ["feedbackCovered", "feedbackUnavailable", "confirmed"],
       },
     ]}
   />
   <NotificationDeliveryActivity
-    messages={messages}
     activity={activity}
-    table={table}
+    state={table}
     total={total}
-    onTable={setTable}
+    onStateChange={setTable}
     onInspect={setSelected}
     pending={pending}
     error={error}
@@ -109,7 +107,6 @@ import {
   {/* Mount inside the host's accessible dialog/drawer when a row is selected. */}
   {selected && (
     <NotificationDeliveryDetails
-      messages={messages}
       inspection={inspection}
       error={inspectionError}
     />
@@ -243,8 +240,8 @@ authentication or policy. Default rendering remains backwards compatible.
 - Supply data, mutation callbacks, messages and controlled table state to the
   views. Shared server-backed tables apply search, filtering, sorting and pagination
   to the full authorized dataset, not just loaded rows.
-- Supply English and French messages using the host's Paraglide integration. The
-  package does not embed the KrakStack site's generated translations.
+- Supply host translations for views outside `/deliveries`. Delivery history
+  uses bundled labels unless the host supplies overrides.
 - Use the Effect Atom factories for the existing protected API contracts, or
   supply host-owned atoms/HttpClient layers when authentication or CSRF transport
   requires customization. Default factories use FetchHttpClient and same-origin

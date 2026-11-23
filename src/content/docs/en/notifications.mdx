@@ -307,6 +307,21 @@ NOTIFICATION_EMAIL_FROM=no-reply@example.com
 
 Use `sesEmailTransportRegistryLayer` from `@krak-stack/notifications/transport/email-ses`. This release supports explicit SES access keys; AWS default-chain credentials and session tokens are not yet supported.
 
+To print emails to the server console instead of sending them, opt in at your application's composition root:
+
+```ts
+import { NotificationTransportRegistry } from "@krak-stack/notifications/transport";
+import { ConsoleEmailTransport } from "@krak-stack/notifications/transport/email-console";
+import { sesEmailTransportRegistryLayer } from "@krak-stack/notifications/transport/email-ses";
+
+const transportRegistryLayer =
+  process.env.NODE_ENV === "development"
+    ? NotificationTransportRegistry.layer([ConsoleEmailTransport])
+    : sesEmailTransportRegistryLayer;
+```
+
+Provide this registry to the direct dispatcher or queued runtime. Queued email still needs running delivery workers and a development database. Use only local test data: console output includes the email body and may contain verification codes or reset links.
+
 For SMTP, replace the registry layer in the composition example:
 
 ```ts

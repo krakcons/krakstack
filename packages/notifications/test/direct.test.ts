@@ -1,9 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Console, Effect, Layer } from "effect";
 
 import { DirectNotificationDispatcher } from "../src/direct.js";
 import { makeFakeTransport } from "../src/testing.js";
 import { NotificationTransportRegistry } from "../src/transport.js";
+import { ConsoleEmailTransport } from "../src/transport/email-console.js";
 
 const input = {
   scope: {
@@ -22,6 +23,57 @@ const input = {
 };
 
 describe("direct notification dispatcher", () => {
+  it.effect("prints email when the console transport is registered", () => {
+    const logs: unknown[][] = [];
+    const layer = DirectNotificationDispatcher.layer.pipe(
+      Layer.provide(
+        NotificationTransportRegistry.layer([ConsoleEmailTransport]),
+      ),
+    );
+
+    return Effect.gen(function* () {
+      const dispatcher = yield* DirectNotificationDispatcher;
+      const result = yield* dispatcher.dispatch({
+        ...input,
+        attachments: [
+          {
+            filename: "screen.png",
+            contentType: "image/png",
+            content: Uint8Array.of(1, 2, 3),
+          },
+        ],
+      });
+      const invalid = yield* dispatcher
+        .dispatch({ ...input, payload: { subject: "Missing body" } })
+        .pipe(Effect.flip);
+
+      expect(result).toEqual({
+        provider: "email-console",
+        providerMessageId: null,
+      });
+      expect(invalid._tag).toBe("NotificationTransportPermanent");
+      expect(logs).toEqual([
+        [
+          "[Console email]",
+          {
+            to: "person@example.com",
+            subject: "Test",
+            text: "Body",
+            attachments: ["screen.png"],
+          },
+        ],
+      ]);
+    }).pipe(
+      Effect.provide(layer),
+      Effect.provideService(Console.Console, {
+        ...console,
+        log: (...args: unknown[]) => {
+          logs.push(args);
+        },
+      }),
+    );
+  });
+
   it.effect("dispatches without SQL or a persisted queue", () => {
     const fake = makeFakeTransport({ channel: "email" });
     const layer = DirectNotificationDispatcher.layer.pipe(

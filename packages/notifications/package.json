@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/notifications",
-  "version": "0.4.5",
+  "version": "0.4.7",
   "description": "PostgreSQL-backed Effect notification inbox, delivery, and reminder primitives.",
   "homepage": "https://krakstack.net/docs/notifications",
   "license": "MIT",
@@ -95,6 +95,10 @@
       "types": "./dist/transport/email-ses.d.ts",
       "import": "./dist/transport/email-ses.js"
     },
+    "./transport/email-console": {
+      "types": "./dist/transport/email-console.d.ts",
+      "import": "./dist/transport/email-console.js"
+    },
     "./transport/email-smtp": {
       "types": "./dist/transport/email-smtp.d.ts",
       "import": "./dist/transport/email-smtp.js"
@@ -124,7 +128,8 @@
     "prepack": "bun run check:release"
   },
   "dependencies": {
-    "@effect/platform-node-shared": "4.1.0"
+    "@effect/platform-node-shared": "4.1.0",
+    "sanitize-html": "2.18.2"
   },
   "devDependencies": {
     "@aws-sdk/client-sesv2": "^3.1068.0",
@@ -133,6 +138,7 @@
     "@effect/vitest": "4.1.0",
     "@types/node": "^22.19.21",
     "@types/nodemailer": "^8.0.1",
+    "@types/sanitize-html": "2.16.2",
     "effect": "4.1.0",
     "nodemailer": "^9.0.6",
     "typescript": "7.0.1-rc",
@@ -142,7 +148,7 @@
     "@aws-sdk/client-sesv2": "^3.1068.0",
     "@effect/platform-node": "^4.1.0",
     "@effect/sql-pg": "^4.1.0",
-    "@krak-stack/registry": "workspace:^",
+    "@krak-stack/registry": "^0.10.14",
     "effect": "^4.1.0",
     "nodemailer": "^9.0.6"
   },

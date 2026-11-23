@@ -230,6 +230,18 @@ export class NotificationDeliveryAdmin extends Context.Service<NotificationDeliv
             references: detail.references.filter((ref) =>
               input.access.referenceNamespaces.includes(ref.namespace),
             ),
+            ...(input.access.deliveryInput &&
+            input.access.deliveryScopes?.some(
+              (scope) => scope._tag === "Installation",
+            )
+              ? {
+                  input: {
+                    channel: detail.delivery.channel,
+                    payloadVersion: detail.delivery.payloadVersion,
+                    payload: detail.delivery.payload,
+                  },
+                }
+              : {}),
           };
         },
         storage,

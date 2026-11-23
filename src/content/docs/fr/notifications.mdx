@@ -321,6 +321,21 @@ NOTIFICATION_EMAIL_FROM=no-reply@example.com
 
 Utilisez `sesEmailTransportRegistryLayer` depuis `@krak-stack/notifications/transport/email-ses`. Cette version accepte des clés d'accès SES explicites; la chaîne d'identifiants AWS par défaut et les jetons de session ne sont pas encore pris en charge.
 
+Pour afficher les courriels dans la console du serveur au lieu de les envoyer, activez ce transport dans la configuration de votre application :
+
+```ts
+import { NotificationTransportRegistry } from "@krak-stack/notifications/transport";
+import { ConsoleEmailTransport } from "@krak-stack/notifications/transport/email-console";
+import { sesEmailTransportRegistryLayer } from "@krak-stack/notifications/transport/email-ses";
+
+const transportRegistryLayer =
+  process.env.NODE_ENV === "development"
+    ? NotificationTransportRegistry.layer([ConsoleEmailTransport])
+    : sesEmailTransportRegistryLayer;
+```
+
+Fournissez ce registre au service d'envoi direct ou au moteur de livraison avec file d'attente. Les courriels mis en file d'attente nécessitent toujours des processus de livraison actifs et une base de données de développement. Utilisez uniquement des données de test locales : le corps affiché dans la console peut contenir des codes de vérification ou des liens de réinitialisation.
+
 Pour SMTP, remplacez la couche de registre dans l'exemple de composition :
 
 ```ts

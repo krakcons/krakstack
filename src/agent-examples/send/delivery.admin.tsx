@@ -14,7 +14,7 @@ import {
   deliveryQueryKey,
   deliveryInspectionKey,
 } from "./delivery.atom";
-import { notificationDeliveryMessages } from "./delivery.messages";
+import { sendOperationsMessages } from "./operations.messages";
 import { useNotificationQuery } from "@krak-stack/notifications-admin/hooks";
 import {
   Dialog,
@@ -82,9 +82,8 @@ const DeliverySelectionPanel = ({
   );
   const overview = data?.overview;
   const activity = data?.activity;
-  const messages = notificationDeliveryMessages(locale);
+  const messages = sendOperationsMessages(locale);
   const common: NotificationDeliveriesProps = {
-    messages,
     source,
     onSource,
     view,
@@ -95,7 +94,7 @@ const DeliverySelectionPanel = ({
     onTable: setTable,
     total,
     pending,
-    error: failed ? messages.common.failed : undefined,
+    error: failed ? messages.failed : undefined,
     inspecting: !!selected,
     onInspect: setSelected,
     onRefresh: refresh,
@@ -110,6 +109,7 @@ const DeliverySelectionPanel = ({
           key={selected}
           atoms={atoms}
           id={selected}
+          locale={locale}
           queryKey={key}
           common={common}
         />
@@ -120,11 +120,13 @@ const DeliverySelectionPanel = ({
 const Inspection = ({
   atoms,
   id,
+  locale,
   queryKey,
   common,
 }: {
   atoms: Atoms;
   id: string;
+  locale: "en" | "fr";
   queryKey: string;
   common: NotificationDeliveriesProps;
 }) => {
@@ -136,7 +138,7 @@ const Inspection = ({
       refreshIntervalMillis: 15_000,
     },
   );
-  const messages = common.messages.common;
+  const messages = sendOperationsMessages(locale);
   return (
     <Dialog
       open
@@ -149,7 +151,6 @@ const Inspection = ({
           <DialogTitle>{messages.inspect}</DialogTitle>
         </DialogHeader>
         <NotificationDeliveryDetails
-          messages={common.messages}
           inspection={data}
           error={common.error ?? (failed ? messages.failed : undefined)}
           onContact={common.onContact}
