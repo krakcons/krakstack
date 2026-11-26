@@ -13,16 +13,16 @@ updatedAt: "2026-11-26"
 
 # Formulaire de soutien
 
-Affichez `SupportForm` directement sur une page de soutien. Les utilisateurs peuvent sélectionner ou coller jusqu’à trois captures d’écran PNG, JPEG ou WebP de 5 Mio chacune. Votre application choisit le mode d’envoi.
+Affichez `SupportPage` sur votre route de soutien pour inclure un titre, une description et le formulaire. Utilisez `SupportForm` seul si vous souhaitez une mise en page personnalisée. Les utilisateurs peuvent sélectionner ou coller jusqu’à trois captures d’écran PNG, JPEG ou WebP de 5 Mio chacune. Votre application choisit le mode d’envoi.
 
 ```bash
 bunx shadcn@latest add @krak-stack/support-dialog
 ```
 
 ```tsx
-import { SupportForm } from "@/components/support";
+import { SupportPage } from "@/components/support";
 
-<SupportForm
+<SupportPage
   defaultReplyEmail={user?.email}
   supportEmail="support@krakconsultants.com"
   onSubmit={sendSupportRequest}
@@ -33,6 +33,35 @@ Le composant est aussi exporté par `@krak-stack/registry/support`. L’adresse 
 
 Les textes sont fournis en français et en anglais. Le formulaire suit la langue de `KrakstackProvider`, sauf si vous précisez `locale`. Pour personnaliser certains textes, utilisez par exemple `messages={{ fr: { title: "Contacter le soutien" } }}`.
 
+## Partager les propriétés entre les composants
+
+Définissez un objet commun avec `satisfies SupportFormProps` pour utiliser les mêmes textes, le même lien courriel et la même fonction d’envoi dans la page, le formulaire et la boîte de dialogue. Placez-le dans un module partagé si les composants se trouvent sur des routes différentes.
+
+```tsx
+import {
+  SupportDialog,
+  SupportForm,
+  SupportPage,
+  type SupportFormProps,
+} from "@krak-stack/registry/support";
+
+const supportProps = {
+  supportEmail: "support@krakconsultants.com",
+  onSubmit: sendSupportRequest,
+  messages: {
+    en: { title: "Contact support" },
+    fr: { title: "Contacter le soutien" },
+  },
+} satisfies SupportFormProps;
+
+// Choisissez le composant adapté à chaque emplacement.
+<SupportPage {...supportProps} />;
+<SupportForm {...supportProps} />;
+<SupportDialog {...supportProps} />;
+```
+
+Passez d’abord les propriétés communes, puis celles qui dépendent du contexte. Par exemple, passez `defaultReplyEmail={user?.email}` si l’utilisateur est connecté et `errorDetails` uniquement lorsque vous ouvrez la boîte de dialogue depuis une page d’erreur. La propriété `trigger` est propre à `SupportDialog`.
+
 ## Commentaires sur une page d’erreur
 
 Utilisez `SupportDialog` avec la propriété `renderFeedback` d’`ErrorComponent`. La case à cocher joint les mêmes détails que la page propose de copier. L’utilisateur peut la décocher pour ne pas les joindre.
@@ -42,10 +71,9 @@ Utilisez `SupportDialog` avec la propriété `renderFeedback` d’`ErrorComponen
   {...errorProps}
   renderFeedback={(errorDetails) => (
     <SupportDialog
+      {...supportProps}
       trigger={<Button variant="outline">Commentaires</Button>}
       errorDetails={errorDetails}
-      supportEmail="support@krakconsultants.com"
-      onSubmit={sendSupportRequest}
     />
   )}
 />;

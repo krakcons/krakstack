@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import {
   SupportDialog,
-  SupportForm,
+  SupportPage,
   type SupportFormProps,
 } from "@/components/support";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export const getSupportPreviewProps = (): SupportFormProps => {
 export const SupportDialogPreview = () => {
   const props = getSupportPreviewProps();
   return (
-    <div className="grid max-w-xl gap-3">
+    <div className="grid gap-6">
       <p className="text-muted-foreground text-sm">
         {m.support_preview_local_only()}
       </p>
@@ -30,7 +30,7 @@ export const SupportDialogPreview = () => {
           trigger={<Button variant="outline">{m.support_feedback()}</Button>}
         />
       </div>
-      <SupportForm {...props} />
+      <SupportPage {...props} />
     </div>
   );
 };

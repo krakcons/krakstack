@@ -516,7 +516,7 @@
       "title": "Support Dialog",
       "description": "A localized form for bug reports and support requests with host-owned delivery.",
       "meta": { "createdAt": "2026-11-23", "updatedAt": "2026-11-26" },
-      "docs": "SupportDialog wraps SupportForm. Supply an onSubmit callback to deliver feedback. Pass errorDetails to let users include or exclude diagnostics with a checkbox. See /docs/support-dialog for the error page and standalone support page examples.",
+      "docs": "Use SupportPage for a standalone support page, SupportForm for a custom layout, or SupportDialog for a popup. Supply an onSubmit callback to deliver feedback. Pass errorDetails to let users include or exclude diagnostics with a checkbox. See /docs/support-dialog for examples.",
       "files": [
         {
           "path": "src/components/support-dialog.tsx",

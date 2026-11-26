@@ -523,6 +523,36 @@ export const SupportForm = ({
   );
 };
 
+export const SupportPage = (props: SupportFormProps) => {
+  const { title, description } = useSupportFormMessages(
+    props.locale,
+    props.messages,
+  );
+  const titleId = useId();
+
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="mx-auto grid w-full max-w-xl gap-8 self-start"
+    >
+      <header className="grid gap-3">
+        <h1
+          id={titleId}
+          className="text-3xl font-semibold tracking-tight sm:text-4xl"
+        >
+          {title}
+        </h1>
+        {description && (
+          <p className="text-muted-foreground text-base sm:text-lg">
+            {description}
+          </p>
+        )}
+      </header>
+      <SupportForm {...props} />
+    </section>
+  );
+};
+
 export type SupportDialogMessages = SupportFormMessages;
 export type SupportDialogProps = SupportFormProps & { trigger?: ReactElement };
 

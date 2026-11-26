@@ -13,16 +13,16 @@ updatedAt: "2026-11-26"
 
 # Support Form
 
-Render `SupportForm` directly on a support page. Users can choose files or paste up to three PNG, JPEG, or WebP screenshots of up to 5 MiB each. Your app decides how to send the request.
+Render `SupportPage` in your support route for a page heading, description, and inline form. Use `SupportForm` on its own if you need a custom layout. Users can choose files or paste up to three PNG, JPEG, or WebP screenshots of up to 5 MiB each. Your app decides how to send the request.
 
 ```bash
 bunx shadcn@latest add @krak-stack/support-dialog
 ```
 
 ```tsx
-import { SupportForm } from "@/components/support";
+import { SupportPage } from "@/components/support";
 
-<SupportForm
+<SupportPage
   defaultReplyEmail={user?.email}
   supportEmail="support@krakconsultants.com"
   onSubmit={sendSupportRequest}
@@ -32,6 +32,35 @@ import { SupportForm } from "@/components/support";
 The package export is `@krak-stack/registry/support`. The reply email is optional: users can add, edit, or clear it. Set `askForReplyEmail` to require it or `askForReplyEmail={false}` to hide it. `supportEmail` adds a direct email link below the form; it does not set the submission destination.
 
 English and French messages are built in. The form follows `KrakstackProvider` unless you pass `locale`. To customize strings, pass overrides keyed by locale, for example `messages={{ en: { title: "Contact support" } }}`.
+
+## Share props across support components
+
+Define a shared object with `satisfies SupportFormProps` so the page, inline form, and dialog use the same copy, contact link, and submission handler. Put it in a shared module if the components live on different routes.
+
+```tsx
+import {
+  SupportDialog,
+  SupportForm,
+  SupportPage,
+  type SupportFormProps,
+} from "@krak-stack/registry/support";
+
+const supportProps = {
+  supportEmail: "support@krakconsultants.com",
+  onSubmit: sendSupportRequest,
+  messages: {
+    en: { title: "Contact support" },
+    fr: { title: "Contacter le soutien" },
+  },
+} satisfies SupportFormProps;
+
+// Use one of these in each location.
+<SupportPage {...supportProps} />;
+<SupportForm {...supportProps} />;
+<SupportDialog {...supportProps} />;
+```
+
+Spread the shared props first, then pass values that depend on the current context. For example, pass `defaultReplyEmail={user?.email}` where you have a signed-in user, and pass `errorDetails` only when opening feedback from an error page. `trigger` is specific to `SupportDialog`.
 
 ## Feedback on an error page
 
@@ -46,10 +75,9 @@ import { ErrorComponent } from "@/components/ui/error-component";
   {...errorProps}
   renderFeedback={(errorDetails) => (
     <SupportDialog
+      {...supportProps}
       trigger={<Button variant="outline">Feedback</Button>}
       errorDetails={errorDetails}
-      supportEmail="support@krakconsultants.com"
-      onSubmit={sendSupportRequest}
     />
   )}
 />;

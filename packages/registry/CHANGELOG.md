@@ -1,5 +1,11 @@
 # @krak-stack/registry
 
+## 0.10.17
+
+### Patch Changes
+
+- Export `SupportPage` with a responsive heading and description above the inline support form. It shares localization and submission options with `SupportForm` and `SupportDialog`.
+
 ## 0.10.16
 
 ### Patch Changes
