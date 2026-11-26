@@ -3,20 +3,29 @@ import {
   Array,
   Context,
   Effect,
+  Exit,
   Layer,
   Option,
   Schema,
   Semaphore,
+  Stream,
 } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { extract, ExtractInputKind } from "@xberg-io/xberg";
 import { S3Service } from "@krak-stack/registry/service-s3";
+import { ClamAV } from "@krak-stack/registry/clamav";
 
 import {
   AssetInUse,
   AssetExtractionFailed,
   AssetNotFound,
   AssetUploadInvalid,
+  AssetUploadFinalization,
+  AssetUploadCompletionPayloadSchema,
+  AssetUploadPublication,
+  AssetUploadPublicationRequest,
+  AssetUploadScanKey,
+  AssetUploadScanStatus,
   type AssetUploadCompletionPayload,
   type AssetUploadPayload,
   AssetRowSchema,
@@ -33,7 +42,7 @@ import {
   type AssetProcessingOptions,
   AssetProcessingLimitsSchema,
 } from "./processing.js";
-import { ProcessAssetDocumentV2 } from "./workflow.js";
+import { FinalizeAssetUploadV1, ProcessAssetDocumentV2 } from "./workflow.js";
 import { makeRetrieval } from "./retrieval.js";
 import { contextualizeChunks } from "./chunks.js";
 import { limitTextBytes } from "./text.js";
@@ -42,6 +51,13 @@ import { migrateAssets } from "./migrations.js";
 const migrationsLayer = Layer.effectDiscard(migrateAssets);
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const stagingKey = ({
+  organizationId,
+  uploadToken,
+}: Pick<typeof AssetUploadScanKey.Type, "organizationId" | "uploadToken">) =>
+  `scan-staging/organizations/${organizationId}/${uploadToken}`;
+const scannedKey = (organizationId: string, executionId: string) =>
+  `organizations/${organizationId}/scanned/${executionId}`;
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -91,7 +107,7 @@ const sha256 = (bytes: Uint8Array) =>
     Effect.provide(Digest.layerWebCrypto),
   );
 
-const make = (options: AssetProcessingOptions) =>
+const make = (options: AssetProcessingOptions, scanner?: ClamAV["Service"]) =>
   Effect.gen(function* () {
     const random = yield* SecureRandom.SecureRandom.pipe(
       Effect.provide(SecureRandom.layerWebCrypto),
@@ -199,9 +215,11 @@ const make = (options: AssetProcessingOptions) =>
           return yield* new AssetNotFound({ assetId: payload.assetId });
       }
 
-      // Upload capabilities remain opaque; UUIDv7 is reserved for entity IDs.
+      // Upload capabilities remain opaque and unpredictable.
       const uploadToken = yield* random.uuidV4();
-      const objectKey = `organizations/${organizationId}/uploads/${uploadToken}`;
+      const objectKey = scanner
+        ? stagingKey({ organizationId, uploadToken })
+        : `organizations/${organizationId}/uploads/${uploadToken}`;
       return {
         uploadToken,
         uploadUrl: yield* s3.presign(objectKey, {
@@ -222,7 +240,14 @@ const make = (options: AssetProcessingOptions) =>
       createdBy: string;
       payload: AssetUploadCompletionPayload;
     }) {
+      if (scanner)
+        return yield* new AssetUploadInvalid({
+          message: "This project requires scanned upload finalization",
+        });
       yield* validateUpload(payload);
+      yield* Schema.decodeUnknownEffect(AssetUploadCompletionPayloadSchema)(
+        payload,
+      );
       const objectKey = `organizations/${organizationId}/uploads/${payload.uploadToken}`;
       const bytes = yield* s3.bytes(objectKey);
       if (bytes.byteLength !== payload.byteSize) {
@@ -291,6 +316,228 @@ const make = (options: AssetProcessingOptions) =>
       yield* startProcessing(completion.completed);
       return completion.completed;
     });
+
+    type ScanKey = typeof AssetUploadScanKey.Type;
+    type Finalization = typeof AssetUploadFinalization.Type;
+    const uploadStatus = (
+      uploadToken: string,
+      status: typeof AssetUploadScanStatus.Type.status,
+      assetId: string | null = null,
+    ): typeof AssetUploadScanStatus.Type => ({ uploadToken, status, assetId });
+
+    const readUploadPublication = SqlSchema.findOneOption({
+      Request: AssetUploadPublicationRequest,
+      Result: AssetUploadPublication,
+      execute: ({ organizationId, uploadToken }) =>
+        sql`SELECT execution_id, asset_id FROM asset_upload_publications
+            WHERE organization_id = ${organizationId} AND upload_token = ${uploadToken}`,
+    });
+
+    const getUploadScan = Effect.fn("Assets.getUploadScan")(function* (
+      input: ScanKey,
+    ) {
+      const key = yield* Schema.decodeUnknownEffect(AssetUploadScanKey)(input);
+      const id = yield* FinalizeAssetUploadV1.executionId(key);
+      const receipt = yield* readUploadPublication(key);
+      if (Option.isSome(receipt) && receipt.value.executionId === id)
+        return uploadStatus(
+          key.uploadToken,
+          "published",
+          receipt.value.assetId,
+        );
+      const result = yield* FinalizeAssetUploadV1.poll(id);
+      // The engine returns None for both an unfinished run and an unknown ID.
+      if (Option.isNone(result) || result.value._tag !== "Complete")
+        return uploadStatus(key.uploadToken, "pending");
+      return Exit.isSuccess(result.value.exit)
+        ? result.value.exit.value
+        : uploadStatus(key.uploadToken, "failed");
+    });
+
+    const queueUploadScan = Effect.fn("Assets.queueUploadScan")(function* ({
+      organizationId,
+      createdBy,
+      payload,
+    }: {
+      organizationId: string;
+      createdBy: string;
+      payload: AssetUploadCompletionPayload;
+    }) {
+      if (!scanner)
+        return yield* new AssetUploadInvalid({
+          message: "Scanned uploads are not configured",
+        });
+      const { uploadToken, ...file } = yield* Schema.decodeUnknownEffect(
+        AssetUploadCompletionPayloadSchema,
+      )(payload);
+      yield* validateUpload(file);
+      const key = yield* Schema.decodeUnknownEffect(AssetUploadScanKey)({
+        organizationId,
+        createdBy,
+        uploadToken,
+      });
+      const status = yield* getUploadScan(key);
+      if (status.status !== "pending") return status;
+
+      if (!(yield* s3.exists(stagingKey(key))))
+        return yield* new AssetUploadInvalid({
+          message:
+            "No staged file found; complete the upload before requesting a scan",
+        });
+      const replacement = payload.assetId
+        ? yield* readAsset({ organizationId, assetId: payload.assetId })
+        : Option.none();
+      yield* FinalizeAssetUploadV1.execute(
+        {
+          ...key,
+          request: {
+            payload: file,
+            // The stable upload UUID is the row ID for new scanned assets.
+            assetId: file.assetId ?? uploadToken,
+            previousObjectKey: Option.getOrUndefined(replacement)?.objectKey,
+          },
+        },
+        { discard: true },
+      );
+      return status;
+    });
+
+    const scanSlots = yield* Semaphore.make(2);
+    const validateAndPublishUpload = Effect.fn(
+      "Assets.validateAndPublishUpload",
+    )(
+      function* (key: ScanKey, request: Finalization, executionId: string) {
+        if (!scanner)
+          return yield* Effect.fail("ClamAV layer is not configured");
+        const { organizationId, createdBy, uploadToken } = key;
+        const { payload, assetId, previousObjectKey } = request;
+        const objectKey = scannedKey(organizationId, executionId);
+        const scope = { organizationId, assetId };
+        const invalid = uploadStatus(uploadToken, "invalid");
+        const published = uploadStatus(uploadToken, "published", assetId);
+        const receiptStatus = (receipt: typeof AssetUploadPublication.Type) =>
+          receipt.executionId === executionId
+            ? uploadStatus(uploadToken, "published", receipt.assetId)
+            : invalid;
+        yield* validateUpload(payload);
+        const receipt = yield* readUploadPublication(key);
+        if (Option.isSome(receipt)) return receiptStatus(receipt.value);
+        const current = Option.getOrUndefined(yield* readAsset(scope));
+        const canPublish = (currentKey: string | undefined) =>
+          payload.assetId
+            ? previousObjectKey !== undefined &&
+              currentKey === previousObjectKey
+            : currentKey === undefined;
+        if (!canPublish(current?.objectKey)) return invalid;
+
+        const stream = yield* s3.stream(stagingKey(key));
+        const bytes = new Uint8Array(payload.byteSize);
+        let offset = 0;
+        yield* Stream.fromReadableStream({
+          evaluate: () => stream,
+          onError: () => "Could not read staged upload",
+        }).pipe(
+          Stream.runForEachWhile((chunk) =>
+            Effect.sync(() => {
+              const start = offset;
+              offset += chunk.length;
+              if (offset > bytes.length) return false;
+              bytes.set(chunk, start);
+              return true;
+            }),
+          ),
+          Effect.timeout("60 seconds"),
+        );
+        const checksum = payload.checksum.toLowerCase();
+        if (offset !== bytes.length || (yield* sha256(bytes)) !== checksum)
+          return invalid;
+
+        const verdict = yield* scanner.scan({ bytes });
+        if (verdict._tag !== "Clean")
+          return uploadStatus(
+            uploadToken,
+            verdict._tag === "Detected" ? "rejected" : "unscannable",
+          );
+
+        // No workflow history stores the file. Write only the buffer just scanned.
+        const values = {
+          objectKey,
+          checksum,
+          name: payload.name,
+          mimeType: payload.mimeType,
+          byteSize: payload.byteSize,
+          updatedAt: new Date(),
+        };
+        const result = yield* sql.withTransaction(
+          Effect.gen(function* () {
+            // Serialize publication for this token, even across actors or targets.
+            yield* sql`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(
+              [
+                "asset-upload-publication",
+                organizationId,
+                uploadToken.toLowerCase(),
+              ],
+            )}, 0))`;
+            const committed = yield* readUploadPublication(key);
+            if (Option.isSome(committed)) return receiptStatus(committed.value);
+            const locked = Option.getOrUndefined(yield* lockAsset(scope));
+            if (!canPublish(locked?.objectKey)) return invalid;
+            if (payload.assetId) {
+              yield* sql`UPDATE assets SET ${sql.update(values)}
+                      WHERE organization_id = ${organizationId} AND id = ${assetId}`;
+            } else {
+              const inserted = yield* sql<{
+                id: string;
+              }>`INSERT INTO assets ${sql.insert({
+                ...values,
+                id: assetId,
+                organizationId,
+                createdBy,
+              })} ON CONFLICT (id) DO NOTHING RETURNING id`;
+              if (!inserted.length) return invalid;
+            }
+            yield* s3
+              .write(objectKey, bytes, { type: payload.mimeType })
+              .pipe(Effect.timeout("60 seconds"));
+            yield* sql`INSERT INTO asset_upload_publications ${sql.insert({
+              organizationId,
+              uploadToken,
+              executionId,
+              assetId,
+            })}`;
+            return published;
+          }),
+        );
+        return result;
+      },
+      (effect) => scanSlots.withPermit(effect),
+    );
+
+    const processScannedUpload = Effect.fn("Assets.processScannedUpload")(
+      function* (
+        organizationId: string,
+        request: Finalization,
+        executionId: string,
+      ) {
+        const asset = yield* readAsset({
+          organizationId,
+          assetId: request.assetId,
+        });
+        if (
+          Option.isSome(asset) &&
+          asset.value.objectKey === scannedKey(organizationId, executionId)
+        ) {
+          if (
+            request.previousObjectKey &&
+            request.previousObjectKey !== asset.value.objectKey
+          )
+            yield* s3
+              .delete(request.previousObjectKey)
+              .pipe(Effect.timeout("30 seconds"), Effect.ignore);
+          yield* startProcessing(asset.value);
+        }
+      },
+    );
 
     const download = Effect.fn("Assets.download")(function* ({
       organizationId,
@@ -550,6 +797,10 @@ const make = (options: AssetProcessingOptions) =>
       stats,
       createUpload,
       completeUpload,
+      queueUploadScan,
+      getUploadScan,
+      validateAndPublishUpload,
+      processScannedUpload,
       download,
       readText,
       ...retrieval,
@@ -606,4 +857,9 @@ export class Assets extends Context.Service<
     this.layerWithoutMigrationsWith(options).pipe(
       Layer.provide(migrationsLayer),
     );
+
+  static readonly layerWithMalwareScanning = Layer.effect(
+    this,
+    ClamAV.use((scanner) => make(defaultAssetProcessingOptions, scanner)),
+  ).pipe(Layer.provide(migrationsLayer));
 }

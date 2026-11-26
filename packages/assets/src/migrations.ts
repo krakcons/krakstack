@@ -4,10 +4,12 @@ import { SqlClient } from "effect/sql";
 
 import initialMigration from "./migrations/0001_assets.js";
 import chunksMigration from "./migrations/0002_chunks.js";
+import uploadPublicationsMigration from "./migrations/0003_upload_publications.js";
 
 export const assetMigrations = PgMigrator.fromRecord({
   "1_assets": initialMigration,
   "2_chunks": chunksMigration,
+  "3_upload_publications": uploadPublicationsMigration,
 });
 
 // No schema dump is requested, so layer startup needs only the SQL client.

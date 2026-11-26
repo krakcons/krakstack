@@ -1,0 +1,50 @@
+---
+slug: clamav
+path: /docs/clamav
+title: ClamAV
+description: Analysez les fichiers non fiables côté serveur avec le client Effect autonome pour ClamAV.
+order: 23
+locale: fr
+section: services
+type: how-to
+createdAt: 2026-11-25
+updatedAt: 2026-11-25
+---
+
+# ClamAV
+
+Utilisez `@krak-stack/registry/clamav` pour analyser des fichiers depuis un serveur ou un worker. Le client fonctionne sans Assets, PostgreSQL ni moteur de workflows. Il envoie les octets à un [socket privé de `clamd`](https://docs.clamav.net/manual/Usage/ClamdProtocol.html#instream), et non à une API HTTP. Le démon n'a pas besoin d'accéder au stockage objet.
+
+## Installation
+
+Installez une version de `@krak-stack/registry` qui inclut l'export `./clamav`, avec Effect 4.1.
+
+## Connecter un service côté serveur
+
+Exécutez `clamd` sur un réseau privé et autorisez uniquement les serveurs ou workers qui doivent analyser les fichiers à s'y connecter. Renseignez `CLAMAV_HOST` avec le nom d'hôte privé du démon et `CLAMAV_PORT` si le port diffère de `3310`. Le socket TCP de ClamAV ne fournit ni authentification ni chiffrement. Ne l'exposez pas publiquement et ne l'appelez pas depuis un navigateur.
+
+```ts
+import { ClamAV } from "@krak-stack/registry/clamav";
+import { Effect } from "effect";
+
+const scanAttachment = (bytes: Uint8Array) =>
+  ClamAV.use((clamav) => clamav.scan({ bytes }));
+
+const runScan = (bytes: Uint8Array) =>
+  Effect.runPromise(scanAttachment(bytes).pipe(Effect.provide(ClamAV.layer)));
+```
+
+En production, fournissez la couche une seule fois au runtime du serveur ou du worker pour que les appels partagent sa limite de concurrence. Utilisez `ClamAV.layerWith({ host, port })` pour une configuration explicite ou `ClamAV.layerTest({ scan, ping })` pour injecter le comportement des tests.
+
+## Interpréter les résultats et les erreurs
+
+| Résultat | Signification |
+| --- | --- |
+| `Clean` | Le démon n'a rien détecté. Cela ne garantit ni l'innocuité du fichier ni l'inspection de tous les objets incorporés. |
+| `Detected` | Le démon a signalé une détection et renvoyé une `signature`. Ne publiez pas le fichier. |
+| `Unscannable` | Le fichier est vide, dépasse la limite du client ou le démon a signalé une limite de taille ou d'analyse, ou un chiffrement reconnu. Gardez le fichier privé. |
+| `ClamAVError` | L'analyse n'a pas renvoyé de résultat exploitable. Motifs : `Unavailable`, `Timeout`, `InvalidReply` ou `ScanFailed`. Ne considérez jamais une erreur comme `Clean`. |
+
+Le client accepte des fichiers de **1 octet à 100 Mio**, avec deux analyses simultanées par couche et un délai maximal de 60 secondes par requête au démon. Le démon peut imposer des limites plus strictes. `ping()` vérifie que le démon répond, pas que ses signatures sont à jour ni que l'analyse est complète.
+
+Le client ne gère ni la quarantaine, ni les nouvelles tentatives, ni la suppression, ni la publication. Gardez les fichiers privés jusqu'à ce que votre politique autorise leur publication et ne publiez que les octets analysés. Pour les téléversements présignés et les nouvelles tentatives durables, utilisez le [workflow d'analyse d'Assets](/docs/assets#analyser-les-fichiers-avant-publication).

@@ -1,0 +1,50 @@
+---
+slug: clamav
+path: /docs/clamav
+title: ClamAV
+description: Scan untrusted files from a backend using the standalone Effect ClamAV client.
+order: 23
+locale: en
+section: services
+type: how-to
+createdAt: 2026-11-25
+updatedAt: 2026-11-25
+---
+
+# ClamAV
+
+Use `@krak-stack/registry/clamav` to scan files from a server or worker. The client works without Assets, PostgreSQL, or a workflow engine. It sends file bytes to a private [`clamd` socket](https://docs.clamav.net/manual/Usage/ClamdProtocol.html#instream), not to an HTTP API. The daemon does not need access to your object storage.
+
+## Install
+
+Install a release of `@krak-stack/registry` that includes the `./clamav` export, with Effect 4.1.
+
+## Connect a backend
+
+Run `clamd` on a private network and allow only the servers or workers that need to scan files to connect. Set `CLAMAV_HOST` to the daemon's private hostname and `CLAMAV_PORT` if it differs from `3310`. ClamAV's TCP socket has no authentication or encryption. Do not expose it publicly or call it from the browser.
+
+```ts
+import { ClamAV } from "@krak-stack/registry/clamav";
+import { Effect } from "effect";
+
+const scanAttachment = (bytes: Uint8Array) =>
+  ClamAV.use((clamav) => clamav.scan({ bytes }));
+
+const runScan = (bytes: Uint8Array) =>
+  Effect.runPromise(scanAttachment(bytes).pipe(Effect.provide(ClamAV.layer)));
+```
+
+In production, provide the layer once to your server or worker runtime so calls share its concurrency limit. Use `ClamAV.layerWith({ host, port })` for explicit configuration or `ClamAV.layerTest({ scan, ping })` to inject test behavior.
+
+## Handle verdicts and errors
+
+| Result | What it means |
+| --- | --- |
+| `Clean` | The daemon reported no detection. This does not guarantee that the file is safe or that every embedded object was inspected. |
+| `Detected` | The daemon reported a finding and returned a `signature`. Do not release the file. |
+| `Unscannable` | The input is empty or over the client limit, or the daemon reported a recognized size, scan limit, or encryption condition. Keep the file private. |
+| `ClamAVError` | The scan did not return a usable verdict. Reasons: `Unavailable`, `Timeout`, `InvalidReply`, or `ScanFailed`. Never treat an error as `Clean`. |
+
+The client accepts **1 byte to 100 MiB**, with two concurrent scans per live layer and a 60-second deadline per socket request. The daemon may enforce stricter limits. `ping()` checks that the daemon responds; it does not verify signature freshness or scan coverage.
+
+The client does not quarantine, retry, delete, or publish files. Keep files private until your policy allows release, and release only the exact bytes that were scanned. For presigned uploads and durable retries, use the [Assets scan workflow](/docs/assets#scan-uploads-before-publication).

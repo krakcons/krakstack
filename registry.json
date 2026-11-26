@@ -1207,6 +1207,21 @@
       ]
     },
     {
+      "name": "clamav",
+      "type": "registry:lib",
+      "title": "ClamAV",
+      "description": "Effect client for a private ClamAV daemon.",
+      "dependencies": ["effect"],
+      "files": [
+        {
+          "path": "src/services/clamav/index.ts",
+          "type": "registry:file",
+          "target": "services/clamav/index.ts"
+        }
+      ],
+      "meta": { "createdAt": "2026-11-26", "updatedAt": "2026-11-26" }
+    },
+    {
       "name": "service-s3",
       "title": "S3 Service",
       "description": "An Effect service wrapping Bun's S3 client for object reads, writes, metadata, presigned URLs, listing, and deletion with typed service errors.",

@@ -104,7 +104,8 @@ for (const entry of entries) {
     plugins: [providerExternalPlugin, sourceAliasPlugin],
     target: entry.output.endsWith(".server.js")
       ? "bun"
-      : entry.output.includes("/oxlint/")
+      : entry.output.includes("/oxlint/") ||
+          entry.output.endsWith("/services/clamav/index.js")
         ? "node"
         : "browser",
   });

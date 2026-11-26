@@ -1,9 +1,17 @@
-import { Cause, Effect, Layer, Schema } from "effect";
-import { Activity } from "effect/workflow";
-import { AssetExtractedTextSchema, AssetIndexedTextSchema } from "./schema.js";
+import { Cause, Effect, Layer, Schedule, Schema } from "effect";
+import { Activity, DurableClock } from "effect/workflow";
+import {
+  AssetExtractedTextSchema,
+  AssetIndexedTextSchema,
+  AssetUploadScanStatus,
+} from "./schema.js";
 
 import { Assets } from "./index.js";
-import { ProcessAssetDocumentV1, ProcessAssetDocumentV2 } from "./workflow.js";
+import {
+  FinalizeAssetUploadV1,
+  ProcessAssetDocumentV1,
+  ProcessAssetDocumentV2,
+} from "./workflow.js";
 
 const failureMessage = (cause: unknown) =>
   cause instanceof Error ? cause.message : String(cause);
@@ -70,4 +78,64 @@ const indexedWorkflowLayer = ProcessAssetDocumentV2.toLayer(
 export const assetProcessingWorkflowLayer = Layer.merge(
   legacyWorkflowLayer,
   indexedWorkflowLayer,
+);
+
+export const assetUploadScanWorkflowLayer = FinalizeAssetUploadV1.toLayer(
+  ({ request, ...key }, executionId) =>
+    Effect.gen(function* () {
+      const assets = yield* Assets;
+      const failed = {
+        uploadToken: key.uploadToken,
+        status: "failed",
+        assetId: null,
+      } as const;
+      if (!request) return failed;
+      const retryDelays = [
+        "15 seconds",
+        "1 minute",
+        "5 minutes",
+        "15 minutes",
+      ] as const;
+      for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+        const delay = retryDelays[attempt];
+        const result = yield* Activity.make({
+          name: `ValidateAssetUploadV1-${attempt}`,
+          success: AssetUploadScanStatus,
+          error: Schema.String,
+          execute: assets
+            .validateAndPublishUpload(key, request, executionId)
+            .pipe(
+              Effect.mapError(
+                () => "Could not validate and publish asset upload",
+              ),
+              Effect.tapError(Effect.logWarning),
+            ),
+        }).pipe(Effect.option);
+        if (result._tag === "Some") {
+          if (result.value.status === "published") {
+            yield* Activity.make({
+              name: "ProcessPublishedUploadV1",
+              error: Schema.String,
+              execute: assets
+                .processScannedUpload(key.organizationId, request, executionId)
+                .pipe(
+                  Effect.mapError(
+                    () => "Could not schedule extraction for scanned asset",
+                  ),
+                  Effect.tapError(Effect.logWarning),
+                  Effect.retry(Schedule.spaced("30 seconds")),
+                ),
+            }).pipe(Effect.orDie);
+          }
+          return result.value;
+        }
+        if (!delay) break;
+        yield* DurableClock.sleep({
+          name: `AssetUploadScanRetryV1-${attempt}`,
+          duration: delay,
+          inMemoryThreshold: 0,
+        });
+      }
+      return failed;
+    }),
 );

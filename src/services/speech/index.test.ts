@@ -6,7 +6,7 @@ import {
   MAX_AUDIO_BYTES,
   TranscribeAudio,
   WhisperRequest,
-  MeloRequest,
+  ElevenLabsSpeechRequest,
   SynthesizeSpeech,
 } from "./schema";
 
@@ -21,12 +21,17 @@ const input: TranscribeAudio = {
   language: "fr",
 };
 const speechLayer = Speech.layer(options);
+const audioUrl =
+  "https://test-account.r2.cloudflarestorage.com/audio/speech.mp3?X-Amz-Signature=test";
+const completed = (audio = audioUrl) =>
+  Response.json({ state: "Completed", result: { audio } });
 
 describe("speech synthesis", () => {
   it.effect(
     "routes French synthesis through the Gateway and returns MP3 bytes",
     () => {
       const requests: Request[] = [];
+      let downloadCredentials: RequestCredentials | undefined;
       const bytes = new Uint8Array([73, 68, 51, 1]);
       return Effect.gen(function* () {
         const speech = yield* Speech;
@@ -35,24 +40,50 @@ describe("speech synthesis", () => {
         ).toEqual(bytes);
         const request = requests[0]!;
         expect(request.url).toBe(
-          "https://api.example.test/client/v4/accounts/test-account/ai/run/@cf/myshell-ai/melotts",
+          "https://api.example.test/client/v4/accounts/test-account/ai/run",
         );
         expect(request.headers.get("authorization")).toBe("Bearer gateway-key");
         expect(request.headers.get("cf-aig-gateway-id")).toBe("example");
         expect(request.headers.get("cf-aig-skip-cache")).toBe("true");
         expect(request.headers.get("cf-aig-collect-log")).toBe("false");
         expect(
-          yield* Schema.decodeEffect(Schema.fromJsonString(MeloRequest))(
-            yield* Effect.promise(() => request.text()),
-          ),
-        ).toEqual({ prompt: "Bonjour Alex.", lang: "fr" });
+          yield* Schema.decodeEffect(
+            Schema.fromJsonString(ElevenLabsSpeechRequest),
+          )(yield* Effect.promise(() => request.text())),
+        ).toEqual({
+          model: "elevenlabs/eleven-flash-v2-5",
+          input: {
+            text: "Bonjour Alex.",
+            language_code: "fr",
+            voice_id: "JBFqnCBsd6RMkjVDRZzb",
+            output_format: "mp3_44100_128",
+          },
+        });
+        expect(requests).toHaveLength(2);
+        const download = requests[1]!;
+        expect(download.url).toBe(audioUrl);
+        expect(download.method).toBe("GET");
+        expect(download.redirect).toBe("error");
+        expect(downloadCredentials).toBe("omit");
+        expect(download.headers.has("authorization")).toBe(false);
+        expect(download.headers.has("cf-aig-gateway-id")).toBe(false);
       }).pipe(
         Effect.provide(speechLayer),
         Effect.provideService(
           FetchHttpClient.Fetch,
           Object.assign(
             async (input: string | URL | Request, init?: RequestInit) => {
-              requests.push(new Request(input, init));
+              const request = new Request(input, init);
+              requests.push(request);
+              if (request.method === "POST") {
+                return Response.json({
+                  success: true,
+                  result: { state: "Completed", result: { audio: audioUrl } },
+                  errors: [],
+                  messages: [],
+                });
+              }
+              downloadCredentials = init?.credentials;
               return new Response(bytes, {
                 headers: { "content-type": "audio/mpeg" },
               });
@@ -63,19 +94,35 @@ describe("speech synthesis", () => {
       );
     },
   );
-  it.effect("decodes the Gateway JSON audio response", () =>
+  it.effect("passes Spanish through as an ISO 639-1 language code", () =>
     Effect.gen(function* () {
       const speech = yield* Speech;
       expect(
-        yield* speech.synthesize({ text: "Hello.", language: "en" }),
+        yield* speech.synthesize({ text: "Hola.", language: "es" }),
       ).toEqual(new Uint8Array([73, 68, 51]));
     }).pipe(
       Effect.provide(speechLayer),
       Effect.provideService(
         FetchHttpClient.Fetch,
         Object.assign(
-          async () =>
-            Response.json({ success: true, result: { audio: "SUQz" } }),
+          async (input: string | URL | Request, init?: RequestInit) => {
+            const request = new Request(input, init);
+            if (request.method === "POST") {
+              expect(await request.json()).toEqual({
+                model: "elevenlabs/eleven-flash-v2-5",
+                input: {
+                  text: "Hola.",
+                  language_code: "es",
+                  voice_id: "JBFqnCBsd6RMkjVDRZzb",
+                  output_format: "mp3_44100_128",
+                },
+              });
+              return completed();
+            }
+            return new Response(new Uint8Array([73, 68, 51]), {
+              headers: { "content-type": "audio/mpeg; charset=binary" },
+            });
+          },
           { preconnect: () => {} },
         ),
       ),
@@ -85,16 +132,32 @@ describe("speech synthesis", () => {
     "maps provider, malformed, empty, and unexpected responses to a typed error",
     () =>
       Effect.gen(function* () {
-        for (const response of [
+        const providerFailures = [
           new Response("unavailable", { status: 503 }),
-          Response.json({ success: true, result: { audio: "invalid%%%" } }),
+          Response.json({ state: "Failed", result: { audio: audioUrl } }),
+          Response.json({
+            success: false,
+            result: { state: "Completed", result: { audio: audioUrl } },
+          }),
+          completed("not-a-url"),
+          completed("https://untrusted.example/audio.mp3"),
+        ];
+        const downloadFailures = [
+          new Response("expired", { status: 403 }),
           new Response(new Uint8Array(), {
             headers: { "content-type": "audio/mpeg" },
           }),
           new Response("<html>error</html>", {
             headers: { "content-type": "text/html" },
           }),
+        ];
+        for (const [response, download] of [
+          ...providerFailures.map((response) => [response, undefined] as const),
+          ...downloadFailures.map(
+            (download) => [completed(), download] as const,
+          ),
         ]) {
+          let calls = 0;
           const error = yield* Effect.gen(function* () {
             return yield* (yield* Speech).synthesize({
               text: "Hello.",
@@ -104,11 +167,20 @@ describe("speech synthesis", () => {
             Effect.provide(speechLayer),
             Effect.provideService(
               FetchHttpClient.Fetch,
-              Object.assign(async () => response, { preconnect: () => {} }),
+              Object.assign(
+                async () => {
+                  calls++;
+                  return calls === 1
+                    ? response
+                    : (download ?? Response.error());
+                },
+                { preconnect: () => {} },
+              ),
             ),
             Effect.flip,
           );
           expect(error._tag).toBe("SpeechUnavailable");
+          expect(calls).toBe(download ? 2 : 1);
         }
       }),
   );

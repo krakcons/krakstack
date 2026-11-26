@@ -45,10 +45,46 @@ export const SynthesizeSpeech = Schema.Struct({
   language: Schema.Literals(["en", "fr", "es", "zh", "ja", "ko"]),
 }).annotate({ identifier: "SynthesizeSpeech" });
 export type SynthesizeSpeech = typeof SynthesizeSpeech.Type;
+export const ElevenLabsSpeechRequest = Schema.Struct({
+  model: Schema.Literal("elevenlabs/eleven-flash-v2-5"),
+  input: Schema.Struct({
+    text: SynthesizeSpeech.fields.text,
+    language_code: SynthesizeSpeech.fields.language,
+    voice_id: Schema.NonEmptyString,
+    output_format: Schema.Literal("mp3_44100_128"),
+  }),
+}).annotate({ identifier: "GatewayElevenLabsSpeechRequest" });
+
+const GatewayAudioUrl = Schema.URLFromString.check(
+  Schema.makeFilter(
+    (url) =>
+      (url.protocol === "https:" &&
+        !url.port &&
+        !url.username &&
+        !url.password &&
+        (url.hostname.endsWith(".r2.cloudflarestorage.com") ||
+          url.hostname.endsWith(".r2.dev") ||
+          url.hostname === "examples.aig.cloudflare.com")) ||
+      "Expected an HTTPS Cloudflare audio URL",
+  ),
+).annotate({ identifier: "GatewayAudioUrl" });
+
+const CompletedSpeech = Schema.Struct({
+  state: Schema.Literal("Completed"),
+  result: Schema.Struct({ audio: GatewayAudioUrl }),
+});
+
+export const GatewaySpeechResponse = Schema.Union([
+  Schema.Struct({ success: Schema.Literal(true), result: CompletedSpeech }),
+  CompletedSpeech,
+]).annotate({ identifier: "GatewaySpeechResponse" });
+
+/** @deprecated Legacy wire schema; the service no longer calls MeloTTS. */
 export const MeloRequest = Schema.Struct({
   prompt: SynthesizeSpeech.fields.text,
   lang: SynthesizeSpeech.fields.language,
 }).annotate({ identifier: "GatewayMeloRequest" });
+/** @deprecated Legacy wire schema; the service no longer calls MeloTTS. */
 export const MeloResponse = Schema.Struct({
   success: Schema.Literal(true),
   result: Schema.Struct({

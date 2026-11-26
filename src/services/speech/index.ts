@@ -6,12 +6,14 @@ import {
   HttpClientResponse,
 } from "effect/http";
 import {
+  ElevenLabsSpeechRequest,
+  GatewaySpeechResponse,
   SpeechUnavailable,
+  SynthesizeSpeech,
   TranscribeAudio,
   WhisperRequest,
   WhisperResponse,
 } from "./schema";
-import { SynthesizeSpeech, MeloRequest, MeloResponse } from "./schema";
 
 export interface SpeechOptions {
   readonly baseUrl: string;
@@ -80,10 +82,7 @@ export class Speech extends Context.Service<Speech>()(
                 Schema.isPattern(/^\/.*accounts\/[^/]+\/ai\/(v1|run)\/?$/),
               ),
             )(url.pathname);
-            url.pathname = path.replace(
-              /\/(v1|run)\/?$/,
-              "/run/@cf/myshell-ai/melotts",
-            );
+            url.pathname = path.replace(/\/(v1|run)\/?$/, "/run");
             url.search = "";
             url.hash = "";
             const request = yield* HttpClientRequest.post(url.toString()).pipe(
@@ -92,26 +91,39 @@ export class Speech extends Context.Service<Speech>()(
                 "cf-aig-gateway-id": options.gatewayId,
                 "cf-aig-skip-cache": "true",
                 "cf-aig-collect-log": "false",
-                accept: "audio/mpeg",
               }),
-              HttpClientRequest.schemaBodyJson(MeloRequest)({
-                prompt: payload.text,
-                lang: payload.language,
+              HttpClientRequest.schemaBodyJson(ElevenLabsSpeechRequest)({
+                model: "elevenlabs/eleven-flash-v2-5",
+                input: {
+                  text: payload.text,
+                  language_code: payload.language,
+                  voice_id: "JBFqnCBsd6RMkjVDRZzb",
+                  output_format: "mp3_44100_128",
+                },
               }),
             );
             const response = yield* http.execute(request);
+            const body = yield* HttpClientResponse.schemaBodyJson(
+              GatewaySpeechResponse,
+            )(response);
+            const { result } = "success" in body ? body.result : body;
+            // The presigned URL needs no Gateway credentials. Do not follow redirects.
+            const audio = yield* http.get(result.audio).pipe(
+              Effect.provideService(FetchHttpClient.RequestInit, {
+                credentials: "omit",
+                redirect: "error",
+              }),
+              Effect.provideService(HttpClient.TracerDisabledWhen, () => true),
+            );
             if (
-              response.headers["content-type"]?.split(";")[0]?.trim() ===
+              audio.headers["content-type"]?.split(";")[0]?.trim() !==
               "audio/mpeg"
             ) {
-              const bytes = new Uint8Array(yield* response.arrayBuffer);
-              return yield* Schema.decodeEffect(
-                Schema.Uint8Array.check(Schema.isMinLength(1)),
-              )(bytes);
+              return yield* new SpeechUnavailable({});
             }
-            const body =
-              yield* HttpClientResponse.schemaBodyJson(MeloResponse)(response);
-            return body.result.audio;
+            return yield* Schema.decodeEffect(
+              Schema.Uint8Array.check(Schema.isMinLength(1)),
+            )(new Uint8Array(yield* audio.arrayBuffer));
           },
           Effect.timeout("60 seconds"),
           Effect.mapError(() => new SpeechUnavailable({})),

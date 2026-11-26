@@ -1,5 +1,14 @@
 # @krak-stack/assets
 
+## 0.1.4
+
+### Patch Changes
+
+- Export a standalone Effect ClamAV client at `@krak-stack/registry/clamav` and add opt-in durable malware scanning to Assets. Scanned uploads stay private until their verified bytes pass scanning.
+- Updated dependencies
+- Updated dependencies
+  - @krak-stack/registry@0.10.15
+
 ## 0.1.3
 
 ### Patch Changes

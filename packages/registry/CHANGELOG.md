@@ -1,5 +1,12 @@
 # @krak-stack/registry
 
+## 0.10.15
+
+### Patch Changes
+
+- Export a standalone Effect ClamAV client at `@krak-stack/registry/clamav` and add opt-in durable malware scanning to Assets. Scanned uploads stay private until their verified bytes pass scanning.
+- Replace deprecated MeloTTS synthesis with ElevenLabs Flash v2.5 through Cloudflare AI Gateway. The six supported languages and MP3 response are unchanged. Synthesis requires Cloudflare AI Gateway Unified Billing credits; transcription still uses Whisper.
+
 ## 0.10.14
 
 ### Patch Changes

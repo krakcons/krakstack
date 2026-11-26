@@ -1,6 +1,6 @@
 # Speech
 
-Reusable Effect speech-to-text and text-to-speech service backed by Cloudflare AI Gateway. Transcription uses `@cf/openai/whisper-large-v3-turbo`; synthesis uses `@cf/myshell-ai/melotts`. No application, session, database, authentication, React, or environment-variable dependencies.
+Reusable Effect speech-to-text and text-to-speech service backed by Cloudflare AI Gateway. Transcription uses `@cf/openai/whisper-large-v3-turbo`; synthesis uses `elevenlabs/eleven-flash-v2-5`. No application, session, database, authentication, React, or environment-variable dependencies.
 
 ## Use the service
 
@@ -36,7 +36,9 @@ const audio = yield * speech.synthesize({ text: "Bonjour.", language: "fr" });
 // Uint8Array containing MP3 audio
 ```
 
-The base URL accepts the account's `/ai/v1` or `/ai/run` endpoint. The credential needs Workers AI access. No direct OpenAI credential is used. Install `@krak-stack/registry` and its `effect` peer dependency to use the speech exports.
+The base URL accepts the account's `/ai/v1` or `/ai/run` endpoint. The credential needs Workers AI access. For synthesis, load [AI Gateway Unified Billing credits](https://developers.cloudflare.com/ai-gateway/features/unified-billing/#load-credits) on the Cloudflare account. No separate provider key is needed. Install `@krak-stack/registry` and its `effect` peer dependency to use the speech exports.
+
+The models are fixed because their request and response formats differ.
 
 ## Optional HTTP API
 
@@ -95,8 +97,7 @@ Response:
 Returns raw MP3 bytes with `Content-Type: audio/mpeg`, not base64 JSON. The typed Effect client returns `Uint8Array`.
 
 - `text`: 1–4,000 characters, containing non-whitespace text.
-- `language`: required; `en`, `fr`, `es`, `zh`, `ja`, or `ko` (MeloTTS languages).
-- No voice selection: the model does not expose a voice parameter.
+- `language`: required; `en`, `fr`, `es`, `zh`, `ja`, or `ko`. The service uses a fixed ElevenLabs voice.
 - Invalid HTTP input is rejected by the schema. Provider, configuration, timeout, empty-audio, and malformed-response failures use `SpeechUnavailable` (HTTP 503).
 
 Both operations have a 60-second request timeout and do not retry automatically or store recordings/generated audio. They skip Gateway caching and request disabled input/output logging; Cloudflare retention policies still apply. The browser UI owns microphone access, recording duration, cancellation, draft insertion, and playback.

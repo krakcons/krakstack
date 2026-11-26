@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.10.14",
+  "version": "0.10.15",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -395,6 +395,10 @@
     "./service-notification/persistence/schema": {
       "types": "./dist/services/notification/persistence/schema.d.ts",
       "import": "./dist/services/notification/persistence/schema.js"
+    },
+    "./clamav": {
+      "types": "./dist/services/clamav/index.d.ts",
+      "import": "./dist/services/clamav/index.js"
     },
     "./service-s3": {
       "types": "./dist/services/s3/index.d.ts",

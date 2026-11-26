@@ -8,12 +8,12 @@ locale: fr
 section: services
 type: how-to
 createdAt: 2026-10-31
-updatedAt: 2026-10-31
+updatedAt: 2026-11-26
 ---
 
 # Parole
 
-`@krak-stack/registry/speech` fournit la transcription avec `@cf/openai/whisper-large-v3-turbo` et la synthèse vocale avec `@cf/myshell-ai/melotts`. Il ne dépend ni d'une application, ni d'une base de données, ni de l'authentification, des sessions ou de React.
+`@krak-stack/registry/speech` fournit la transcription avec `@cf/openai/whisper-large-v3-turbo` et la synthèse vocale avec `elevenlabs/eleven-flash-v2-5`. Il ne dépend ni d'une application, ni d'une base de données, ni de l'authentification, des sessions ou de React.
 
 ## Installation
 
@@ -31,7 +31,7 @@ Les exports vocaux nécessitent la version **0.1.59 ou ultérieure** du registre
 
 ## Configurer le service
 
-Fournissez l'URL du compte Cloudflare, un secret réservé au serveur autorisant l'accès à Workers AI et l'identifiant AI Gateway. Le service accepte les URL de compte se terminant par `/ai/v1` ou `/ai/run` et déduit l'URL de chaque modèle. Aucune clé OpenAI ni aucun SDK fournisseur n'est nécessaire.
+Fournissez l'URL du compte Cloudflare, un secret réservé au serveur autorisant l'accès à Workers AI et l'identifiant AI Gateway. Le service accepte les URL de compte se terminant par `/ai/v1` ou `/ai/run`. Pour la synthèse, ajoutez des [crédits de facturation unifiée AI Gateway](https://developers.cloudflare.com/ai-gateway/features/unified-billing/#load-credits) au compte Cloudflare. Aucune clé ni aucun SDK propre au fournisseur n'est nécessaire.
 
 ```ts
 import { Speech } from "@krak-stack/registry/speech";
@@ -47,6 +47,8 @@ const makeSpeechLayer = (apiKey: Redacted.Redacted<string>) =>
 ```
 
 `Speech.layer(...)` inclut le client HTTP Fetch. La configuration est explicite ; le service ne lit pas les variables d'environnement.
+
+Les modèles ne sont pas configurables, car leurs formats de requête et de réponse diffèrent.
 
 ## Transcrire un enregistrement
 
@@ -86,7 +88,7 @@ const synthesize = Effect.gen(function* () {
 // Fournissez la même couche. Résultat : Uint8Array contenant l'audio MP3.
 ```
 
-Le texte doit contenir au moins un caractère autre qu'un espace et compter **1 à 4 000 caractères**. La synthèse exige l'une des langues `en`, `fr`, `es`, `zh`, `ja` ou `ko`. MeloTTS ne propose pas de sélection de voix. Les textes longs ne sont ni tronqués ni découpés automatiquement.
+Le texte doit contenir au moins un caractère autre qu'un espace et compter **1 à 4 000 caractères**. La synthèse exige l'une des langues `en`, `fr`, `es`, `zh`, `ja` ou `ko` et utilise une voix ElevenLabs fixe. Les textes longs ne sont ni tronqués ni découpés automatiquement.
 
 ## API HTTP facultative
 

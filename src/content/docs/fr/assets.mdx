@@ -7,7 +7,7 @@ order: 18
 locale: fr
 section: services
 type: how-to
-updatedAt: 2026-10-15
+updatedAt: 2026-11-25
 ---
 
 # Fichiers et documents
@@ -60,9 +60,51 @@ const runtimeLayer = assetProcessingWorkflowLayer.pipe(
 
 Configurez le client SQL pour convertir les noms des requêtes en snake case et ceux des résultats en camel case, avec `transformJson: false`. Gardez le runtime composé actif dans le serveur ou le worker. Les opérations qui planifient un traitement nécessitent le moteur de workflows ; acquérir `Assets.layer` ne démarre pas à lui seul un worker. Consultez le [guide de la couche de workflows](/docs/workflow-layer) pour le modèle de moteur partagé.
 
+## Analyser les fichiers avant publication
+
+L'analyse est facultative. Pour un parcours qui l'exige, utilisez une version d'Assets qui exporte `Assets.layerWithMalwareScanning` et une version du registre qui inclut le [client ClamAV](/docs/clamav). Fournissez la couche Assets avec analyse à l'API et au worker. Exécutez les deux couches de workflows avec un moteur durable :
+
+```ts
+import { Assets } from "@krak-stack/assets";
+import {
+  assetProcessingWorkflowLayer,
+  assetUploadScanWorkflowLayer,
+} from "@krak-stack/assets/workflows";
+import { ClamAV } from "@krak-stack/registry/clamav";
+import { S3Service } from "@krak-stack/registry/service-s3";
+import { Layer } from "effect";
+
+const assetsLayer = Assets.layerWithMalwareScanning.pipe(
+  Layer.provide(ClamAV.layer),
+  Layer.provide(S3Service.layer),
+  Layer.provide(databaseLayer),
+);
+
+const runtimeLayer = Layer.merge(
+  assetProcessingWorkflowLayer,
+  assetUploadScanWorkflowLayer,
+).pipe(Layer.provideMerge(assetsLayer), Layer.provide(workflowEngineLayer));
+```
+
+1. Appelez `createUpload({ organizationId, payload })`, puis envoyez le fichier par PUT à l'URL retournée. Gardez le compartiment privé.
+2. Après le succès du PUT, appelez `queueUploadScan({ organizationId, createdBy, payload })` avec les données de finalisation, dont `uploadToken`. Assets vérifie que l'objet en quarantaine existe avant de lancer `FinalizeAssetUploadV1`. Le worker vérifie sa taille réelle et son empreinte avant l'analyse. Une nouvelle tentative à l'identique rejoint le même workflow ; utilisez un nouveau jeton si les données changent.
+3. Une fois la demande acceptée, interrogez `getUploadScan({ organizationId, createdBy, uploadToken })` avec le même acteur authentifié. Le moteur ne renvoie aucun résultat tant que le workflow n'est pas terminé ou si le jeton est inconnu : dans les deux cas, l'état est `pending`, sans identifiant de fichier. Affichez l'état d'analyse séparément de la progression du téléversement et de l'extraction.
+
+| État | Action de l'application |
+| --- | --- |
+| `pending` | Indiquez que le fichier attend une analyse ou qu'elle est en cours. Gardez le fichier privé pendant les nouvelles tentatives. |
+| `published` | Le fichier a été publié. Utilisez l'`assetId` pour le téléchargement si le fichier existe encore. La publication n'attend ni la planification ni la fin de l'extraction. |
+| `rejected` ou `unscannable` | Ne proposez pas le téléchargement. Demandez un fichier sûr que le service peut analyser. |
+| `invalid` | Les octets en quarantaine ne correspondent plus au téléversement, ou le fichier à remplacer a changé ou a été supprimé. Vérifiez la cible avant de recommencer. |
+| `failed` | Toutes les tentatives ont échoué. Corrigez le problème avant de lancer un nouveau téléversement. |
+
+Le worker vérifie la taille et l'empreinte SHA-256, analyse ces octets et n'écrit que ces mêmes octets sous une clé contrôlée par le serveur. La clé `scan-staging/`, accessible en écriture depuis le navigateur, n'est jamais utilisée pour le téléchargement ni l'extraction. Appliquez une règle d'expiration **à ce préfixe uniquement** (sept jours, par exemple) pour supprimer les fichiers abandonnés ou rejetés. En cas de remplacement, le fichier existant reste en service jusqu'à la publication du nouveau.
+
+La couche avec analyse refuse `completeUpload`. En cas de panne, ne revenez pas au parcours sans analyse : suspendez les téléversements si nécessaire. Les fichiers existants ne sont pas réanalysés. Avant le déploiement, vérifiez les formats acceptés et la limite de 100 Mio avec le démon qui sera utilisé, puis confirmez qu'une panne laisse les fichiers privés.
+
 ## Migrations et suppression sécurisée
 
-`Assets.layer` et `Assets.layerWith(...)` exécutent les migrations en attente avant d'exposer le service. Un échec de migration empêche l'initialisation. Le package utilise son propre journal `public.asset_migrations` et un verrou consultatif transactionnel pour sérialiser les démarrages concurrents.
+`Assets.layer`, `Assets.layerWith(...)` et `Assets.layerWithMalwareScanning` exécutent les migrations en attente avant d'exposer le service. Le moteur de workflows suit les tentatives d'analyse. Assets inscrit la publication dans `asset_upload_publications`, dans la même transaction que l'écriture du fichier en base. Cette trace subsiste après la suppression pour qu'une reprise du workflow ne recrée pas le fichier. Un échec de migration empêche l'initialisation. Le package utilise son propre journal `public.asset_migrations` et un verrou consultatif transactionnel pour sérialiser les démarrages concurrents.
 
 Pour un rôle SQL d'exécution restreint, exécutez `migrateAssets` depuis `@krak-stack/assets/migrations` avec un client autorisé à migrer, puis utilisez `Assets.layerWithoutMigrations` ou `Assets.layerWithoutMigrationsWith(...)`.
 

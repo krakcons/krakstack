@@ -7,7 +7,7 @@ order: 18
 locale: en
 section: services
 type: how-to
-updatedAt: 2026-10-15
+updatedAt: 2026-11-25
 ---
 
 # Assets
@@ -60,9 +60,51 @@ const runtimeLayer = assetProcessingWorkflowLayer.pipe(
 
 Configure the SQL client to transform query names to snake case and result names to camel case, with `transformJson: false`. Keep the composed runtime alive in the server or worker. Operations that enqueue processing require the workflow engine; acquiring `Assets.layer` alone does not start a processing worker. See the [workflow layer guide](/docs/workflow-layer) for the shared engine pattern.
 
+## Scan uploads before publication
+
+Malware scanning is opt-in. For a scanning-required upload flow, use a release of Assets that exports `Assets.layerWithMalwareScanning` and a registry release with the [ClamAV client](/docs/clamav). Use the scan-enabled Assets layer in the API and worker. Run both workflow layers on a durable engine:
+
+```ts
+import { Assets } from "@krak-stack/assets";
+import {
+  assetProcessingWorkflowLayer,
+  assetUploadScanWorkflowLayer,
+} from "@krak-stack/assets/workflows";
+import { ClamAV } from "@krak-stack/registry/clamav";
+import { S3Service } from "@krak-stack/registry/service-s3";
+import { Layer } from "effect";
+
+const assetsLayer = Assets.layerWithMalwareScanning.pipe(
+  Layer.provide(ClamAV.layer),
+  Layer.provide(S3Service.layer),
+  Layer.provide(databaseLayer),
+);
+
+const runtimeLayer = Layer.merge(
+  assetProcessingWorkflowLayer,
+  assetUploadScanWorkflowLayer,
+).pipe(Layer.provideMerge(assetsLayer), Layer.provide(workflowEngineLayer));
+```
+
+1. Call `createUpload({ organizationId, payload })`, then PUT the file to the returned URL. Keep the bucket private.
+2. After the PUT succeeds, call `queueUploadScan({ organizationId, createdBy, payload })` with the completion payload, including `uploadToken`. Assets checks that the staged object exists before starting `FinalizeAssetUploadV1`. The worker verifies its actual size and checksum before scanning. Retrying the same request joins the same workflow; use a fresh upload token if the payload changes.
+3. After submission succeeds, poll `getUploadScan({ organizationId, createdBy, uploadToken })` as the same authenticated actor. The engine returns no verdict for either an unfinished workflow or an unknown token; both appear as `pending` with no asset ID. Show the scan state separately from upload progress and document extraction.
+
+| Status | What the application should do |
+| --- | --- |
+| `pending` | Show that the upload is awaiting or undergoing a scan. Keep it private while the worker retries transient failures. |
+| `published` | The upload was published. Use `assetId` for downloads if the asset still exists. Publication does not wait for extraction to be scheduled or completed. |
+| `rejected` or `unscannable` | Do not offer the file for download. Ask for a safe, scannable file. |
+| `invalid` | The staged bytes no longer match the upload, or the asset being replaced changed or was removed. Recheck the target before starting a fresh upload. |
+| `failed` | The scan attempts were exhausted. Start a new upload after resolving the underlying problem. |
+
+The worker checks size and SHA-256, scans those bytes, and writes only those same bytes to a server-controlled key. The browser-writable `scan-staging/` key is never used for downloads or extraction. Apply a storage lifecycle rule to **that prefix only** (for example, seven days) to remove abandoned and rejected uploads. A replacement does not supersede the existing asset until it is published.
+
+The scan-enabled layer rejects `completeUpload`. Do not fall back to a legacy runtime during an outage; pause uploads if necessary. Existing assets are not rescanned. Before rollout, validate your accepted formats and the 100 MiB boundary against the actual daemon, and verify that a scanner outage leaves files private.
+
 ## Migrations and deletion safety
 
-`Assets.layer` and `Assets.layerWith(...)` run pending migrations before exposing the service. A migration failure prevents initialization. The package uses its own `public.asset_migrations` ledger and a transaction-scoped advisory lock to serialize concurrent startup.
+`Assets.layer`, `Assets.layerWith(...)`, and `Assets.layerWithMalwareScanning` run pending migrations before exposing the service. The workflow engine tracks scan attempts. Assets records successful publication in `asset_upload_publications` in the same transaction as the asset write. That receipt survives deletion so replay cannot recreate the file. A migration failure prevents initialization. The package uses its own `public.asset_migrations` ledger and a transaction-scoped advisory lock to serialize concurrent startup.
 
 For a restricted runtime database role, run `migrateAssets` from `@krak-stack/assets/migrations` with a migration-capable SQL client, then use `Assets.layerWithoutMigrations` or `Assets.layerWithoutMigrationsWith(...)`.
 

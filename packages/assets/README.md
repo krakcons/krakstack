@@ -11,6 +11,44 @@ bun add @krak-stack/assets@0.1.1 @effect/sql-pg@4.0.0 effect@4.0.0
 See the [Assets guide](https://krakstack.net/docs/assets) for application setup
 and retrieval examples. This README covers package boundaries and operations.
 
+## Opt-in malware scanning
+
+Provide `ClamAV.layer` from `@krak-stack/registry/clamav` to
+`Assets.layerWithMalwareScanning` alongside the usual PostgreSQL and S3 layers.
+Run both worker layers against the same configured Assets service and durable engine:
+
+```ts
+const assets = Assets.layerWithMalwareScanning.pipe(
+  Layer.provide(ClamAV.layer),
+  Layer.provide(s3Layer),
+  Layer.provide(databaseLayer),
+);
+const worker = Layer.merge(
+  assetProcessingWorkflowLayer,
+  assetUploadScanWorkflowLayer,
+).pipe(Layer.provideMerge(assets), Layer.provide(workflowEngineLayer));
+```
+
+Both worker layers are exported from `@krak-stack/assets/workflows`. After the
+browser completes its PUT, call `queueUploadScan` instead of `completeUpload`.
+After submission succeeds, poll `getUploadScan` with the same authenticated
+organization and actor. `published` returns an asset ID. An unfinished or
+unknown workflow reports `pending` with no asset ID. `rejected`,
+`unscannable`, `invalid`, and `failed` are terminal. Start a fresh upload after a
+terminal failure. Finalization checks that the staged object exists before
+queueing. The worker verifies its actual size and checksum before scanning.
+The workflow engine handles retries; there is no scan
+dispatcher. A receipt stored with the asset in PostgreSQL makes `published`
+visible before extraction and prevents replay from recreating a deleted asset.
+The receipt records a past publication, not current download availability.
+Do not route uploads through a legacy runtime as a fallback.
+
+Apply a lifecycle expiration rule only to `scan-staging/` in private object
+storage (for example, seven days). Existing assets are not rescanned.
+A clean result means no threat was detected, not that every format or embedded
+object was inspected. Test the actual scanner configuration and accepted
+formats before rollout.
+
 ## Boundaries
 
 - Import `Assets` from `@krak-stack/assets` and schemas from `@krak-stack/assets/schema`.

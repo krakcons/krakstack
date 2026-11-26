@@ -37,6 +37,41 @@ export const AssetUploadCompletionPayloadSchema = Schema.Struct({
   uploadToken: Schema.String.check(Schema.isUUID()),
 }).annotate({ identifier: "AssetUploadCompletionPayload" });
 
+export const AssetUploadScanKey = Schema.Struct({
+  organizationId: Schema.String,
+  createdBy: Schema.NonEmptyString,
+  uploadToken: Schema.String.check(Schema.isUUID()),
+}).annotate({ identifier: "AssetUploadScanKey" });
+
+export const AssetUploadScanStatus = Schema.Struct({
+  uploadToken: AssetUploadScanKey.fields.uploadToken,
+  status: Schema.Literals([
+    "pending",
+    "published",
+    "rejected",
+    "unscannable",
+    "invalid",
+    "failed",
+  ]),
+  assetId: Schema.NullOr(Schema.String.check(Schema.isUUID())),
+}).annotate({ identifier: "AssetUploadScanStatus" });
+
+export const AssetUploadPublication = Schema.Struct({
+  executionId: Schema.NonEmptyString,
+  assetId: Schema.String.check(Schema.isUUID()),
+}).annotate({ identifier: "AssetUploadPublication" });
+
+export const AssetUploadPublicationRequest = Schema.Struct({
+  organizationId: AssetUploadScanKey.fields.organizationId,
+  uploadToken: AssetUploadScanKey.fields.uploadToken,
+}).annotate({ identifier: "AssetUploadPublicationRequest" });
+
+export const AssetUploadFinalization = Schema.Struct({
+  payload: AssetUploadPayloadSchema,
+  assetId: Schema.String.check(Schema.isUUID()),
+  previousObjectKey: Schema.optional(Schema.String),
+}).annotate({ identifier: "AssetUploadFinalization" });
+
 export const AssetParamsSchema = Schema.Struct({
   assetId: Schema.String.check(Schema.isUUID()),
 }).annotate({ identifier: "AssetParams" });

@@ -8,12 +8,12 @@ locale: en
 section: services
 type: how-to
 createdAt: 2026-10-31
-updatedAt: 2026-10-31
+updatedAt: 2026-11-26
 ---
 
 # Speech
 
-`@krak-stack/registry/speech` provides speech-to-text with `@cf/openai/whisper-large-v3-turbo` and text-to-speech with `@cf/myshell-ai/melotts`. It has no application, database, authentication, session, or React dependencies.
+`@krak-stack/registry/speech` provides speech-to-text with `@cf/openai/whisper-large-v3-turbo` and text-to-speech with `elevenlabs/eleven-flash-v2-5`. It has no application, database, authentication, session, or React dependencies.
 
 ## Install
 
@@ -31,7 +31,7 @@ The speech exports require registry **0.1.59 or later**. This is a package impor
 
 ## Configure the service
 
-Supply the Cloudflare account URL, a server-only credential with Workers AI access, and the AI Gateway ID. The service accepts account URLs ending in `/ai/v1` or `/ai/run` and derives each model's endpoint. No OpenAI API key or provider SDK is required.
+Supply the Cloudflare account URL, a server-only credential with Workers AI access, and the AI Gateway ID. The service accepts account URLs ending in `/ai/v1` or `/ai/run`. For synthesis, load [AI Gateway Unified Billing credits](https://developers.cloudflare.com/ai-gateway/features/unified-billing/#load-credits) on the Cloudflare account. No separate provider key or SDK is required.
 
 ```ts
 import { Speech } from "@krak-stack/registry/speech";
@@ -47,6 +47,8 @@ const makeSpeechLayer = (apiKey: Redacted.Redacted<string>) =>
 ```
 
 `Speech.layer(...)` includes the Fetch HTTP client. Configuration is passed explicitly; the service does not read environment variables.
+
+The models are fixed because their request and response formats differ.
 
 ## Transcribe a recording
 
@@ -86,7 +88,7 @@ const synthesize = Effect.gen(function* () {
 // Provide the same speech layer. Result: Uint8Array containing MP3 audio.
 ```
 
-Text must contain non-whitespace content and be **1–4,000 characters** long. Synthesis requires one of `en`, `fr`, `es`, `zh`, `ja`, or `ko`. MeloTTS does not expose voice selection. Long text is not truncated or split automatically.
+Text must contain non-whitespace content and be **1–4,000 characters** long. Synthesis requires one of `en`, `fr`, `es`, `zh`, `ja`, or `ko` and uses a fixed ElevenLabs voice. Long text is not truncated or split automatically.
 
 ## Optional HTTP API
 
