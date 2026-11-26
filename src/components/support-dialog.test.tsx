@@ -2,7 +2,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
-import { SupportDialog } from "./support-dialog";
+import { SupportDialog, SupportForm } from "./support";
 
 afterEach(cleanup);
 
@@ -27,7 +27,13 @@ describe("SupportDialog", () => {
       .fn()
       .mockRejectedValueOnce(new Error("Delivery failed"))
       .mockResolvedValueOnce(undefined);
-    render(<SupportDialog messages={{ en: messages }} onSubmit={onSubmit} />);
+    render(
+      <SupportDialog
+        messages={{ en: messages }}
+        askForReplyEmail={false}
+        onSubmit={onSubmit}
+      />,
+    );
     const trigger = screen.getByRole("button", { name: messages.title });
     fireEvent.click(trigger);
     const message = screen.getByRole<HTMLTextAreaElement>("textbox", {
@@ -55,9 +61,13 @@ describe("SupportDialog", () => {
     expect(screen.getByText(screenshot.name)).toBeTruthy();
 
     fireEvent.click(send);
-    expect((await screen.findByRole("status")).textContent).toBe(
-      messages.success,
-    );
+    expect(
+      await screen.findByRole("dialog", {
+        name: messages.success,
+        description: "We will get back to you as soon as possible.",
+      }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: messages.close }));
     fireEvent.click(trigger);
     expect(
@@ -101,8 +111,82 @@ describe("SupportDialog", () => {
       replyEmail: "learner@example.com",
       attachments: [],
     });
-    expect((await screen.findByRole("status")).textContent).toBe(
+    expect((await screen.findByRole("status")).textContent).toContain(
       messages.success,
     );
+  });
+});
+
+describe("SupportForm", () => {
+  it("lets the user clear the prefilled email and exclude diagnostics", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <SupportForm
+        locale="en"
+        defaultReplyEmail="learner@example.com"
+        supportEmail="support@krakconsultants.com"
+        errorDetails="Reference: abc123"
+        onSubmit={onSubmit}
+      />,
+    );
+    const email = screen.getByLabelText<HTMLInputElement>(
+      "Reply email (optional)",
+    );
+    expect(email.value).toBe("learner@example.com");
+    expect(
+      screen
+        .getByRole("link", { name: "support@krakconsultants.com" })
+        .getAttribute("href"),
+    ).toBe("mailto:support@krakconsultants.com");
+    expect(screen.queryByText("Reference: abc123")).toBeNull();
+    fireEvent.change(email, { target: { value: "" } });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Include error details" }),
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Tell us how we can help" }),
+      {
+        target: { value: "Help please" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      message: "Help please",
+      attachments: [],
+    });
+    await screen.findByRole("status");
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "support@krakconsultants.com" }),
+    ).toBeNull();
+  });
+
+  it("submits an edited reply address and includes error details by default", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <SupportForm
+        locale="en"
+        defaultReplyEmail="learner@example.com"
+        errorDetails="Reference: abc123"
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Reply email (optional)"), {
+      target: { value: "other@example.com" },
+    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Tell us how we can help" }),
+      {
+        target: { value: "Help please" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      message: "Help please",
+      replyEmail: "other@example.com",
+      errorDetails: "Reference: abc123",
+      attachments: [],
+    });
+    await screen.findByRole("status");
   });
 });

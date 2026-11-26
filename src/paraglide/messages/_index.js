@@ -79,6 +79,7 @@ import { getLocale, experimentalStaticLocale } from "../runtime.js"
 /** @typedef {{}} Interactions_Local_OnlyInputs */
 /** @typedef {{}} Support_Preview_SuccessInputs */
 /** @typedef {{}} Support_Preview_Local_OnlyInputs */
+/** @typedef {{}} Support_FeedbackInputs */
 /** @typedef {{}} Interactions_Delete_ExampleInputs */
 /** @typedef {{}} Interactions_Delete_TitleInputs */
 /** @typedef {{}} Interactions_Delete_DescriptionInputs */
@@ -1573,7 +1574,7 @@ export const support_preview_success = /** @type {((inputs?: Support_Preview_Suc
 /**
 * | output |
 * | --- |
-* | "This preview does not send or save your request." |
+* | "Enter a sample message and select Send message to see the confirmation. Nothing is sent or saved." |
 *
 * @param {Support_Preview_Local_OnlyInputs} inputs
 * @param {{ locale?: "en" | "fr" }} options
@@ -1583,6 +1584,20 @@ export const support_preview_local_only = /** @type {((inputs?: Support_Preview_
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "en") return __en.support_preview_local_only(inputs)
 	return __fr.support_preview_local_only(inputs)
+});
+/**
+* | output |
+* | --- |
+* | "Feedback" |
+*
+* @param {Support_FeedbackInputs} inputs
+* @param {{ locale?: "en" | "fr" }} options
+* @returns {LocalizedString}
+*/
+export const support_feedback = /** @type {((inputs?: Support_FeedbackInputs, options?: { locale?: "en" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Support_FeedbackInputs, { locale?: "en" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return __en.support_feedback(inputs)
+	return __fr.support_feedback(inputs)
 });
 /**
 * | output |

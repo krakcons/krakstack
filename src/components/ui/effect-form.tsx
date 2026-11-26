@@ -28,7 +28,7 @@ import {
   Field,
   FieldDescription,
   FieldGroup,
-  FieldLabel,
+  FieldLabel as BaseFieldLabel,
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
@@ -222,6 +222,30 @@ export type FieldOptions = {
   label: JSX.Element | string;
   description?: string;
   children?: ReactNode;
+  locale?: string;
+  /** Adds a localized marker to the label. The field schema still controls validation. */
+  optional?: boolean;
+};
+
+const FieldLabel = ({
+  htmlFor,
+  options,
+}: {
+  htmlFor?: string;
+  options: Pick<FieldOptions, "label" | "locale" | "optional">;
+}) => {
+  const locale = useKrakstackLocale(options.locale);
+  return (
+    <BaseFieldLabel htmlFor={htmlFor}>
+      {options.label}
+      {options.optional && (
+        <span className="text-muted-foreground font-normal">
+          {" "}
+          ({locale.startsWith("fr") ? "facultatif" : "optional"})
+        </span>
+      )}
+    </BaseFieldLabel>
+  );
 };
 
 export type FieldWrapperOptions = {
@@ -359,12 +383,23 @@ export const TextField: FormReact.FieldComponent<string, TextFieldOptions> = ({
   field,
   props,
 }) => {
-  const { children, description, errorMessage, label, ...inputProps } = props;
+  const {
+    children,
+    description,
+    errorMessage,
+    label,
+    locale,
+    optional,
+    ...inputProps
+  } = props;
 
   return (
     <Field data-invalid={Option.isSome(field.error)}>
       <div className="flex w-full items-center gap-2">
-        <FieldLabel htmlFor={field.path}>{label}</FieldLabel>
+        <FieldLabel
+          htmlFor={field.path}
+          options={{ label, locale, optional }}
+        />
         {children}
       </div>
       <Input
@@ -398,6 +433,7 @@ export const NameField: FormReact.FieldComponent<string, NameFieldOptions> = ({
       field={field}
       props={{
         ...fieldProps,
+        locale,
         label: labels.name,
         errorMessage: props.errorMessage ?? labels.nameRequired,
       }}
@@ -421,18 +457,27 @@ export const TextAreaField: FormReact.FieldComponent<
   string,
   TextAreaFieldOptions
 > = ({ field, props }) => {
-  const { children, description, label, ...textareaProps } = props;
-  const nativeTextareaProps = { ...textareaProps };
-  delete nativeTextareaProps.original;
+  const {
+    children,
+    description,
+    label,
+    locale,
+    optional,
+    original: _original,
+    ...textareaProps
+  } = props;
 
   return (
     <Field data-invalid={Option.isSome(field.error)}>
       <div className="flex w-full items-center gap-2">
-        <FieldLabel htmlFor={field.path}>{label}</FieldLabel>
+        <FieldLabel
+          htmlFor={field.path}
+          options={{ label, locale, optional }}
+        />
         {children}
       </div>
       <Textarea
-        {...nativeTextareaProps}
+        {...textareaProps}
         id={field.path}
         name={field.path}
         value={field.value}
@@ -462,6 +507,7 @@ export const DescriptionField: FormReact.FieldComponent<
       field={field}
       props={{
         ...fieldProps,
+        locale,
         label: labels.description,
       }}
     />
@@ -484,7 +530,7 @@ export const FileField: FormReact.FieldComponent<
 
   return (
     <Field data-invalid={invalid}>
-      <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+      <FieldLabel htmlFor={field.path} options={props} />
       <FilePicker
         accept={props.accept ?? ""}
         canClear={field.value instanceof File}
@@ -518,18 +564,27 @@ export const NullableTextAreaField: FormReact.FieldComponent<
   string | null | undefined,
   TextAreaFieldOptions
 > = ({ field, props }) => {
-  const { children, description, label, ...textareaProps } = props;
-  const nativeTextareaProps = { ...textareaProps };
-  delete nativeTextareaProps.original;
+  const {
+    children,
+    description,
+    label,
+    locale,
+    optional,
+    original: _original,
+    ...textareaProps
+  } = props;
 
   return (
     <Field data-invalid={Option.isSome(field.error)}>
       <div className="flex w-full items-center gap-2">
-        <FieldLabel htmlFor={field.path}>{label}</FieldLabel>
+        <FieldLabel
+          htmlFor={field.path}
+          options={{ label, locale, optional }}
+        />
         {children}
       </div>
       <Textarea
-        {...nativeTextareaProps}
+        {...textareaProps}
         id={field.path}
         name={field.path}
         value={field.value ?? ""}
@@ -557,7 +612,7 @@ export const CheckboxField: FormReact.FieldComponent<boolean, FieldOptions> = ({
         onCheckedChange={field.onChange}
         aria-invalid={Option.isSome(field.error)}
       />
-      <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+      <FieldLabel htmlFor={field.path} options={props} />
       {props.children}
     </div>
     {props.description && (
@@ -578,7 +633,7 @@ export const SelectField = <T extends string>({
   props,
 }: FormReact.FieldComponentProps<T, SelectFieldOptions<T>>) => (
   <Field data-invalid={Option.isSome(field.error)}>
-    <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+    <FieldLabel htmlFor={field.path} options={props} />
     <Select
       items={props.options}
       onValueChange={(value) => {
@@ -634,7 +689,7 @@ export const MultiSelectField = <T extends string>({
   MultiSelectFieldOptions<T>
 >) => (
   <Field data-invalid={Option.isSome(field.error)}>
-    <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+    <FieldLabel htmlFor={field.path} options={props} />
     <Select
       items={props.options}
       onValueChange={(value) => field.onChange(value ?? [])}
@@ -673,7 +728,7 @@ export const NullableMultiSelectField = <T extends string>({
   MultiSelectFieldOptions<T>
 >) => (
   <Field data-invalid={Option.isSome(field.error)}>
-    <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+    <FieldLabel htmlFor={field.path} options={props} />
     <Select
       items={props.options}
       onValueChange={(value) =>
@@ -762,7 +817,7 @@ export const SearchableSelectField = <TData,>({
 
   return (
     <Field className="min-w-0" data-invalid={invalid}>
-      <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+      <FieldLabel htmlFor={field.path} options={props} />
       <VirtualizedCombobox<TData>
         contentClassName={props.contentClassName}
         ariaInvalid={invalid}
@@ -815,7 +870,7 @@ export const SingleSearchableSelectField = <TData,>({
 
   return (
     <Field className="min-w-0" data-invalid={invalid}>
-      <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+      <FieldLabel htmlFor={field.path} options={props} />
       <VirtualizedCombobox<TData>
         contentClassName={props.contentClassName}
         ariaInvalid={invalid}
@@ -866,7 +921,7 @@ export const NullableKeyValueField = ({
 
   return (
     <Field data-invalid={Option.isSome(field.error)}>
-      <FieldLabel>{props.label}</FieldLabel>
+      <FieldLabel options={props} />
       {entries.map(([key, value], index) => (
         <div key={index} className="flex w-full flex-row items-center gap-2">
           <Input
@@ -949,7 +1004,7 @@ export const KeyValueField = ({
 
   return (
     <Field data-invalid={Option.isSome(field.error)}>
-      <FieldLabel>{props.label}</FieldLabel>
+      <FieldLabel options={props} />
       {entries.map(([key, value], index) => (
         <div key={index} className="flex w-full flex-row items-center gap-2">
           <Input
@@ -1040,6 +1095,7 @@ export const RevertButton = ({
 type ImageFieldOptions = {
   label: string;
   locale?: string;
+  optional?: boolean;
   messages?: EffectFormMessageTranslations;
   filePickerMessages?: FilePickerMessageTranslations;
   size: {
@@ -1062,7 +1118,7 @@ export const ImageField: FormReact.FieldComponent<
 
   return (
     <Field data-invalid={invalid}>
-      <FieldLabel htmlFor={field.path}>{props.label}</FieldLabel>
+      <FieldLabel htmlFor={field.path} options={props} />
       <FilePicker
         accept="image/*"
         onBlur={field.onBlur}

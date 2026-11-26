@@ -1,6 +1,6 @@
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, XIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,7 @@ const messages = {
     placeholder: "Search...",
     inputPlaceholder: "Search...",
     emptyMessage: "No results found.",
+    clearSearch: "Clear search",
   },
   fr: {
     title: "Recherche",
@@ -30,6 +31,7 @@ const messages = {
     placeholder: "Rechercher...",
     inputPlaceholder: "Rechercher...",
     emptyMessage: "Aucun résultat trouvé.",
+    clearSearch: "Effacer la recherche",
   },
 } as const;
 
@@ -39,7 +41,8 @@ export type SearchMenuMessages = Partial<
     | "description"
     | "placeholder"
     | "inputPlaceholder"
-    | "emptyMessage",
+    | "emptyMessage"
+    | "clearSearch",
     string
   >
 >;
@@ -118,8 +121,51 @@ export function SearchMenu({
   const resolvedInputPlaceholder = inputPlaceholder ?? labels.inputPlaceholder;
   const resolvedEmptyMessage = emptyMessage ?? labels.emptyMessage;
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const [uncontrolledQuery, setUncontrolledQuery] = useState("");
   const isControlled = open !== undefined;
   const isOpen = open ?? uncontrolledOpen;
+  const searchQuery = query ?? uncontrolledQuery;
+  const externalGroups = shouldFilter === false ? groups : undefined;
+  const [selection, setSelection] = useState<{
+    groups: SearchMenuGroup[];
+    query: string;
+    value: string;
+  }>();
+  const externalItems = externalGroups?.flatMap(({ items }) =>
+    items.filter(({ disabled }) => !disabled),
+  );
+  // cmdk may retain a stale selection when a caller replaces its result list.
+  const selectedValue =
+    selection?.groups === externalGroups &&
+    selection?.query === searchQuery &&
+    externalItems?.some(({ label }) => label.trim() === selection?.value)
+      ? selection.value
+      : (externalItems?.[0]?.label.trim() ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const setQuery = (value: string) => {
+    if (query === undefined) setUncontrolledQuery(value);
+    onQueryChange?.(value);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setUncontrolledQuery("");
+      setSelection(undefined);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!isOpen || !list) return;
+
+    // Run after cmdk has finished scrolling its newly selected item into view.
+    const frame = requestAnimationFrame(() => {
+      list.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, searchQuery, externalGroups]);
+
   const setOpen = useCallback(
     (value: boolean) => {
       if (!isControlled) setUncontrolledOpen(value);
@@ -167,14 +213,53 @@ export function SearchMenu({
         onOpenChange={setOpen}
         title={resolvedTitle}
         description={resolvedDescription}
+        className="[&>[data-slot=dialog-close]]:hidden"
       >
-        <Command {...(shouldFilter === undefined ? {} : { shouldFilter })}>
-          <CommandInput
-            placeholder={resolvedInputPlaceholder}
-            {...(query === undefined ? {} : { value: query })}
-            {...(onQueryChange ? { onValueChange: onQueryChange } : {})}
-          />
-          <CommandList>
+        <Command
+          {...(shouldFilter === undefined ? {} : { shouldFilter })}
+          {...(externalGroups && {
+            value: selectedValue,
+            onValueChange: (value: string) =>
+              setSelection({
+                groups: externalGroups,
+                query: searchQuery,
+                value,
+              }),
+          })}
+        >
+          <div
+            className={cn(
+              "relative",
+              searchQuery && "[&_[data-slot=command-input-wrapper]>div]:pr-10",
+            )}
+          >
+            <CommandInput
+              ref={inputRef}
+              placeholder={resolvedInputPlaceholder}
+              value={searchQuery}
+              onValueChange={setQuery}
+            />
+            {searchQuery && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={labels.clearSearch}
+                className="absolute top-1.5 right-2"
+                onKeyDown={(event) => {
+                  // Let Enter activate the button rather than select a result.
+                  if (event.key === "Enter") event.stopPropagation();
+                }}
+                onClick={() => {
+                  setQuery("");
+                  inputRef.current?.focus();
+                }}
+              >
+                <XIcon />
+              </Button>
+            )}
+          </div>
+          <CommandList ref={listRef}>
             <CommandEmpty>{resolvedEmptyMessage}</CommandEmpty>
             {groups.map((group) => (
               <CommandGroup heading={group.heading} key={group.heading}>

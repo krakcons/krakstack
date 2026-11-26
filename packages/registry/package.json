@@ -1,6 +1,6 @@
 {
   "name": "@krak-stack/registry",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "description": "Tree-shakable KrakStack components and Effect services.",
   "license": "MIT",
   "repository": {
@@ -17,6 +17,10 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./support": {
+      "types": "./dist/components/support.d.ts",
+      "import": "./dist/components/support.js"
+    },
     "./support-dialog": {
       "types": "./dist/components/support-dialog.d.ts",
       "import": "./dist/components/support-dialog.js"

@@ -1,34 +1,62 @@
 ---
 slug: support-dialog
 path: /docs/support-dialog
-title: Support Dialog
+title: Support Form
 description: Collect bug reports and support requests without coupling the UI to a delivery service.
 order: 4
 locale: en
 section: components
 type: reference
 createdAt: "2026-11-23"
-updatedAt: "2026-11-23"
+updatedAt: "2026-11-26"
 ---
 
-# Support Dialog
+# Support Form
 
-Use `SupportDialog` to collect a message and optional screenshots. Users can choose files or paste screenshots into the message field. The dialog accepts up to three PNG, JPEG, or WebP images of up to 5 MiB each. Your app decides how to send the request.
+Render `SupportForm` directly on a support page. Users can choose files or paste up to three PNG, JPEG, or WebP screenshots of up to 5 MiB each. Your app decides how to send the request.
 
 ```bash
 bunx shadcn@latest add @krak-stack/support-dialog
 ```
 
 ```tsx
-import { SupportDialog } from "@/components/support-dialog";
+import { SupportForm } from "@/components/support";
 
-<SupportDialog onSubmit={sendSupportRequest} />;
+<SupportForm
+  defaultReplyEmail={user?.email}
+  supportEmail="support@krakconsultants.com"
+  onSubmit={sendSupportRequest}
+/>;
 ```
 
-The package export is `@krak-stack/registry/support-dialog`. Pass a custom button via `trigger` if you want to choose its placement or styling.
+The package export is `@krak-stack/registry/support`. The reply email is optional: users can add, edit, or clear it. Set `askForReplyEmail` to require it or `askForReplyEmail={false}` to hide it. `supportEmail` adds a direct email link below the form; it does not set the submission destination.
 
-English and French messages are built in. The dialog follows `KrakstackProvider` unless you pass `locale`. To customize individual strings, pass overrides keyed by locale, for example `messages={{ en: { title: "Contact support" } }}`.
+English and French messages are built in. The form follows `KrakstackProvider` unless you pass `locale`. To customize strings, pass overrides keyed by locale, for example `messages={{ en: { title: "Contact support" } }}`.
 
-`onSubmit` receives `{ message, attachments, replyEmail? }`, where `attachments` is a list of `File` objects. Set `askForReplyEmail` for signed-out users. For signed-in users, resolve the reply address from the session on the server. Resolve the callback when the request has been accepted, or throw to retain the draft for retry.
+## Feedback on an error page
 
-Use multipart form data to send files to your server. Apply request and upload limits on the server, use `SupportRequestSchema` to validate the parsed payload, and verify image contents rather than trusting the declared MIME type. Keep credentials and destination selection on the server, and don't include request contents in telemetry. The dialog does not collect URLs, account details, or diagnostics automatically.
+Use the existing `SupportDialog` wrapper with `ErrorComponent`'s `renderFeedback` prop. The checkbox includes the same report the error page offers to copy. Users can uncheck it to leave the report out.
+
+```tsx
+import { SupportDialog } from "@/components/support";
+import { Button } from "@/components/ui/button";
+import { ErrorComponent } from "@/components/ui/error-component";
+
+<ErrorComponent
+  {...errorProps}
+  renderFeedback={(errorDetails) => (
+    <SupportDialog
+      trigger={<Button variant="outline">Feedback</Button>}
+      errorDetails={errorDetails}
+      supportEmail="support@krakconsultants.com"
+      onSubmit={sendSupportRequest}
+    />
+  )}
+/>;
+```
+
+## Handle submission
+
+`onSubmit` receives `{ message, attachments, replyEmail?, errorDetails? }`, where `attachments` is a list of `File` objects. Resolve when the request has been accepted, or throw to retain the draft for retry. Treat the optional reply address as user input, not proof of identity.
+
+Use multipart form data to send files to your server. Apply request and upload limits on the server, use `SupportRequestSchema` to validate the parsed payload, and verify image contents rather than trusting the declared MIME type. Keep credentials and destination selection on the server, and don't include request contents in telemetry. Pass only diagnostics suitable for sharing.

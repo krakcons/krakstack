@@ -4,7 +4,7 @@ import {
   type ErrorComponentProps as RouterErrorComponentProps,
 } from "@tanstack/react-router";
 import { CircleAlert, RefreshCw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Option, Schema } from "effect";
 import { HttpClientError, HttpTraceContext } from "effect/http";
 
@@ -113,6 +113,7 @@ export type ErrorComponentProps = RouterErrorComponentProps & {
   messages?: ErrorComponentMessageTranslations;
   retryable?: boolean;
   className?: string;
+  renderFeedback?: (errorDetails: string) => ReactNode;
   diagnostics?: {
     app?: string;
     version?: string;
@@ -127,6 +128,7 @@ export const ErrorComponent = ({
   retryable = true,
   className,
   diagnostics,
+  renderFeedback,
 }: ErrorComponentProps) => {
   const locale = useKrakstackLocale(localeOverride);
   const pathname = useRouterState({
@@ -195,6 +197,7 @@ export const ErrorComponent = ({
             <Link to="/" className={cn(buttonVariants({ variant: "outline" }))}>
               {labels.home}
             </Link>
+            {renderFeedback?.(report)}
           </div>
           <CopyButton
             value={report}

@@ -1,34 +1,58 @@
 ---
 slug: support-dialog
 path: /docs/support-dialog
-title: Boîte de dialogue de soutien
+title: Formulaire de soutien
 description: Recueillir des signalements de bogues et des demandes de soutien sans imposer de service d’envoi.
 order: 4
 locale: fr
 section: components
 type: reference
 createdAt: "2026-11-23"
-updatedAt: "2026-11-23"
+updatedAt: "2026-11-26"
 ---
 
-# Boîte de dialogue de soutien
+# Formulaire de soutien
 
-Utilisez `SupportDialog` pour recueillir un message et, au besoin, des captures d’écran. Les utilisateurs peuvent choisir des fichiers ou les coller dans le champ de message. La boîte de dialogue accepte jusqu’à trois images PNG, JPEG ou WebP de 5 Mio chacune. Votre application choisit le mode d’envoi.
+Affichez `SupportForm` directement sur une page de soutien. Les utilisateurs peuvent sélectionner ou coller jusqu’à trois captures d’écran PNG, JPEG ou WebP de 5 Mio chacune. Votre application choisit le mode d’envoi.
 
 ```bash
 bunx shadcn@latest add @krak-stack/support-dialog
 ```
 
 ```tsx
-import { SupportDialog } from "@/components/support-dialog";
+import { SupportForm } from "@/components/support";
 
-<SupportDialog onSubmit={sendSupportRequest} />;
+<SupportForm
+  defaultReplyEmail={user?.email}
+  supportEmail="support@krakconsultants.com"
+  onSubmit={sendSupportRequest}
+/>;
 ```
 
-Le composant est aussi exporté par `@krak-stack/registry/support-dialog`. Fournissez un bouton via `trigger` pour choisir son emplacement ou son style.
+Le composant est aussi exporté par `@krak-stack/registry/support`. L’adresse de réponse est facultative : on peut la saisir, la modifier ou l’effacer. Utilisez `askForReplyEmail` pour la rendre obligatoire ou `askForReplyEmail={false}` pour masquer le champ. `supportEmail` ajoute un lien courriel sous le formulaire sans définir la destination des demandes.
 
-Les textes sont fournis en français et en anglais. La boîte de dialogue suit la langue de `KrakstackProvider`, sauf si vous précisez `locale`. Pour personnaliser certains textes, utilisez des substitutions par langue, par exemple `messages={{ fr: { title: "Contacter le soutien" } }}`.
+Les textes sont fournis en français et en anglais. Le formulaire suit la langue de `KrakstackProvider`, sauf si vous précisez `locale`. Pour personnaliser certains textes, utilisez par exemple `messages={{ fr: { title: "Contacter le soutien" } }}`.
 
-`onSubmit` reçoit `{ message, attachments, replyEmail? }`, où `attachments` est une liste d’objets `File`. Activez `askForReplyEmail` pour les utilisateurs non connectés. Pour les utilisateurs connectés, récupérez l’adresse de réponse à partir de la session côté serveur. Résolvez la promesse lorsque la demande est acceptée ou signalez une erreur pour conserver le brouillon et permettre un nouvel essai.
+## Commentaires sur une page d’erreur
 
-Utilisez des données de formulaire multipart pour envoyer les fichiers au serveur. Appliquez des limites de taille côté serveur, utilisez `SupportRequestSchema` pour valider les données reçues et vérifiez le contenu des images plutôt que de vous fier au type MIME déclaré. Gardez les identifiants d’accès et le choix du destinataire côté serveur. N’incluez pas le contenu des demandes dans la télémétrie. La boîte de dialogue ne recueille pas automatiquement les URL, les détails du compte ou les diagnostics.
+Utilisez `SupportDialog` avec la propriété `renderFeedback` d’`ErrorComponent`. La case à cocher joint les mêmes détails que la page propose de copier. L’utilisateur peut la décocher pour ne pas les joindre.
+
+```tsx
+<ErrorComponent
+  {...errorProps}
+  renderFeedback={(errorDetails) => (
+    <SupportDialog
+      trigger={<Button variant="outline">Commentaires</Button>}
+      errorDetails={errorDetails}
+      supportEmail="support@krakconsultants.com"
+      onSubmit={sendSupportRequest}
+    />
+  )}
+/>;
+```
+
+## Traiter l’envoi
+
+`onSubmit` reçoit `{ message, attachments, replyEmail?, errorDetails? }`, où `attachments` est une liste d’objets `File`. Résolvez la promesse lorsque la demande est acceptée ou signalez une erreur pour conserver le brouillon. Ne traitez pas l’adresse de réponse comme une preuve d’identité.
+
+Utilisez des données multipart pour envoyer les fichiers. Appliquez des limites côté serveur, validez les données avec `SupportRequestSchema` et vérifiez le contenu réel des images. Gardez les identifiants d’accès et le choix du destinataire côté serveur. N’incluez pas les demandes dans la télémétrie et ne transmettez que des diagnostics qui peuvent être communiqués.

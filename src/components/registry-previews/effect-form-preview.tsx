@@ -129,7 +129,7 @@ export const EffectFormPreview = () => {
               localized={false}
             >
               <form.metadata label="Metadata" />
-              <form.attachment accept=".pdf,.txt" label="Attachment" />
+              <form.attachment accept=".pdf,.txt" label="Attachment" optional />
               <form.image
                 label={m.effect_form_preview_image_label()}
                 size={{

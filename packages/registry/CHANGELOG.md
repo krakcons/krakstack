@@ -1,5 +1,13 @@
 # @krak-stack/registry
 
+## 0.10.16
+
+### Patch Changes
+
+- Add an `optional` prop to Effect Form fields to display a localized optional marker without changing schema validation.
+- Add a clear button inside the Search Menu input that keeps the dialog open, reset the results scroll position when the query changes, and keep the first match selected when externally filtered results update.
+- Add `SupportForm` for inline support pages, shared by the existing `SupportDialog`. Both support an optional, editable reply address, a direct email link, and a checkbox for including error details. Add a feedback render slot to `ErrorComponent`.
+
 ## 0.10.15
 
 ### Patch Changes
