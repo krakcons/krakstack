@@ -1,6 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/Effect-TS/tsgo/refs/heads/main/schema.json",
   "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "packages/effect-ui-adapter"],
   "compilerOptions": {
     "incremental": true,
     "target": "ES2022",

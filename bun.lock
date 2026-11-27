@@ -98,6 +98,28 @@
         "effect": "^4.1.0",
       },
     },
+    "packages/effect-ui-adapter": {
+      "name": "@krak-stack/effect-ui-adapter",
+      "devDependencies": {
+        "@base-ui/react": "1.5.0",
+        "@effect/ui": "https://pkg.pr.new/Effect-TS/ui/@effect/ui@d795fa2",
+        "@effect/ui-devtools": "https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@d795fa2",
+        "@effect/ui-kit": "https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@d795fa2",
+        "@types/bun": "1.3.14",
+        "@types/react": "19.2.17",
+        "@types/react-dom": "19.2.3",
+        "basecoat-css": "1.3.0",
+        "effect": "4.1.5",
+        "react": "19.2.7",
+        "react-dom": "19.2.7",
+        "typescript": "6.0.3",
+      },
+      "peerDependencies": {
+        "@effect/ui": "0.0.0",
+        "effect": "^4.1.4",
+        "react": "^19.0.0",
+      },
+    },
     "packages/notifications": {
       "name": "@krak-stack/notifications",
       "version": "0.4.7",
@@ -451,6 +473,10 @@
 
     "@effect/tsgo-win32-x64": ["@effect/tsgo-win32-x64@0.63.0", "", { "os": "win32", "cpu": "x64" }, "sha512-28s5YrwL26/7EUnUOu81IOJGJZLkPf2lPkiSIsd4EnFhimeBqP279bhAoDAEwLW1gv45GKM/49JKduXmdLyT1g=="],
 
+    "@effect/ui": ["@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@d795fa2", { "peerDependencies": { "effect": "^4.1.4" } }, "sha512-b0RsW02XDOdvCfglyl3oGB1wfFpiLc/ANQa+zmKe8qS0z7Z1rTdxsa3fVZfTAlgkdxsyc0jtijYOHC1Mgh5JFQ=="],
+
+    "@effect/ui-kit": ["@effect/ui-kit@https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@d795fa2", { "peerDependencies": { "@effect/ui": "^0.0.0", "effect": "^4.1.6" } }, "sha512-kEml9r9EMFYpzrm+TKNPvxqnBgig756klgjg7CR7Hq2ZGcjh1FJQ6PlRB+yw2M07CfwmVAd2tavyTTh6EvgCpA=="],
+
     "@effect/vitest": ["@effect/vitest@4.1.0", "", { "peerDependencies": { "effect": "^4.1.0", "vitest": ">=5.0.0 <6.0.0" } }, "sha512-+APF69oTYgGj5WCewowk1/udepH74xz4ONyH7d+UfcK0SrF3osiSwsWEyODUpJvWd6MIk5F5PcFJiE4evMuG2A=="],
 
     "@emnapi/core": ["@emnapi/core@1.11.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" } }, "sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ=="],
@@ -548,6 +574,8 @@
     "@krak-stack/assets": ["@krak-stack/assets@workspace:packages/assets"],
 
     "@krak-stack/auth": ["@krak-stack/auth@0.2.32", "", { "dependencies": { "@effect/atom-react": "^4.1.0", "@lucas-barake/effect-form-react": "1.1.0", "react-qr-code": "^2.2.0" }, "peerDependencies": { "@krak-stack/registry": "^0.1.61", "@tanstack/react-router": "^1.170.15", "effect": "^4.1.0", "input-otp": "^1.5.0", "lucide-react": "^1.18.0", "react": "^19.2.0" }, "optionalPeers": ["@tanstack/react-router", "input-otp", "lucide-react", "react"] }, "sha512-6cmw+IcX36UjjTeeINTkIStI8mFB4Uiuugf2eXg8vSrrqrDefVUSVcedVUjXZfCoWG+5XQ2HD54LagIlaeIHhw=="],
+
+    "@krak-stack/effect-ui-adapter": ["@krak-stack/effect-ui-adapter@workspace:packages/effect-ui-adapter"],
 
     "@krak-stack/notifications": ["@krak-stack/notifications@workspace:packages/notifications"],
 
@@ -984,6 +1012,8 @@
     "babel-dead-code-elimination": ["babel-dead-code-elimination@1.0.12", "", { "dependencies": { "@babel/core": "^7.23.7", "@babel/parser": "^7.23.6", "@babel/traverse": "^7.23.7", "@babel/types": "^7.23.6" } }, "sha512-GERT7L2TiYcYDtYk1IpD+ASAYXjKbLTDPhBtYj7X1NuRMDTMtAx9kyBenub1Ev41lo91OHCKdmP+egTDmfQ7Ig=="],
 
     "balanced-match": ["balanced-match@4.0.4", "", {}, "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA=="],
+
+    "basecoat-css": ["basecoat-css@1.3.0", "", {}, "sha512-N7RYvuoaKq57xQFumDYXP2bMf6JKUyzI33tCmyBAkexru64xti+oYE1BA/iUYMVW+9NjWSfhO6eT27WjF/xFMA=="],
 
     "baseline-browser-mapping": ["baseline-browser-mapping@2.10.38", "", { "bin": { "baseline-browser-mapping": "dist/cli.cjs" } }, "sha512-31/02mVB4yuQU6adKk5SlY6m+mxDwUq5KZkyYgnLrrKl7TEm1+3PyDtDBz2kOv/wxZz41GHsvV1A/u6RmiyBvw=="],
 
@@ -1823,6 +1853,16 @@
 
     "@krak-stack/assets/typescript": ["typescript@7.0.1-rc", "", { "optionalDependencies": { "@typescript/typescript-aix-ppc64": "7.0.1-rc", "@typescript/typescript-darwin-arm64": "7.0.1-rc", "@typescript/typescript-darwin-x64": "7.0.1-rc", "@typescript/typescript-freebsd-arm64": "7.0.1-rc", "@typescript/typescript-freebsd-x64": "7.0.1-rc", "@typescript/typescript-linux-arm": "7.0.1-rc", "@typescript/typescript-linux-arm64": "7.0.1-rc", "@typescript/typescript-linux-loong64": "7.0.1-rc", "@typescript/typescript-linux-mips64el": "7.0.1-rc", "@typescript/typescript-linux-ppc64": "7.0.1-rc", "@typescript/typescript-linux-riscv64": "7.0.1-rc", "@typescript/typescript-linux-s390x": "7.0.1-rc", "@typescript/typescript-linux-x64": "7.0.1-rc", "@typescript/typescript-netbsd-arm64": "7.0.1-rc", "@typescript/typescript-netbsd-x64": "7.0.1-rc", "@typescript/typescript-openbsd-arm64": "7.0.1-rc", "@typescript/typescript-openbsd-x64": "7.0.1-rc", "@typescript/typescript-sunos-x64": "7.0.1-rc", "@typescript/typescript-win32-arm64": "7.0.1-rc", "@typescript/typescript-win32-x64": "7.0.1-rc" }, "bin": { "tsc": "bin/tsc" } }, "sha512-drEP77wK7CCDlPfXZH4e008UUQOsw1DFmHmZOZjuNA+yoDLLnSNMZRXi90NbV/1LVo7SbNLq1bs3jjvk49TEqQ=="],
 
+    "@krak-stack/effect-ui-adapter/@base-ui/react": ["@base-ui/react@1.5.0", "", { "dependencies": { "@babel/runtime": "^7.29.2", "@base-ui/utils": "0.2.9", "@floating-ui/react-dom": "^2.1.8", "@floating-ui/utils": "^0.2.11", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "@date-fns/tz": "^1.2.0", "@types/react": "^17 || ^18 || ^19", "date-fns": "^4.0.0", "react": "^17 || ^18 || ^19", "react-dom": "^17 || ^18 || ^19" }, "optionalPeers": ["@date-fns/tz", "@types/react", "date-fns"] }, "sha512-z1gSAlced1yY+iM+mHDEtIkD8UI3Ebs52MuBPxvV6f5hRutk+xvCH/wuB7hDqDzK9JG5FoMz5nhrqtSs1wjt1A=="],
+
+    "@krak-stack/effect-ui-adapter/@effect/ui": ["@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@d795fa2", { "peerDependencies": { "effect": "^4.1.4" } }, "sha512-b0RsW02XDOdvCfglyl3oGB1wfFpiLc/ANQa+zmKe8qS0z7Z1rTdxsa3fVZfTAlgkdxsyc0jtijYOHC1Mgh5JFQ=="],
+
+    "@krak-stack/effect-ui-adapter/@effect/ui-devtools": ["@effect/ui-devtools@https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@d795fa2", { "peerDependencies": { "@effect/platform-node": "^4.1.4", "@effect/ui": "^0.0.0", "@effect/ui-kit": "^0.0.0", "effect": "^4.1.4" }, "optionalPeers": ["@effect/platform-node"], "bin": { "effect-ui-devtools": "./dist/node/internal/bin.js" } }, "sha512-/OzPn9UtrDBjM7EvxZaanoVy7v/YmfKhBCm/4iINBSKoKZZN76IruKCsaucAmu7T8H3+0b+0y89Je4ExACPJeA=="],
+
+    "@krak-stack/effect-ui-adapter/effect": ["effect@4.1.5", "", {}, "sha512-xyR20KhQI0vg2gD8ILUSQRTTESEYJ0JKdP+QD8J37xbwPTqXRxFM/l0+vUVD9fuSvoYruoTqyt33C4FZv1s4TQ=="],
+
+    "@krak-stack/effect-ui-adapter/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+
     "@krak-stack/notifications/typescript": ["typescript@7.0.1-rc", "", { "optionalDependencies": { "@typescript/typescript-aix-ppc64": "7.0.1-rc", "@typescript/typescript-darwin-arm64": "7.0.1-rc", "@typescript/typescript-darwin-x64": "7.0.1-rc", "@typescript/typescript-freebsd-arm64": "7.0.1-rc", "@typescript/typescript-freebsd-x64": "7.0.1-rc", "@typescript/typescript-linux-arm": "7.0.1-rc", "@typescript/typescript-linux-arm64": "7.0.1-rc", "@typescript/typescript-linux-loong64": "7.0.1-rc", "@typescript/typescript-linux-mips64el": "7.0.1-rc", "@typescript/typescript-linux-ppc64": "7.0.1-rc", "@typescript/typescript-linux-riscv64": "7.0.1-rc", "@typescript/typescript-linux-s390x": "7.0.1-rc", "@typescript/typescript-linux-x64": "7.0.1-rc", "@typescript/typescript-netbsd-arm64": "7.0.1-rc", "@typescript/typescript-netbsd-x64": "7.0.1-rc", "@typescript/typescript-openbsd-arm64": "7.0.1-rc", "@typescript/typescript-openbsd-x64": "7.0.1-rc", "@typescript/typescript-sunos-x64": "7.0.1-rc", "@typescript/typescript-win32-arm64": "7.0.1-rc", "@typescript/typescript-win32-x64": "7.0.1-rc" }, "bin": { "tsc": "bin/tsc" } }, "sha512-drEP77wK7CCDlPfXZH4e008UUQOsw1DFmHmZOZjuNA+yoDLLnSNMZRXi90NbV/1LVo7SbNLq1bs3jjvk49TEqQ=="],
 
     "@krak-stack/notifications-admin-compat/typescript": ["typescript@7.0.1-rc", "", { "optionalDependencies": { "@typescript/typescript-aix-ppc64": "7.0.1-rc", "@typescript/typescript-darwin-arm64": "7.0.1-rc", "@typescript/typescript-darwin-x64": "7.0.1-rc", "@typescript/typescript-freebsd-arm64": "7.0.1-rc", "@typescript/typescript-freebsd-x64": "7.0.1-rc", "@typescript/typescript-linux-arm": "7.0.1-rc", "@typescript/typescript-linux-arm64": "7.0.1-rc", "@typescript/typescript-linux-loong64": "7.0.1-rc", "@typescript/typescript-linux-mips64el": "7.0.1-rc", "@typescript/typescript-linux-ppc64": "7.0.1-rc", "@typescript/typescript-linux-riscv64": "7.0.1-rc", "@typescript/typescript-linux-s390x": "7.0.1-rc", "@typescript/typescript-linux-x64": "7.0.1-rc", "@typescript/typescript-netbsd-arm64": "7.0.1-rc", "@typescript/typescript-netbsd-x64": "7.0.1-rc", "@typescript/typescript-openbsd-arm64": "7.0.1-rc", "@typescript/typescript-openbsd-x64": "7.0.1-rc", "@typescript/typescript-sunos-x64": "7.0.1-rc", "@typescript/typescript-win32-arm64": "7.0.1-rc", "@typescript/typescript-win32-x64": "7.0.1-rc" }, "bin": { "tsc": "bin/tsc" } }, "sha512-drEP77wK7CCDlPfXZH4e008UUQOsw1DFmHmZOZjuNA+yoDLLnSNMZRXi90NbV/1LVo7SbNLq1bs3jjvk49TEqQ=="],
@@ -2016,6 +2056,8 @@
     "@krak-stack/assets/typescript/@typescript/typescript-win32-arm64": ["@typescript/typescript-win32-arm64@7.0.1-rc", "", { "os": "win32", "cpu": "arm64" }, "sha512-KzXzFSXZOm7zvEt2Aw0MsB2LbTL88znAiVqTDNAOHdlEb7brgmUQh/X2wM/8Be+N0fjEqWKl65cBKNwpWEbJiw=="],
 
     "@krak-stack/assets/typescript/@typescript/typescript-win32-x64": ["@typescript/typescript-win32-x64@7.0.1-rc", "", { "os": "win32", "cpu": "x64" }, "sha512-98R3+OqDr/r0/PLWEoXu88AE0lGVLNd335Ew8ONgzK1JWkNs4ou/5BGt3Or1ij4iXjH+c7PRL+jFjCbtWze+EA=="],
+
+    "@krak-stack/effect-ui-adapter/@base-ui/react/@base-ui/utils": ["@base-ui/utils@0.2.9", "", { "dependencies": { "@babel/runtime": "^7.29.2", "@floating-ui/utils": "^0.2.11", "reselect": "^5.1.1", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "@types/react": "^17 || ^18 || ^19", "react": "^17 || ^18 || ^19", "react-dom": "^17 || ^18 || ^19" }, "optionalPeers": ["@types/react"] }, "sha512-x/PDDCYzoqPpjrdyb3VcyylTI2IjUXEtYDGi5foh7KsnmNJIIaVwA2GLgDH1dps1GgXiJbA60hM+AyuTfQzIvw=="],
 
     "@krak-stack/notifications-admin-compat/typescript/@typescript/typescript-aix-ppc64": ["@typescript/typescript-aix-ppc64@7.0.1-rc", "", { "os": "aix", "cpu": "ppc64" }, "sha512-oqq2ZfEJ7BQuufcC3QBQndZLPNyamYNHLao8lKRBeeSkZKypBqxPSgkzrcFZtbYcIaBvpiyUnQP9MT7DEYHWbw=="],
 

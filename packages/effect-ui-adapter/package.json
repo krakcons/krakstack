@@ -1,0 +1,37 @@
+{
+  "name": "@krak-stack/effect-ui-adapter",
+  "private": true,
+  "type": "module",
+  "description": "Render an Effect UI model with a React TSX view.",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "bun run build && tsc -p tsconfig.json",
+    "demo": "bun run build && bun examples/counter/serve.tsx"
+  },
+  "peerDependencies": {
+    "@effect/ui": "0.0.0",
+    "effect": "^4.1.4",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@base-ui/react": "1.5.0",
+    "@effect/ui": "https://pkg.pr.new/Effect-TS/ui/@effect/ui@d795fa2",
+    "@effect/ui-devtools": "https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@d795fa2",
+    "@effect/ui-kit": "https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@d795fa2",
+    "@types/bun": "1.3.14",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "basecoat-css": "1.3.0",
+    "effect": "4.1.5",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "typescript": "6.0.3"
+  }
+}
